@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// PUBLIC SCHEMA - Platform Level Only
+// ============================================
+
+enum TenantStatus {
+  PROVISIONING // Schema being created
+  ACTIVE // Ready for use
+  SUSPENDED // Temporarily disabled
+  PROVISION_FAILED // Schema creation failed
+  ARCHIVED // Soft deleted
+}
+
+enum FeatureStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum SuperAdminStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+// Platform tenants table - stores salon metadata
+model Tenant {
+  id         String       @id @default(uuid()) @db.Uuid
+  code       String       @unique // SAL000001, SAL000002
+  schemaName String       @unique // tenant_000001, tenant_000002
+  name       String
+  email      String?
+  phone      String?
+  status     TenantStatus @default(PROVISIONING)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  tenantFeatures TenantFeature[]
+
+  @@map("tenants")
+}
+
+// Global feature catalog
+model Feature {
+  id          String        @id @default(uuid()) @db.Uuid
+  code        String        @unique // CUSTOMERS, SERVICES, INVENTORY, POS, BRANCH_MANAGEMENT
+  name        String
+  description String?
+  status      FeatureStatus @default(ACTIVE)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  tenantFeatures TenantFeature[]
+
+  @@map("features")
+}
+
+// Features enabled per tenant
+model TenantFeature {
+  tenantId  String  @db.Uuid
+  featureId String  @db.Uuid
+  isEnabled Boolean @default(false)
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  feature Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@id([tenantId, featureId])
+  @@map("tenant_features")
+}
+
+// Platform super administrators (NOT tenant users)
+model SuperAdminUser {
+  id           String           @id @default(uuid()) @db.Uuid
+  name         String
+  email        String           @unique
+  passwordHash String
+  status       SuperAdminStatus @default(ACTIVE)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  refreshTokens SuperAdminRefreshToken[]
+
+  @@map("super_admin_users")
+}
+
+// Refresh tokens for super admin users
+model SuperAdminRefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user SuperAdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("super_admin_refresh_tokens")
+}
+
+// NOTE: Tenant-specific data (users, roles, branches, etc.) 
+// are stored in dynamic schemas (tenant_000001, tenant_000002, etc.)
+// and are NOT defined in this Prisma schema.
