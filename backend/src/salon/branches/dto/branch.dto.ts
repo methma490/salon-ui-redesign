@@ -1,4 +1,8 @@
+import { Transform } from 'class-transformer';
 import { IsEmail, IsEnum, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+
+const emptyToUndefined = ({ value }: { value: unknown }) =>
+  value === '' || value === null ? undefined : value;
 
 export class CreateBranchDto {
   @IsString()
@@ -12,16 +16,19 @@ export class CreateBranchDto {
   name!: string;
 
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsString()
   @MaxLength(50)
   phone?: string;
 
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsEmail()
   @MaxLength(255)
   email?: string;
 
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsString()
   address?: string;
 }
@@ -34,16 +41,19 @@ export class UpdateBranchDto {
   name?: string;
 
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsString()
   @MaxLength(50)
   phone?: string;
 
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsEmail()
   @MaxLength(255)
   email?: string;
 
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsString()
   address?: string;
 }

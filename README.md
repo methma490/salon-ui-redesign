@@ -31,7 +31,7 @@ cd backend
 cp .env.example .env
 npm install
 npx prisma generate
-npm run start:dev
+npm run start:dev    # migrations + seed (if empty) run automatically on startup
 ```
 
 ### 3. Frontend Setup
@@ -72,9 +72,12 @@ npm run dev:backend      # Start backend only
 npm run lint             # Lint both projects
 
 # Backend
-npm run start:dev        # Development server
+npm run start:dev        # Development server (auto migrates + seeds empty DB)
 npx prisma generate      # Generate Prisma Client
-npx prisma migrate dev   # Run migrations (when models are added)
+npm run db:setup         # Manual: migrations + seed
+npm run db:migrate       # Manual: migrations only
+npm run db:seed          # Manual: seed only
+npx prisma migrate dev   # Create new migration during development
 
 # Frontend
 npm run dev              # Development server

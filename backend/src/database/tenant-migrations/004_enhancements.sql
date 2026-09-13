@@ -47,28 +47,56 @@ END $$;
 -- Extend stock movement enum values
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid WHERE t.typname = 'stock_movement_type' AND e.enumlabel = 'STOCK_IN') THEN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_enum e
+    JOIN pg_type t ON e.enumtypid = t.oid
+    JOIN pg_namespace n ON t.typnamespace = n.oid
+    WHERE t.typname = 'stock_movement_type'
+      AND e.enumlabel = 'STOCK_IN'
+      AND n.nspname = current_schema()
+  ) THEN
     ALTER TYPE stock_movement_type ADD VALUE 'STOCK_IN';
   END IF;
 END $$;
 
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid WHERE t.typname = 'stock_movement_type' AND e.enumlabel = 'SALE') THEN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_enum e
+    JOIN pg_type t ON e.enumtypid = t.oid
+    JOIN pg_namespace n ON t.typnamespace = n.oid
+    WHERE t.typname = 'stock_movement_type'
+      AND e.enumlabel = 'SALE'
+      AND n.nspname = current_schema()
+  ) THEN
     ALTER TYPE stock_movement_type ADD VALUE 'SALE';
   END IF;
 END $$;
 
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid WHERE t.typname = 'stock_movement_type' AND e.enumlabel = 'DAMAGE') THEN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_enum e
+    JOIN pg_type t ON e.enumtypid = t.oid
+    JOIN pg_namespace n ON t.typnamespace = n.oid
+    WHERE t.typname = 'stock_movement_type'
+      AND e.enumlabel = 'DAMAGE'
+      AND n.nspname = current_schema()
+  ) THEN
     ALTER TYPE stock_movement_type ADD VALUE 'DAMAGE';
   END IF;
 END $$;
 
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type t ON e.enumtypid = t.oid WHERE t.typname = 'stock_movement_type' AND e.enumlabel = 'TRANSFER') THEN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_enum e
+    JOIN pg_type t ON e.enumtypid = t.oid
+    JOIN pg_namespace n ON t.typnamespace = n.oid
+    WHERE t.typname = 'stock_movement_type'
+      AND e.enumlabel = 'TRANSFER'
+      AND n.nspname = current_schema()
+  ) THEN
     ALTER TYPE stock_movement_type ADD VALUE 'TRANSFER';
   END IF;
 END $$;

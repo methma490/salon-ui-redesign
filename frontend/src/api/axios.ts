@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { SUPER_ADMIN_LOGIN_PATH } from '@/config/auth-paths';
 import { authStorage } from '@/lib/auth-storage';
 import type {
   AuthUser,
@@ -27,6 +28,42 @@ const processQueue = (token: string | null) => {
   refreshQueue = [];
 };
 
+const AUTH_REDIRECT_MESSAGE_KEY = 'auth_redirect_message';
+
+function getErrorMessage(error: unknown): string | undefined {
+  const message = (error as { response?: { data?: { message?: string | string[] } } })?.response
+    ?.data?.message;
+  if (Array.isArray(message)) {
+    return message[0];
+  }
+  return typeof message === 'string' ? message : undefined;
+}
+
+function redirectToLoginIfNeeded(message?: string) {
+  if (typeof window === 'undefined') return;
+  if (message) {
+    sessionStorage.setItem(AUTH_REDIRECT_MESSAGE_KEY, message);
+  }
+  const path = window.location.pathname;
+  if (path.startsWith('/salon') && !path.startsWith('/salon/login')) {
+    window.location.href = '/salon/login';
+    return;
+  }
+  if (
+    path.startsWith('/super-admin') &&
+    !path.includes('/login') &&
+    !path.includes('/forgot-password') &&
+    !path.includes('/reset-password')
+  ) {
+    window.location.href = SUPER_ADMIN_LOGIN_PATH;
+  }
+}
+
+function forceLogout(message?: string) {
+  authStorage.clearTokens();
+  redirectToLoginIfNeeded(message);
+}
+
 api.interceptors.request.use((config) => {
   const token = authStorage.getAccessToken();
   if (token) {
@@ -40,7 +77,19 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config as typeof error.config & { _retry?: boolean };
 
-    if (error.response?.status !== 401 || originalRequest._retry) {
+    const status = error.response?.status;
+    const path = typeof window !== 'undefined' ? window.location.pathname : '';
+
+    if (
+      status === 403 &&
+      path.startsWith('/salon') &&
+      !path.startsWith('/salon/login')
+    ) {
+      forceLogout(getErrorMessage(error));
+      return Promise.reject(error);
+    }
+
+    if (status !== 401 || originalRequest._retry) {
       return Promise.reject(error);
     }
 
@@ -54,7 +103,7 @@ api.interceptors.response.use(
     const refreshToken = authStorage.getRefreshToken();
 
     if (!refreshToken) {
-      authStorage.clearTokens();
+      forceLogout(getErrorMessage(error));
       return Promise.reject(error);
     }
 
@@ -85,8 +134,8 @@ api.interceptors.response.use(
       originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
       return api(originalRequest);
     } catch (refreshError) {
-      authStorage.clearTokens();
       processQueue(null);
+      forceLogout(getErrorMessage(refreshError) ?? getErrorMessage(error));
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
@@ -99,6 +148,10 @@ export const authApi = {
     api.post<LoginResponse>('/auth/login', { email, password }).then((r) => r.data),
   logout: (refreshToken: string) => api.post('/auth/logout', { refreshToken }).then((r) => r.data),
   me: () => api.get<AuthUser>('/auth/me').then((r) => r.data),
+  forgotPassword: (email: string, portal: 'salon' | 'super-admin') =>
+    api.post<{ message: string }>('/auth/forgot-password', { email, portal }).then((r) => r.data),
+  resetPassword: (token: string, password: string) =>
+    api.post<{ message: string }>('/auth/reset-password', { token, password }).then((r) => r.data),
 };
 
 export const salonsApi = {

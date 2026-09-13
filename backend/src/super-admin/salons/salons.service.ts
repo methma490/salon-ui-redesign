@@ -7,12 +7,14 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { TenantProvisioningService } from '../../database/tenant-provisioning.service';
-import { Feature, Prisma, Tenant, TenantStatus } from '@prisma/client';
+import { Feature, Prisma, SubscriptionStatus, Tenant, TenantStatus } from '@prisma/client';
 import { CreateSalonDto } from './dto/create-salon.dto';
 import { ListSalonsQueryDto } from './dto/list-salons-query.dto';
 import { UpdateSalonDto } from './dto/update-salon.dto';
 import { UpdateSalonFeaturesDto } from './dto/update-salon-features.dto';
 import { UpdateSalonStatusDto } from './dto/update-salon-status.dto';
+import { AuthService } from '../../auth/auth.service';
+import { SubscriptionsService } from '../../subscriptions/subscriptions.service';
 import { normalizeFeatureCodes, validateFeatureRecords } from './utils/feature-validation.util';
 
 const TENANT_CODE_PREFIX = 'SAL';
@@ -23,6 +25,32 @@ type TenantWithRelations = Tenant & {
     isEnabled: boolean;
     feature: Feature;
   }>;
+  subscriptions: Array<{
+    id: string;
+    status: SubscriptionStatus;
+    price: Prisma.Decimal;
+    currency: string;
+    startDate: Date | null;
+    endDate: Date | null;
+    plan: { code: string; name: string };
+    subscriptionFeatures: Array<{
+      enabled: boolean;
+      feature: Feature;
+    }>;
+  }>;
+};
+
+const subscriptionInclude = {
+  orderBy: { createdAt: 'desc' as const },
+  take: 1,
+  include: {
+    plan: { select: { code: true, name: true } },
+    subscriptionFeatures: {
+      where: { enabled: true },
+      include: { feature: true },
+      orderBy: { feature: { code: 'asc' as const } },
+    },
+  },
 };
 
 @Injectable()
@@ -30,6 +58,8 @@ export class SalonsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly provisioning: TenantProvisioningService,
+    private readonly subscriptionsService: SubscriptionsService,
+    private readonly authService: AuthService,
   ) {}
 
   async findAll(query: ListSalonsQueryDto) {
@@ -64,6 +94,7 @@ export class SalonsService {
             where: { isEnabled: true },
             include: { feature: true },
           },
+          subscriptions: subscriptionInclude,
         },
       }),
     ]);
@@ -96,6 +127,7 @@ export class SalonsService {
           include: { feature: true },
           orderBy: { feature: { code: 'asc' } },
         },
+        subscriptions: subscriptionInclude,
       },
     });
 
@@ -128,6 +160,7 @@ export class SalonsService {
           where: { isEnabled: true },
           include: { feature: true },
         },
+        subscriptions: subscriptionInclude,
       },
     });
 
@@ -138,18 +171,27 @@ export class SalonsService {
   }
 
   async updateSalonStatus(salonId: string, dto: UpdateSalonStatusDto) {
-    await this.findTenantOrThrow(salonId);
+    const existing = await this.findTenantOrThrow(salonId);
+    const nextStatus = dto.status as TenantStatus;
 
     const salon = await this.prisma.tenant.update({
       where: { id: salonId },
-      data: { status: dto.status as TenantStatus },
+      data: { status: nextStatus },
       include: {
         tenantFeatures: {
           where: { isEnabled: true },
           include: { feature: true },
         },
+        subscriptions: subscriptionInclude,
       },
     });
+
+    if (
+      nextStatus !== existing.status &&
+      (nextStatus === TenantStatus.SUSPENDED || nextStatus === TenantStatus.ARCHIVED)
+    ) {
+      await this.authService.revokeAllTenantSessions(salon.schemaName);
+    }
 
     const mainBranch = await this.getMainBranch(salon.schemaName);
     const admin = await this.getSalonAdmin(salon.schemaName);
@@ -159,6 +201,25 @@ export class SalonsService {
 
   async updateSalonFeatures(salonId: string, dto: UpdateSalonFeaturesDto) {
     await this.findTenantOrThrow(salonId);
+
+    const managedSubscription = await this.prisma.subscription.findFirst({
+      where: {
+        tenantId: salonId,
+        status: {
+          in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.PENDING, SubscriptionStatus.TRIAL],
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (managedSubscription) {
+      await this.subscriptionsService.updateSubscriptionFeatures(
+        managedSubscription.id,
+        salonId,
+        dto.features,
+      );
+      return this.findOne(salonId);
+    }
 
     const uniqueFeatures = normalizeFeatureCodes(dto.features);
     const features = await this.resolveActiveFeatures(uniqueFeatures);
@@ -405,6 +466,10 @@ export class SalonsService {
     salon: TenantWithRelations,
     mainBranch: { id: string; code: string; name: string } | null,
   ) {
+    const subscription = this.mapSubscriptionSummary(salon);
+    const effectiveFeatures = this.getEffectiveFeatureCodes(salon);
+    const awaitingActivation = this.isAwaitingActivation(salon);
+
     return {
       id: salon.id,
       code: salon.code,
@@ -412,6 +477,7 @@ export class SalonsService {
       email: salon.email,
       phone: salon.phone,
       status: salon.status,
+      awaitingActivation,
       mainBranch: mainBranch
         ? {
             id: mainBranch.id,
@@ -419,7 +485,9 @@ export class SalonsService {
             name: mainBranch.name,
           }
         : null,
-      enabledFeatures: salon.tenantFeatures.map((tf) => tf.feature.code),
+      subscription,
+      featuresManagedBySubscription: subscription !== null,
+      enabledFeatures: effectiveFeatures,
       createdAt: salon.createdAt,
     };
   }
@@ -443,6 +511,10 @@ export class SalonsService {
       roles: string[];
     } | null,
   ) {
+    const subscription = this.mapSubscriptionSummary(salon);
+    const effectiveFeatures = this.getEffectiveFeatureDetails(salon);
+    const awaitingActivation = this.isAwaitingActivation(salon);
+
     return {
       id: salon.id,
       code: salon.code,
@@ -450,8 +522,11 @@ export class SalonsService {
       email: salon.email,
       phone: salon.phone,
       status: salon.status,
+      awaitingActivation,
       createdAt: salon.createdAt,
       updatedAt: salon.updatedAt,
+      subscription,
+      featuresManagedBySubscription: subscription !== null,
       mainBranch: mainBranch
         ? {
             id: mainBranch.id,
@@ -463,10 +538,7 @@ export class SalonsService {
             isMain: mainBranch.is_main,
           }
         : null,
-      enabledFeatures: salon.tenantFeatures.map((tf) => ({
-        code: tf.feature.code,
-        name: tf.feature.name,
-      })),
+      enabledFeatures: effectiveFeatures,
       admin: admin
         ? {
             id: admin.id,
@@ -477,6 +549,56 @@ export class SalonsService {
           }
         : null,
     };
+  }
+
+  private isAwaitingActivation(salon: TenantWithRelations): boolean {
+    const sub = salon.subscriptions[0];
+    return (
+      salon.status === TenantStatus.SUSPENDED && sub?.status === SubscriptionStatus.ACTIVE
+    );
+  }
+
+  private mapSubscriptionSummary(salon: TenantWithRelations) {
+    const sub = salon.subscriptions[0];
+    if (!sub) {
+      return null;
+    }
+
+    return {
+      id: sub.id,
+      planCode: sub.plan.code,
+      planName: sub.plan.name,
+      status: sub.status,
+      price: Number(sub.price),
+      currency: sub.currency,
+      startDate: sub.startDate,
+      endDate: sub.endDate,
+      featureCodes: sub.subscriptionFeatures.map((sf) => sf.feature.code),
+    };
+  }
+
+  private getEffectiveFeatureCodes(salon: TenantWithRelations): string[] {
+    const sub = salon.subscriptions[0];
+    if (sub && sub.subscriptionFeatures.length > 0) {
+      return sub.subscriptionFeatures.map((sf) => sf.feature.code);
+    }
+
+    return salon.tenantFeatures.map((tf) => tf.feature.code);
+  }
+
+  private getEffectiveFeatureDetails(salon: TenantWithRelations): Array<{ code: string; name: string }> {
+    const sub = salon.subscriptions[0];
+    if (sub && sub.subscriptionFeatures.length > 0) {
+      return sub.subscriptionFeatures.map((sf) => ({
+        code: sf.feature.code,
+        name: sf.feature.name,
+      }));
+    }
+
+    return salon.tenantFeatures.map((tf) => ({
+      code: tf.feature.code,
+      name: tf.feature.name,
+    }));
   }
 
   private async generateTenantCode(): Promise<string> {

@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { buildPaginatedResponse, resolvePagination } from '../../common/dto/pagination.dto';
 import { TenantSchemaService } from '../../tenant/services/tenant-schema.service';
 import { tenantTable } from '../../tenant/utils/schema-name.util';
 import { ListSalesQueryDto } from '../pos/dto/pos.dto';
@@ -12,6 +13,7 @@ export class SalesService {
     const branches = tenantTable(schemaName, 'branches');
     const customers = tenantTable(schemaName, 'customers');
     const users = tenantTable(schemaName, 'users');
+    const { page, limit, offset } = resolvePagination(query.page, query.limit);
 
     const conditions: string[] = [`s.status = 'COMPLETED'`];
     const params: unknown[] = [];
@@ -51,24 +53,39 @@ export class SalesService {
       params.push(query.employeeId);
     }
 
-    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) =>
-      tx.$queryRawUnsafe(
+    const whereClause = conditions.join(' AND ');
+    const fromClause = `
+         FROM ${sales} s
+         INNER JOIN ${branches} b ON s.branch_id = b.id
+         LEFT JOIN ${customers} c ON s.customer_id = c.id
+         LEFT JOIN ${users} u ON s.cashier_id = u.id
+         ${employeeJoin}
+         WHERE ${whereClause}`;
+
+    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      const countRows = await tx.$queryRawUnsafe<Array<{ count: bigint }>>(
+        `SELECT COUNT(DISTINCT s.id)::bigint AS count ${fromClause}`,
+        ...params,
+      );
+      const total = Number(countRows[0]?.count ?? 0);
+
+      const data = await tx.$queryRawUnsafe(
         `SELECT DISTINCT s.id, s.sale_number AS "saleNumber",
                 s.subtotal, s.discount, s.total, s.status::text AS status,
                 s.branch_id AS "branchId", b.name AS "branchName",
                 s.customer_id AS "customerId", c.name AS "customerName",
                 s.cashier_id AS "cashierId", u.name AS "cashierName",
                 s.created_at AS "createdAt"
-         FROM ${sales} s
-         INNER JOIN ${branches} b ON s.branch_id = b.id
-         LEFT JOIN ${customers} c ON s.customer_id = c.id
-         LEFT JOIN ${users} u ON s.cashier_id = u.id
-         ${employeeJoin}
-         WHERE ${conditions.join(' AND ')}
-         ORDER BY s.created_at DESC`,
+         ${fromClause}
+         ORDER BY s.created_at DESC
+         LIMIT $${idx} OFFSET $${idx + 1}`,
         ...params,
-      ),
-    );
+        limit,
+        offset,
+      );
+
+      return buildPaginatedResponse(data as unknown[], total, page, limit);
+    });
   }
 
   async findById(schemaName: string, id: string) {
@@ -126,14 +143,19 @@ export class SalesService {
                 si.product_id AS "productId", p.name AS "productName",
                 si.quantity, si.unit_price AS "unitPrice",
                 si.discount, si.total,
-                e.id AS "employeeId", e.name AS "employeeName"
+                COALESCE(
+                  json_agg(json_build_object('id', e.id, 'name', e.name))
+                  FILTER (WHERE e.id IS NOT NULL),
+                  '[]'::json
+                ) AS employees
          FROM ${saleItems} si
          LEFT JOIN ${services} sv ON si.service_id = sv.id
          LEFT JOIN ${products} p ON si.product_id = p.id
          LEFT JOIN ${saleItemEmployees} sie ON sie.sale_item_id = si.id
          LEFT JOIN ${employees} e ON sie.employee_id = e.id
          WHERE si.sale_id = $1::uuid
-         ORDER BY si.created_at ASC`,
+         GROUP BY si.id, sv.name, p.name
+         ORDER BY MIN(si.created_at) ASC`,
         id,
       );
 

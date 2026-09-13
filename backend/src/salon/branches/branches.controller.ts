@@ -26,7 +26,7 @@ export class BranchesController {
 
   @Post()
   @UseGuards(FeatureGuard, PermissionGuard)
-  @RequireFeature('BRANCH_MANAGEMENT')
+  @RequireFeature('MULTI_BRANCH')
   @RequirePermission('BRANCH_CREATE')
   create(
     @CurrentTenant() tenant: TenantContext,

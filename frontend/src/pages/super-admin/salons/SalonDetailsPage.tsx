@@ -1,167 +1,318 @@
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Layers3, ShieldCheck, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EditSalonDialog } from '@/features/salons/components/EditSalonDialog';
 import { ManageFeaturesDialog } from '@/features/salons/components/ManageFeaturesDialog';
 import { StatusBadge } from '@/features/salons/components/StatusBadge';
 import { StatusChangeDialog } from '@/features/salons/components/StatusChangeDialog';
 import { useSalon } from '@/features/salons/hooks/useSalons';
 import type { SalonStatus } from '@/features/salons/types/salon.types';
+import { ManageSubscriptionDialog } from '@/features/subscriptions/components/ManageSubscriptionDialog';
+import { formatPrice } from '@/features/plans/lib/plan-utils';
+import { OpsError, OpsLoading } from '@/pages/salon/salon-ops-ui';
+import './salon-details-page.css';
+
+function subscriptionStatusClass(status: string): string {
+  switch (status) {
+    case 'ACTIVE':
+      return 'emp-badge emp-badge-active';
+    case 'PENDING':
+      return 'emp-badge emp-badge-inactive';
+    default:
+      return 'emp-badge emp-type-out';
+  }
+}
+
+function formatDateTime(value: string): string {
+  return new Date(value).toLocaleString('en-LK', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function formatDate(value: string): string {
+  return new Date(value).toLocaleDateString('en-LK', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
 
 export default function SalonDetailsPage() {
   const { id = '' } = useParams();
-  const { data: salon, isLoading, error } = useSalon(id);
+  const { data: salon, isLoading, error, refetch } = useSalon(id);
   const [editOpen, setEditOpen] = useState(false);
   const [featuresOpen, setFeaturesOpen] = useState(false);
+  const [subscriptionOpen, setSubscriptionOpen] = useState(false);
   const [statusTarget, setStatusTarget] = useState<SalonStatus | null>(null);
 
-  if (isLoading) {
-    return <p className="text-muted-foreground">Loading salon details...</p>;
-  }
-
+  if (isLoading) return <OpsLoading />;
   if (error || !salon) {
-    return <p className="text-destructive">Salon not found.</p>;
+    return <OpsError message="Salon not found." onRetry={() => void refetch()} />;
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <Button asChild variant="ghost" size="sm" className="mb-2 px-0">
-            <Link to="/super-admin/salons">
-              <ArrowLeft className="h-4 w-4" />
-              Back to salons
-            </Link>
-          </Button>
-          <h1 className="text-2xl font-semibold">{salon.name}</h1>
-          <p className="text-sm text-muted-foreground">{salon.code}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => setEditOpen(true)}>
-            Edit Salon
-          </Button>
-          <Button variant="outline" onClick={() => setFeaturesOpen(true)}>
-            Manage Features
-          </Button>
-          {salon.status !== 'ACTIVE' && (
-            <Button onClick={() => setStatusTarget('ACTIVE')}>Activate</Button>
-          )}
-          {salon.status !== 'SUSPENDED' && (
-            <Button variant="secondary" onClick={() => setStatusTarget('SUSPENDED')}>
-              Suspend
-            </Button>
-          )}
-          {salon.status !== 'ARCHIVED' && (
-            <Button variant="destructive" onClick={() => setStatusTarget('ARCHIVED')}>
-              Archive
-            </Button>
-          )}
-        </div>
-      </div>
+    <div className="sd-page">
+      <Link to="/super-admin/salons" className="sd-back">
+        <ArrowLeft className="h-4 w-4" />
+        Back to salons
+      </Link>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Salon Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Status</span>
+      <header className="sd-hero">
+        <div>
+          <h1>{salon.name}</h1>
+          <p className="sd-hero-meta">
+            {salon.code} · Tenant details and subscription management
+          </p>
+        </div>
+        <div className="sd-hero-actions">
+          <button type="button" className="sd-btn sd-btn-secondary" onClick={() => setEditOpen(true)}>
+            Edit Salon
+          </button>
+          <button
+            type="button"
+            className="sd-btn sd-btn-primary"
+            onClick={() => setSubscriptionOpen(true)}
+          >
+            {salon.subscription ? 'Manage Plan' : 'Assign Plan'}
+          </button>
+        </div>
+      </header>
+
+      {salon.awaitingActivation && (
+        <div className="sd-alert">
+          <p className="sd-alert-title">Payment received — awaiting activation</p>
+          <p className="sd-alert-text">
+            Customer paid for the {salon.subscription?.planName ?? 'selected'} plan. Activate this
+            salon to allow login and enable plan features.
+          </p>
+          <button type="button" className="sd-btn sd-btn-primary" onClick={() => setStatusTarget('ACTIVE')}>
+            Activate Salon
+          </button>
+        </div>
+      )}
+
+      <section className="sd-stats" aria-label="Salon summary">
+        <article className="sd-stat-card">
+          <div className="sd-stat-icon">
+            <ShieldCheck className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="sd-stat-label">Salon Status</div>
+            <div className="sd-stat-value">
               <StatusBadge status={salon.status} />
             </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Email</span>
-              <span>{salon.email || '—'}</span>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Phone</span>
-              <span>{salon.phone || '—'}</span>
-            </div>
-            <div className="flex justify-between gap-4">
-              <span className="text-muted-foreground">Created</span>
-              <span>{new Date(salon.createdAt).toLocaleString()}</span>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </article>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Main Branch</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            {salon.mainBranch ? (
-              <>
-                <div className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">Name</span>
-                  <span>{salon.mainBranch.name}</span>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">Code</span>
-                  <span>{salon.mainBranch.code}</span>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">Status</span>
-                  <span>{salon.mainBranch.status}</span>
-                </div>
-              </>
-            ) : (
-              <p className="text-muted-foreground">No main branch found.</p>
-            )}
-          </CardContent>
-        </Card>
+        <article className="sd-stat-card">
+          <div className="sd-stat-icon">
+            <Layers3 className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="sd-stat-label">Plan</div>
+            <div className="sd-stat-value">{salon.subscription?.planCode ?? 'Manual'}</div>
+          </div>
+        </article>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Salon Admin</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            {salon.admin ? (
-              <>
-                <div className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">Name</span>
-                  <span>{salon.admin.name}</span>
+        <article className="sd-stat-card">
+          <div className="sd-stat-icon">
+            <Sparkles className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="sd-stat-label">Enabled Features</div>
+            <div className="sd-stat-value">{salon.enabledFeatures.length}</div>
+          </div>
+        </article>
+      </section>
+
+      <div className="sd-layout">
+        <div className="sd-main-stack">
+          <section className="sd-panel">
+            <div className="sd-panel-head">
+              <h2 className="sd-panel-title">Subscription</h2>
+              <p className="sd-panel-desc">Current billing plan and renewal dates</p>
+            </div>
+            <div className="sd-panel-body">
+              {salon.subscription ? (
+                <dl className="sd-detail-list">
+                  <div className="sd-detail-item">
+                    <dt>Plan</dt>
+                    <dd className="sd-detail-strong">
+                      {salon.subscription.planName}{' '}
+                      <span className={subscriptionStatusClass(salon.subscription.status)}>
+                        {salon.subscription.status}
+                      </span>
+                    </dd>
+                  </div>
+                  <div className="sd-detail-item">
+                    <dt>Price</dt>
+                    <dd className="sd-detail-strong">
+                      {formatPrice(salon.subscription.price, salon.subscription.currency)}
+                    </dd>
+                  </div>
+                  {salon.subscription.startDate && (
+                    <div className="sd-detail-item">
+                      <dt>Started</dt>
+                      <dd>{formatDate(salon.subscription.startDate)}</dd>
+                    </div>
+                  )}
+                  {salon.subscription.endDate && (
+                    <div className="sd-detail-item">
+                      <dt>Renews / Ends</dt>
+                      <dd>{formatDate(salon.subscription.endDate)}</dd>
+                    </div>
+                  )}
+                </dl>
+              ) : (
+                <div className="sd-empty">
+                  No subscription assigned. Features are managed manually for this legacy salon.
                 </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">Email</span>
-                  <span>{salon.admin.email}</span>
+              )}
+            </div>
+          </section>
+
+          <section className="sd-panel">
+            <div className="sd-panel-head">
+              <h2 className="sd-panel-title">Salon Information</h2>
+              <p className="sd-panel-desc">Contact details and tenant admin</p>
+            </div>
+            <div className="sd-panel-body">
+              <dl className="sd-detail-list">
+                <div className="sd-detail-item">
+                  <dt>Email</dt>
+                  <dd>{salon.email || '—'}</dd>
                 </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">Phone</span>
-                  <span>{salon.admin.phone || '—'}</span>
+                <div className="sd-detail-item">
+                  <dt>Phone</dt>
+                  <dd>{salon.phone || '—'}</dd>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {salon.admin.roles.map((role) => (
-                    <Badge key={role}>{role}</Badge>
+                <div className="sd-detail-item">
+                  <dt>Created</dt>
+                  <dd>{formatDateTime(salon.createdAt)}</dd>
+                </div>
+                <div className="sd-detail-item">
+                  <dt>Main Branch</dt>
+                  <dd>{salon.mainBranch?.name ?? '—'}</dd>
+                </div>
+                <div className="sd-detail-item">
+                  <dt>Admin</dt>
+                  <dd>
+                    {salon.admin ? (
+                      <>
+                        <span className="sd-detail-strong">{salon.admin.name}</span>
+                        <br />
+                        <span className="sd-detail-muted">{salon.admin.email}</span>
+                      </>
+                    ) : (
+                      '—'
+                    )}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          </section>
+        </div>
+
+        <aside className="sd-sidebar-stack">
+          <section className="sd-panel">
+            <div className="sd-panel-head">
+              <h2 className="sd-panel-title">Quick Actions</h2>
+              <p className="sd-panel-desc">Manage plan, features, and salon status</p>
+            </div>
+            <div className="sd-panel-body">
+              <div className="sd-action-stack">
+                <button
+                  type="button"
+                  className="sd-btn sd-btn-secondary"
+                  onClick={() => setFeaturesOpen(true)}
+                >
+                  Manage Features
+                </button>
+                <button
+                  type="button"
+                  className="sd-btn sd-btn-secondary"
+                  onClick={() => setSubscriptionOpen(true)}
+                >
+                  {salon.subscription ? 'Change Plan' : 'Assign Plan'}
+                </button>
+
+                <div className="sd-action-divider" />
+
+                {salon.status !== 'ACTIVE' && (
+                  <button
+                    type="button"
+                    className="sd-btn sd-btn-primary"
+                    onClick={() => setStatusTarget('ACTIVE')}
+                  >
+                    Activate Salon
+                  </button>
+                )}
+                {salon.status !== 'SUSPENDED' && (
+                  <button
+                    type="button"
+                    className="sd-btn sd-btn-secondary"
+                    onClick={() => setStatusTarget('SUSPENDED')}
+                  >
+                    Suspend Salon
+                  </button>
+                )}
+                {salon.status !== 'ARCHIVED' && (
+                  <button
+                    type="button"
+                    className="sd-btn sd-btn-danger"
+                    onClick={() => setStatusTarget('ARCHIVED')}
+                  >
+                    Archive Salon
+                  </button>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <section className="sd-panel">
+            <div className="sd-panel-head">
+              <h2 className="sd-panel-title">Enabled Features</h2>
+              <p className="sd-panel-desc">
+                {salon.featuresManagedBySubscription
+                  ? 'Module access for this subscription-managed salon'
+                  : 'Manually assigned modules'}
+              </p>
+            </div>
+            <div className="sd-panel-body">
+              {salon.enabledFeatures.length ? (
+                <div className="sd-feature-grid">
+                  {salon.enabledFeatures.map((feature) => (
+                    <div key={feature.code} className="sd-feature-chip">
+                      <span className="sd-feature-name">{feature.name}</span>
+                      <span className="sd-feature-code">{feature.code}</span>
+                    </div>
                   ))}
                 </div>
-              </>
-            ) : (
-              <p className="text-muted-foreground">No salon admin assigned.</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Enabled Features</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {salon.enabledFeatures.map((feature) => (
-                <Badge key={feature.code} variant="secondary">
-                  {feature.code}
-                </Badge>
-              ))}
+              ) : (
+                <div className="sd-empty">
+                  {salon.subscription?.status === 'PENDING'
+                    ? 'Features activate after the subscription is activated.'
+                    : 'No features enabled.'}
+                </div>
+              )}
             </div>
-          </CardContent>
-        </Card>
+          </section>
+        </aside>
       </div>
 
       <EditSalonDialog salon={salon} open={editOpen} onOpenChange={setEditOpen} />
       <ManageFeaturesDialog salon={salon} open={featuresOpen} onOpenChange={setFeaturesOpen} />
+      <ManageSubscriptionDialog
+        tenantId={salon.id}
+        salonName={salon.name}
+        subscription={salon.subscription}
+        open={subscriptionOpen}
+        onOpenChange={setSubscriptionOpen}
+      />
       {statusTarget && (
         <StatusChangeDialog
           salonId={salon.id}

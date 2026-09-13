@@ -1,10 +1,7 @@
-import { Plus, Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -12,30 +9,60 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { CreateSalonDialog } from '@/features/salons/components/CreateSalonDialog';
 import { EditSalonDialog } from '@/features/salons/components/EditSalonDialog';
 import { ManageFeaturesDialog } from '@/features/salons/components/ManageFeaturesDialog';
 import { StatusBadge } from '@/features/salons/components/StatusBadge';
 import { StatusChangeDialog } from '@/features/salons/components/StatusChangeDialog';
 import { useSalons } from '@/features/salons/hooks/useSalons';
 import type { SalonFilters, SalonListItem, SalonStatus } from '@/features/salons/types/salon.types';
+import { ManageSubscriptionDialog } from '@/features/subscriptions/components/ManageSubscriptionDialog';
+import {
+  OpsEditButton,
+  OpsError,
+  OpsLoading,
+  OpsPageHeader,
+  OpsToggleStatusButton,
+} from '@/pages/salon/salon-ops-ui';
+import '@/pages/salon/employees-page.css';
 
-type ListAction = 'edit' | 'features' | 'status';
+type ListAction = 'edit' | 'features' | 'subscription' | 'status' | 'create';
+
+function subscriptionBadgeClass(status: string): string {
+  switch (status) {
+    case 'ACTIVE':
+      return 'emp-badge emp-badge-active';
+    case 'PENDING':
+      return 'emp-badge emp-badge-inactive';
+    default:
+      return 'emp-badge emp-type-out';
+  }
+}
 
 export default function SalonListPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<SalonFilters['status']>('ALL');
   const [page, setPage] = useState(1);
   const [activeSalon, setActiveSalon] = useState<SalonListItem | null>(null);
   const [activeAction, setActiveAction] = useState<ListAction | null>(null);
   const [statusTarget, setStatusTarget] = useState<SalonStatus | null>(null);
+
+  useEffect(() => {
+    if (searchParams.get('create') === '1') {
+      setActiveAction('create');
+      const next = new URLSearchParams(searchParams);
+      next.delete('create');
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
+  const filters = useMemo(
+    () => ({ page, limit: 10, search: search || undefined, status }),
+    [page, search, status],
+  );
+
+  const { data, isLoading, isError, refetch } = useSalons(filters);
 
   const openAction = (salon: SalonListItem, action: ListAction) => {
     setActiveSalon(salon);
@@ -48,48 +75,65 @@ export default function SalonListPage() {
     setStatusTarget(null);
   };
 
-  const filters = useMemo(
-    () => ({ page, limit: 10, search: search || undefined, status }),
-    [page, search, status],
-  );
+  if (isLoading) return <OpsLoading />;
+  if (isError) {
+    return <OpsError message="Failed to load salons." onRetry={() => void refetch()} />;
+  }
 
-  const { data, isLoading, error } = useSalons(filters);
+  const salons = data?.data ?? [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Salons</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage salon tenants, features, and admins.
-          </p>
+    <div className="emp-page">
+      <OpsPageHeader
+        title="Salons"
+        subtitle="Manage tenant salons, subscriptions, and access"
+        action={
+          <button
+            type="button"
+            className="emp-btn emp-btn-primary"
+            onClick={() => setActiveAction('create')}
+          >
+            + Create Salon
+          </button>
+        }
+      />
+
+      <div className="emp-stats">
+        <div className="emp-stat">
+          <div className="emp-stat-value">{data?.meta.total ?? 0}</div>
+          <div className="emp-stat-label">Total</div>
         </div>
-        <Button asChild>
-          <Link to="/super-admin/salons/new">
-            <Plus className="h-4 w-4" />
-            Create Salon
-          </Link>
-        </Button>
+        <div className="emp-stat">
+          <div className="emp-stat-value">
+            {salons.filter((s) => s.subscription?.status === 'ACTIVE').length}
+          </div>
+          <div className="emp-stat-label">Active Plans</div>
+        </div>
+        <div className="emp-stat">
+          <div className="emp-stat-value">
+            {salons.filter((s) => s.awaitingActivation).length}
+          </div>
+          <div className="emp-stat-label">Awaiting Activation</div>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Salon Directory</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col gap-3 md:flex-row">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                className="pl-9"
-                placeholder="Search by name, code, email, or phone"
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(1);
-                }}
-              />
-            </div>
+      <div className="emp-panel emp-form-panel">
+        <div className="emp-form-panel-title">Filters</div>
+        <div className="emp-filter-grid">
+          <div className="emp-filter-field">
+            <Label htmlFor="salon-search">Search</Label>
+            <Input
+              id="salon-search"
+              placeholder="Name, code, email, phone…"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
+          <div className="emp-filter-field">
+            <Label>Status</Label>
             <Select
               value={status}
               onValueChange={(value) => {
@@ -97,8 +141,8 @@ export default function SalonListPage() {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="md:w-48">
-                <SelectValue placeholder="Filter by status" />
+              <SelectTrigger>
+                <SelectValue placeholder="All statuses" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">All statuses</SelectItem>
@@ -108,133 +152,183 @@ export default function SalonListPage() {
               </SelectContent>
             </Select>
           </div>
+        </div>
+      </div>
 
-          {isLoading && <p className="text-sm text-muted-foreground">Loading salons...</p>}
-          {error && <p className="text-sm text-destructive">Failed to load salons.</p>}
+      <div className="emp-panel">
+        <div className="emp-panel-header">
+          <div>
+            <h2 className="emp-panel-title">Salon Directory</h2>
+            <p className="emp-panel-desc">
+              Page {data?.meta.page ?? 1} of {data?.meta.totalPages || 1}
+            </p>
+          </div>
+        </div>
 
-          {!isLoading && !error && !data?.data.length && (
-            <div className="rounded-lg border border-dashed border-border p-8 text-center">
-              <p className="font-medium">No salons found.</p>
-              <p className="mt-1 text-sm text-muted-foreground">Create your first salon.</p>
-              <Button asChild className="mt-4">
-                <Link to="/super-admin/salons/new">Create Salon</Link>
-              </Button>
+        {salons.length === 0 ? (
+          <div className="emp-empty">No salons found for the selected filters.</div>
+        ) : (
+          <>
+            <div className="emp-cards">
+              {salons.map((salon) => (
+                <article key={salon.id} className="emp-card">
+                  <div className="emp-card-top">
+                    <div>
+                      <Link to={`/super-admin/salons/${salon.id}`} className="emp-name-cell">
+                        {salon.name}
+                      </Link>
+                      <div className="emp-code">{salon.code}</div>
+                    </div>
+                    <StatusBadge status={salon.status} />
+                  </div>
+                  <div className="emp-card-meta">
+                    <span>
+                      <strong>Plan:</strong>{' '}
+                      {salon.subscription ? (
+                        <>
+                          {salon.subscription.planName}{' '}
+                          <span className={subscriptionBadgeClass(salon.subscription.status)}>
+                            {salon.subscription.status}
+                          </span>
+                        </>
+                      ) : (
+                        'Manual features'
+                      )}
+                    </span>
+                    <span>
+                      <strong>Contact:</strong> {salon.email || salon.phone || '—'}
+                    </span>
+                    {salon.awaitingActivation && (
+                      <span className="emp-type-badge emp-type-in">Paid · Awaiting activation</span>
+                    )}
+                  </div>
+                  <div className="emp-card-actions">
+                    <OpsEditButton onClick={() => openAction(salon, 'edit')} />
+                    <button
+                      type="button"
+                      className="emp-btn emp-btn-secondary"
+                      onClick={() => openAction(salon, 'subscription')}
+                    >
+                      Plan
+                    </button>
+                    <button
+                      type="button"
+                      className="emp-btn emp-btn-secondary"
+                      onClick={() => openAction(salon, 'features')}
+                    >
+                      Features
+                    </button>
+                    <OpsToggleStatusButton
+                      isActive={salon.status === 'ACTIVE'}
+                      onClick={() => {
+                        setActiveSalon(salon);
+                        setStatusTarget(salon.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE');
+                        setActiveAction('status');
+                      }}
+                    />
+                  </div>
+                </article>
+              ))}
             </div>
-          )}
 
-          {!!data?.data.length && (
-            <>
-              <div className="overflow-x-auto rounded-lg border border-border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Salon</TableHead>
-                      <TableHead>Code</TableHead>
-                      <TableHead>Contact</TableHead>
-                      <TableHead>Features</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.data.map((salon) => (
-                      <TableRow key={salon.id}>
-                        <TableCell className="font-medium">{salon.name}</TableCell>
-                        <TableCell>{salon.code}</TableCell>
-                        <TableCell>
-                          <div className="text-sm">{salon.email || '—'}</div>
-                          <div className="text-xs text-muted-foreground">{salon.phone || '—'}</div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {salon.enabledFeatures.map((feature) => (
-                              <Badge key={feature} variant="secondary">
-                                {feature}
-                              </Badge>
-                            ))}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge status={salon.status} />
-                        </TableCell>
-                        <TableCell>{new Date(salon.createdAt).toLocaleDateString()}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex flex-wrap justify-end gap-1">
-                            <Button asChild size="sm" variant="outline">
-                              <Link to={`/super-admin/salons/${salon.id}`}>View</Link>
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openAction(salon, 'edit')}
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openAction(salon, 'features')}
-                            >
-                              Features
-                            </Button>
-                            {salon.status === 'ACTIVE' ? (
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                onClick={() => {
-                                  setActiveSalon(salon);
-                                  setStatusTarget('SUSPENDED');
-                                }}
-                              >
-                                Suspend
-                              </Button>
-                            ) : (
-                              <Button
-                                size="sm"
-                                onClick={() => {
-                                  setActiveSalon(salon);
-                                  setStatusTarget('ACTIVE');
-                                }}
-                              >
-                                Activate
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+            <div className="emp-table-wrap">
+              <table className="emp-table">
+                <thead>
+                  <tr>
+                    <th>Salon</th>
+                    <th>Plan</th>
+                    <th>Contact</th>
+                    <th>Features</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {salons.map((salon) => (
+                    <tr key={salon.id}>
+                      <td>
+                        <Link to={`/super-admin/salons/${salon.id}`} className="emp-name-cell">
+                          {salon.name}
+                        </Link>
+                        <div className="emp-code">{salon.code}</div>
+                      </td>
+                      <td>
+                        {salon.subscription ? (
+                          <>
+                            <div>{salon.subscription.planName}</div>
+                            <span className={subscriptionBadgeClass(salon.subscription.status)}>
+                              {salon.subscription.status}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="emp-panel-desc">Manual</span>
+                        )}
+                      </td>
+                      <td>
+                        <div>{salon.email || '—'}</div>
+                        <div className="emp-code">{salon.phone || '—'}</div>
+                      </td>
+                      <td>
+                        <div className="emp-card-meta">
+                          {salon.enabledFeatures.slice(0, 3).join(', ')}
+                          {salon.enabledFeatures.length > 3 &&
+                            ` +${salon.enabledFeatures.length - 3}`}
+                        </div>
+                      </td>
+                      <td>
+                        <StatusBadge status={salon.status} />
+                      </td>
+                      <td>{new Date(salon.createdAt).toLocaleDateString()}</td>
+                      <td>
+                        <div className="emp-actions">
+                          <button
+                            type="button"
+                            className="emp-link-btn"
+                            onClick={() => openAction(salon, 'subscription')}
+                          >
+                            Plan
+                          </button>
+                          <button
+                            type="button"
+                            className="emp-link-btn"
+                            onClick={() => openAction(salon, 'features')}
+                          >
+                            Features
+                          </button>
+                          <OpsEditButton onClick={() => openAction(salon, 'edit')} />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  Page {data.meta.page} of {data.meta.totalPages || 1} ({data.meta.total} total)
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page <= 1}
-                    onClick={() => setPage((current) => current - 1)}
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page >= data.meta.totalPages}
-                    onClick={() => setPage((current) => current + 1)}
-                  >
-                    Next
-                  </Button>
-                </div>
+            <div className="emp-toolbar" style={{ marginTop: '1rem' }}>
+              <span className="emp-panel-desc">{data?.meta.total ?? 0} total salons</span>
+              <div className="emp-toolbar-filters">
+                <button
+                  type="button"
+                  className="emp-btn emp-btn-secondary"
+                  disabled={page <= 1}
+                  onClick={() => setPage((current) => current - 1)}
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  className="emp-btn emp-btn-secondary"
+                  disabled={page >= (data?.meta.totalPages ?? 1)}
+                  onClick={() => setPage((current) => current + 1)}
+                >
+                  Next
+                </button>
               </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
+            </div>
+          </>
+        )}
+      </div>
 
       {activeSalon && activeAction === 'edit' && (
         <EditSalonDialog salon={activeSalon} open onOpenChange={(open) => !open && closeAction()} />
@@ -245,18 +339,42 @@ export default function SalonListPage() {
             id: activeSalon.id,
             name: activeSalon.name,
             enabledFeatures: activeSalon.enabledFeatures,
+            featuresManagedBySubscription: activeSalon.featuresManagedBySubscription,
+            subscription: activeSalon.subscription
+              ? {
+                  planName: activeSalon.subscription.planName,
+                  status: activeSalon.subscription.status,
+                }
+              : null,
           }}
           open
           onOpenChange={(open) => !open && closeAction()}
         />
       )}
-      {activeSalon && statusTarget && (
+      {activeSalon && activeAction === 'subscription' && (
+        <ManageSubscriptionDialog
+          tenantId={activeSalon.id}
+          salonName={activeSalon.name}
+          subscription={activeSalon.subscription}
+          open
+          onOpenChange={(open) => !open && closeAction()}
+        />
+      )}
+      {activeSalon && statusTarget && activeAction === 'status' && (
         <StatusChangeDialog
           salonId={activeSalon.id}
           salonName={activeSalon.name}
           targetStatus={statusTarget}
           open
           onOpenChange={(open) => !open && closeAction()}
+        />
+      )}
+      {activeAction === 'create' && (
+        <CreateSalonDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setActiveAction(null);
+          }}
         />
       )}
     </div>

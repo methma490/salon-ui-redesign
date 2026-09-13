@@ -1,17 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
+import { ArrowLeft, Calendar, MapPin, Printer, User, Wallet } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { tenantApi } from '@/api/tenant.api';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { OpsError, OpsLoading, getErrorMessage } from './salon-ops-ui';
+import './sales-page.css';
+
+interface SaleItemEmployee {
+  id: string;
+  name: string;
+}
 
 interface SaleItem {
   id: string;
@@ -24,8 +21,9 @@ interface SaleItem {
   unitPrice: number;
   discount: number;
   total: number;
-  employeeId: string | null;
-  employeeName: string | null;
+  employeeId?: string | null;
+  employeeName?: string | null;
+  employees?: SaleItemEmployee[];
 }
 
 interface SalePayment {
@@ -59,141 +57,227 @@ function formatMoney(value: number) {
   return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function formatPaymentMethod(method: string) {
+  return method
+    .split('_')
+    .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function itemStylistName(item: SaleItem) {
+  if (item.itemType !== 'service') return null;
+  if (item.employeeName) return item.employeeName;
+  if (item.employees?.length) {
+    return item.employees.map((e) => e.name).join(', ');
+  }
+  return null;
+}
+
+function userInitials(name: string) {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('');
+}
+
+function SaleStatusBadge({ status }: { status: string }) {
+  const key = status.toUpperCase();
+  const cls =
+    key === 'COMPLETED'
+      ? 'sale-badge sale-badge-completed'
+      : key === 'CANCELLED' || key === 'REFUNDED'
+        ? 'sale-badge sale-badge-cancelled'
+        : 'sale-badge sale-badge-pending';
+  return <span className={cls}>{status}</span>;
+}
+
+function ItemTypeBadge({ type }: { type: string }) {
+  const isService = type === 'service';
+  return (
+    <span className={`sale-type-badge ${isService ? 'sale-type-service' : 'sale-type-product'}`}>
+      {isService ? 'Service' : 'Product'}
+    </span>
+  );
+}
+
 export default function SaleDetailsPage() {
   const { id } = useParams<{ id: string }>();
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['sale', id],
     queryFn: () => tenantApi.sales.get(id!) as Promise<SaleDetail>,
     enabled: !!id,
   });
 
-  if (isLoading) return <p>Loading sale details...</p>;
-  if (error || !data) return <p className="text-destructive">Sale not found.</p>;
+  if (isLoading) return <OpsLoading />;
+  if (isError || !data) {
+    return <OpsError message={getErrorMessage(error) || 'Sale not found.'} onRetry={() => void refetch()} />;
+  }
+
+  const saleDate = new Date(data.createdAt);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <Button asChild variant="ghost" size="sm" className="mb-2">
-            <Link to="/salon/sales">← Back to Sales</Link>
-          </Button>
-          <h1 className="text-2xl font-semibold">Sale {data.saleNumber}</h1>
-          <p className="text-muted-foreground">
-            {new Date(data.createdAt).toLocaleString()} · {data.branchName}
-          </p>
-        </div>
-        <Badge className="w-fit">{data.status}</Badge>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Customer</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="font-medium">{data.customerName || 'Walk-in'}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Cashier</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="font-medium">{data.cashierName || '—'}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-semibold">{formatMoney(data.total)}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Line Items</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Type</TableHead>
-                <TableHead>Item</TableHead>
-                <TableHead>Employee</TableHead>
-                <TableHead>Qty</TableHead>
-                <TableHead>Unit Price</TableHead>
-                <TableHead>Discount</TableHead>
-                <TableHead>Total</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.items.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>
-                    <Badge variant="outline">{item.itemType}</Badge>
-                  </TableCell>
-                  <TableCell>{item.serviceName || item.productName || '—'}</TableCell>
-                  <TableCell>{item.employeeName || '—'}</TableCell>
-                  <TableCell>{item.quantity}</TableCell>
-                  <TableCell>{formatMoney(Number(item.unitPrice))}</TableCell>
-                  <TableCell>{formatMoney(Number(item.discount))}</TableCell>
-                  <TableCell>{formatMoney(Number(item.total))}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <div className="mt-4 space-y-1 text-sm">
-            <div className="flex justify-end gap-8">
-              <span className="text-muted-foreground">Subtotal</span>
-              <span>{formatMoney(data.subtotal)}</span>
+    <div className="sale-detail-page sales-page emp-page">
+      <header className="sale-invoice-header">
+        <div className="sale-invoice-header-left">
+          <Link to="/salon/sales" className="sale-back-link">
+            <ArrowLeft size={16} />
+            Sales history
+          </Link>
+          <div className="sale-invoice-title-block">
+            <div className="sale-invoice-title-row">
+              <h1>{data.saleNumber}</h1>
+              <SaleStatusBadge status={data.status} />
             </div>
-            <div className="flex justify-end gap-8">
-              <span className="text-muted-foreground">Discount</span>
-              <span>-{formatMoney(data.discount)}</span>
-            </div>
-            <div className="flex justify-end gap-8 font-semibold">
-              <span>Total</span>
-              <span>{formatMoney(data.total)}</span>
-            </div>
+            <p className="sale-invoice-subtitle">Sale receipt · {data.branchName}</p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <button type="button" className="sale-print-btn" onClick={() => window.print()}>
+          <Printer size={16} />
+          Print receipt
+        </button>
+      </header>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Payments</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Method</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Reference</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.payments.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell>{p.method}</TableCell>
-                  <TableCell>{formatMoney(Number(p.amount))}</TableCell>
-                  <TableCell>{p.referenceNumber || '—'}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{p.status}</Badge>
-                  </TableCell>
-                  <TableCell>{new Date(p.createdAt).toLocaleString()}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <div className="sale-invoice-layout">
+        <div className="sale-invoice-main">
+          <section className="sale-invoice-card">
+            <div className="sale-invoice-card-head">
+              <h2>Line items</h2>
+              <span>{data.items.length} item{data.items.length === 1 ? '' : 's'}</span>
+            </div>
+
+            <div className="sale-invoice-table-wrap">
+              <table className="sale-invoice-table">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Stylist</th>
+                    <th className="num">Qty</th>
+                    <th className="num">Unit (LKR)</th>
+                    <th className="num">Total (LKR)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.items.map((item) => {
+                    const stylist = itemStylistName(item);
+                    return (
+                      <tr key={item.id}>
+                        <td>
+                          <div className="sale-invoice-item-cell">
+                            <ItemTypeBadge type={item.itemType} />
+                            <span className="sale-invoice-item-name">
+                              {item.serviceName || item.productName || '—'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="sale-invoice-muted">{stylist || '—'}</td>
+                        <td className="num">{item.quantity}</td>
+                        <td className="num">{formatMoney(Number(item.unitPrice))}</td>
+                        <td className="num sale-invoice-amount">{formatMoney(Number(item.total))}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="sale-invoice-mobile-items">
+              {data.items.map((item) => {
+                const stylist = itemStylistName(item);
+                return (
+                  <div key={item.id} className="sale-invoice-mobile-item">
+                    <div className="sale-invoice-mobile-item-top">
+                      <ItemTypeBadge type={item.itemType} />
+                      <strong>{item.serviceName || item.productName || '—'}</strong>
+                      <span className="sale-invoice-amount">LKR {formatMoney(Number(item.total))}</span>
+                    </div>
+                    <div className="sale-invoice-mobile-item-meta">
+                      {stylist && <span>Stylist: {stylist}</span>}
+                      <span>
+                        {item.quantity} × LKR {formatMoney(Number(item.unitPrice))}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        </div>
+
+        <aside className="sale-invoice-aside">
+          <section className="sale-invoice-card sale-invoice-summary">
+            <p className="sale-invoice-summary-label">Amount collected</p>
+            <p className="sale-invoice-summary-total">LKR {formatMoney(data.total)}</p>
+            <div className="sale-invoice-summary-rows">
+              <div className="sale-invoice-summary-row">
+                <span>Subtotal</span>
+                <span>LKR {formatMoney(data.subtotal)}</span>
+              </div>
+              <div className="sale-invoice-summary-row">
+                <span>Discount</span>
+                <span>- LKR {formatMoney(data.discount)}</span>
+              </div>
+            </div>
+          </section>
+
+          <section className="sale-invoice-card">
+            <h3 className="sale-invoice-aside-title">Sale info</h3>
+            <ul className="sale-invoice-meta-list">
+              <li>
+                <Calendar size={15} />
+                <span>{saleDate.toLocaleString()}</span>
+              </li>
+              <li>
+                <MapPin size={15} />
+                <span>{data.branchName}</span>
+              </li>
+              <li>
+                <User size={15} />
+                <span>{data.customerName || 'Walk-in customer'}</span>
+              </li>
+            </ul>
+          </section>
+
+          <section className="sale-invoice-card sale-invoice-cashier-card">
+            <h3 className="sale-invoice-aside-title">Cashier</h3>
+            <div className="sale-invoice-cashier">
+              <span className="sale-invoice-cashier-avatar">
+                {data.cashierName ? userInitials(data.cashierName) : '—'}
+              </span>
+              <div>
+                <strong>{data.cashierName || '—'}</strong>
+                <p>Processed this sale at POS</p>
+              </div>
+            </div>
+          </section>
+
+          <section className="sale-invoice-card">
+            <h3 className="sale-invoice-aside-title">Payments</h3>
+            {data.payments.length === 0 ? (
+              <p className="sale-invoice-empty">No payment records.</p>
+            ) : (
+              <ul className="sale-invoice-payments">
+                {data.payments.map((payment) => (
+                  <li key={payment.id} className="sale-invoice-payment">
+                    <div className="sale-invoice-payment-top">
+                      <span className="sale-invoice-payment-method">
+                        <Wallet size={14} />
+                        {formatPaymentMethod(payment.method)}
+                      </span>
+                      <strong>LKR {formatMoney(Number(payment.amount))}</strong>
+                    </div>
+                    {payment.referenceNumber && (
+                      <p className="sale-invoice-payment-ref">Ref: {payment.referenceNumber}</p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </aside>
+      </div>
     </div>
   );
 }

@@ -32,7 +32,7 @@ export class CustomersController {
   @Get('search')
   @RequirePermission('CUSTOMER_VIEW')
   search(@CurrentTenant() tenant: TenantContext, @Query() query: ListCustomersQueryDto) {
-    return this.customersService.list(tenant.schemaName, query);
+    return this.customersService.list(tenant.schemaName, { ...query, summary: true });
   }
 
   @Get(':id')

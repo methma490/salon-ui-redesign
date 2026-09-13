@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { SUPER_ADMIN_LOGIN_PATH } from '@/config/auth-paths';
 
 export function SuperAdminProtectedRoute() {
   const { isAuthenticated, isLoading, isSuperAdmin } = useAuth();
@@ -14,7 +15,7 @@ export function SuperAdminProtectedRoute() {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/super-admin/login" replace state={{ from: location }} />;
+    return <Navigate to={SUPER_ADMIN_LOGIN_PATH} replace state={{ from: location }} />;
   }
 
   if (!isSuperAdmin) {

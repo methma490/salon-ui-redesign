@@ -8,6 +8,7 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
+import { PaginationQueryDto } from '../../../common/dto/pagination.dto';
 
 export class CreateProductCategoryDto {
   @IsString()
@@ -132,7 +133,7 @@ export class StockAdjustmentDto {
   notes?: string;
 }
 
-export class ListStockMovementsQueryDto {
+export class ListStockMovementsQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsUUID()
   branchId?: string;

@@ -1,4 +1,6 @@
+import { Transform } from 'class-transformer';
 import {
+  IsBoolean,
   IsDateString,
   IsEmail,
   IsEnum,
@@ -7,6 +9,10 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { PaginationQueryDto } from '../../../common/dto/pagination.dto';
+
+const emptyToUndefined = ({ value }: { value: unknown }) =>
+  value === '' || value === null ? undefined : value;
 
 export class CreateCustomerDto {
   @IsString()
@@ -19,15 +25,18 @@ export class CreateCustomerDto {
   phone!: string;
 
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsEmail()
   @MaxLength(255)
   email?: string;
 
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsDateString()
   birthday?: string;
 
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsString()
   notes?: string;
 }
@@ -45,15 +54,18 @@ export class UpdateCustomerDto {
   phone?: string;
 
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsEmail()
   @MaxLength(255)
   email?: string;
 
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsDateString()
   birthday?: string;
 
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsString()
   notes?: string;
 }
@@ -63,7 +75,7 @@ export class UpdateCustomerStatusDto {
   status!: 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
 }
 
-export class ListCustomersQueryDto {
+export class ListCustomersQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
@@ -75,4 +87,10 @@ export class ListCustomersQueryDto {
   @IsOptional()
   @IsEnum(['ACTIVE', 'INACTIVE', 'BLOCKED'])
   status?: 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
+
+  /** When true, returns only id, code, name, phone (for autocomplete/search). */
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  summary?: boolean;
 }

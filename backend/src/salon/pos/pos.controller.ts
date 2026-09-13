@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../auth/interfaces/auth.interface';
@@ -18,6 +18,16 @@ import { PosService } from './pos.service';
 export class PosController {
   constructor(private readonly posService: PosService) {}
 
+  @Get('performers')
+  @RequirePermission('SALE_CREATE')
+  getPerformers(
+    @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('branchId') branchId?: string,
+  ) {
+    return this.posService.getPerformers(tenant.schemaName, user, branchId);
+  }
+
   @Post('sales')
   @RequirePermission('SALE_CREATE')
   createSale(
@@ -25,6 +35,6 @@ export class PosController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateSaleDto,
   ) {
-    return this.posService.createSale(tenant.schemaName, dto, user.id);
+    return this.posService.createSale(tenant.schemaName, dto, user);
   }
 }

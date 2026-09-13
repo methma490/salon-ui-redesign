@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,12 +14,20 @@ export default function SalonLoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    const message = sessionStorage.getItem('auth_redirect_message');
+    if (message) {
+      setError(message);
+      sessionStorage.removeItem('auth_redirect_message');
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      const user = await login(email, password);
+      const user = await login(email.trim().toLowerCase(), password);
       if (user.roles.includes('SUPER_ADMIN')) {
         navigate('/super-admin/dashboard');
       } else if (user.tenantId) {
@@ -27,8 +35,10 @@ export default function SalonLoginPage() {
       } else {
         setError('Invalid salon account');
       }
-    } catch {
-      setError('Invalid email or password');
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(message || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
@@ -54,7 +64,15 @@ export default function SalonLoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <Link
+                  to="/salon/forgot-password"
+                  className="text-xs text-muted-foreground underline-offset-4 hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <Input
                 id="password"
                 type="password"

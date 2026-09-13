@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 import { TenantModule } from '../tenant/tenant.module';
 import { BranchesController } from './branches/branches.controller';
 import { BranchesService } from './branches/branches.service';
 import { CustomersController } from './customers/customers.controller';
 import { CustomersService } from './customers/customers.service';
 import { DashboardController, ReportsController } from './dashboard/dashboard.controller';
+import { DashboardCacheInterceptor } from './dashboard/dashboard-cache.interceptor';
 import { DashboardService } from './dashboard/dashboard.service';
 import { EmployeesController } from './employees/employees.controller';
 import { EmployeesService } from './employees/employees.service';
@@ -17,9 +19,13 @@ import { SalesService } from './sales/sales.service';
 import { ServicesCatalogController } from './services/services-catalog.controller';
 import { ServicesCatalogService } from './services/services-catalog.service';
 import { TenantFeaturesController } from './tenant-features.controller';
+import { SettingsController } from './settings/settings.controller';
+import { SettingsService } from './settings/settings.service';
+import { AppointmentsController } from './appointments/appointments.controller';
+import { AppointmentsService } from './appointments/appointments.service';
 
 @Module({
-  imports: [TenantModule],
+  imports: [TenantModule, SubscriptionsModule],
   controllers: [
     BranchesController,
     EmployeesController,
@@ -31,6 +37,8 @@ import { TenantFeaturesController } from './tenant-features.controller';
     DashboardController,
     ReportsController,
     TenantFeaturesController,
+    SettingsController,
+    AppointmentsController,
   ],
   providers: [
     BranchesService,
@@ -41,6 +49,9 @@ import { TenantFeaturesController } from './tenant-features.controller';
     PosService,
     SalesService,
     DashboardService,
+    DashboardCacheInterceptor,
+    SettingsService,
+    AppointmentsService,
   ],
 })
 export class SalonModule {}

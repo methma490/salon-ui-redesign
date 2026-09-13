@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { buildPaginatedResponse, resolvePagination } from '../../common/dto/pagination.dto';
 import { TenantSchemaService } from '../../tenant/services/tenant-schema.service';
 import { tenantTable } from '../../tenant/utils/schema-name.util';
 import { logAudit } from '../utils/audit.util';
@@ -27,8 +28,30 @@ export interface CustomerRecord {
 export class CustomersService {
   constructor(private readonly tenantSchemaService: TenantSchemaService) {}
 
-  async list(schemaName: string, query: ListCustomersQueryDto): Promise<CustomerRecord[]> {
+  private customerSelectSql(table: string): string {
+    return `SELECT id, code, name, phone, email,
+                   birthday::text AS birthday, notes,
+                   status::text AS status,
+                   created_at AS "createdAt", updated_at AS "updatedAt"
+            FROM ${table}`;
+  }
+
+  private async fetchCustomerByIdTx(
+    tx: { $queryRawUnsafe: (query: string, ...values: unknown[]) => Promise<unknown> },
+    schemaName: string,
+    id: string,
+  ): Promise<CustomerRecord | null> {
     const table = tenantTable(schemaName, 'customers');
+    const rows = (await tx.$queryRawUnsafe(
+      `${this.customerSelectSql(table)} WHERE id = $1::uuid LIMIT 1`,
+      id,
+    )) as CustomerRecord[];
+    return rows[0] ?? null;
+  }
+
+  async list(schemaName: string, query: ListCustomersQueryDto) {
+    const table = tenantTable(schemaName, 'customers');
+    const { page, limit, offset } = resolvePagination(query.page, query.limit);
     const conditions: string[] = ['1=1'];
     const params: unknown[] = [];
     let idx = 1;
@@ -47,38 +70,46 @@ export class CustomersService {
       params.push(query.status);
     }
 
-    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) =>
-      tx.$queryRawUnsafe<CustomerRecord[]>(
-        `SELECT id, code, name, phone, email,
+    const whereClause = conditions.join(' AND ');
+    const selectSql = query.summary
+      ? `SELECT id, code, name, phone FROM ${table}`
+      : `SELECT id, code, name, phone, email,
                 birthday::text AS birthday, notes,
                 status::text AS status,
                 created_at AS "createdAt", updated_at AS "updatedAt"
-         FROM ${table}
-         WHERE ${conditions.join(' AND ')}
-         ORDER BY name ASC`,
+         FROM ${table}`;
+
+    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      const countRows = await tx.$queryRawUnsafe<Array<{ count: bigint }>>(
+        `SELECT COUNT(*)::bigint AS count FROM ${table} WHERE ${whereClause}`,
         ...params,
-      ),
-    );
+      );
+      const total = Number(countRows[0]?.count ?? 0);
+
+      const data = await tx.$queryRawUnsafe(
+        `${selectSql}
+         WHERE ${whereClause}
+         ORDER BY name ASC
+         LIMIT $${idx} OFFSET $${idx + 1}`,
+        ...params,
+        limit,
+        offset,
+      );
+
+      return buildPaginatedResponse(data as CustomerRecord[], total, page, limit);
+    });
   }
 
   async findById(schemaName: string, id: string): Promise<CustomerRecord> {
-    const table = tenantTable(schemaName, 'customers');
-    const rows = await this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) =>
-      tx.$queryRawUnsafe<CustomerRecord[]>(
-        `SELECT id, code, name, phone, email,
-                birthday::text AS birthday, notes,
-                status::text AS status,
-                created_at AS "createdAt", updated_at AS "updatedAt"
-         FROM ${table} WHERE id = $1::uuid LIMIT 1`,
-        id,
-      ),
+    const customer = await this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) =>
+      this.fetchCustomerByIdTx(tx, schemaName, id),
     );
 
-    if (rows.length === 0) {
+    if (!customer) {
       throw new NotFoundException('Customer not found');
     }
 
-    return rows[0];
+    return customer;
   }
 
   async create(
@@ -118,7 +149,12 @@ export class CustomersService {
         details: { name: dto.name, phone: dto.phone },
       });
 
-      return this.findById(schemaName, rows[0].id);
+      const created = await this.fetchCustomerByIdTx(tx, schemaName, rows[0].id);
+      if (!created) {
+        throw new NotFoundException('Customer not found');
+      }
+
+      return created;
     });
   }
 

@@ -1,5 +1,6 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { AuthenticatedUser } from '../../auth/interfaces/auth.interface';
 import { REQUIRE_PERMISSION_KEY } from '../constants/tenant.constants';
 import { TenantContext } from '../interfaces/tenant-context.interface';
 import { TenantPermissionService } from '../services/tenant-permission.service';
@@ -21,14 +22,26 @@ export class PermissionGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest<{ tenantContext?: TenantContext }>();
+    const request = context.switchToHttp().getRequest<{
+      user?: AuthenticatedUser;
+      tenantContext?: TenantContext;
+    }>();
     const tenantContext = request.tenantContext;
 
     if (!tenantContext) {
       throw new ForbiddenException('Tenant context required');
     }
 
+    const cachedPermissions = request.user?.permissions;
+
     for (const permissionCode of requiredPermissions) {
+      if (cachedPermissions) {
+        if (!cachedPermissions.includes(permissionCode)) {
+          throw new ForbiddenException('Insufficient permissions');
+        }
+        continue;
+      }
+
       const allowed = await this.tenantPermissionService.userHasPermission(
         tenantContext.schemaName,
         tenantContext.userId,

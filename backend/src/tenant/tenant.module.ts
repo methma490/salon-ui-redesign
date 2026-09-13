@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { FeatureGuard } from './guards/feature.guard';
 import { PermissionGuard } from './guards/permission.guard';
 import { TenantContextGuard } from './guards/tenant-context.guard';
@@ -7,8 +7,10 @@ import { TenantFeatureService } from './services/tenant-feature.service';
 import { TenantPermissionService } from './services/tenant-permission.service';
 import { TenantSchemaService } from './services/tenant-schema.service';
 import { TenantTestController } from './tenant-test.controller';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 
 @Module({
+  imports: [forwardRef(() => SubscriptionsModule)],
   controllers: [TenantTestController],
   providers: [
     TenantContextService,

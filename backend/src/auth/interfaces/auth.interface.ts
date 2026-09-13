@@ -3,8 +3,12 @@ export interface JwtPayload {
   email: string;
   roles: string[];
   tenantId?: string | null;
-  schemaName?: string | null; // For tenant users, identifies their schema
-  userType: 'SUPER_ADMIN' | 'TENANT_USER'; // Discriminator
+  schemaName?: string | null;
+  userType: 'SUPER_ADMIN' | 'TENANT_USER';
+  permissions?: string[];
+  tenantName?: string | null;
+  tenantStatus?: string | null;
+  tenantCode?: string | null;
 }
 
 export interface AuthenticatedUser {
@@ -15,6 +19,10 @@ export interface AuthenticatedUser {
   schemaName: string | null;
   roles: string[];
   userType: 'SUPER_ADMIN' | 'TENANT_USER';
+  permissions?: string[];
+  tenantName?: string | null;
+  tenantStatus?: string | null;
+  tenantCode?: string | null;
 }
 
 export interface AuthUserResponse {
@@ -23,4 +31,16 @@ export interface AuthUserResponse {
   email: string;
   tenantId: string | null;
   roles: string[];
+  tenant?: {
+    id: string;
+    name: string;
+  } | null;
+  subscription?: {
+    plan: string;
+    planCode: string;
+    status: string;
+    startDate: Date | null;
+    endDate: Date | null;
+  } | null;
+  features?: string[];
 }

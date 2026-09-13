@@ -1,6 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { AuthenticatedUser } from '../../auth/interfaces/auth.interface';
 import { TenantSchemaService } from '../../tenant/services/tenant-schema.service';
 import { tenantTable } from '../../tenant/utils/schema-name.util';
+import { EmployeesService } from '../employees/employees.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { logAudit } from '../utils/audit.util';
 import { CreateSaleDto } from './dto/pos.dto';
@@ -10,9 +12,24 @@ export class PosService {
   constructor(
     private readonly tenantSchemaService: TenantSchemaService,
     private readonly inventoryService: InventoryService,
+    private readonly employeesService: EmployeesService,
   ) {}
 
-  async createSale(schemaName: string, dto: CreateSaleDto, cashierUserId: string) {
+  /** Tenant enums live in each schema; unqualified casts resolve to public and fail. */
+  private tenantEnumCast(schemaName: string, enumName: string, paramIndex: number): string {
+    return `$${paramIndex}::text::"${schemaName}".${enumName}`;
+  }
+
+  getPerformers(schemaName: string, user: AuthenticatedUser, branchId?: string) {
+    return this.employeesService.listPosPerformers(schemaName, user, branchId);
+  }
+
+  async createSale(schemaName: string, dto: CreateSaleDto, user: AuthenticatedUser) {
+    const cashierUserId = user.id;
+
+    if (dto.services.length > 0) {
+      await this.employeesService.listPosPerformers(schemaName, user, dto.branchId);
+    }
     if (dto.services.length === 0 && dto.products.length === 0) {
       throw new BadRequestException('Sale must include at least one service or product');
     }
@@ -201,12 +218,15 @@ export class PosService {
       }
 
       for (const payment of dto.payments) {
+        const methodCast = this.tenantEnumCast(schemaName, 'payment_method', 2);
+        const statusCast = this.tenantEnumCast(schemaName, 'payment_status', 4);
         await tx.$queryRawUnsafe(
           `INSERT INTO ${payments} (sale_id, method, amount, status, reference_number)
-           VALUES ($1::uuid, $2::payment_method, $3, 'COMPLETED', $4)`,
+           VALUES ($1::uuid, ${methodCast}, $3, ${statusCast}, $5)`,
           saleId,
           payment.method,
           payment.amount,
+          'COMPLETED',
           payment.referenceNumber ?? null,
         );
       }

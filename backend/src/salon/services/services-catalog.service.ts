@@ -31,9 +31,12 @@ export class ServicesCatalogService {
 
   async createCategory(schemaName: string, dto: CreateServiceCategoryDto, userId: string) {
     const table = tenantTable(schemaName, 'service_categories');
-    const code = dto.code.toUpperCase();
 
     return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      const code = dto.code
+        ? dto.code.toUpperCase()
+        : await generateSequentialCode(tx, table, 'SCAT-');
+
       const existing = await tx.$queryRawUnsafe<Array<{ id: string }>>(
         `SELECT id FROM ${table} WHERE UPPER(code) = $1 LIMIT 1`,
         code,

@@ -1,58 +1,149 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-import { tenantApi } from '@/api/tenant.api';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import { useMemo, useState } from 'react';
+import { tenantApi, type Customer } from '@/api/tenant.api';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+  FormError,
+  FormSubmit,
+  FormTextarea,
+  getErrorMessage,
+  OpsError,
+  OpsLoading,
+  OpsEditButton,
+  OpsPageHeader,
+  OpsStatusBadge,
+  OpsToggleStatusButton,
+  SimpleForm,
+  SimpleFormDialog,
+} from './salon-ops-ui';
+
+type CustomerForm = {
+  name: string;
+  phone: string;
+  email: string;
+  birthday: string;
+  notes: string;
+};
+
+const emptyForm: CustomerForm = { name: '', phone: '', email: '', birthday: '', notes: '' };
+
+function toCustomerPayload(form: CustomerForm) {
+  const payload: Record<string, string> = {
+    name: form.name.trim(),
+    phone: form.phone.trim(),
+  };
+  const email = form.email.trim();
+  const birthday = form.birthday.trim();
+  const notes = form.notes.trim();
+  if (email) payload.email = email;
+  if (birthday) payload.birthday = birthday;
+  if (notes) payload.notes = notes;
+  return payload;
+}
+
+function CustomerFormFields({
+  form,
+  setForm,
+}: {
+  form: CustomerForm;
+  setForm: (f: CustomerForm) => void;
+}) {
+  return (
+    <>
+      <div className="space-y-2">
+        <Label htmlFor="cust-name">Full name</Label>
+        <Input
+          id="cust-name"
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          placeholder="Customer name"
+          required
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="cust-phone">Phone</Label>
+        <Input
+          id="cust-phone"
+          value={form.phone}
+          onChange={(e) => setForm({ ...form, phone: e.target.value })}
+          placeholder="0771234567"
+          required
+        />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="cust-email">Email</Label>
+          <Input
+            id="cust-email"
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            placeholder="Optional"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="cust-birthday">Birthday</Label>
+          <Input
+            id="cust-birthday"
+            type="date"
+            value={form.birthday}
+            onChange={(e) => setForm({ ...form, birthday: e.target.value })}
+          />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="cust-notes">Notes</Label>
+        <FormTextarea
+          id="cust-notes"
+          value={form.notes}
+          onChange={(e) => setForm({ ...form, notes: e.target.value })}
+          placeholder="Optional"
+          rows={3}
+        />
+      </div>
+    </>
+  );
+}
 
 export default function CustomersPage() {
   const qc = useQueryClient();
   const [phoneSearch, setPhoneSearch] = useState('');
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editCustomer, setEditCustomer] = useState<Customer | null>(null);
+  const [form, setForm] = useState<CustomerForm>(emptyForm);
+  const [editForm, setEditForm] = useState<CustomerForm>(emptyForm);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  const { data: customers = [], isLoading } = useQuery({
+  const {
+    data: customers = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ['customers', phoneSearch],
     queryFn: () => tenantApi.customers.list(phoneSearch ? { phone: phoneSearch } : undefined),
   });
 
-  const [form, setForm] = useState({
-    name: '',
-    phone: '',
-    email: '',
-    birthday: '',
-    notes: '',
-  });
-  const [editId, setEditId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({
-    name: '',
-    phone: '',
-    email: '',
-    birthday: '',
-    notes: '',
-  });
+  const stats = useMemo(
+    () => ({
+      total: customers.length,
+      active: customers.filter((c) => c.status === 'ACTIVE').length,
+      inactive: customers.filter((c) => c.status !== 'ACTIVE').length,
+    }),
+    [customers],
+  );
 
   const createMutation = useMutation({
     mutationFn: tenantApi.customers.create,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['customers'] });
-      setForm({ name: '', phone: '', email: '', birthday: '', notes: '' });
+      setForm(emptyForm);
+      setFormError(null);
+      setCreateOpen(false);
     },
+    onError: (err) => setFormError(getErrorMessage(err)),
   });
 
   const updateMutation = useMutation({
@@ -60,8 +151,10 @@ export default function CustomersPage() {
       tenantApi.customers.update(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['customers'] });
-      setEditId(null);
+      setEditCustomer(null);
+      setFormError(null);
     },
+    onError: (err) => setFormError(getErrorMessage(err)),
   });
 
   const statusMutation = useMutation({
@@ -70,206 +163,220 @@ export default function CustomersPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['customers'] }),
   });
 
-  if (isLoading) return <p>Loading customers...</p>;
+  const openEdit = (cust: Customer) => {
+    setFormError(null);
+    setEditCustomer(cust);
+    setEditForm({
+      name: cust.name,
+      phone: cust.phone || '',
+      email: cust.email || '',
+      birthday: cust.birthday?.slice(0, 10) || '',
+      notes: cust.notes || '',
+    });
+  };
+
+  if (isLoading) return <OpsLoading />;
+  if (isError) return <OpsError message={getErrorMessage(error)} onRetry={() => void refetch()} />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Customers</h1>
-          <p className="text-muted-foreground">Manage customer records</p>
+    <div className="emp-page">
+      <OpsPageHeader
+        title="Customers"
+        subtitle="Manage customer records, contact info, and visit notes"
+        action={
+          <button
+            type="button"
+            className="emp-btn emp-btn-primary"
+            onClick={() => {
+              setFormError(null);
+              setForm(emptyForm);
+              setCreateOpen(true);
+            }}
+          >
+            + Add Customer
+          </button>
+        }
+      />
+
+      <div className="emp-stats">
+        <div className="emp-stat">
+          <div className="emp-stat-value">{stats.total}</div>
+          <div className="emp-stat-label">Total</div>
         </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>Add Customer</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create Customer</DialogTitle>
-            </DialogHeader>
-            <form
-              className="space-y-3"
-              onSubmit={(e) => {
-                e.preventDefault();
-                createMutation.mutate({
-                  ...form,
-                  birthday: form.birthday || undefined,
-                  email: form.email || undefined,
-                  notes: form.notes || undefined,
-                });
-              }}
-            >
-              <div>
-                <Label>Name</Label>
-                <Input
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label>Phone</Label>
-                <Input
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label>Email</Label>
-                <Input
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Birthday</Label>
-                <Input
-                  type="date"
-                  value={form.birthday}
-                  onChange={(e) => setForm({ ...form, birthday: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Notes</Label>
-                <Input
-                  value={form.notes}
-                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                />
-              </div>
-              <Button type="submit" disabled={createMutation.isPending}>
-                Create
-              </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <div className="emp-stat">
+          <div className="emp-stat-value">{stats.active}</div>
+          <div className="emp-stat-label">Active</div>
+        </div>
+        <div className="emp-stat">
+          <div className="emp-stat-value">{stats.inactive}</div>
+          <div className="emp-stat-label">Inactive</div>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle>All Customers</CardTitle>
-          <div className="flex gap-2">
-            <Input
-              placeholder="Search by phone..."
-              value={phoneSearch}
-              onChange={(e) => setPhoneSearch(e.target.value)}
-              className="w-full sm:w-[220px]"
-            />
-            {phoneSearch && (
-              <Button variant="outline" onClick={() => setPhoneSearch('')}>
-                Clear
-              </Button>
-            )}
+      <div className="emp-toolbar">
+        <div className="emp-toolbar-filters">
+          <input
+            type="search"
+            className="emp-input search"
+            placeholder="Search by phone…"
+            value={phoneSearch}
+            onChange={(e) => setPhoneSearch(e.target.value)}
+          />
+          {phoneSearch && (
+            <button type="button" className="emp-btn emp-btn-secondary" onClick={() => setPhoneSearch('')}>
+              Clear
+            </button>
+          )}
+        </div>
+        <span style={{ fontSize: '0.8125rem', color: 'var(--emp-muted)' }}>
+          {customers.length} customer{customers.length === 1 ? '' : 's'}
+        </span>
+      </div>
+
+      <div className="emp-panel">
+        <div className="emp-panel-header">
+          <div>
+            <h2 className="emp-panel-title">All Customers</h2>
+            <p className="emp-panel-desc">Tap a card on mobile or use the table on desktop</p>
           </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+        </div>
+
+        {customers.length === 0 ? (
+          <div className="emp-empty">No customers found. Add your first customer to get started.</div>
+        ) : (
+          <>
+            <div className="emp-cards">
               {customers.map((cust) => (
-                <TableRow key={cust.id}>
-                  <TableCell>{cust.code}</TableCell>
-                  <TableCell>{cust.name}</TableCell>
-                  <TableCell>{cust.phone || '-'}</TableCell>
-                  <TableCell>{cust.email || '-'}</TableCell>
-                  <TableCell>
-                    <Badge variant={cust.status === 'ACTIVE' ? 'default' : 'secondary'}>
-                      {cust.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="space-x-2">
-                    <Dialog
-                      open={editId === cust.id}
-                      onOpenChange={(open) => {
-                        if (open) {
-                          setEditId(cust.id);
-                          setEditForm({
-                            name: cust.name,
-                            phone: cust.phone || '',
-                            email: cust.email || '',
-                            birthday: cust.birthday?.slice(0, 10) || '',
-                            notes: cust.notes || '',
-                          });
-                        } else {
-                          setEditId(null);
-                        }
-                      }}
-                    >
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          Edit
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Edit Customer</DialogTitle>
-                        </DialogHeader>
-                        <form
-                          className="space-y-3"
-                          onSubmit={(e) => {
-                            e.preventDefault();
-                            updateMutation.mutate({ id: cust.id, data: editForm });
-                          }}
-                        >
-                          <div>
-                            <Label>Name</Label>
-                            <Input
-                              value={editForm.name}
-                              onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                            />
-                          </div>
-                          <div>
-                            <Label>Phone</Label>
-                            <Input
-                              value={editForm.phone}
-                              onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                            />
-                          </div>
-                          <div>
-                            <Label>Email</Label>
-                            <Input
-                              type="email"
-                              value={editForm.email}
-                              onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                            />
-                          </div>
-                          <Button type="submit" disabled={updateMutation.isPending}>
-                            Save
-                          </Button>
-                        </form>
-                      </DialogContent>
-                    </Dialog>
+                <article key={cust.id} className="emp-card">
+                  <div className="emp-card-top">
+                    <div>
+                      <div className="emp-name-cell">{cust.name}</div>
+                      <div className="emp-code">{cust.code}</div>
+                    </div>
+                    <OpsStatusBadge status={cust.status} />
+                  </div>
+                  <div className="emp-card-meta">
+                    <span>
+                      <strong>Phone:</strong> {cust.phone || '—'}
+                    </span>
+                    <span>
+                      <strong>Email:</strong> {cust.email || '—'}
+                    </span>
+                    {cust.birthday && (
+                      <span>
+                        <strong>Birthday:</strong> {cust.birthday.slice(0, 10)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="emp-card-actions">
+                    <OpsEditButton onClick={() => openEdit(cust)} />
                     {cust.status !== 'BLOCKED' && (
-                      <Button
-                        variant="outline"
-                        size="sm"
+                      <OpsToggleStatusButton
+                        isActive={cust.status === 'ACTIVE'}
                         onClick={() =>
                           statusMutation.mutate({
                             id: cust.id,
                             status: cust.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE',
                           })
                         }
-                      >
-                        {cust.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
-                      </Button>
+                      />
                     )}
-                  </TableCell>
-                </TableRow>
+                  </div>
+                </article>
               ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            </div>
+
+            <div className="emp-table-wrap">
+              <table className="emp-table">
+                <thead>
+                  <tr>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {customers.map((cust) => (
+                    <tr key={cust.id}>
+                      <td className="emp-code">{cust.code}</td>
+                      <td className="emp-name-cell">{cust.name}</td>
+                      <td>{cust.phone || '—'}</td>
+                      <td>{cust.email || '—'}</td>
+                      <td>
+                        <OpsStatusBadge status={cust.status} />
+                      </td>
+                      <td>
+                        <div className="emp-actions">
+                          <OpsEditButton onClick={() => openEdit(cust)} />
+                          {cust.status !== 'BLOCKED' && (
+                            <OpsToggleStatusButton
+                              isActive={cust.status === 'ACTIVE'}
+                              onClick={() =>
+                                statusMutation.mutate({
+                                  id: cust.id,
+                                  status: cust.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE',
+                                })
+                              }
+                            />
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </div>
+
+      <SimpleFormDialog
+        open={createOpen}
+        onOpenChange={(open) => {
+          if (!open) setFormError(null);
+          setCreateOpen(open);
+        }}
+        title="Create Customer"
+      >
+        <SimpleForm
+          onSubmit={(e) => {
+            e.preventDefault();
+            setFormError(null);
+            createMutation.mutate(toCustomerPayload(form));
+          }}
+        >
+          <FormError message={formError} />
+          <CustomerFormFields form={form} setForm={setForm} />
+          <FormSubmit pending={createMutation.isPending}>Create Customer</FormSubmit>
+        </SimpleForm>
+      </SimpleFormDialog>
+
+      <SimpleFormDialog
+        open={editCustomer !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditCustomer(null);
+            setFormError(null);
+          }
+        }}
+        title="Edit Customer"
+      >
+        <SimpleForm
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!editCustomer) return;
+            setFormError(null);
+            updateMutation.mutate({ id: editCustomer.id, data: toCustomerPayload(editForm) });
+          }}
+        >
+          <FormError message={formError} />
+          <CustomerFormFields form={editForm} setForm={setEditForm} />
+          <FormSubmit pending={updateMutation.isPending}>Save Changes</FormSubmit>
+        </SimpleForm>
+      </SimpleFormDialog>
     </div>
   );
 }

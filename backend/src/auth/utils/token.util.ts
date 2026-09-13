@@ -7,3 +7,7 @@ export function hashToken(token: string): string {
 export function generateRefreshToken(): string {
   return randomBytes(64).toString('hex');
 }
+
+export function generatePasswordResetToken(): string {
+  return randomBytes(32).toString('hex');
+}

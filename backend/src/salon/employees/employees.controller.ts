@@ -3,7 +3,9 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../auth/interfaces/auth.interface';
 import { CurrentTenant } from '../../tenant/decorators/current-tenant.decorator';
+import { RequireFeature } from '../../tenant/decorators/require-feature.decorator';
 import { RequirePermission } from '../../tenant/decorators/require-permission.decorator';
+import { FeatureGuard } from '../../tenant/guards/feature.guard';
 import { PermissionGuard } from '../../tenant/guards/permission.guard';
 import { TenantContextGuard } from '../../tenant/guards/tenant-context.guard';
 import { TenantContext } from '../../tenant/interfaces/tenant-context.interface';
@@ -26,6 +28,14 @@ export class EmployeesController {
     return this.employeesService.list(tenant.schemaName, query);
   }
 
+  @Get('assignable-roles')
+  @UseGuards(FeatureGuard)
+  @RequireFeature('STAFF_MANAGEMENT')
+  @RequirePermission('EMPLOYEE_VIEW')
+  getAssignableRoles(@CurrentTenant() tenant: TenantContext) {
+    return this.employeesService.getAssignableRoles(tenant.tenantId, tenant.schemaName);
+  }
+
   @Get(':id')
   @RequirePermission('EMPLOYEE_VIEW')
   getById(@CurrentTenant() tenant: TenantContext, @Param('id') id: string) {
@@ -39,7 +49,7 @@ export class EmployeesController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateEmployeeDto,
   ) {
-    return this.employeesService.create(tenant.schemaName, dto, user.id);
+    return this.employeesService.create(tenant.tenantId, tenant.schemaName, dto, user.id);
   }
 
   @Patch(':id')
@@ -50,7 +60,7 @@ export class EmployeesController {
     @Param('id') id: string,
     @Body() dto: UpdateEmployeeDto,
   ) {
-    return this.employeesService.update(tenant.schemaName, id, dto, user.id);
+    return this.employeesService.update(tenant.tenantId, tenant.schemaName, id, dto, user.id);
   }
 
   @Patch(':id/status')

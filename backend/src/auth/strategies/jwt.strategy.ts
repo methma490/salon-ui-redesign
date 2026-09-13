@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
-import { SuperAdminStatus } from '@prisma/client';
+import { SuperAdminStatus, TenantStatus } from '@prisma/client';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '../../database/prisma.service';
 import { TenantSchemaService } from '../../tenant/services/tenant-schema.service';
@@ -58,11 +58,24 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
       const tenant = await this.prisma.tenant.findUnique({
         where: { id: payload.tenantId },
-        select: { schemaName: true },
+        select: {
+          status: true,
+          name: true,
+          code: true,
+          schemaName: true,
+        },
       });
 
       if (!tenant || tenant.schemaName !== payload.schemaName) {
         throw new UnauthorizedException('Invalid or expired token');
+      }
+
+      if (tenant.status !== TenantStatus.ACTIVE) {
+        throw new UnauthorizedException(
+          tenant.status === TenantStatus.SUSPENDED
+            ? 'Your salon has been suspended. Please contact support.'
+            : 'Your salon account is not active.',
+        );
       }
 
       const usersTable = tenantTable(payload.schemaName, 'users');
@@ -103,6 +116,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         schemaName: payload.schemaName,
         roles: payload.roles,
         userType: 'TENANT_USER',
+        permissions: payload.permissions,
+        tenantName: tenant.name,
+        tenantStatus: tenant.status,
+        tenantCode: tenant.code,
       };
     }
 

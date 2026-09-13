@@ -1,13 +1,31 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { ConfigService } from '@nestjs/config';
 import { config } from 'dotenv';
+import { existsSync, mkdirSync } from 'fs';
+import { join } from 'path';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
+import { bootstrapDatabase } from './database/bootstrap-database';
 
 config({ override: true });
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  await bootstrapDatabase();
+
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  const uploadsRoot = join(process.cwd(), 'uploads');
+  if (!existsSync(uploadsRoot)) {
+    mkdirSync(uploadsRoot, { recursive: true });
+  }
+  app.useStaticAssets(uploadsRoot, {
+    prefix: '/api/uploads',
+    maxAge: '7d',
+    etag: true,
+    lastModified: true,
+  });
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 3000);
@@ -25,6 +43,8 @@ async function bootstrap() {
       },
     }),
   );
+
+  app.useGlobalInterceptors(new TransformInterceptor());
 
   app.enableCors({
     origin: frontendUrl,

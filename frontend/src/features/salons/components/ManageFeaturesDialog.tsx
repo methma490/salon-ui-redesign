@@ -16,6 +16,8 @@ interface ManageFeaturesDialogProps {
   salon: {
     id: string;
     name: string;
+    featuresManagedBySubscription?: boolean;
+    subscription?: { planName: string; status: string } | null;
     enabledFeatures: Array<{ code: string } | string>;
   };
   open: boolean;
@@ -27,6 +29,8 @@ export function ManageFeaturesDialog({ salon, open, onOpenChange }: ManageFeatur
   const updateFeatures = useUpdateSalonFeatures(salon.id);
   const [selected, setSelected] = useState<string[]>([]);
   const [error, setError] = useState('');
+
+  const subscriptionManaged = salon.featuresManagedBySubscription ?? false;
 
   useEffect(() => {
     setSelected(
@@ -44,6 +48,7 @@ export function ManageFeaturesDialog({ salon, open, onOpenChange }: ManageFeatur
 
   const handleSave = async () => {
     setError('');
+
     if (!selected.length) {
       setError('At least one feature must be selected.');
       return;
@@ -59,11 +64,16 @@ export function ManageFeaturesDialog({ salon, open, onOpenChange }: ManageFeatur
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Manage Features</DialogTitle>
-          <DialogDescription>Select enabled features for {salon.name}.</DialogDescription>
+          <DialogTitle>Manage Feature Access</DialogTitle>
+          <DialogDescription>
+            {subscriptionManaged
+              ? `Choose which modules ${salon.name} can access. Current plan: ${salon.subscription?.planName ?? 'Subscription'} (${salon.subscription?.status ?? 'active'}).`
+              : `Select enabled features for ${salon.name}.`}
+          </DialogDescription>
         </DialogHeader>
+
         {isLoading ? (
           <p className="text-sm text-muted-foreground">Loading features...</p>
         ) : (
@@ -80,20 +90,30 @@ export function ManageFeaturesDialog({ salon, open, onOpenChange }: ManageFeatur
                 />
                 <div>
                   <Label htmlFor={feature.code}>{feature.name}</Label>
+                  <p className="text-xs font-medium text-muted-foreground">{feature.code}</p>
                   {feature.description && (
-                    <p className="text-xs text-muted-foreground">{feature.description}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{feature.description}</p>
                   )}
                 </div>
               </div>
             ))}
           </div>
         )}
+
+        {subscriptionManaged && (
+          <p className="text-xs text-muted-foreground">
+            Changes apply immediately to this salon&apos;s subscription and control which modules
+            appear in their admin panel and role permissions.
+          </p>
+        )}
+
         {error && <p className="text-sm text-destructive">{error}</p>}
+
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={() => void handleSave()} disabled={updateFeatures.isPending}>
+          <Button onClick={() => void handleSave()} disabled={updateFeatures.isPending || isLoading}>
             {updateFeatures.isPending ? 'Saving...' : 'Save Features'}
           </Button>
         </DialogFooter>

@@ -30,6 +30,99 @@ enum SuperAdminStatus {
   SUSPENDED
 }
 
+enum BillingCycle {
+  MONTHLY
+  YEARLY
+}
+
+enum PlanStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum SubscriptionStatus {
+  PENDING
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  SUSPENDED
+  CANCELLED
+  EXPIRED
+}
+
+enum SubscriptionHistoryAction {
+  CREATED
+  ACTIVATED
+  RENEWED
+  UPGRADED
+  DOWNGRADED
+  CANCELLED
+  EXPIRED
+  STATUS_CHANGED
+  PLAN_CHANGED
+  TRIAL_STARTED
+  TRIAL_CONVERTED
+}
+
+enum PaymentGatewayProvider {
+  PAYHERE
+  KOKO
+  STRIPE
+  MANUAL
+}
+
+enum PaymentOrderStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+enum PaymentRecordStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PasswordResetAccountType {
+  SUPER_ADMIN
+  TENANT_USER
+}
+
+enum InvoiceStatus {
+  ISSUED
+  PAID
+  VOID
+  REFUNDED
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  IN_APP
+}
+
+enum NotificationType {
+  TRIAL_EXPIRY_REMINDER
+  SUBSCRIPTION_EXPIRY_REMINDER
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+  RENEWAL_REMINDER
+}
+
+enum NotificationDeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum InAppNotificationStatus {
+  UNREAD
+  READ
+}
+
 // Platform tenants table - stores salon metadata
 model Tenant {
   id         String       @id @default(uuid()) @db.Uuid
@@ -38,11 +131,17 @@ model Tenant {
   name       String
   email      String?
   phone      String?
+  logoUrl    String?
   status     TenantStatus @default(PROVISIONING)
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
 
-  tenantFeatures TenantFeature[]
+  tenantFeatures        TenantFeature[]
+  subscriptions         Subscription[]
+  paymentOrders         PaymentOrder[]
+  invoices              Invoice[]
+  notifications         Notification[]
+  notificationLogs      NotificationLog[]
 
   @@map("tenants")
 }
@@ -57,7 +156,9 @@ model Feature {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  tenantFeatures TenantFeature[]
+  tenantFeatures       TenantFeature[]
+  planFeatures         PlanFeature[]
+  subscriptionFeatures SubscriptionFeature[]
 
   @@map("features")
 }
@@ -105,6 +206,352 @@ model SuperAdminRefreshToken {
   @@map("super_admin_refresh_tokens")
 }
 
-// NOTE: Tenant-specific data (users, roles, branches, etc.) 
+// Subscription plans (product definition; pricing lives in plan_prices)
+model Plan {
+  id           String     @id @default(uuid()) @db.Uuid
+  code         String     @unique
+  name         String
+  description  String?
+  status       PlanStatus @default(ACTIVE)
+  displayOrder Int        @default(0) @map("display_order")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  planPrices           PlanPrice[]
+  planFeatures         PlanFeature[]
+  subscriptions        Subscription[]
+  pendingSubscriptions Subscription[] @relation("PendingPlan")
+
+  @@index([status])
+  @@index([displayOrder])
+  @@map("plans")
+}
+
+// Billing-cycle pricing variants per plan (monthly / yearly)
+model PlanPrice {
+  id           String       @id @default(uuid()) @db.Uuid
+  planId       String       @map("plan_id") @db.Uuid
+  billingCycle BillingCycle @map("billing_cycle")
+  price        Decimal      @db.Decimal(10, 2)
+  currency     String       @default("LKR")
+  trialDays    Int          @default(0) @map("trial_days")
+  isActive     Boolean      @default(true) @map("is_active")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  plan                    Plan           @relation(fields: [planId], references: [id], onDelete: Cascade)
+  subscriptions           Subscription[]
+  pendingSubscriptions    Subscription[] @relation("PendingPlanPrice")
+
+  @@unique([planId, billingCycle, currency])
+  @@index([planId])
+  @@index([isActive])
+  @@map("plan_prices")
+}
+
+// Current plan feature template (changes do not affect existing subscriptions)
+model PlanFeature {
+  id        String   @id @default(uuid()) @db.Uuid
+  planId    String   @map("plan_id") @db.Uuid
+  featureId String   @map("feature_id") @db.Uuid
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  plan    Plan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  feature Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, featureId])
+  @@index([planId])
+  @@index([featureId])
+  @@map("plan_features")
+}
+
+// Salon subscription (entitlement source at runtime)
+model Subscription {
+  id                String             @id @default(uuid()) @db.Uuid
+  tenantId          String             @map("tenant_id") @db.Uuid
+  planId            String             @map("plan_id") @db.Uuid
+  planPriceId       String?            @map("plan_price_id") @db.Uuid
+  status            SubscriptionStatus
+  billingCycle      BillingCycle       @map("billing_cycle")
+  price             Decimal            @db.Decimal(10, 2)
+  currency          String
+  trialStart        DateTime?          @map("trial_start")
+  trialEnd          DateTime?          @map("trial_end")
+  startDate         DateTime?          @map("start_date")
+  endDate           DateTime?          @map("end_date")
+  nextBillingDate   DateTime?          @map("next_billing_date")
+  autoRenew         Boolean            @default(true) @map("auto_renew")
+  cancelAtPeriodEnd Boolean            @default(false) @map("cancel_at_period_end")
+  cancelledAt       DateTime?          @map("cancelled_at")
+  gracePeriodEnd    DateTime?          @map("grace_period_end")
+  pendingPlanId     String?            @map("pending_plan_id") @db.Uuid
+  pendingPlanPriceId String?           @map("pending_plan_price_id") @db.Uuid
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+
+  tenant               Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan                 Plan                  @relation(fields: [planId], references: [id], onDelete: Restrict)
+  planPrice            PlanPrice?            @relation(fields: [planPriceId], references: [id], onDelete: SetNull)
+  pendingPlan          Plan?                 @relation("PendingPlan", fields: [pendingPlanId], references: [id], onDelete: SetNull)
+  pendingPlanPrice     PlanPrice?            @relation("PendingPlanPrice", fields: [pendingPlanPriceId], references: [id], onDelete: SetNull)
+  subscriptionFeatures SubscriptionFeature[]
+  history              SubscriptionHistory[]
+  paymentOrders        PaymentOrder[]
+  invoices             Invoice[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([planPriceId])
+  @@index([nextBillingDate])
+  @@index([endDate])
+  @@map("subscriptions")
+}
+
+// Audit trail for subscription lifecycle events
+model SubscriptionHistory {
+  id              String                    @id @default(uuid()) @db.Uuid
+  subscriptionId  String                    @map("subscription_id") @db.Uuid
+  action          SubscriptionHistoryAction
+  fromPlanId      String?                   @map("from_plan_id") @db.Uuid
+  toPlanId        String?                   @map("to_plan_id") @db.Uuid
+  fromPlanPriceId String?                   @map("from_plan_price_id") @db.Uuid
+  toPlanPriceId   String?                   @map("to_plan_price_id") @db.Uuid
+  fromStatus      SubscriptionStatus?       @map("from_status")
+  toStatus        SubscriptionStatus?       @map("to_status")
+  metadata        Json?
+  performedBy     String?                   @map("performed_by") @db.Uuid
+  createdAt       DateTime                  @default(now()) @map("created_at")
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("subscription_history")
+}
+
+// Frozen feature snapshot per subscription
+model SubscriptionFeature {
+  id             String   @id @default(uuid()) @db.Uuid
+  subscriptionId String   @map("subscription_id") @db.Uuid
+  featureId      String   @map("feature_id") @db.Uuid
+  enabled        Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  feature      Feature      @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionId, featureId])
+  @@index([subscriptionId])
+  @@index([featureId])
+  @@map("subscription_features")
+}
+
+// Gateway-agnostic payment orders (Phase 4)
+model PaymentOrder {
+  id             String                 @id @default(uuid()) @db.Uuid
+  tenantId       String                 @map("tenant_id") @db.Uuid
+  subscriptionId String                 @map("subscription_id") @db.Uuid
+  amount         Decimal                @db.Decimal(10, 2)
+  currency       String
+  status         PaymentOrderStatus     @default(PENDING)
+  gateway        PaymentGatewayProvider
+  reference      String                 @unique
+  purpose        String                 @default("SUBSCRIPTION")
+  metadata       Json?
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @updatedAt @map("updated_at")
+
+  tenant               Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subscription         Subscription         @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  payments             Payment[]
+  paymentTransactions  PaymentTransaction[]
+  invoices             Invoice[]
+
+  @@index([tenantId])
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([gateway])
+  @@map("payment_orders")
+}
+
+model Payment {
+  id             String              @id @default(uuid()) @db.Uuid
+  paymentOrderId String              @map("payment_order_id") @db.Uuid
+  transactionId  String?             @unique @map("transaction_id")
+  status         PaymentRecordStatus @default(PENDING)
+  paidAt         DateTime?           @map("paid_at")
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+
+  paymentOrder        PaymentOrder         @relation(fields: [paymentOrderId], references: [id], onDelete: Cascade)
+  paymentTransactions PaymentTransaction[]
+  invoice             Invoice?
+
+  @@index([paymentOrderId])
+  @@index([status])
+  @@map("payments")
+}
+
+model PaymentTransaction {
+  id                 String                 @id @default(uuid()) @db.Uuid
+  paymentOrderId     String                 @map("payment_order_id") @db.Uuid
+  paymentId          String?                @map("payment_id") @db.Uuid
+  gateway            PaymentGatewayProvider
+  eventType          String                 @map("event_type")
+  rawPayload         Json                   @map("raw_payload")
+  verificationResult Json?                  @map("verification_result")
+  verified           Boolean                @default(false)
+  createdAt          DateTime               @default(now()) @map("created_at")
+
+  paymentOrder PaymentOrder @relation(fields: [paymentOrderId], references: [id], onDelete: Cascade)
+  payment      Payment?     @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([paymentOrderId])
+  @@index([paymentId])
+  @@index([gateway])
+  @@map("payment_transactions")
+}
+
+// Subscription invoices
+model Invoice {
+  id               String        @id @default(uuid()) @db.Uuid
+  invoiceNumber    String        @unique @map("invoice_number")
+  tenantId         String        @map("tenant_id") @db.Uuid
+  subscriptionId   String        @map("subscription_id") @db.Uuid
+  paymentId        String?       @unique @map("payment_id") @db.Uuid
+  paymentOrderId   String?       @map("payment_order_id") @db.Uuid
+  status           InvoiceStatus @default(PAID)
+  currency         String
+  subtotal         Decimal       @db.Decimal(10, 2)
+  total            Decimal       @db.Decimal(10, 2)
+  paidAt           DateTime?     @map("paid_at")
+  issueDate        DateTime      @default(now()) @map("issue_date")
+  salonName        String        @map("salon_name")
+  salonEmail       String?       @map("salon_email")
+  salonPhone       String?       @map("salon_phone")
+  customerName     String        @map("customer_name")
+  customerEmail    String        @map("customer_email")
+  customerPhone    String?       @map("customer_phone")
+  planName         String        @map("plan_name")
+  planCode         String        @map("plan_code")
+  billingCycle     BillingCycle  @map("billing_cycle")
+  paymentMethod    String?       @map("payment_method")
+  paymentReference String?       @map("payment_reference")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  payment      Payment?     @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  paymentOrder PaymentOrder? @relation(fields: [paymentOrderId], references: [id], onDelete: SetNull)
+  items        InvoiceItem[]
+
+  @@index([tenantId])
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([issueDate])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id          String  @id @default(uuid()) @db.Uuid
+  invoiceId   String  @map("invoice_id") @db.Uuid
+  description String
+  quantity    Decimal @default(1) @db.Decimal(10, 2)
+  unitPrice   Decimal @map("unit_price") @db.Decimal(10, 2)
+  amount      Decimal @db.Decimal(10, 2)
+  sortOrder   Int     @default(0) @map("sort_order")
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@map("invoice_items")
+}
+
+model NotificationTemplate {
+  id           String              @id @default(uuid()) @db.Uuid
+  code         String
+  type         NotificationType
+  channel      NotificationChannel
+  subject      String?
+  bodyTemplate String              @map("body_template")
+  active       Boolean             @default(true)
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+
+  @@unique([code, channel])
+  @@index([type])
+  @@index([active])
+  @@map("notification_templates")
+}
+
+model Notification {
+  id        String                  @id @default(uuid()) @db.Uuid
+  tenantId  String                  @map("tenant_id") @db.Uuid
+  type      NotificationType
+  title     String
+  message   String
+  status    InAppNotificationStatus @default(UNREAD)
+  metadata  Json?
+  readAt    DateTime?               @map("read_at")
+  createdAt DateTime                @default(now()) @map("created_at")
+  updatedAt DateTime                @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model NotificationLog {
+  id             String                     @id @default(uuid()) @db.Uuid
+  idempotencyKey String                     @map("idempotency_key")
+  tenantId       String                     @map("tenant_id") @db.Uuid
+  templateCode   String                     @map("template_code")
+  channel        NotificationChannel
+  status         NotificationDeliveryStatus @default(PENDING)
+  recipient      String?
+  error          String?
+  attemptCount   Int                        @default(0) @map("attempt_count")
+  jobId          String?                    @map("job_id")
+  metadata       Json?
+  sentAt         DateTime?                  @map("sent_at")
+  createdAt      DateTime                   @default(now()) @map("created_at")
+  updatedAt      DateTime                   @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([idempotencyKey, channel])
+  @@index([tenantId])
+  @@index([templateCode])
+  @@index([status])
+  @@map("notification_logs")
+}
+
+model PasswordResetToken {
+  id           String                   @id @default(uuid()) @db.Uuid
+  email        String
+  tokenHash    String                   @unique @map("token_hash")
+  accountType  PasswordResetAccountType @map("account_type")
+  superAdminId String?                  @map("super_admin_id") @db.Uuid
+  tenantId     String?                  @map("tenant_id") @db.Uuid
+  tenantUserId String?                  @map("tenant_user_id") @db.Uuid
+  tenantSchema String?                  @map("tenant_schema")
+  expiresAt    DateTime                 @map("expires_at")
+  usedAt       DateTime?                @map("used_at")
+  createdAt    DateTime                 @default(now()) @map("created_at")
+
+  @@index([email])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
+// NOTE: Tenant-specific data (users, roles, branches, etc.)
 // are stored in dynamic schemas (tenant_000001, tenant_000002, etc.)
 // and are NOT defined in this Prisma schema.

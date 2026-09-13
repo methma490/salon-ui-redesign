@@ -1,11 +1,31 @@
 export type SalonStatus = 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED';
 
+export interface SalonSubscriptionSummary {
+  id: string;
+  planCode: string;
+  planName: string;
+  status: string;
+  price: number;
+  currency: string;
+  startDate: string | null;
+  endDate: string | null;
+  featureCodes: string[];
+}
+
 export interface AuthUser {
   id: string;
   name: string;
   email: string;
   tenantId: string | null;
   roles: string[];
+  subscription?: {
+    plan: string;
+    planCode: string;
+    status: string;
+    startDate: string | null;
+    endDate: string | null;
+  } | null;
+  features?: string[];
 }
 
 export interface LoginResponse {
@@ -26,6 +46,9 @@ export interface SalonListItem {
     code: string;
     name: string;
   } | null;
+  subscription: SalonSubscriptionSummary | null;
+  featuresManagedBySubscription: boolean;
+  awaitingActivation?: boolean;
   enabledFeatures: string[];
   createdAt: string;
 }
@@ -49,6 +72,9 @@ export interface SalonDetails {
   status: SalonStatus;
   createdAt: string;
   updatedAt: string;
+  subscription: SalonSubscriptionSummary | null;
+  featuresManagedBySubscription: boolean;
+  awaitingActivation?: boolean;
   mainBranch: {
     id: string;
     code: string;

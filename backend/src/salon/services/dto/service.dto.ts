@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsEnum,
   IsNumber,
@@ -9,11 +10,16 @@ import {
   MinLength,
 } from 'class-validator';
 
+const emptyToUndefined = ({ value }: { value: unknown }) =>
+  value === '' || value === null ? undefined : value;
+
 export class CreateServiceCategoryDto {
+  @IsOptional()
+  @Transform(emptyToUndefined)
   @IsString()
   @MinLength(2)
   @MaxLength(50)
-  code!: string;
+  code?: string;
 
   @IsString()
   @MinLength(2)
@@ -21,6 +27,7 @@ export class CreateServiceCategoryDto {
   name!: string;
 
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsString()
   description?: string;
 }
@@ -33,6 +40,7 @@ export class UpdateServiceCategoryDto {
   name?: string;
 
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsString()
   description?: string;
 }
@@ -52,6 +60,7 @@ export class CreateServiceDto {
   name!: string;
 
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsString()
   description?: string;
 
@@ -77,6 +86,7 @@ export class UpdateServiceDto {
   name?: string;
 
   @IsOptional()
+  @Transform(emptyToUndefined)
   @IsString()
   description?: string;
 

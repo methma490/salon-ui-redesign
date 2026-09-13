@@ -1,8 +1,24 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import {
+  AlertTriangle,
+  CalendarDays,
+  TrendingUp,
+  Users,
+  Wallet,
+} from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { tenantApi } from '@/api/tenant.api';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  DashboardBarChart,
+  DashboardPieChart,
+  fillWeeklySales,
+} from '@/components/dashboard/dashboard-charts';
+import {
+  DashboardEmpty,
+  DashboardPanel,
+  DashboardStatCard,
+} from '@/components/dashboard/dashboard-ui';
 import {
   Select,
   SelectContent,
@@ -10,14 +26,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { OpsError, OpsLoading } from './salon-ops-ui';
+import '@/components/dashboard/dashboard-page.css';
+import './employees-page.css';
 
 function formatMoney(value: number) {
   return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -31,135 +42,158 @@ export default function DashboardPage() {
     queryFn: tenantApi.branches.list,
   });
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['dashboard', branchId],
     queryFn: () => tenantApi.dashboard.get(branchId === 'all' ? undefined : branchId),
   });
 
-  if (isLoading) return <p>Loading dashboard...</p>;
-  if (error) return <p className="text-destructive">Failed to load dashboard.</p>;
+  const weeklyChart = useMemo(
+    () => fillWeeklySales(data?.weeklySales ?? []),
+    [data?.weeklySales],
+  );
 
-  const stats = [
-    {
-      label: "Today's Sales",
-      value: formatMoney(data?.todaySales.total ?? 0),
-      sub: `${data?.todaySales.count ?? 0} transactions`,
-    },
-    {
-      label: 'Monthly Sales',
-      value: formatMoney(data?.monthlySales.total ?? 0),
-      sub: `${data?.monthlySales.count ?? 0} transactions`,
-    },
-    {
-      label: 'Active Customers',
-      value: String(data?.totalCustomers ?? 0),
-      sub: 'Total registered',
-    },
-    {
-      label: 'Low Stock Items',
-      value: String(data?.lowStockProducts.length ?? 0),
-      sub: 'Needs attention',
-    },
-  ];
+  const servicePie = useMemo(
+    () =>
+      (data?.topServices ?? []).map((svc) => ({
+        name: svc.name,
+        value: svc.revenue,
+      })),
+    [data?.topServices],
+  );
+
+  if (isLoading) return <OpsLoading />;
+  if (isError || !data) {
+    return <OpsError message="Failed to load dashboard." onRetry={() => void refetch()} />;
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="dash-page emp-page">
+      <header className="dash-header">
         <div>
-          <h1 className="text-2xl font-semibold">Dashboard</h1>
-          <p className="text-muted-foreground">Overview of your salon performance</p>
+          <h1>Dashboard</h1>
+          <p>Overview of sales, customers, inventory, and top services</p>
         </div>
-        <Select value={branchId} onValueChange={setBranchId}>
-          <SelectTrigger className="w-full sm:w-[200px]">
-            <SelectValue placeholder="All branches" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Branches</SelectItem>
-            {branches.map((b) => (
-              <SelectItem key={b.id} value={b.id}>
-                {b.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="dash-header-actions">
+          <Select value={branchId} onValueChange={setBranchId}>
+            <SelectTrigger className="dash-filter-select">
+              <SelectValue placeholder="All branches" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Branches</SelectItem>
+              {branches.map((b) => (
+                <SelectItem key={b.id} value={b.id}>
+                  {b.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </header>
+
+      <div className="dash-stats">
+        <DashboardStatCard
+          icon={Wallet}
+          label="Today's sales"
+          value={formatMoney(data.todaySales.total)}
+          sub={`${data.todaySales.count} transactions`}
+          isMoney
+        />
+        <DashboardStatCard
+          icon={TrendingUp}
+          label="Monthly sales"
+          value={formatMoney(data.monthlySales.total)}
+          sub={`${data.monthlySales.count} transactions`}
+          isMoney
+        />
+        <DashboardStatCard
+          icon={Users}
+          label="Active customers"
+          value={String(data.totalCustomers)}
+          sub="Registered customers"
+        />
+        <DashboardStatCard
+          icon={AlertTriangle}
+          label="Low stock"
+          value={String(data.lowStockProducts.length)}
+          sub="Items at or below 5"
+        />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {stats.map((stat) => (
-          <Card key={stat.label}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {stat.label}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-semibold">{stat.value}</p>
-              <p className="text-sm text-muted-foreground">{stat.sub}</p>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="dash-grid dash-grid-2">
+        <DashboardPanel title="Sales trend" description="Last 7 days revenue (LKR)">
+          {weeklyChart.some((d) => d.value > 0) ? (
+            <div className="dash-chart-wrap">
+              <DashboardBarChart data={weeklyChart} valuePrefix="LKR " />
+            </div>
+          ) : (
+            <DashboardEmpty message="No sales in the last 7 days yet." />
+          )}
+        </DashboardPanel>
+
+        <DashboardPanel title="Top services" description="Revenue share (30 days)">
+          {servicePie.length > 0 ? (
+            <div className="dash-chart-wrap">
+              <DashboardPieChart data={servicePie} valuePrefix="LKR " />
+            </div>
+          ) : (
+            <DashboardEmpty message="No service sales yet." />
+          )}
+        </DashboardPanel>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Low Stock Products</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {!data?.lowStockProducts.length ? (
-              <p className="text-sm text-muted-foreground">No low stock items.</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Quantity</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.lowStockProducts.map((item) => (
-                    <TableRow key={`${item.branchId}-${item.productId}`}>
-                      <TableCell>{item.productName}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{item.quantity}</Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+      <div className="dash-grid dash-grid-bottom" style={{ marginTop: '1rem' }}>
+        <DashboardPanel
+          title="Low stock products"
+          description="Needs restocking soon"
+          action={
+            <Link to="/salon/inventory" className="dash-link-btn">
+              View inventory
+            </Link>
+          }
+        >
+          {data.lowStockProducts.length === 0 ? (
+            <DashboardEmpty message="All products are above the low-stock threshold." />
+          ) : (
+            <div className="dash-list">
+              {data.lowStockProducts.map((item) => (
+                <div key={`${item.branchId}-${item.productId}`} className="dash-list-item">
+                  <div className="dash-list-item-main">
+                    <div className="dash-list-item-name">{item.productName}</div>
+                    <div className="dash-list-item-sub">Branch stock alert</div>
+                  </div>
+                  <span className="dash-badge-warn">Qty {item.quantity}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </DashboardPanel>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Top Services</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {!data?.topServices.length ? (
-              <p className="text-sm text-muted-foreground">No service sales yet.</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Service</TableHead>
-                    <TableHead>Sales</TableHead>
-                    <TableHead>Revenue</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.topServices.map((svc) => (
-                    <TableRow key={svc.id}>
-                      <TableCell>{svc.name}</TableCell>
-                      <TableCell>{svc.saleCount}</TableCell>
-                      <TableCell>{formatMoney(svc.revenue)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+        <DashboardPanel
+          title="Top performing services"
+          description="By sales count (30 days)"
+          action={
+            <Link to="/salon/reports" className="dash-link-btn">
+              <CalendarDays size={14} />
+              Reports
+            </Link>
+          }
+        >
+          {data.topServices.length === 0 ? (
+            <DashboardEmpty message="No service sales yet." />
+          ) : (
+            <div className="dash-list">
+              {data.topServices.map((svc) => (
+                <div key={svc.id} className="dash-list-item">
+                  <div className="dash-list-item-main">
+                    <div className="dash-list-item-name">{svc.name}</div>
+                    <div className="dash-list-item-sub">{svc.saleCount} sales</div>
+                  </div>
+                  <span className="dash-list-item-value">LKR {formatMoney(svc.revenue)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </DashboardPanel>
       </div>
     </div>
   );

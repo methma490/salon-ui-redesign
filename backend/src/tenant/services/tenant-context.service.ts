@@ -20,6 +20,23 @@ export class TenantContextService {
 
     assertTrustedTenantSchemaName(user.schemaName);
 
+    if (user.tenantStatus && user.tenantStatus !== TenantStatus.ACTIVE) {
+      throw new ForbiddenException('Tenant access is not available');
+    }
+
+    if (user.tenantName && user.tenantCode && user.tenantStatus) {
+      return {
+        tenantId: user.tenantId,
+        schemaName: user.schemaName,
+        tenantCode: user.tenantCode,
+        tenantName: user.tenantName,
+        status: user.tenantStatus as TenantStatus,
+        userId: user.id,
+        userEmail: user.email,
+        userRoles: user.roles,
+      };
+    }
+
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: user.tenantId },
       select: {

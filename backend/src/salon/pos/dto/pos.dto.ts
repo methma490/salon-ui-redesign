@@ -8,6 +8,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+import { PaginationQueryDto } from '../../../common/dto/pagination.dto';
 
 export class PosServiceItemDto {
   @IsUUID()
@@ -78,7 +79,7 @@ export class CreateSaleDto {
   payments!: PosPaymentDto[];
 }
 
-export class ListSalesQueryDto {
+export class ListSalesQueryDto extends PaginationQueryDto {
   @IsOptional()
   startDate?: string;
 

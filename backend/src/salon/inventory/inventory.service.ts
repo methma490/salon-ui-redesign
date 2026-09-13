@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { buildPaginatedResponse, resolvePagination } from '../../common/dto/pagination.dto';
 import { TenantSchemaService } from '../../tenant/services/tenant-schema.service';
 import { tenantTable } from '../../tenant/utils/schema-name.util';
 import { logAudit } from '../utils/audit.util';
@@ -22,6 +23,22 @@ import {
 @Injectable()
 export class InventoryService {
   constructor(private readonly tenantSchemaService: TenantSchemaService) {}
+
+  /** Tenant enums live in each schema; unqualified casts resolve to public and fail. */
+  private stockMovementTypeCast(schemaName: string, paramIndex: number): string {
+    return `$${paramIndex}::text::"${schemaName}".stock_movement_type`;
+  }
+
+  /** Map extended labels to base enum values present on all tenant schemas. */
+  private resolveStockMovementType(movementType: string): string {
+    const legacyMap: Record<string, string> = {
+      STOCK_IN: 'IN',
+      SALE: 'OUT',
+      DAMAGE: 'OUT',
+      TRANSFER: 'ADJUSTMENT',
+    };
+    return legacyMap[movementType] ?? movementType;
+  }
 
   // --- Product Categories ---
 
@@ -272,6 +289,7 @@ export class InventoryService {
     const movements = tenantTable(schemaName, 'stock_movements');
     const products = tenantTable(schemaName, 'products');
     const branches = tenantTable(schemaName, 'branches');
+    const { page, limit, offset } = resolvePagination(query.page, query.limit);
 
     const conditions: string[] = ['1=1'];
     const params: unknown[] = [];
@@ -286,21 +304,36 @@ export class InventoryService {
       params.push(query.productId);
     }
 
-    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) =>
-      tx.$queryRawUnsafe(
+    const whereClause = conditions.join(' AND ');
+    const fromClause = `
+         FROM ${movements} sm
+         INNER JOIN ${products} p ON sm.product_id = p.id
+         INNER JOIN ${branches} b ON sm.branch_id = b.id
+         WHERE ${whereClause}`;
+
+    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      const countRows = await tx.$queryRawUnsafe<Array<{ count: bigint }>>(
+        `SELECT COUNT(*)::bigint AS count ${fromClause}`,
+        ...params,
+      );
+      const total = Number(countRows[0]?.count ?? 0);
+
+      const data = await tx.$queryRawUnsafe(
         `SELECT sm.id, sm.branch_id AS "branchId", b.name AS "branchName",
                 sm.product_id AS "productId", p.name AS "productName",
                 sm.type::text AS type, sm.quantity, sm.notes,
                 sm.reference_type AS "referenceType", sm.reference_id AS "referenceId",
                 sm.created_by AS "createdBy", sm.created_at AS "createdAt"
-         FROM ${movements} sm
-         INNER JOIN ${products} p ON sm.product_id = p.id
-         INNER JOIN ${branches} b ON sm.branch_id = b.id
-         WHERE ${conditions.join(' AND ')}
-         ORDER BY sm.created_at DESC`,
+         ${fromClause}
+         ORDER BY sm.created_at DESC
+         LIMIT $${idx} OFFSET $${idx + 1}`,
         ...params,
-      ),
-    );
+        limit,
+        offset,
+      );
+
+      return buildPaginatedResponse(data as unknown[], total, page, limit);
+    });
   }
 
   /** Used by POS to reduce stock - must run inside existing transaction */
@@ -397,7 +430,7 @@ export class InventoryService {
 
     if (existing.length > 0) {
       await tx.$queryRawUnsafe(
-        `UPDATE ${stock} SET quantity = $2, updated_at = NOW() WHERE id = $1::uuid`,
+        `UPDATE ${stock} SET quantity = $2::numeric, updated_at = NOW() WHERE id = $1::uuid`,
         existing[0].id,
         newQty,
       );
@@ -406,21 +439,24 @@ export class InventoryService {
         throw new BadRequestException('Insufficient stock');
       }
       await tx.$queryRawUnsafe(
-        `INSERT INTO ${stock} (branch_id, product_id, quantity) VALUES ($1::uuid, $2::uuid, $3)`,
+        `INSERT INTO ${stock} (branch_id, product_id, quantity) VALUES ($1::uuid, $2::uuid, $3::numeric)`,
         data.branchId,
         data.productId,
         newQty,
       );
     }
 
+    const dbMovementType = this.resolveStockMovementType(data.movementType);
+    const typeCast = this.stockMovementTypeCast(schemaName, 3);
+
     const movementRows = await tx.$queryRawUnsafe<Array<{ id: string }>>(
       `INSERT INTO ${movements}
          (branch_id, product_id, type, quantity, notes, reference_type, reference_id, created_by)
-       VALUES ($1::uuid, $2::uuid, $3::stock_movement_type, $4, $5, $6, $7::uuid, $8::uuid)
+       VALUES ($1::uuid, $2::uuid, ${typeCast}, $4::numeric, $5, $6, $7::uuid, $8::uuid)
        RETURNING id`,
       data.branchId,
       data.productId,
-      data.movementType,
+      dbMovementType,
       Math.abs(data.quantityChange),
       data.notes ?? null,
       data.referenceType ?? null,

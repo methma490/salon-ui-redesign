@@ -99,6 +99,13 @@ export class TenantProvisioningService {
   }
 
   /**
+   * Drop tenant schema (cleanup abandoned / failed signups)
+   */
+  async cleanupTenantSchema(schemaName: string): Promise<void> {
+    await this.dropSchema(schemaName);
+  }
+
+  /**
    * Drop a schema (used for cleanup on failure)
    */
   private async dropSchema(schemaName: string): Promise<void> {
@@ -123,7 +130,7 @@ export class TenantProvisioningService {
       const sql = fs.readFileSync(path.join(this.migrationsPath, file), 'utf-8');
 
       // Set search_path
-      await this.prisma.$executeRawUnsafe(`SET search_path TO "${schemaName}"`);
+      await this.prisma.$executeRawUnsafe(`SET search_path TO "${schemaName}", public`);
 
       // Split SQL into statements, handling dollar-quoted strings
       const statements = this.splitSqlStatements(sql);
@@ -231,6 +238,10 @@ export class TenantProvisioningService {
       { code: 'SALE_VIEW', name: 'View Sales' },
       { code: 'SALE_CREATE', name: 'Create Sales' },
       { code: 'SALE_UPDATE', name: 'Update Sales' },
+      { code: 'APPOINTMENT_VIEW', name: 'View Appointments' },
+      { code: 'APPOINTMENT_CREATE', name: 'Create Appointments' },
+      { code: 'APPOINTMENT_UPDATE', name: 'Update Appointments' },
+      { code: 'APPOINTMENT_DELETE', name: 'Cancel Appointments' },
     ];
 
     await this.prisma.$executeRawUnsafe(`SET search_path TO "${schemaName}"`);
@@ -238,7 +249,7 @@ export class TenantProvisioningService {
     // Insert roles
     for (const role of roles) {
       await this.prisma.$executeRawUnsafe(
-        `INSERT INTO roles (code, name, description) VALUES ($1, $2, $3)`,
+        `INSERT INTO roles (code, name, description, is_system) VALUES ($1, $2, $3, true)`,
         role.code,
         role.name,
         role.description,
@@ -270,7 +281,8 @@ export class TenantProvisioningService {
       FROM roles r
       INNER JOIN permissions p ON p.code IN (
         'BRANCH_VIEW', 'CUSTOMER_VIEW', 'CUSTOMER_CREATE',
-        'SERVICE_VIEW', 'PRODUCT_VIEW', 'SALE_VIEW', 'SALE_CREATE', 'EMPLOYEE_VIEW'
+        'SERVICE_VIEW', 'PRODUCT_VIEW', 'SALE_VIEW', 'SALE_CREATE', 'EMPLOYEE_VIEW',
+        'APPOINTMENT_VIEW', 'APPOINTMENT_CREATE', 'APPOINTMENT_UPDATE'
       )
       WHERE r.code = 'CASHIER'
     `);

@@ -1,16 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-import { tenantApi } from '@/api/tenant.api';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import { useMemo, useState } from 'react';
+import { tenantApi, type Service } from '@/api/tenant.api';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -21,54 +11,173 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+  FormError,
+  FormSubmit,
+  FormTextarea,
+  getErrorMessage,
+  OpsEditButton,
+  OpsError,
+  OpsLoading,
+  OpsPageHeader,
+  OpsStatusBadge,
+  OpsToggleStatusButton,
+  SimpleForm,
+  SimpleFormDialog,
+} from './salon-ops-ui';
+
+type ServiceForm = {
+  categoryId: string;
+  name: string;
+  description: string;
+  price: string;
+  durationMinutes: string;
+};
+
+const emptyForm: ServiceForm = {
+  categoryId: '',
+  name: '',
+  description: '',
+  price: '',
+  durationMinutes: '',
+};
 
 function formatMoney(value: number) {
   return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function toServicePayload(form: ServiceForm) {
+  const payload: Record<string, unknown> = {
+    categoryId: form.categoryId,
+    name: form.name.trim(),
+    price: Number(form.price),
+  };
+  const desc = form.description.trim();
+  if (desc) payload.description = desc;
+  if (form.durationMinutes.trim()) payload.durationMinutes = Number(form.durationMinutes);
+  return payload;
+}
+
+function ServiceFormFields({
+  form,
+  setForm,
+  categories,
+}: {
+  form: ServiceForm;
+  setForm: (f: ServiceForm) => void;
+  categories: Array<{ id: string; name: string }>;
+}) {
+  return (
+    <>
+      <div className="space-y-2">
+        <Label>Category</Label>
+        <Select value={form.categoryId} onValueChange={(v) => setForm({ ...form, categoryId: v })}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select category" />
+          </SelectTrigger>
+          <SelectContent>
+            {categories.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="svc-name">Service name</Label>
+        <Input
+          id="svc-name"
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          placeholder="Service display name"
+          required
+        />
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="svc-price">Price (LKR)</Label>
+          <Input
+            id="svc-price"
+            type="number"
+            min="0"
+            step="0.01"
+            value={form.price}
+            onChange={(e) => setForm({ ...form, price: e.target.value })}
+            placeholder="0.00"
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="svc-duration">Duration (min)</Label>
+          <Input
+            id="svc-duration"
+            type="number"
+            min="1"
+            value={form.durationMinutes}
+            onChange={(e) => setForm({ ...form, durationMinutes: e.target.value })}
+            placeholder="Optional"
+          />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="svc-desc">Description</Label>
+        <FormTextarea
+          id="svc-desc"
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          placeholder="Optional"
+          rows={3}
+        />
+      </div>
+    </>
+  );
+}
+
 export default function ServicesPage() {
   const qc = useQueryClient();
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editService, setEditService] = useState<Service | null>(null);
+  const [form, setForm] = useState<ServiceForm>(emptyForm);
+  const [editForm, setEditForm] = useState<ServiceForm>(emptyForm);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const { data: categories = [] } = useQuery({
     queryKey: ['service-categories'],
     queryFn: tenantApi.serviceCategories.list,
   });
 
-  const { data: services = [], isLoading } = useQuery({
+  const {
+    data: services = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ['services', categoryFilter],
     queryFn: () => tenantApi.services.list(categoryFilter === 'all' ? undefined : categoryFilter),
   });
 
-  const [form, setForm] = useState({
-    categoryId: '',
-    name: '',
-    description: '',
-    price: '',
-    durationMinutes: '',
-  });
-  const [editId, setEditId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({
-    categoryId: '',
-    name: '',
-    description: '',
-    price: '',
-    durationMinutes: '',
-  });
+  const stats = useMemo(
+    () => ({
+      total: services.length,
+      active: services.filter((s) => s.status === 'ACTIVE').length,
+      inactive: services.filter((s) => s.status !== 'ACTIVE').length,
+    }),
+    [services],
+  );
+
+  const defaultCategoryId = categories[0]?.id ?? '';
 
   const createMutation = useMutation({
     mutationFn: tenantApi.services.create,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['services'] });
-      setForm({ categoryId: '', name: '', description: '', price: '', durationMinutes: '' });
+      setForm(emptyForm);
+      setFormError(null);
+      setCreateOpen(false);
     },
+    onError: (err) => setFormError(getErrorMessage(err)),
   });
 
   const updateMutation = useMutation({
@@ -76,8 +185,10 @@ export default function ServicesPage() {
       tenantApi.services.update(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['services'] });
-      setEditId(null);
+      setEditService(null);
+      setFormError(null);
     },
+    onError: (err) => setFormError(getErrorMessage(err)),
   });
 
   const statusMutation = useMutation({
@@ -86,245 +197,237 @@ export default function ServicesPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['services'] }),
   });
 
-  if (isLoading) return <p>Loading services...</p>;
+  const openEdit = (svc: Service) => {
+    setFormError(null);
+    setEditService(svc);
+    setEditForm({
+      categoryId: svc.categoryId || '',
+      name: svc.name,
+      description: svc.description || '',
+      price: String(svc.price),
+      durationMinutes: svc.durationMinutes ? String(svc.durationMinutes) : '',
+    });
+  };
+
+  const validateServiceForm = (payload: ServiceForm) => {
+    if (!payload.categoryId) return 'Please select a category.';
+    if (!payload.name.trim()) return 'Service name is required.';
+    if (!payload.price.trim() || Number(payload.price) < 0) return 'Enter a valid price.';
+    return null;
+  };
+
+  if (isLoading) return <OpsLoading />;
+  if (isError) return <OpsError message={getErrorMessage(error)} onRetry={() => void refetch()} />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Services</h1>
-          <p className="text-muted-foreground">Manage salon services and pricing</p>
+    <div className="emp-page">
+      <OpsPageHeader
+        title="Services"
+        subtitle="Manage salon services, pricing, and duration"
+        action={
+          <button
+            type="button"
+            className="emp-btn emp-btn-primary"
+            disabled={!categories.length}
+            onClick={() => {
+              setFormError(null);
+              setForm({ ...emptyForm, categoryId: defaultCategoryId });
+              setCreateOpen(true);
+            }}
+          >
+            + Add Service
+          </button>
+        }
+      />
+
+      {!categories.length && (
+        <div className="emp-error-box" style={{ marginBottom: '1rem' }}>
+          Create at least one service category before adding services.
         </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>Add Service</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create Service</DialogTitle>
-            </DialogHeader>
-            <form
-              className="space-y-3"
-              onSubmit={(e) => {
-                e.preventDefault();
-                createMutation.mutate({
-                  categoryId: form.categoryId,
-                  name: form.name,
-                  description: form.description || undefined,
-                  price: Number(form.price),
-                  durationMinutes: form.durationMinutes ? Number(form.durationMinutes) : undefined,
-                });
-              }}
-            >
-              <div>
-                <Label>Category</Label>
-                <Select
-                  value={form.categoryId}
-                  onValueChange={(v) => setForm({ ...form, categoryId: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Name</Label>
-                <Input
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label>Price</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.price}
-                  onChange={(e) => setForm({ ...form, price: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label>Duration (minutes)</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={form.durationMinutes}
-                  onChange={(e) => setForm({ ...form, durationMinutes: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Description</Label>
-                <Input
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                />
-              </div>
-              <Button type="submit" disabled={createMutation.isPending || !form.categoryId}>
-                Create
-              </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+      )}
+
+      <div className="emp-stats">
+        <div className="emp-stat">
+          <div className="emp-stat-value">{stats.total}</div>
+          <div className="emp-stat-label">Total</div>
+        </div>
+        <div className="emp-stat">
+          <div className="emp-stat-value">{stats.active}</div>
+          <div className="emp-stat-label">Active</div>
+        </div>
+        <div className="emp-stat">
+          <div className="emp-stat-value">{stats.inactive}</div>
+          <div className="emp-stat-label">Inactive</div>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>All Services</CardTitle>
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {categories.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Duration</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+      <div className="emp-toolbar">
+        <div className="emp-toolbar-filters">
+          <select
+            className="emp-select"
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+          >
+            <option value="all">All categories</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <span style={{ fontSize: '0.8125rem', color: 'var(--emp-muted)' }}>
+          {services.length} service{services.length === 1 ? '' : 's'}
+        </span>
+      </div>
+
+      <div className="emp-panel">
+        {services.length === 0 ? (
+          <div className="emp-empty">No services found. Add your first service to get started.</div>
+        ) : (
+          <>
+            <div className="emp-cards">
               {services.map((svc) => (
-                <TableRow key={svc.id}>
-                  <TableCell>{svc.code}</TableCell>
-                  <TableCell>{svc.name}</TableCell>
-                  <TableCell>{svc.categoryName || '-'}</TableCell>
-                  <TableCell>{formatMoney(svc.price)}</TableCell>
-                  <TableCell>{svc.durationMinutes ? `${svc.durationMinutes} min` : '-'}</TableCell>
-                  <TableCell>
-                    <Badge variant={svc.status === 'ACTIVE' ? 'default' : 'secondary'}>
-                      {svc.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="space-x-2">
-                    <Dialog
-                      open={editId === svc.id}
-                      onOpenChange={(open) => {
-                        if (open) {
-                          setEditId(svc.id);
-                          setEditForm({
-                            categoryId: svc.categoryId || '',
-                            name: svc.name,
-                            description: svc.description || '',
-                            price: String(svc.price),
-                            durationMinutes: svc.durationMinutes ? String(svc.durationMinutes) : '',
-                          });
-                        } else {
-                          setEditId(null);
-                        }
-                      }}
-                    >
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          Edit
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Edit Service</DialogTitle>
-                        </DialogHeader>
-                        <form
-                          className="space-y-3"
-                          onSubmit={(e) => {
-                            e.preventDefault();
-                            updateMutation.mutate({
-                              id: svc.id,
-                              data: {
-                                categoryId: editForm.categoryId,
-                                name: editForm.name,
-                                description: editForm.description || undefined,
-                                price: Number(editForm.price),
-                                durationMinutes: editForm.durationMinutes
-                                  ? Number(editForm.durationMinutes)
-                                  : undefined,
-                              },
-                            });
-                          }}
-                        >
-                          <div>
-                            <Label>Category</Label>
-                            <Select
-                              value={editForm.categoryId}
-                              onValueChange={(v) => setEditForm({ ...editForm, categoryId: v })}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {categories.map((c) => (
-                                  <SelectItem key={c.id} value={c.id}>
-                                    {c.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <Label>Name</Label>
-                            <Input
-                              value={editForm.name}
-                              onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                            />
-                          </div>
-                          <div>
-                            <Label>Price</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={editForm.price}
-                              onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
-                            />
-                          </div>
-                          <Button type="submit" disabled={updateMutation.isPending}>
-                            Save
-                          </Button>
-                        </form>
-                      </DialogContent>
-                    </Dialog>
-                    <Button
-                      variant="outline"
-                      size="sm"
+                <article key={svc.id} className="emp-card">
+                  <div className="emp-card-top">
+                    <div>
+                      <div className="emp-name-cell">{svc.name}</div>
+                      <div className="emp-code">{svc.code}</div>
+                    </div>
+                    <OpsStatusBadge status={svc.status} />
+                  </div>
+                  <div className="emp-card-meta">
+                    <span>
+                      <strong>Category:</strong> {svc.categoryName || '—'}
+                    </span>
+                    <span>
+                      <strong>Price (LKR):</strong>{' '}
+                      <span className="emp-price">{formatMoney(svc.price)}</span>
+                    </span>
+                    <span>
+                      <strong>Duration:</strong>{' '}
+                      {svc.durationMinutes ? `${svc.durationMinutes} min` : '—'}
+                    </span>
+                  </div>
+                  <div className="emp-card-actions">
+                    <OpsEditButton onClick={() => openEdit(svc)} />
+                    <OpsToggleStatusButton
+                      isActive={svc.status === 'ACTIVE'}
                       onClick={() =>
                         statusMutation.mutate({
                           id: svc.id,
                           status: svc.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE',
                         })
                       }
-                    >
-                      {svc.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
-                    </Button>
-                  </TableCell>
-                </TableRow>
+                    />
+                  </div>
+                </article>
               ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            </div>
+
+            <div className="emp-table-wrap">
+              <table className="emp-table">
+                <thead>
+                  <tr>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Price (LKR)</th>
+                    <th>Duration</th>
+                    <th>Status</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {services.map((svc) => (
+                    <tr key={svc.id}>
+                      <td className="emp-code">{svc.code}</td>
+                      <td className="emp-name-cell">{svc.name}</td>
+                      <td>{svc.categoryName || '—'}</td>
+                      <td className="emp-price">{formatMoney(svc.price)}</td>
+                      <td>{svc.durationMinutes ? `${svc.durationMinutes} min` : '—'}</td>
+                      <td>
+                        <OpsStatusBadge status={svc.status} />
+                      </td>
+                      <td>
+                        <div className="emp-actions">
+                          <OpsEditButton onClick={() => openEdit(svc)} />
+                          <OpsToggleStatusButton
+                            isActive={svc.status === 'ACTIVE'}
+                            onClick={() =>
+                              statusMutation.mutate({
+                                id: svc.id,
+                                status: svc.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE',
+                              })
+                            }
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </div>
+
+      <SimpleFormDialog
+        open={createOpen}
+        onOpenChange={(open) => {
+          if (!open) setFormError(null);
+          setCreateOpen(open);
+        }}
+        title="Create Service"
+      >
+        <SimpleForm
+          onSubmit={(e) => {
+            e.preventDefault();
+            setFormError(null);
+            const validationError = validateServiceForm(form);
+            if (validationError) {
+              setFormError(validationError);
+              return;
+            }
+            createMutation.mutate(toServicePayload(form));
+          }}
+        >
+          <FormError message={formError} />
+          <ServiceFormFields form={form} setForm={setForm} categories={categories} />
+          <FormSubmit pending={createMutation.isPending} disabled={!form.categoryId}>
+            Create Service
+          </FormSubmit>
+        </SimpleForm>
+      </SimpleFormDialog>
+
+      <SimpleFormDialog
+        open={editService !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditService(null);
+            setFormError(null);
+          }
+        }}
+        title="Edit Service"
+      >
+        <SimpleForm
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!editService) return;
+            setFormError(null);
+            const validationError = validateServiceForm(editForm);
+            if (validationError) {
+              setFormError(validationError);
+              return;
+            }
+            updateMutation.mutate({ id: editService.id, data: toServicePayload(editForm) });
+          }}
+        >
+          <FormError message={formError} />
+          <ServiceFormFields form={editForm} setForm={setEditForm} categories={categories} />
+          <FormSubmit pending={updateMutation.isPending}>Save Changes</FormSubmit>
+        </SimpleForm>
+      </SimpleFormDialog>
     </div>
   );
 }

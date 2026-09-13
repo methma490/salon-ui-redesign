@@ -1,10 +1,15 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { CacheTTL } from '@nestjs/cache-manager';
+import { Controller, Get, Query, UseGuards, UseInterceptors } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentTenant } from '../../tenant/decorators/current-tenant.decorator';
+import { RequireFeature } from '../../tenant/decorators/require-feature.decorator';
 import { RequirePermission } from '../../tenant/decorators/require-permission.decorator';
+import { FeatureGuard } from '../../tenant/guards/feature.guard';
 import { PermissionGuard } from '../../tenant/guards/permission.guard';
 import { TenantContextGuard } from '../../tenant/guards/tenant-context.guard';
 import { TenantContext } from '../../tenant/interfaces/tenant-context.interface';
+import { DashboardCacheInterceptor } from './dashboard-cache.interceptor';
+import { SalonDashboardQueryDto } from './dto/dashboard-query.dto';
 import { DashboardService } from './dashboard.service';
 
 @Controller('tenant/dashboard')
@@ -13,14 +18,21 @@ export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get()
+  @UseInterceptors(DashboardCacheInterceptor)
+  @CacheTTL(300_000)
   @RequirePermission('SALE_VIEW')
-  getDashboard(@CurrentTenant() tenant: TenantContext, @Query('branchId') branchId?: string) {
-    return this.dashboardService.getDashboard(tenant.schemaName, branchId);
+  getDashboard(@CurrentTenant() tenant: TenantContext, @Query() query: SalonDashboardQueryDto) {
+    return this.dashboardService.getDashboard(
+      tenant.schemaName,
+      query.branchId,
+      query.period ?? 'today',
+    );
   }
 }
 
 @Controller('tenant/reports')
-@UseGuards(JwtAuthGuard, TenantContextGuard, PermissionGuard)
+@UseGuards(JwtAuthGuard, TenantContextGuard, FeatureGuard, PermissionGuard)
+@RequireFeature('REPORTS')
 export class ReportsController {
   constructor(private readonly dashboardService: DashboardService) {}
 
