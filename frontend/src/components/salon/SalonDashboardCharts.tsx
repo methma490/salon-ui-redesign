@@ -15,10 +15,34 @@ import {
   YAxis,
 } from 'recharts';
 
-const GREEN = '#0d5c3d';
-const GREEN_LIGHT = '#10b981';
-const PIE_COLORS = ['#0d5c3d', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0', '#d1fae5'];
+function brandPrimary(): string {
+  if (typeof window === 'undefined') return '#0d5c3d';
+  const fromCss = getComputedStyle(document.documentElement)
+    .getPropertyValue('--brand-primary')
+    .trim();
+  const fromRoot = getComputedStyle(
+    document.querySelector('.salon-theme-root') ?? document.documentElement,
+  )
+    .getPropertyValue('--brand-primary')
+    .trim();
+  return fromRoot || fromCss || '#0d5c3d';
+}
 
+function pieColors(primary: string) {
+  const soft = (hex: string, mixWhite: number) => {
+    // mixWhite 0..1 toward white for secondary slices
+    const h = hex.replace('#', '');
+    const r = parseInt(h.slice(0, 2), 16);
+    const g = parseInt(h.slice(2, 4), 16);
+    const b = parseInt(h.slice(4, 6), 16);
+    const m = (c: number) =>
+      Math.round(c + (255 - c) * mixWhite)
+        .toString(16)
+        .padStart(2, '0');
+    return `#${m(r)}${m(g)}${m(b)}`;
+  };
+  return [primary, soft(primary, 0.25), soft(primary, 0.4), soft(primary, 0.55), soft(primary, 0.7), soft(primary, 0.85)];
+}
 const tooltipStyle = {
   background: '#fff',
   border: '1px solid #e2e8f0',
@@ -31,20 +55,21 @@ export function SalesTrendChart({
 }: {
   data: Array<{ name: string; revenue: number; sales: number }>;
 }) {
+  const primary = brandPrimary();
   return (
     <ResponsiveContainer width="100%" height={260}>
       <AreaChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="salonSalesGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={GREEN} stopOpacity={0.35} />
-            <stop offset="95%" stopColor={GREEN} stopOpacity={0} />
+            <stop offset="5%" stopColor={primary} stopOpacity={0.35} />
+            <stop offset="95%" stopColor={primary} stopOpacity={0} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
         <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} />
         <YAxis tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} width={48} tickFormatter={(v) => `${(Number(v) / 1000).toFixed(0)}k`} />
         <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`LKR ${Number(v).toLocaleString()}`, 'Revenue']} />
-        <Area type="monotone" dataKey="revenue" stroke={GREEN} strokeWidth={2} fill="url(#salonSalesGrad)" />
+        <Area type="monotone" dataKey="revenue" stroke={primary} strokeWidth={2} fill="url(#salonSalesGrad)" />
       </AreaChart>
     </ResponsiveContainer>
   );
@@ -56,13 +81,14 @@ export function ServiceDonutChart({
   data: Array<{ name: string; value: number }>;
 }) {
   const total = data.reduce((s, d) => s + d.value, 0);
+  const colors = pieColors(brandPrimary());
   return (
     <div className="salon-donut-center">
       <ResponsiveContainer width="100%" height={260}>
         <PieChart>
           <Pie data={data} cx="50%" cy="50%" innerRadius={58} outerRadius={86} paddingAngle={3} dataKey="value" nameKey="name">
             {data.map((_, i) => (
-              <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+              <Cell key={i} fill={colors[i % colors.length]} />
             ))}
           </Pie>
           <Tooltip contentStyle={tooltipStyle} formatter={(v, name) => [`LKR ${Number(v).toLocaleString()} (${total ? ((Number(v) / total) * 100).toFixed(0) : 0}%)`, name]} />
@@ -83,6 +109,7 @@ export function TopServicesBarChart({
 }: {
   data: Array<{ name: string; bookings: number }>;
 }) {
+  const primary = brandPrimary();
   return (
     <ResponsiveContainer width="100%" height={260}>
       <BarChart data={data} layout="vertical" margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
@@ -90,7 +117,7 @@ export function TopServicesBarChart({
         <XAxis type="number" tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} />
         <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} width={100} />
         <Tooltip contentStyle={tooltipStyle} formatter={(v) => [Number(v), 'Bookings']} />
-        <Bar dataKey="bookings" radius={[0, 4, 4, 0]} barSize={18} fill={GREEN} />
+        <Bar dataKey="bookings" radius={[0, 4, 4, 0]} barSize={18} fill={primary} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -101,6 +128,7 @@ export function EmployeePerformanceChart({
 }: {
   data: Array<{ name: string; revenue: number; services: number }>;
 }) {
+  const primary = brandPrimary();
   return (
     <ResponsiveContainer width="100%" height={260}>
       <BarChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
@@ -108,8 +136,8 @@ export function EmployeePerformanceChart({
         <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} />
         <YAxis tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} width={48} tickFormatter={(v) => `${(Number(v) / 1000).toFixed(0)}k`} />
         <Tooltip contentStyle={tooltipStyle} formatter={(v, name) => [name === 'revenue' ? `LKR ${Number(v).toLocaleString()}` : Number(v), name === 'revenue' ? 'Revenue' : 'Services']} />
-        <Bar dataKey="revenue" fill={GREEN} radius={[4, 4, 0, 0]} barSize={28} />
-        <Bar dataKey="services" fill={GREEN_LIGHT} radius={[4, 4, 0, 0]} barSize={28} />
+        <Bar dataKey="revenue" fill={primary} radius={[4, 4, 0, 0]} barSize={28} />
+        <Bar dataKey="services" fill={pieColors(primary)[2]} radius={[4, 4, 0, 0]} barSize={28} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -120,6 +148,7 @@ export function AppointmentStackedChart({
 }: {
   data: Array<{ name: string; completed: number; pending: number; cancelled: number }>;
 }) {
+  const primary = brandPrimary();
   return (
     <ResponsiveContainer width="100%" height={260}>
       <BarChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
@@ -127,7 +156,7 @@ export function AppointmentStackedChart({
         <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} />
         <YAxis tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} width={32} />
         <Tooltip contentStyle={tooltipStyle} />
-        <Bar dataKey="completed" stackId="a" fill={GREEN} />
+        <Bar dataKey="completed" stackId="a" fill={primary} />
         <Bar dataKey="pending" stackId="a" fill="#f59e0b" />
         <Bar dataKey="cancelled" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
       </BarChart>
@@ -160,6 +189,7 @@ export function CustomerGrowthChart({
 }: {
   data: Array<{ name: string; count: number }>;
 }) {
+  const primary = brandPrimary();
   return (
     <ResponsiveContainer width="100%" height={220}>
       <LineChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
@@ -167,7 +197,7 @@ export function CustomerGrowthChart({
         <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} />
         <YAxis tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} width={32} />
         <Tooltip contentStyle={tooltipStyle} formatter={(v) => [Number(v), 'New customers']} />
-        <Line type="monotone" dataKey="count" stroke={GREEN} strokeWidth={2} dot={{ r: 3, fill: GREEN }} />
+        <Line type="monotone" dataKey="count" stroke={primary} strokeWidth={2} dot={{ r: 3, fill: primary }} />
       </LineChart>
     </ResponsiveContainer>
   );

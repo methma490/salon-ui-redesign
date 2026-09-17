@@ -20,3 +20,21 @@ export function eligibleSaleStatusSql(alias = 's'): string {
 export function netSaleAmountSql(alias = 's'): string {
   return `GREATEST(0, ${alias}.total - COALESCE(${alias}.refunded_amount, 0))`;
 }
+
+/**
+ * Service line value for commission, scaled by sale-level partial refunds.
+ * Products are excluded by joining only item_type = 'service'.
+ */
+export function commissionableServiceLineSql(saleAlias = 's', itemAlias = 'si'): string {
+  return `CASE
+    WHEN COALESCE(${saleAlias}.total, 0) <= 0 THEN 0
+    ELSE ROUND(
+      (
+        ${itemAlias}.total
+        * GREATEST(0, ${saleAlias}.total - COALESCE(${saleAlias}.refunded_amount, 0))
+        / ${saleAlias}.total
+      )::numeric,
+      2
+    )
+  END`;
+}

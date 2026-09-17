@@ -17,7 +17,7 @@ const TEMPLATE_SEEDS: TemplateSeed[] = [
     code: 'TRIAL_EXPIRY_7D',
     type: NotificationType.TRIAL_EXPIRY_REMINDER,
     channel: NotificationChannel.EMAIL,
-    subject: 'Your Salon360 trial ends in 7 days',
+    subject: 'Your Dart Smart Salon trial ends in 7 days',
     bodyTemplate:
       'Hi {{customerName}},\n\nYour trial for {{planName}} at {{salonName}} ends on {{expiryDate}}.\n\nUpgrade now to keep your salon running without interruption.\n\n{{actionUrl}}',
   },
@@ -26,20 +26,20 @@ const TEMPLATE_SEEDS: TemplateSeed[] = [
     type: NotificationType.TRIAL_EXPIRY_REMINDER,
     channel: NotificationChannel.SMS,
     bodyTemplate:
-      'Salon360: {{salonName}} trial ends in 7 days ({{expiryDate}}). Upgrade: {{actionUrl}}',
+      'Dart Smart Salon: {{salonName}} trial ends in 7 days ({{expiryDate}}). Upgrade: {{actionUrl}}',
   },
   {
     code: 'TRIAL_EXPIRY_7D',
     type: NotificationType.TRIAL_EXPIRY_REMINDER,
     channel: NotificationChannel.IN_APP,
     bodyTemplate:
-      'Your {{planName}} trial ends in 7 days on {{expiryDate}}. Upgrade to continue using Salon360.',
+      'Your {{planName}} trial ends in 7 days on {{expiryDate}}. Upgrade to continue using Dart Smart Salon.',
   },
   {
     code: 'TRIAL_EXPIRY_1D',
     type: NotificationType.TRIAL_EXPIRY_REMINDER,
     channel: NotificationChannel.EMAIL,
-    subject: 'Your Salon360 trial ends tomorrow',
+    subject: 'Your Dart Smart Salon trial ends tomorrow',
     bodyTemplate:
       'Hi {{customerName}},\n\nYour trial for {{planName}} at {{salonName}} ends tomorrow ({{expiryDate}}).\n\nSubscribe today to avoid losing access.\n\n{{actionUrl}}',
   },
@@ -48,7 +48,7 @@ const TEMPLATE_SEEDS: TemplateSeed[] = [
     type: NotificationType.TRIAL_EXPIRY_REMINDER,
     channel: NotificationChannel.SMS,
     bodyTemplate:
-      'Salon360: {{salonName}} trial ends tomorrow. Subscribe: {{actionUrl}}',
+      'Dart Smart Salon: {{salonName}} trial ends tomorrow. Subscribe: {{actionUrl}}',
   },
   {
     code: 'TRIAL_EXPIRY_1D',
@@ -61,7 +61,7 @@ const TEMPLATE_SEEDS: TemplateSeed[] = [
     code: 'SUBSCRIPTION_EXPIRY_3D',
     type: NotificationType.SUBSCRIPTION_EXPIRY_REMINDER,
     channel: NotificationChannel.EMAIL,
-    subject: 'Your Salon360 subscription expires in 3 days',
+    subject: 'Your Dart Smart Salon subscription expires in 3 days',
     bodyTemplate:
       'Hi {{customerName}},\n\nYour {{planName}} subscription for {{salonName}} expires on {{expiryDate}}.\n\nRenew to maintain uninterrupted service.\n\n{{actionUrl}}',
   },
@@ -70,7 +70,7 @@ const TEMPLATE_SEEDS: TemplateSeed[] = [
     type: NotificationType.SUBSCRIPTION_EXPIRY_REMINDER,
     channel: NotificationChannel.SMS,
     bodyTemplate:
-      'Salon360: {{salonName}} subscription expires in 3 days. Renew: {{actionUrl}}',
+      'Dart Smart Salon: {{salonName}} subscription expires in 3 days. Renew: {{actionUrl}}',
   },
   {
     code: 'SUBSCRIPTION_EXPIRY_3D',
@@ -83,7 +83,7 @@ const TEMPLATE_SEEDS: TemplateSeed[] = [
     code: 'SUBSCRIPTION_EXPIRY_1D',
     type: NotificationType.SUBSCRIPTION_EXPIRY_REMINDER,
     channel: NotificationChannel.EMAIL,
-    subject: 'Your Salon360 subscription expires tomorrow',
+    subject: 'Your Dart Smart Salon subscription expires tomorrow',
     bodyTemplate:
       'Hi {{customerName}},\n\nYour {{planName}} subscription for {{salonName}} expires tomorrow ({{expiryDate}}).\n\n{{actionUrl}}',
   },
@@ -92,7 +92,7 @@ const TEMPLATE_SEEDS: TemplateSeed[] = [
     type: NotificationType.SUBSCRIPTION_EXPIRY_REMINDER,
     channel: NotificationChannel.SMS,
     bodyTemplate:
-      'Salon360: {{salonName}} subscription expires tomorrow. Renew: {{actionUrl}}',
+      'Dart Smart Salon: {{salonName}} subscription expires tomorrow. Renew: {{actionUrl}}',
   },
   {
     code: 'SUBSCRIPTION_EXPIRY_1D',
@@ -105,7 +105,7 @@ const TEMPLATE_SEEDS: TemplateSeed[] = [
     code: 'RENEWAL_REMINDER_7D',
     type: NotificationType.RENEWAL_REMINDER,
     channel: NotificationChannel.EMAIL,
-    subject: 'Upcoming renewal for your Salon360 subscription',
+    subject: 'Upcoming renewal for your Dart Smart Salon subscription',
     bodyTemplate:
       'Hi {{customerName}},\n\nYour {{planName}} plan for {{salonName}} renews on {{renewalDate}} for {{amount}} {{currency}}.\n\n{{actionUrl}}',
   },
@@ -114,7 +114,7 @@ const TEMPLATE_SEEDS: TemplateSeed[] = [
     type: NotificationType.RENEWAL_REMINDER,
     channel: NotificationChannel.SMS,
     bodyTemplate:
-      'Salon360: {{salonName}} renews on {{renewalDate}} ({{amount}} {{currency}}).',
+      'Dart Smart Salon: {{salonName}} renews on {{renewalDate}} ({{amount}} {{currency}}).',
   },
   {
     code: 'RENEWAL_REMINDER_7D',
@@ -127,7 +127,7 @@ const TEMPLATE_SEEDS: TemplateSeed[] = [
     code: 'PAYMENT_SUCCESS',
     type: NotificationType.PAYMENT_SUCCESS,
     channel: NotificationChannel.EMAIL,
-    subject: 'Payment received — Salon360',
+    subject: 'Payment received — Dart Smart Salon',
     bodyTemplate:
       'Hi {{customerName}},\n\nWe received your payment of {{amount}} {{currency}} for {{planName}} at {{salonName}}.\n\nReference: {{paymentReference}}\n\nThank you!',
   },
@@ -136,7 +136,7 @@ const TEMPLATE_SEEDS: TemplateSeed[] = [
     type: NotificationType.PAYMENT_SUCCESS,
     channel: NotificationChannel.SMS,
     bodyTemplate:
-      'Salon360: Payment of {{amount}} {{currency}} received for {{salonName}}. Ref: {{paymentReference}}',
+      'Dart Smart Salon: Payment of {{amount}} {{currency}} received for {{salonName}}. Ref: {{paymentReference}}',
   },
   {
     code: 'PAYMENT_SUCCESS',
@@ -149,7 +149,7 @@ const TEMPLATE_SEEDS: TemplateSeed[] = [
     code: 'PAYMENT_FAILED',
     type: NotificationType.PAYMENT_FAILED,
     channel: NotificationChannel.EMAIL,
-    subject: 'Payment failed — Salon360',
+    subject: 'Payment failed — Dart Smart Salon',
     bodyTemplate:
       'Hi {{customerName}},\n\nYour payment of {{amount}} {{currency}} for {{planName}} at {{salonName}} could not be processed.\n\nPlease try again: {{actionUrl}}',
   },
@@ -158,7 +158,7 @@ const TEMPLATE_SEEDS: TemplateSeed[] = [
     type: NotificationType.PAYMENT_FAILED,
     channel: NotificationChannel.SMS,
     bodyTemplate:
-      'Salon360: Payment failed for {{salonName}}. Retry: {{actionUrl}}',
+      'Dart Smart Salon: Payment failed for {{salonName}}. Retry: {{actionUrl}}',
   },
   {
     code: 'PAYMENT_FAILED',

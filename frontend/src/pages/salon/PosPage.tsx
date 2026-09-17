@@ -52,15 +52,6 @@ interface CartProduct {
   discount: number;
 }
 
-interface SaleAssignee {
-  employeeId: string;
-  employeeName: string;
-  designation: string | null;
-  branchName: string;
-  assignmentType: 'PRIMARY' | 'ASSISTANT';
-  allocationPercentage: number;
-}
-
 type PaymentMode = 'CASH' | 'CARD' | 'BANK_TRANSFER' | 'MIX';
 type PayMethod = 'CASH' | 'CARD' | 'BANK_TRANSFER';
 
@@ -161,8 +152,6 @@ export default function PosPage() {
 
   const [cartServices, setCartServices] = useState<CartService[]>([]);
   const [cartProducts, setCartProducts] = useState<CartProduct[]>([]);
-  const [saleAssignees, setSaleAssignees] = useState<SaleAssignee[]>([]);
-  const [assigneeSearch, setAssigneeSearch] = useState('');
   const [discountInput, setDiscountInput] = useState('');
   const [discountMode, setDiscountMode] = useState<DiscountMode>('amount');
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('CASH');
@@ -203,86 +192,31 @@ export default function PosPage() {
   const hasMultipleEmployees = employees.length > 1;
   const hasNoEmployees = employees.length === 0;
 
-  const employeeIdsKey = employees.map((e) => e.id).join(',');
-
-  useEffect(() => {
-    if (soleEmployee) {
-      setSaleAssignees([
-        {
-          employeeId: soleEmployee.id,
-          employeeName: soleEmployee.name,
-          designation: soleEmployee.designation,
-          branchName: soleEmployee.branchName,
-          assignmentType: 'PRIMARY',
-          allocationPercentage: 100,
-        },
-      ]);
-      return;
+  /** Distinct performers on cart services — used only for backend sale roster (not commission). */
+  const derivedSaleEmployees = useMemo(() => {
+    const ids: string[] = [];
+    for (const s of cartServices) {
+      if (s.employeeId && !ids.includes(s.employeeId)) ids.push(s.employeeId);
     }
-    setSaleAssignees((prev) =>
-      prev.filter((a) => employees.some((e) => e.id === a.employeeId)),
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- employeeIdsKey tracks roster changes
-  }, [branchId, soleEmployee?.id, employeeIdsKey]);
-
-  const applyEqualSplit = (list: SaleAssignee[]) => {
-    const pcts = equalSplitPercents(list.length);
-    return list.map((item, index) => ({
-      ...item,
+    const pcts = equalSplitPercents(ids.length);
+    return ids.map((employeeId, index) => ({
+      employeeId,
       assignmentType: (index === 0 ? 'PRIMARY' : 'ASSISTANT') as 'PRIMARY' | 'ASSISTANT',
       allocationPercentage: pcts[index] ?? 0,
     }));
-  };
+  }, [cartServices]);
 
-  const toggleSaleAssignee = (emp: (typeof employees)[number]) => {
-    setSaleAssignees((prev) => {
-      const exists = prev.some((a) => a.employeeId === emp.id);
-      if (exists) {
-        const next = prev.filter((a) => a.employeeId !== emp.id);
-        return applyEqualSplit(next);
-      }
-      return applyEqualSplit([
-        ...prev,
-        {
-          employeeId: emp.id,
-          employeeName: emp.name,
-          designation: emp.designation,
-          branchName: emp.branchName,
-          assignmentType: 'ASSISTANT',
-          allocationPercentage: 0,
-        },
-      ]);
-    });
-  };
-
-  const updateAssigneePct = (employeeId: string, value: string) => {
-    const pct = Number(value);
-    setSaleAssignees((prev) =>
-      prev.map((a) =>
-        a.employeeId === employeeId
-          ? { ...a, allocationPercentage: Number.isFinite(pct) ? pct : 0 }
-          : a,
+  const updateCartServiceEmployee = (cartKey: string, employeeId: string) => {
+    const emp = employees.find((e) => e.id === employeeId);
+    if (!emp) return;
+    setCartServices((prev) =>
+      prev.map((s) =>
+        s.key === cartKey
+          ? { ...s, employeeId: emp.id, employeeName: emp.name }
+          : s,
       ),
     );
   };
-
-  const allocationSum = Math.round(
-    saleAssignees.reduce((sum, a) => sum + a.allocationPercentage, 0) * 100,
-  ) / 100;
-  const allocationValid =
-    saleAssignees.length === 0 || Math.abs(allocationSum - 100) < 0.02;
-
-  const filteredAssigneeOptions = employees.filter((e) => {
-    if (saleAssignees.some((a) => a.employeeId === e.id)) return false;
-    const q = assigneeSearch.trim().toLowerCase();
-    if (!q) return true;
-    return (
-      e.name.toLowerCase().includes(q) ||
-      e.code.toLowerCase().includes(q) ||
-      (e.designation ?? '').toLowerCase().includes(q)
-    );
-  });
-
   const { data: services = [] } = useQuery({
     queryKey: ['services'],
     queryFn: () => tenantApi.services.list(),
@@ -544,12 +478,8 @@ export default function PosPage() {
       setFormError('Select a branch so your stylist profile can be loaded.');
       return;
     }
-    if ((cartServices.length > 0 || saleAssignees.length > 0) && saleAssignees.length === 0) {
-      setFormError('Assign at least one employee to this sale.');
-      return;
-    }
-    if (saleAssignees.length > 0 && !allocationValid) {
-      setFormError(`Employee allocation must total 100% (currently ${allocationSum}%).`);
+    if (cartServices.some((s) => !s.employeeId)) {
+      setFormError('Assign an employee to every service in the cart.');
       return;
     }
     if (!paymentBalanced) {
@@ -579,7 +509,7 @@ export default function PosPage() {
       customerId: customerId || undefined,
       services: cartServices.map((s) => ({
         serviceId: s.serviceId,
-        employeeId: s.employeeId || saleAssignees[0]?.employeeId || undefined,
+        employeeId: s.employeeId,
         discount: s.discount || undefined,
       })),
       products: cartProducts.map((p) => ({
@@ -587,11 +517,7 @@ export default function PosPage() {
         quantity: p.quantity,
         discount: p.discount || undefined,
       })),
-      employees: saleAssignees.map((a) => ({
-        employeeId: a.employeeId,
-        assignmentType: a.assignmentType,
-        allocationPercentage: a.allocationPercentage,
-      })),
+      employees: derivedSaleEmployees,
       discount: discount || undefined,
       payments,
     });
@@ -611,30 +537,36 @@ export default function PosPage() {
     cartCount === 0 ||
     !paymentBalanced ||
     (cartServices.length > 0 && hasNoEmployees) ||
-    (cartServices.length > 0 && saleAssignees.length === 0) ||
-    (saleAssignees.length > 0 && !allocationValid);
+    cartServices.some((s) => !s.employeeId);
 
   const cartRows = [
     ...cartServices.map((s, index) => ({
       key: s.key,
+      kind: 'service' as const,
       index: index + 1,
       icon: '✂️',
       name: s.serviceName,
-      sub: s.categoryName || `With ${s.employeeName}`,
+      sub: s.categoryName || 'Service',
+      employeeId: s.employeeId,
+      employeeName: s.employeeName,
       price: s.price,
       qty: 1,
       total: s.price,
       onRemove: () => setCartServices((prev) => prev.filter((x) => x.key !== s.key)),
-      onQtyChange: null as null,
+      onQtyChange: null as null | ((next: number) => void),
+      onEmployeeChange: (employeeId: string) => updateCartServiceEmployee(s.key, employeeId),
     })),
     ...cartProducts.flatMap((p, baseIndex) => {
       const index = cartServices.length + baseIndex + 1;
       return {
         key: p.key,
+        kind: 'product' as const,
         index,
         icon: '📦',
         name: p.productName,
         sub: p.categoryName || 'Product',
+        employeeId: '',
+        employeeName: '',
         price: p.price,
         qty: p.quantity,
         total: p.price * p.quantity,
@@ -648,6 +580,7 @@ export default function PosPage() {
             prev.map((x) => (x.key === p.key ? { ...x, quantity: next } : x)),
           );
         },
+        onEmployeeChange: null as null | ((employeeId: string) => void),
       };
     }),
   ];
@@ -673,6 +606,30 @@ export default function PosPage() {
               <Trash2 size={16} />
             </button>
           </div>
+          {row.kind === 'service' && row.onEmployeeChange && (
+            <div className="pos-cart-employee">
+              <label className="pos-cart-employee-label">Employee</label>
+              {hasNoEmployees ? (
+                <span className="pos-muted">No employees for this branch</span>
+              ) : employees.length === 1 ? (
+                <span className="pos-cart-employee-solo">{row.employeeName}</span>
+              ) : (
+                <Select value={row.employeeId} onValueChange={row.onEmployeeChange}>
+                  <SelectTrigger className="pos-cart-employee-select">
+                    <SelectValue placeholder="Select employee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {employees.map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {e.name}
+                        {e.designation ? ` · ${e.designation}` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          )}
           <div className="pos-mobile-cart-card-bottom">
             <span className="pos-mobile-cart-price">{formatMoney(row.price)}</span>
             {row.onQtyChange ? (
@@ -781,101 +738,6 @@ export default function PosPage() {
   const showCashFields =
     paymentMode === 'CASH' ||
     (paymentMode === 'MIX' && paymentLines.some((line) => line.method === 'CASH'));
-
-  const renderSaleEmployeesPanel = (className?: string) => (
-    <div className={`pos-panel pos-employees-panel ${className ?? ''}`.trim()}>
-      <div className="pos-panel-head">
-        <h2>Employees</h2>
-        <span className={allocationValid ? 'pos-alloc-ok' : 'pos-alloc-bad'}>
-          {saleAssignees.length === 0 ? 'None' : `${allocationSum}%`}
-        </span>
-      </div>
-      {hasNoEmployees ? (
-        <p className="pos-muted">No active employees for this branch.</p>
-      ) : (
-        <>
-          {saleAssignees.length > 0 && (
-            <div className="pos-assignee-list">
-              {saleAssignees.map((a) => (
-                <div key={a.employeeId} className="pos-assignee-row">
-                  <div className="pos-assignee-info">
-                    <strong>{a.employeeName}</strong>
-                    <span>
-                      {a.designation || 'Staff'} · {a.branchName}
-                    </span>
-                    <em>{a.assignmentType}</em>
-                  </div>
-                  <div className="pos-assignee-pct">
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="0.01"
-                      value={a.allocationPercentage}
-                      onChange={(e) => updateAssigneePct(a.employeeId, e.target.value)}
-                      aria-label={`${a.employeeName} allocation`}
-                    />
-                    <span>%</span>
-                    {!soloOwnerMode && (
-                      <button
-                        type="button"
-                        className="pos-cart-remove"
-                        aria-label={`Remove ${a.employeeName}`}
-                        onClick={() =>
-                          setSaleAssignees((prev) =>
-                            applyEqualSplit(prev.filter((x) => x.employeeId !== a.employeeId)),
-                          )
-                        }
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {saleAssignees.length > 1 && (
-                <button
-                  type="button"
-                  className="pos-add-split-btn"
-                  onClick={() => setSaleAssignees((prev) => applyEqualSplit(prev))}
-                >
-                  Equal split
-                </button>
-              )}
-            </div>
-          )}
-          {!soloOwnerMode && (
-            <div className="pos-assignee-picker">
-              <Input
-                placeholder="Search employee…"
-                value={assigneeSearch}
-                onChange={(e) => setAssigneeSearch(e.target.value)}
-              />
-              <div className="pos-assignee-options">
-                {filteredAssigneeOptions.length === 0 ? (
-                  <p className="pos-muted">No more employees to add.</p>
-                ) : (
-                  filteredAssigneeOptions.slice(0, 8).map((emp) => (
-                    <button
-                      key={emp.id}
-                      type="button"
-                      className="pos-assignee-option"
-                      onClick={() => toggleSaleAssignee(emp)}
-                    >
-                      <strong>{emp.name}</strong>
-                      <span>
-                        {emp.designation || 'Staff'} · {emp.branchName}
-                      </span>
-                    </button>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
 
   const renderPaymentPanel = (options?: { hideActions?: boolean; className?: string }) => (
     <div className={`pos-panel ${options?.className ?? ''}`.trim()}>
@@ -1219,33 +1081,6 @@ export default function PosPage() {
             ))}
           </div>
 
-          {pendingService && hasMultipleEmployees && (
-            <div className="pos-stylist-bar">
-              <span>
-                Stylist for <strong>{pendingService.name}</strong>
-              </span>
-              <div className="pos-employee-chips">
-                {employees.map((e) => (
-                  <button
-                    key={e.id}
-                    type="button"
-                    className="pos-employee-chip"
-                    onClick={() => addServiceToCart(pendingServiceId, e.id)}
-                  >
-                    {e.name}
-                  </button>
-                ))}
-              </div>
-              <button
-                type="button"
-                className="pos-stylist-cancel"
-                onClick={() => setPendingServiceId('')}
-              >
-                Cancel
-              </button>
-            </div>
-          )}
-
           {catalogTab === 'services' ? (
             <div className="pos-item-grid">
               {filteredServices.length === 0 ? (
@@ -1296,7 +1131,6 @@ export default function PosPage() {
 
         <aside className="pos-checkout-panel">
           {renderCartPanel('pos-checkout-cart')}
-          {renderSaleEmployeesPanel('pos-checkout-employees')}
           {renderPaymentPanel({ className: 'pos-checkout-pay' })}
         </aside>
       </div>
@@ -1352,7 +1186,6 @@ export default function PosPage() {
                 </div>
               </DialogHeader>
               <div className="pos-sheet-body">
-                {renderSaleEmployeesPanel('pos-panel-mobile-employees')}
                 {renderPaymentPanel({ hideActions: true, className: 'pos-panel-mobile-pay' })}
               </div>
               <div className="pos-sheet-footer">
@@ -1366,6 +1199,57 @@ export default function PosPage() {
                 </button>
               </div>
             </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!pendingService && hasMultipleEmployees}
+        onOpenChange={(open) => {
+          if (!open) setPendingServiceId('');
+        }}
+      >
+        <DialogContent className="pos-assign-dialog sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Assign employee</DialogTitle>
+          </DialogHeader>
+          {pendingService && (
+            <div className="pos-assign-body">
+              <div className="pos-assign-service">
+                <span className="pos-assign-service-icon">✂️</span>
+                <div>
+                  <div className="pos-assign-service-name">{pendingService.name}</div>
+                  <div className="pos-assign-service-price">
+                    {formatMoney(pendingService.price)}
+                    {pendingService.categoryName ? ` · ${pendingService.categoryName}` : ''}
+                  </div>
+                </div>
+              </div>
+              <p className="pos-assign-hint">Select who performed this service</p>
+              <div className="pos-assign-list">
+                {employees.map((e) => (
+                  <button
+                    key={e.id}
+                    type="button"
+                    className="pos-assign-option"
+                    onClick={() => addServiceToCart(pendingService.id, e.id)}
+                  >
+                    <span className="pos-assign-option-avatar">
+                      {e.name
+                        .split(' ')
+                        .map((p) => p[0])
+                        .join('')
+                        .slice(0, 2)
+                        .toUpperCase()}
+                    </span>
+                    <span className="pos-assign-option-text">
+                      <strong>{e.name}</strong>
+                      <span>{e.designation || e.code}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>

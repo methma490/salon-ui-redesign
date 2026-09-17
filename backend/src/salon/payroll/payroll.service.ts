@@ -118,6 +118,7 @@ export interface PayrollItemRecord {
   employerEpf: number;
   employerEtf: number;
   loanDeduction: number;
+  advanceDeduction: number;
   otherDeduction: number;
   totalDeductions: number;
   netSalary: number;
@@ -852,14 +853,14 @@ export class PayrollService {
              payroll_run_id, employee_id, basic_salary,
              commission_percentage, commission_base, commission_amount, bonus,
              gross_salary, employee_epf, employer_epf, employer_etf,
-             loan_deduction, other_deduction, total_deductions, net_salary,
+             loan_deduction, advance_deduction, other_deduction, total_deductions, net_salary,
              commission_invoice_count, commission_period_from, commission_period_to
            ) VALUES (
              $1::uuid, $2::uuid, $3::numeric,
              $4::numeric, $5::numeric, $6::numeric, $7::numeric,
              $8::numeric, $9::numeric, $10::numeric, $11::numeric,
-             $12::numeric, $13::numeric, $14::numeric, $15::numeric,
-             $16::int, $17::date, $18::date
+             $12::numeric, $13::numeric, $14::numeric, $15::numeric, $16::numeric,
+             $17::int, $18::date, $19::date
            )`,
           runId,
           employee.id,
@@ -873,6 +874,7 @@ export class PayrollService {
           calc.employerEpf,
           calc.employerEtf,
           calc.loanDeduction,
+          calc.advanceDeduction,
           calc.otherDeduction,
           calc.totalDeductions,
           calc.netSalary,
@@ -950,9 +952,10 @@ export class PayrollService {
              employer_epf = $8::numeric,
              employer_etf = $9::numeric,
              loan_deduction = $10::numeric,
-             other_deduction = $11::numeric,
-             total_deductions = $12::numeric,
-             net_salary = $13::numeric
+             advance_deduction = $11::numeric,
+             other_deduction = $12::numeric,
+             total_deductions = $13::numeric,
+             net_salary = $14::numeric
          WHERE id = $1::uuid`,
         itemId,
         calc.commissionPercentage,
@@ -964,6 +967,7 @@ export class PayrollService {
         calc.employerEpf,
         calc.employerEtf,
         calc.loanDeduction,
+        calc.advanceDeduction,
         calc.otherDeduction,
         calc.totalDeductions,
         calc.netSalary,
@@ -1030,8 +1034,9 @@ export class PayrollService {
                employer_epf = $5::numeric,
                employer_etf = $6::numeric,
                loan_deduction = $7::numeric,
-               total_deductions = $8::numeric,
-               net_salary = $9::numeric
+               advance_deduction = $8::numeric,
+               total_deductions = $9::numeric,
+               net_salary = $10::numeric
            WHERE id = $1::uuid`,
           item.id,
           calc.commissionAmount,
@@ -1040,12 +1045,13 @@ export class PayrollService {
           calc.employerEpf,
           calc.employerEtf,
           calc.loanDeduction,
+          calc.advanceDeduction,
           calc.totalDeductions,
           calc.netSalary,
         );
 
         for (const loanDeduction of calc.loanDeductions) {
-          const source = sourceById.get(loanDeduction.loanId) ?? 'loan';
+          const source = loanDeduction.source ?? sourceById.get(loanDeduction.loanId) ?? 'loan';
           if (source === 'advance') {
             await tx.$queryRawUnsafe(
               `UPDATE ${advancesTable}
@@ -1311,6 +1317,7 @@ export class PayrollService {
                    pi.employer_epf::float AS "employerEpf",
                    pi.employer_etf::float AS "employerEtf",
                    pi.loan_deduction::float AS "loanDeduction",
+                   COALESCE(pi.advance_deduction, 0)::float AS "advanceDeduction",
                    pi.other_deduction::float AS "otherDeduction",
                    pi.total_deductions::float AS "totalDeductions",
                    pi.net_salary::float AS "netSalary",

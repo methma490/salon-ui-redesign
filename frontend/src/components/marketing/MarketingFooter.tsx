@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Scissors } from 'lucide-react';
 import { SALON_LOGIN_PATH } from '@/config/auth-paths';
+import { APP_NAME } from '@/config/brand';
 
 export function MarketingFooter() {
   return (
@@ -11,7 +12,7 @@ export function MarketingFooter() {
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <Scissors className="h-4 w-4" />
             </span>
-            Salon SaaS
+            {APP_NAME}
           </div>
           <p className="text-sm leading-relaxed text-muted-foreground">
             Modern salon management software with POS, inventory, customers, and reports — built for
@@ -48,7 +49,7 @@ export function MarketingFooter() {
       </div>
 
       <div className="border-t border-border bg-muted/30 py-4 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} Salon SaaS. All rights reserved.
+        © {new Date().getFullYear()} {APP_NAME}. All rights reserved.
       </div>
     </footer>
   );

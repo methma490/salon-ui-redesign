@@ -25,8 +25,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { getErrorMessage, OpsError, OpsLoading, OpsPageHeader } from './salon-ops-ui';
+import { getErrorMessage, OpsError, OpsLoading } from './salon-ops-ui';
 import './employees-page.css';
+import './settings-page.css';
+import './report-shell.css';
 import './sales-analytics-page.css';
 
 type TabKey = 'overview' | 'invoices' | 'employees' | 'branches' | 'daily';
@@ -325,22 +327,58 @@ export default function SalesAnalyticsPage() {
   };
 
   return (
-    <div className="emp-page">
-      <OpsPageHeader
-        title="Sales"
-        subtitle="Analyze invoices, employee commissionables, branch performance, and daily trends"
-      />
+    <div className="emp-page settings-shell report-shell sa-page">
+      <header className="settings-hero">
+        <div className="settings-hero-logo">
+          <span>📈</span>
+        </div>
+        <div className="settings-hero-text">
+          <h1>Sales Analytics</h1>
+          <p>Invoices, employee commissionables, branch performance, and daily trends</p>
+        </div>
+        <div className="settings-hero-meta">
+          <span className="settings-hero-pill">{formatMoney(summary?.netSales ?? 0)}</span>
+          <span className="settings-hero-pill report-shell-pill-secondary">
+            {summary?.invoiceCount ?? 0} invoices
+          </span>
+          {range && (
+            <span className="settings-hero-pill report-shell-pill-secondary">
+              {formatDate(range.from)} – {formatDate(range.to)}
+            </span>
+          )}
+        </div>
+      </header>
 
-      <div className="emp-panel emp-form-panel">
-        <div className="emp-form-panel-title">Filters</div>
-        <div className="emp-filter-grid cols-3">
-          <div className="emp-filter-field">
+      <nav className="settings-tabs report-shell-tabs" aria-label="Sales analytics sections">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            className={`settings-tab${tab === t.key ? ' settings-tab-active' : ''}`}
+            onClick={() => setTab(t.key)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </nav>
+
+      <section className="settings-panel">
+        <div className="settings-panel-header">
+          <h2>Filters</h2>
+          <p>
+            {range
+              ? `Showing ${formatDate(range.from)} – ${formatDate(range.to)}`
+              : 'Choose a date range, branch, and employee'}
+          </p>
+        </div>
+        <div className="settings-form-grid sa-filter-grid">
+          <div className="settings-field">
             <Label>Date range</Label>
             <Select
               value={preset}
               onValueChange={(v) => setPreset(v as SalesAnalyticsPreset)}
             >
-              <SelectTrigger>
+              <SelectTrigger className="settings-input">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -352,10 +390,10 @@ export default function SalesAnalyticsPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="emp-filter-field">
+          <div className="settings-field">
             <Label>Branch</Label>
             <Select value={branchId} onValueChange={setBranchId}>
-              <SelectTrigger>
+              <SelectTrigger className="settings-input">
                 <SelectValue placeholder="All branches" />
               </SelectTrigger>
               <SelectContent>
@@ -368,10 +406,10 @@ export default function SalesAnalyticsPage() {
               </SelectContent>
             </Select>
           </div>
-          <div className="emp-filter-field">
+          <div className="settings-field">
             <Label>Employee</Label>
             <Select value={employeeId} onValueChange={setEmployeeId}>
-              <SelectTrigger>
+              <SelectTrigger className="settings-input">
                 <SelectValue placeholder="All employees" />
               </SelectTrigger>
               <SelectContent>
@@ -385,9 +423,10 @@ export default function SalesAnalyticsPage() {
             </Select>
           </div>
           {(tab === 'invoices' || tab === 'employees') && (
-            <div className="emp-filter-field">
+            <div className="settings-field">
               <Label>Search</Label>
               <Input
+                className="settings-input"
                 placeholder={
                   tab === 'employees' ? 'Employee name or code…' : 'Invoice, customer…'
                 }
@@ -398,17 +437,19 @@ export default function SalesAnalyticsPage() {
           )}
           {preset === 'custom' && (
             <>
-              <div className="emp-filter-field">
+              <div className="settings-field">
                 <Label>From</Label>
                 <Input
+                  className="settings-input"
                   type="date"
                   value={customFrom}
                   onChange={(e) => setCustomFrom(e.target.value)}
                 />
               </div>
-              <div className="emp-filter-field">
+              <div className="settings-field">
                 <Label>To</Label>
                 <Input
+                  className="settings-input"
                   type="date"
                   value={customTo}
                   onChange={(e) => setCustomTo(e.target.value)}
@@ -417,14 +458,9 @@ export default function SalesAnalyticsPage() {
             </>
           )}
         </div>
-        {range && (
-          <p className="emp-panel-desc" style={{ marginTop: '0.75rem', marginBottom: 0 }}>
-            Showing {formatDate(range.from)} – {formatDate(range.to)}
-          </p>
-        )}
-      </div>
+      </section>
 
-      <div className="emp-stats">
+      <div className="emp-stats sa-stats">
         <div className="emp-stat">
           <div className="emp-stat-value">{formatMoney(summary?.netSales ?? 0)}</div>
           <div className="emp-stat-label">Net sales</div>
@@ -453,23 +489,10 @@ export default function SalesAnalyticsPage() {
         </div>
       </div>
 
-      <div className="emp-tabs">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            className={`emp-tab${tab === t.key ? ' emp-tab-active' : ''}`}
-            onClick={() => setTab(t.key)}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
       {activeQuery.isLoading && tab !== 'overview' ? (
-        <div className="emp-panel">
+        <section className="settings-panel">
           <div className="emp-skeleton" />
-        </div>
+        </section>
       ) : activeQuery.isError && tab !== 'overview' ? (
         <OpsError
           message={getErrorMessage(activeQuery.error)}
@@ -478,16 +501,14 @@ export default function SalesAnalyticsPage() {
       ) : (
         <>
           {tab === 'overview' && (
-            <div className="emp-panel">
-              <div className="emp-panel-header">
-                <div>
-                  <h2 className="emp-panel-title">Period summary</h2>
-                  <p className="emp-panel-desc">
-                    Gross {formatMoney(summary?.grossSales ?? 0)} · Refunds{' '}
-                    {formatMoney(summary?.refundAmount ?? 0)} · Net{' '}
-                    {formatMoney(summary?.netSales ?? 0)}
-                  </p>
-                </div>
+            <section className="settings-panel">
+              <div className="settings-panel-header">
+                <h2>Period summary</h2>
+                <p>
+                  Gross {formatMoney(summary?.grossSales ?? 0)} · Refunds{' '}
+                  {formatMoney(summary?.refundAmount ?? 0)} · Net{' '}
+                  {formatMoney(summary?.netSales ?? 0)}
+                </p>
               </div>
               {(invoicesQuery.data?.data?.length ?? 0) === 0 ? (
                 <div className="emp-empty">No invoices in this period.</div>
@@ -533,7 +554,7 @@ export default function SalesAnalyticsPage() {
                   </div>
                 </>
               )}
-            </div>
+            </section>
           )}
 
           {tab === 'invoices' && (
@@ -606,7 +627,7 @@ export default function SalesAnalyticsPage() {
                   <div className="sa-dialog-stat-value">
                     {formatMoney(employeeDetailQuery.data.summary.allocatedSales)}
                   </div>
-                  <div className="sa-dialog-stat-label">Allocated sales</div>
+                  <div className="sa-dialog-stat-label">Service sales</div>
                 </div>
                 <div className="sa-dialog-stat">
                   <div className="sa-dialog-stat-value">
@@ -618,13 +639,13 @@ export default function SalesAnalyticsPage() {
                   <div className="sa-dialog-stat-value">
                     {formatMoney(employeeDetailQuery.data.summary.commissionAmount)}
                   </div>
-                  <div className="sa-dialog-stat-label">Commission</div>
+                  <div className="sa-dialog-stat-label">Estimated commission</div>
                 </div>
                 <div className="sa-dialog-stat">
                   <div className="sa-dialog-stat-value">
                     {employeeDetailQuery.data.summary.invoiceCount}
                   </div>
-                  <div className="sa-dialog-stat-label">Invoices</div>
+                  <div className="sa-dialog-stat-label">Eligible invoices</div>
                 </div>
                 <div className="sa-dialog-stat">
                   <div className="sa-dialog-stat-value">
@@ -639,9 +660,9 @@ export default function SalesAnalyticsPage() {
                   <div className="sa-dialog-stat-label">Branch</div>
                 </div>
               </div>
-              <h3 className="sa-dialog-section-title">Invoices</h3>
+              <h3 className="sa-dialog-section-title">Contributing service lines</h3>
               {(employeeDetailQuery.data.data?.length ?? 0) === 0 ? (
-                <div className="emp-empty">No invoices for this employee in the period.</div>
+                <div className="emp-empty">No service lines for this employee in the period.</div>
               ) : (
                 <>
                   <div className="emp-table-wrap">
@@ -650,23 +671,21 @@ export default function SalesAnalyticsPage() {
                         <tr>
                           <th>Invoice</th>
                           <th>Date</th>
-                          <th>Customer</th>
-                          <th className="num">Employee sales</th>
-                          <th className="num">Alloc %</th>
-                          <th>Type</th>
+                          <th>Branch</th>
+                          <th>Service</th>
+                          <th className="num">Service value</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {employeeDetailQuery.data.data.map((inv) => (
-                          <tr key={`${inv.id}-${inv.assignmentType}`}>
+                        {employeeDetailQuery.data.data.map((inv, index) => (
+                          <tr key={`${inv.id}-${inv.serviceName ?? 'line'}-${index}`}>
                             <td>
                               <Link to={`/salon/sales/${inv.id}`}>{inv.saleNumber}</Link>
                             </td>
                             <td>{formatDateTime(inv.createdAt)}</td>
-                            <td>{inv.customerName || 'Walk-in'}</td>
+                            <td>{inv.branchName}</td>
+                            <td>{inv.serviceName || '—'}</td>
                             <td className="num">{formatMoney(inv.employeeSales)}</td>
-                            <td className="num">{inv.allocationPercentage}%</td>
-                            <td>{inv.assignmentType}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -735,7 +754,7 @@ export default function SalesAnalyticsPage() {
                       <tr>
                         <th>Employee</th>
                         <th className="num">Invoices</th>
-                        <th className="num">Allocated</th>
+                        <th className="num">Service sales</th>
                         <th className="num">Commission</th>
                       </tr>
                     </thead>
@@ -839,19 +858,17 @@ function InvoicesTable({
 }) {
   if (rows.length === 0) {
     return (
-      <div className="emp-panel">
+      <section className="settings-panel">
         <div className="emp-empty">No invoices found for the selected filters.</div>
-      </div>
+      </section>
     );
   }
 
   return (
-    <div className="emp-panel">
-      <div className="emp-panel-header">
-        <div>
-          <h2 className="emp-panel-title">Invoices</h2>
-          <p className="emp-panel-desc">{total} invoice{total === 1 ? '' : 's'}</p>
-        </div>
+    <section className="settings-panel">
+      <div className="settings-panel-header">
+        <h2>Invoices</h2>
+        <p>{total} invoice{total === 1 ? '' : 's'}</p>
       </div>
       <div className="emp-table-wrap">
         <table className="emp-table">
@@ -890,7 +907,7 @@ function InvoicesTable({
         </table>
       </div>
       <PaginationBar page={page} totalPages={totalPages} total={total} onPageChange={onPageChange} />
-    </div>
+    </section>
   );
 }
 
@@ -911,21 +928,19 @@ function EmployeesTable({
 }) {
   if (rows.length === 0) {
     return (
-      <div className="emp-panel">
+      <section className="settings-panel">
         <div className="emp-empty">No employee sales for the selected filters.</div>
-      </div>
+      </section>
     );
   }
 
   return (
-    <div className="emp-panel">
-      <div className="emp-panel-header">
-        <div>
-          <h2 className="emp-panel-title">By employee</h2>
-          <p className="emp-panel-desc">
+    <section className="settings-panel">
+      <div className="settings-panel-header">
+        <h2>By employee</h2>
+        <p>
             {total} employee{total === 1 ? '' : 's'} · click a row for detail
           </p>
-        </div>
       </div>
       <div className="emp-table-wrap">
         <table className="emp-table">
@@ -934,7 +949,7 @@ function EmployeesTable({
               <th>Employee</th>
               <th>Branch</th>
               <th className="num">Invoices</th>
-              <th className="num">Allocated</th>
+              <th className="num">Service sales</th>
               <th className="num">Rate</th>
               <th className="num">Commission</th>
             </tr>
@@ -964,7 +979,7 @@ function EmployeesTable({
         </table>
       </div>
       <PaginationBar page={page} totalPages={totalPages} total={total} onPageChange={onPageChange} />
-    </div>
+    </section>
   );
 }
 
@@ -985,21 +1000,19 @@ function BranchesTable({
 }) {
   if (rows.length === 0) {
     return (
-      <div className="emp-panel">
+      <section className="settings-panel">
         <div className="emp-empty">No branch sales for the selected filters.</div>
-      </div>
+      </section>
     );
   }
 
   return (
-    <div className="emp-panel">
-      <div className="emp-panel-header">
-        <div>
-          <h2 className="emp-panel-title">By branch</h2>
-          <p className="emp-panel-desc">
+    <section className="settings-panel">
+      <div className="settings-panel-header">
+        <h2>By branch</h2>
+        <p>
             {total} branch{total === 1 ? '' : 'es'} · click a row for detail
           </p>
-        </div>
       </div>
       <div className="emp-table-wrap">
         <table className="emp-table">
@@ -1030,7 +1043,7 @@ function BranchesTable({
         </table>
       </div>
       <PaginationBar page={page} totalPages={totalPages} total={total} onPageChange={onPageChange} />
-    </div>
+    </section>
   );
 }
 
@@ -1051,21 +1064,19 @@ function DailyTable({
 }) {
   if (rows.length === 0) {
     return (
-      <div className="emp-panel">
+      <section className="settings-panel">
         <div className="emp-empty">No daily sales for the selected filters.</div>
-      </div>
+      </section>
     );
   }
 
   return (
-    <div className="emp-panel">
-      <div className="emp-panel-header">
-        <div>
-          <h2 className="emp-panel-title">By day</h2>
-          <p className="emp-panel-desc">
+    <section className="settings-panel">
+      <div className="settings-panel-header">
+        <h2>By day</h2>
+        <p>
             {total} day{total === 1 ? '' : 's'} · click a row to view invoices
           </p>
-        </div>
       </div>
       <div className="emp-table-wrap">
         <table className="emp-table">
@@ -1095,6 +1106,6 @@ function DailyTable({
         </table>
       </div>
       <PaginationBar page={page} totalPages={totalPages} total={total} onPageChange={onPageChange} />
-    </div>
+    </section>
   );
 }

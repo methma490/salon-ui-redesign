@@ -1,4 +1,4 @@
-# Salon SaaS
+# Dart Smart Salon
 
 Production-ready foundation for a multi-tenant salon management platform.
 

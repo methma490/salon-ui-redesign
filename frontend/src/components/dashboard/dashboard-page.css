@@ -1,5 +1,5 @@
 .dash-page {
-  --dash-primary: #0d5c3d;
+  --dash-primary: var(--brand-primary, #0d5c3d);
   --dash-primary-light: #ecfdf3;
   --dash-border: #e2e8f0;
   --dash-muted: #64748b;

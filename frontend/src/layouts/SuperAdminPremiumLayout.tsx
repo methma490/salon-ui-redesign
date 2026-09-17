@@ -16,6 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/contexts/AuthContext';
 import { SUPER_ADMIN_LOGIN_PATH } from '@/config/auth-paths';
+import { APP_NAME } from '@/config/brand';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -35,7 +36,7 @@ function PlatformBrand() {
       </div>
       <div className="min-w-0">
         <p className="text-xs text-muted-foreground">Platform Management</p>
-        <p className="truncate text-base font-semibold leading-tight">Salon360</p>
+        <p className="truncate text-base font-semibold leading-tight">{APP_NAME}</p>
       </div>
     </div>
   );
@@ -145,7 +146,7 @@ export default function SuperAdminPremiumLayout() {
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-muted">
                 <Scissors className="h-4 w-4 text-muted-foreground" />
               </div>
-              <p className="truncate text-sm font-semibold">Salon360</p>
+              <p className="truncate text-sm font-semibold">{APP_NAME}</p>
             </div>
 
             <div className="hidden min-w-0 md:block">

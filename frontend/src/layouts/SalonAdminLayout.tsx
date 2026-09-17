@@ -38,13 +38,16 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { SalonBranchProvider, useSalonBranch } from '@/contexts/SalonBranchContext';
+import { TenantThemeProvider } from '@/contexts/TenantThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { resolveUploadUrl } from '@/lib/upload-url';
 import { cn } from '@/lib/utils';
 import { resolveNavAccess, type NavAccessState } from '@/lib/salon-access';
 import SalonPermissionGate from '@/routes/SalonPermissionGate';
 import { formatRoleLabel } from '@/pages/salon/settings-feature-modules';
+import { APP_NAME } from '@/config/brand';
 import './salon-admin-sidebar.css';
+import './salon-brand-overrides.css';
 
 function primaryRoleLabel(roles: string[] | undefined | null): string | null {
   if (!roles?.length) return null;
@@ -91,7 +94,7 @@ function SalonBrand({
     <div className="flex min-w-0 items-center gap-3">
       <SalonLogo logoUrl={logoUrl} />
       <div className="min-w-0">
-        <p className="text-xs text-muted-foreground">Salon360</p>
+        <p className="text-xs text-muted-foreground">{APP_NAME}</p>
         <p className="truncate text-base font-semibold leading-tight">{salonName}</p>
       </div>
     </div>
@@ -539,7 +542,7 @@ function SalonAdminHeader({
           className="h-9 w-9 sm:h-auto sm:w-auto sm:gap-2 sm:pl-1 sm:pr-2"
           onClick={() => setProfileOpen((v) => !v)}
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <div className="salon-brand-avatar flex h-8 w-8 items-center justify-center rounded-full">
             <User className="h-4 w-4" />
           </div>
           <span className="hidden min-w-0 flex-col items-start text-left sm:flex">
@@ -559,9 +562,8 @@ function SalonAdminHeader({
             <div className="border-b border-border px-3 py-2">
               <p className="truncate text-sm font-medium">{user?.name}</p>
               {roleLabel && (
-                <p className="truncate text-xs font-medium text-primary">{roleLabel}</p>
-              )}
-              <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+                <p className="salon-brand-text truncate text-xs font-medium">{roleLabel}</p>
+              )}              <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
             </div>
             <button
               type="button"
@@ -781,8 +783,10 @@ function SalonAdminLayoutInner() {
 
 export default function SalonAdminLayout() {
   return (
-    <SalonBranchProvider>
-      <SalonAdminLayoutInner />
-    </SalonBranchProvider>
+    <TenantThemeProvider>
+      <SalonBranchProvider>
+        <SalonAdminLayoutInner />
+      </SalonBranchProvider>
+    </TenantThemeProvider>
   );
 }

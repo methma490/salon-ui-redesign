@@ -12,6 +12,8 @@ import { generateSequentialCode } from '../utils/code-generator.util';
 import {
   CreateProductCategoryDto,
   CreateProductDto,
+  CreateStockCreditPaymentDto,
+  ListStockCreditsQueryDto,
   ListStockMovementsQueryDto,
   StockAdjustmentDto,
   StockInDto,
@@ -19,6 +21,10 @@ import {
   UpdateProductDto,
   UpdateProductStatusDto,
 } from './dto/inventory.dto';
+import {
+  resolveCreditPaymentUpdate,
+  resolveStockInPayment,
+} from './stock-receipt-money';
 
 @Injectable()
 export class InventoryService {
@@ -260,13 +266,384 @@ export class InventoryService {
   }
 
   async stockIn(schemaName: string, dto: StockInDto, userId: string) {
-    return this.applyStockChange(schemaName, {
-      branchId: dto.branchId,
-      productId: dto.productId,
-      quantityChange: dto.quantity,
-      movementType: 'STOCK_IN',
-      notes: dto.notes,
-      userId,
+    let money;
+    try {
+      money = resolveStockInPayment({
+        quantity: dto.quantity,
+        unitCost: dto.unitCost,
+        paymentType: dto.paymentType,
+        paidAmount: dto.paidAmount,
+      });
+    } catch (error) {
+      throw new BadRequestException(error instanceof Error ? error.message : 'Invalid payment');
+    }
+
+    const purchaseDate = dto.purchaseDate?.slice(0, 10) ?? new Date().toISOString().slice(0, 10);
+    const referenceNo = dto.referenceNo?.trim() || null;
+    const movementNotes =
+      [referenceNo ? `Ref ${referenceNo}` : null, dto.notes?.trim() || null]
+        .filter(Boolean)
+        .join(' — ') || null;
+
+    const receipts = tenantTable(schemaName, 'stock_receipts');
+    const items = tenantTable(schemaName, 'stock_receipt_items');
+    const payments = tenantTable(schemaName, 'stock_credit_payments');
+    const statusCast = `$9::text::"${schemaName}".stock_receipt_payment_status`;
+    const methodCast = `$2::text::"${schemaName}".stock_credit_payment_method`;
+
+    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      const receiptRows = await tx.$queryRawUnsafe<Array<{ id: string }>>(
+        `INSERT INTO ${receipts}
+           (branch_id, reference_no, purchase_date, total_amount, paid_amount,
+            outstanding_amount, payment_status, notes, created_by)
+         VALUES (
+           $1::uuid, $2, $3::date, $4::numeric, $5::numeric,
+           $6::numeric, ${statusCast}, $7, $8::uuid
+         )
+         RETURNING id`,
+        dto.branchId,
+        referenceNo,
+        purchaseDate,
+        money.totalAmount,
+        money.paidAmount,
+        money.outstandingAmount,
+        dto.notes ?? null,
+        userId,
+        money.paymentStatus,
+      );
+      const receiptId = receiptRows[0].id;
+
+      await tx.$queryRawUnsafe(
+        `INSERT INTO ${items}
+           (stock_receipt_id, product_id, quantity, unit_cost, line_total)
+         VALUES ($1::uuid, $2::uuid, $3::numeric, $4::numeric, $5::numeric)`,
+        receiptId,
+        dto.productId,
+        dto.quantity,
+        dto.unitCost,
+        money.lineTotal,
+      );
+
+      const stockResult = await this.applyStockChangeInTx(tx, schemaName, {
+        branchId: dto.branchId,
+        productId: dto.productId,
+        quantityChange: dto.quantity,
+        movementType: 'STOCK_IN',
+        notes: movementNotes ?? undefined,
+        userId,
+        referenceType: 'STOCK_RECEIPT',
+        referenceId: receiptId,
+      });
+
+      if (money.paidAmount > 0) {
+        await tx.$queryRawUnsafe(
+          `INSERT INTO ${payments}
+             (stock_receipt_id, amount, payment_method, payment_date, notes, created_by)
+           VALUES ($1::uuid, $3::numeric, ${methodCast}, $4::date, $5, $6::uuid)`,
+          receiptId,
+          'CASH',
+          money.paidAmount,
+          purchaseDate,
+          'Initial payment on stock in',
+          userId,
+        );
+      }
+
+      await logAudit(tx, schemaName, {
+        userId,
+        action: 'STOCK_RECEIPT_CREATE',
+        entityType: 'stock_receipt',
+        entityId: receiptId,
+        details: {
+          paymentType: dto.paymentType,
+          paymentStatus: money.paymentStatus,
+          totalAmount: money.totalAmount,
+          paidAmount: money.paidAmount,
+          outstandingAmount: money.outstandingAmount,
+          productId: dto.productId,
+          quantity: dto.quantity,
+        },
+      });
+
+      return {
+        id: receiptId,
+        stockQuantity: stockResult.stockQuantity,
+        movementId: stockResult.movementId,
+        totalAmount: money.totalAmount,
+        paidAmount: money.paidAmount,
+        outstandingAmount: money.outstandingAmount,
+        paymentStatus: money.paymentStatus,
+      };
+    });
+  }
+
+  async listStockCredits(schemaName: string, query: ListStockCreditsQueryDto) {
+    const receipts = tenantTable(schemaName, 'stock_receipts');
+    const branches = tenantTable(schemaName, 'branches');
+    const { page, limit, offset } = resolvePagination(query.page, query.limit);
+
+    const conditions: string[] = ['1=1'];
+    const params: unknown[] = [];
+    let idx = 1;
+
+    if (query.branchId) {
+      conditions.push(`sr.branch_id = $${idx++}::uuid`);
+      params.push(query.branchId);
+    }
+    if (query.paymentStatus) {
+      conditions.push(
+        `sr.payment_status = $${idx++}::text::"${schemaName}".stock_receipt_payment_status`,
+      );
+      params.push(query.paymentStatus);
+    }
+    if (query.fromDate) {
+      conditions.push(`sr.purchase_date >= $${idx++}::date`);
+      params.push(query.fromDate.slice(0, 10));
+    }
+    if (query.toDate) {
+      conditions.push(`sr.purchase_date <= $${idx++}::date`);
+      params.push(query.toDate.slice(0, 10));
+    }
+    if (query.search?.trim()) {
+      conditions.push(`sr.reference_no ILIKE $${idx++}`);
+      params.push(`%${query.search.trim()}%`);
+    }
+
+    const whereClause = conditions.join(' AND ');
+    const sortMap: Record<string, string> = {
+      purchaseDate: 'sr.purchase_date',
+      totalAmount: 'sr.total_amount',
+      outstandingAmount: 'sr.outstanding_amount',
+    };
+    const sortCol = sortMap[query.sortBy ?? 'purchaseDate'] ?? 'sr.purchase_date';
+    const sortDir = query.sortDir === 'asc' ? 'ASC' : 'DESC';
+
+    const fromClause = `
+         FROM ${receipts} sr
+         INNER JOIN ${branches} b ON sr.branch_id = b.id
+         WHERE ${whereClause}`;
+
+    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      const countRows = await tx.$queryRawUnsafe<Array<{ count: bigint }>>(
+        `SELECT COUNT(*)::bigint AS count ${fromClause}`,
+        ...params,
+      );
+      const total = Number(countRows[0]?.count ?? 0);
+
+      const summaryRows = await tx.$queryRawUnsafe<
+        Array<{
+          totalPurchases: string;
+          totalPaid: string;
+          totalOutstanding: string;
+        }>
+      >(
+        `SELECT COALESCE(SUM(sr.total_amount), 0)::text AS "totalPurchases",
+                COALESCE(SUM(sr.paid_amount), 0)::text AS "totalPaid",
+                COALESCE(SUM(sr.outstanding_amount), 0)::text AS "totalOutstanding"
+         ${fromClause}`,
+        ...params,
+      );
+
+      const data = await tx.$queryRawUnsafe(
+        `SELECT sr.id, sr.branch_id AS "branchId", b.name AS "branchName",
+                sr.reference_no AS "referenceNo",
+                sr.purchase_date::text AS "purchaseDate",
+                sr.total_amount::float8 AS "totalAmount",
+                sr.paid_amount::float8 AS "paidAmount",
+                sr.outstanding_amount::float8 AS "outstandingAmount",
+                sr.payment_status::text AS "paymentStatus",
+                sr.notes, sr.created_at AS "createdAt"
+         ${fromClause}
+         ORDER BY ${sortCol} ${sortDir}, sr.created_at DESC
+         LIMIT $${idx} OFFSET $${idx + 1}`,
+        ...params,
+        limit,
+        offset,
+      );
+
+      const summary = summaryRows[0] ?? {
+        totalPurchases: '0',
+        totalPaid: '0',
+        totalOutstanding: '0',
+      };
+
+      return {
+        ...buildPaginatedResponse(data as unknown[], total, page, limit),
+        summary: {
+          totalPurchases: Number(summary.totalPurchases),
+          totalPaid: Number(summary.totalPaid),
+          totalOutstanding: Number(summary.totalOutstanding),
+        },
+      };
+    });
+  }
+
+  async getStockCredit(schemaName: string, id: string) {
+    const receipts = tenantTable(schemaName, 'stock_receipts');
+    const branches = tenantTable(schemaName, 'branches');
+    const items = tenantTable(schemaName, 'stock_receipt_items');
+    const products = tenantTable(schemaName, 'products');
+    const payments = tenantTable(schemaName, 'stock_credit_payments');
+
+    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      const rows = await tx.$queryRawUnsafe<
+        Array<{
+          id: string;
+          branchId: string;
+          branchName: string;
+          referenceNo: string | null;
+          purchaseDate: string;
+          totalAmount: number;
+          paidAmount: number;
+          outstandingAmount: number;
+          paymentStatus: string;
+          notes: string | null;
+          createdAt: Date;
+        }>
+      >(
+        `SELECT sr.id, sr.branch_id AS "branchId", b.name AS "branchName",
+                sr.reference_no AS "referenceNo",
+                sr.purchase_date::text AS "purchaseDate",
+                sr.total_amount::float8 AS "totalAmount",
+                sr.paid_amount::float8 AS "paidAmount",
+                sr.outstanding_amount::float8 AS "outstandingAmount",
+                sr.payment_status::text AS "paymentStatus",
+                sr.notes, sr.created_at AS "createdAt"
+         FROM ${receipts} sr
+         INNER JOIN ${branches} b ON sr.branch_id = b.id
+         WHERE sr.id = $1::uuid
+         LIMIT 1`,
+        id,
+      );
+      if (rows.length === 0) {
+        throw new NotFoundException('Stock credit receipt not found');
+      }
+
+      const itemRows = await tx.$queryRawUnsafe(
+        `SELECT sri.id, sri.product_id AS "productId", p.name AS "productName", p.code AS "productCode",
+                sri.quantity::float8 AS quantity,
+                sri.unit_cost::float8 AS "unitCost",
+                sri.line_total::float8 AS "lineTotal"
+         FROM ${items} sri
+         INNER JOIN ${products} p ON sri.product_id = p.id
+         WHERE sri.stock_receipt_id = $1::uuid
+         ORDER BY sri.created_at ASC`,
+        id,
+      );
+
+      const paymentRows = await tx.$queryRawUnsafe(
+        `SELECT scp.id, scp.amount::float8 AS amount,
+                scp.payment_method::text AS "paymentMethod",
+                scp.payment_date::text AS "paymentDate",
+                scp.payment_reference AS "paymentReference",
+                scp.notes, scp.created_at AS "createdAt"
+         FROM ${payments} scp
+         WHERE scp.stock_receipt_id = $1::uuid
+         ORDER BY scp.payment_date ASC, scp.created_at ASC`,
+        id,
+      );
+
+      return {
+        ...rows[0],
+        items: itemRows,
+        payments: paymentRows,
+      };
+    });
+  }
+
+  async addStockCreditPayment(
+    schemaName: string,
+    id: string,
+    dto: CreateStockCreditPaymentDto,
+    userId: string,
+  ) {
+    const receipts = tenantTable(schemaName, 'stock_receipts');
+    const payments = tenantTable(schemaName, 'stock_credit_payments');
+    const statusCast = `$4::text::"${schemaName}".stock_receipt_payment_status`;
+    const methodCast = `$2::text::"${schemaName}".stock_credit_payment_method`;
+    const paymentDate = dto.paymentDate?.slice(0, 10) ?? new Date().toISOString().slice(0, 10);
+
+    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      const rows = await tx.$queryRawUnsafe<
+        Array<{
+          id: string;
+          totalAmount: string;
+          paidAmount: string;
+          outstandingAmount: string;
+        }>
+      >(
+        `SELECT id,
+                total_amount::text AS "totalAmount",
+                paid_amount::text AS "paidAmount",
+                outstanding_amount::text AS "outstandingAmount"
+         FROM ${receipts}
+         WHERE id = $1::uuid
+         FOR UPDATE`,
+        id,
+      );
+      if (rows.length === 0) {
+        throw new NotFoundException('Stock credit receipt not found');
+      }
+
+      let next;
+      try {
+        next = resolveCreditPaymentUpdate({
+          totalAmount: Number(rows[0].totalAmount),
+          currentPaidAmount: Number(rows[0].paidAmount),
+          paymentAmount: dto.amount,
+        });
+      } catch (error) {
+        throw new BadRequestException(error instanceof Error ? error.message : 'Invalid payment');
+      }
+
+      const paymentRows = await tx.$queryRawUnsafe<Array<{ id: string }>>(
+        `INSERT INTO ${payments}
+           (stock_receipt_id, amount, payment_method, payment_date, payment_reference, notes, created_by)
+         VALUES ($1::uuid, $3::numeric, ${methodCast}, $4::date, $5, $6, $7::uuid)
+         RETURNING id`,
+        id,
+        dto.paymentMethod,
+        dto.amount,
+        paymentDate,
+        dto.paymentReference ?? null,
+        dto.notes ?? null,
+        userId,
+      );
+
+      await tx.$queryRawUnsafe(
+        `UPDATE ${receipts}
+         SET paid_amount = $2::numeric,
+             outstanding_amount = $3::numeric,
+             payment_status = ${statusCast},
+             updated_at = NOW()
+         WHERE id = $1::uuid`,
+        id,
+        next.paidAmount,
+        next.outstandingAmount,
+        next.paymentStatus,
+      );
+
+      await logAudit(tx, schemaName, {
+        userId,
+        action: 'STOCK_CREDIT_PAYMENT',
+        entityType: 'stock_credit_payment',
+        entityId: paymentRows[0].id,
+        details: {
+          stockReceiptId: id,
+          amount: dto.amount,
+          paidAmount: next.paidAmount,
+          outstandingAmount: next.outstandingAmount,
+          paymentStatus: next.paymentStatus,
+        },
+      });
+
+      return {
+        paymentId: paymentRows[0].id,
+        stockReceiptId: id,
+        paidAmount: next.paidAmount,
+        outstandingAmount: next.outstandingAmount,
+        paymentStatus: next.paymentStatus,
+      };
     });
   }
 

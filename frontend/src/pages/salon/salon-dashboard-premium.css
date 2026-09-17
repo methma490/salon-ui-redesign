@@ -1,12 +1,12 @@
 /* ========================================
-   Salon360 - Premium Salon Admin Dashboard
+   Dart Smart Salon - Premium Salon Admin Dashboard
    Enterprise SaaS Style
    ======================================== */
 
 :root {
-  --sd-primary: #0d5c3d;
-  --sd-primary-light: #ecfdf3;
-  --sd-primary-dark: #064e32;
+  --sd-primary: var(--brand-primary, #0d5c3d);
+  --sd-primary-light: var(--brand-soft, #ecfdf3);
+  --sd-primary-dark: var(--brand-hover, #0a4a31);
   --sd-secondary: #0f172a;
   --sd-bg: #f8fafc;
   --sd-surface: #ffffff;
@@ -20,8 +20,8 @@
   --sd-warning-light: #fef3c7;
   --sd-danger: #ef4444;
   --sd-danger-light: #fee2e2;
-  --sd-info: #0d5c3d;
-  --sd-info-light: #ecfdf3;
+  --sd-info: var(--brand-primary, #0d5c3d);
+  --sd-info-light: var(--brand-soft, #ecfdf3);
   --sd-radius: 12px;
   --sd-radius-sm: 8px;
   --sd-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);

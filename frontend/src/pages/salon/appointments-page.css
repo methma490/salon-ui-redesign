@@ -104,14 +104,14 @@
 }
 
 .apt-service-card.is-selected {
-  border-color: #0d5c3d;
-  background: #ecfdf3;
-  box-shadow: 0 0 0 1px rgba(13, 92, 61, 0.12);
+  border-color: var(--brand-primary, #0d5c3d);
+  background: var(--brand-soft, #ecfdf3);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand-primary, #0d5c3d) 12%, transparent);
 }
 
 .apt-service-card input {
   margin-top: 0.2rem;
-  accent-color: #0d5c3d;
+  accent-color: var(--brand-primary, #0d5c3d);
 }
 
 .apt-service-name {
@@ -150,7 +150,7 @@
 .apt-summary-value {
   font-size: 1rem;
   font-weight: 700;
-  color: #0d5c3d;
+  color: var(--brand-primary, #0d5c3d);
   font-variant-numeric: tabular-nums;
 }
 
@@ -176,12 +176,12 @@
 }
 
 .apt-btn-primary {
-  background: #0d5c3d;
+  background: var(--brand-primary, #0d5c3d);
   color: #fff;
 }
 
 .apt-btn-primary:hover:not(:disabled) {
-  background: #0a4a31;
+  background: var(--brand-hover, #0a4a31);
 }
 
 .apt-btn-primary:disabled {
@@ -288,8 +288,8 @@
 
 .apt-filter-control:focus,
 .apt-filter-control:focus-visible {
-  border-color: #0d5c3d !important;
-  box-shadow: 0 0 0 2px rgba(13, 92, 61, 0.12) !important;
+  border-color: var(--brand-primary, #0d5c3d) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-primary, #0d5c3d) 12%, transparent) !important;
   background: #fff !important;
 }
 

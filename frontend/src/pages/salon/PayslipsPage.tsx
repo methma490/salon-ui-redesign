@@ -93,12 +93,20 @@ function buildPayslipHtml(detail: PayslipDetail, salonName: string) {
   <table>
     ${moneyRow('Basic Salary', detail.basicSalary)}
     ${moneyRow('Commission', detail.commissionAmount)}
-    ${moneyRow('Bonus', detail.bonus)}
+    ${moneyRow('Bonus / Allowance', detail.bonus)}
     ${moneyRow('Gross Salary', detail.grossSalary)}
+  </table>
+  <h3>Commission Details</h3>
+  <table>
+    ${moneyRow('Employee Service Sales', detail.commissionBase ?? 0)}
+    <tr><td style="padding:6px 0;border-bottom:1px solid #f1f5f9">Commission Rate</td><td style="padding:6px 0;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums">${detail.commissionPercentage ?? 0}%</td></tr>
+    ${moneyRow('Commission', detail.commissionAmount)}
+    ${(detail.commissionInvoiceCount ?? 0) > 0 ? `<tr><td style="padding:6px 0;border-bottom:1px solid #f1f5f9">Eligible Invoices</td><td style="padding:6px 0;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums">${detail.commissionInvoiceCount}</td></tr>` : ''}
   </table>
   <h3>Deductions</h3>
   <table>
     ${moneyRow('Employee EPF', detail.employeeEpf)}
+    ${moneyRow('Salary Advance', detail.advanceDeduction ?? 0)}
     ${moneyRow('Loan Deduction', detail.loanDeduction)}
     ${moneyRow('Other Deduction', detail.otherDeduction)}
     ${moneyRow('Total Deductions', detail.totalDeductions)}
@@ -159,7 +167,7 @@ function PayslipPrintView({ detail, salonName }: { detail: PayslipDetail; salonN
           <span className="value">LKR {formatMoney(detail.commissionAmount)}</span>
         </div>
         <div className="payslip-row">
-          <span className="label">Bonus</span>
+          <span className="label">Bonus / Allowance</span>
           <span className="value">LKR {formatMoney(detail.bonus)}</span>
         </div>
         <div className="payslip-row">
@@ -169,10 +177,36 @@ function PayslipPrintView({ detail, salonName }: { detail: PayslipDetail; salonN
       </div>
 
       <div className="payslip-section">
+        <div className="payslip-section-title">Commission Details</div>
+        <div className="payslip-row">
+          <span className="label">Employee Service Sales</span>
+          <span className="value">LKR {formatMoney(detail.commissionBase ?? 0)}</span>
+        </div>
+        <div className="payslip-row">
+          <span className="label">Commission Rate</span>
+          <span className="value">{detail.commissionPercentage ?? 0}%</span>
+        </div>
+        <div className="payslip-row">
+          <span className="label">Commission</span>
+          <span className="value">LKR {formatMoney(detail.commissionAmount)}</span>
+        </div>
+        {(detail.commissionInvoiceCount ?? 0) > 0 && (
+          <div className="payslip-row">
+            <span className="label">Eligible Invoices</span>
+            <span className="value">{detail.commissionInvoiceCount}</span>
+          </div>
+        )}
+      </div>
+
+      <div className="payslip-section">
         <div className="payslip-section-title">Deductions</div>
         <div className="payslip-row">
           <span className="label">Employee EPF</span>
           <span className="value">LKR {formatMoney(detail.employeeEpf)}</span>
+        </div>
+        <div className="payslip-row">
+          <span className="label">Salary Advance</span>
+          <span className="value">LKR {formatMoney(detail.advanceDeduction ?? 0)}</span>
         </div>
         <div className="payslip-row">
           <span className="label">Loan Deduction</span>

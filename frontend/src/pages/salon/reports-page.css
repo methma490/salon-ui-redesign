@@ -1,0 +1,31 @@
+.reports-page .reports-filter-grid {
+  max-width: 48rem;
+}
+
+.reports-page .reports-filter-grid-3 {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .reports-page .reports-filter-grid-3 {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+.reports-page .emp-stats {
+  margin: 0;
+}
+
+.reports-page .settings-panel .emp-table-wrap {
+  margin-top: 0.25rem;
+}
+
+@media (min-width: 768px) {
+  .reports-page .settings-tabs {
+    flex-wrap: wrap;
+  }
+
+  .reports-page .report-shell-tab-icon {
+    margin-right: 0.15rem;
+  }
+}

@@ -22,7 +22,7 @@ export class EmailNotificationChannel implements NotificationChannelAdapter {
       throw new Error('Email recipient is missing');
     }
 
-    const from = this.configService.get<string>('mail.from', 'Salon360 <noreply@salon360.local>');
+    const from = this.configService.get<string>('mail.from', 'Dart Smart Salon <noreply@dartsmartsalon.local>');
     const subject = input.subject ?? input.title;
     const html = input.body.replace(/\n/g, '<br/>');
 

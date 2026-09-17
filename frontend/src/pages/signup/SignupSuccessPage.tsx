@@ -40,7 +40,7 @@ export default function SignupSuccessPage() {
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Scissors className="h-3.5 w-3.5" />
           </span>
-          Salon SaaS
+          Dart Smart Salon
         </Link>
       </header>
 

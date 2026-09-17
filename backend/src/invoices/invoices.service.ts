@@ -277,9 +277,9 @@ export class InvoicesService {
 
   private getIssuerInfo(): InvoiceIssuerInfo {
     return {
-      name: this.configService.get<string>('invoice.issuerName', 'Salon360'),
+      name: this.configService.get<string>('invoice.issuerName', 'Dart Smart Salon'),
 
-      email: this.configService.get<string>('invoice.issuerEmail', 'billing@salon360.local'),
+      email: this.configService.get<string>('invoice.issuerEmail', 'billing@dartsmartsalon.local'),
 
       address: this.configService.get<string>('invoice.issuerAddress', 'Colombo, Sri Lanka'),
     };

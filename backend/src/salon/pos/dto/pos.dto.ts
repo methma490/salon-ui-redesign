@@ -15,9 +15,9 @@ export class PosServiceItemDto {
   @IsUUID()
   serviceId!: string;
 
-  @IsOptional()
+  /** Employee who performed this service line (required for commission tracking). */
   @IsUUID()
-  employeeId?: string;
+  employeeId!: string;
 
   @IsOptional()
   @IsNumber()

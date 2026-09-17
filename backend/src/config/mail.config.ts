@@ -1,7 +1,7 @@
 import { registerAs } from '@nestjs/config';
 
 export default registerAs('mail', () => ({
-  from: process.env.MAIL_FROM ?? 'Salon360 <noreply@salon360.local>',
+  from: process.env.MAIL_FROM ?? 'Dart Smart Salon <noreply@dartsmartsalon.local>',
   smtpHost: process.env.SMTP_HOST ?? '',
   smtpPort: Number(process.env.SMTP_PORT ?? 587),
   smtpSecure: process.env.SMTP_SECURE === 'true',

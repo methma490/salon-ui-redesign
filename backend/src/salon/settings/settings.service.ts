@@ -29,11 +29,17 @@ import {
   ChangeSubscriptionPlanDto,
   CreateRoleDto,
   UpdateAccountSettingsDto,
+  UpdateAppearanceSettingsDto,
   UpdateSalonSettingsDto,
   UpdateRolePermissionsDto,
   UpdateUserAccessDto,
   UpdateUserRolesDto,
 } from './dto/settings.dto';
+import {
+  DEFAULT_PRIMARY_COLOR,
+  normalizeHexColor,
+  resolvePrimaryColor,
+} from './appearance.util';
 
 const ALLOWED_LOGO_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
@@ -56,6 +62,7 @@ export class SettingsService {
         email: true,
         phone: true,
         logoUrl: true,
+        primaryColor: true,
         status: true,
         createdAt: true,
       },
@@ -114,6 +121,7 @@ export class SettingsService {
     return {
       salon: {
         ...tenant,
+        primaryColor: resolvePrimaryColor(tenant.primaryColor),
         logoThumbnailUrl,
       },
       account,
@@ -152,12 +160,68 @@ export class SettingsService {
         email: true,
         phone: true,
         logoUrl: true,
+        primaryColor: true,
         status: true,
         createdAt: true,
       },
     });
 
-    return tenant;
+    return {
+      ...tenant,
+      primaryColor: resolvePrimaryColor(tenant.primaryColor),
+    };
+  }
+
+  async getAppearance(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { primaryColor: true },
+    });
+    if (!tenant) {
+      throw new NotFoundException('Salon not found');
+    }
+    return {
+      primaryColor: resolvePrimaryColor(tenant.primaryColor),
+      isDefault: !tenant.primaryColor,
+      defaultPrimaryColor: DEFAULT_PRIMARY_COLOR,
+    };
+  }
+
+  async updateAppearance(tenantId: string, dto: UpdateAppearanceSettingsDto, roles: string[]) {
+    if (!roles.includes('SALON_ADMIN')) {
+      throw new ForbiddenException('Only salon admins can update appearance settings');
+    }
+
+    const primaryColor = normalizeHexColor(dto.primaryColor);
+    const tenant = await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { primaryColor },
+      select: { primaryColor: true },
+    });
+
+    return {
+      primaryColor: resolvePrimaryColor(tenant.primaryColor),
+      isDefault: tenant.primaryColor === DEFAULT_PRIMARY_COLOR,
+      defaultPrimaryColor: DEFAULT_PRIMARY_COLOR,
+    };
+  }
+
+  async resetAppearance(tenantId: string, roles: string[]) {
+    if (!roles.includes('SALON_ADMIN')) {
+      throw new ForbiddenException('Only salon admins can update appearance settings');
+    }
+
+    await this.prisma.tenant.update({
+      where: { id: tenantId },
+      data: { primaryColor: null },
+      select: { id: true },
+    });
+
+    return {
+      primaryColor: DEFAULT_PRIMARY_COLOR,
+      isDefault: true,
+      defaultPrimaryColor: DEFAULT_PRIMARY_COLOR,
+    };
   }
 
   async updateAccount(schemaName: string, userId: string, dto: UpdateAccountSettingsDto) {

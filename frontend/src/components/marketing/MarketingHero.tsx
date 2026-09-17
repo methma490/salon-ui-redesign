@@ -40,7 +40,7 @@ export function MarketingHero() {
       <div className="relative mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl flex-col justify-center px-4 py-16 md:px-6 md:py-24">
         <div className="mx-auto max-w-3xl text-center">
           <p className="mb-4 inline-flex rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">
-            Built for salons · Multi-branch ready
+            Dart Smart Salon · Multi-branch ready
           </p>
           <h1 className="text-4xl font-bold tracking-tight text-white md:text-6xl">
             Run your salon on one{' '}

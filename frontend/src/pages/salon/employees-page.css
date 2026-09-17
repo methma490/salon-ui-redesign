@@ -1,6 +1,6 @@
 .emp-page {
-  --emp-primary: #0d5c3d;
-  --emp-primary-hover: #0a4a31;
+  --emp-primary: var(--brand-primary, #0d5c3d);
+  --emp-primary-hover: var(--brand-hover, #0a4a31);
   --emp-surface: #ffffff;
   --emp-border: #e5ebe8;
   --emp-muted: #64748b;
@@ -8,7 +8,7 @@
   --emp-danger: #dc2626;
   --emp-success: #16a34a;
   --emp-warning: #d97706;
-  --emp-shadow: 0 4px 24px rgba(13, 92, 61, 0.08);
+  --emp-shadow: 0 4px 24px color-mix(in srgb, var(--brand-primary, #0d5c3d) 12%, transparent);
   --emp-radius: 12px;
   font-family: inherit;
 }
@@ -144,7 +144,7 @@
 .emp-select:focus {
   outline: none;
   border-color: var(--emp-primary);
-  box-shadow: 0 0 0 3px rgba(13, 92, 61, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary, #0d5c3d) 12%, transparent);
 }
 
 .emp-btn {
@@ -445,7 +445,7 @@
 
 .emp-icon-btn:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(13, 92, 61, 0.15);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary, #0d5c3d) 15%, transparent);
 }
 
 .emp-empty {
@@ -750,7 +750,7 @@
 .emp-role-card input:checked + .emp-role-card-inner {
   border-color: var(--emp-primary);
   background: #f0fdf4;
-  box-shadow: 0 0 0 1px rgba(13, 92, 61, 0.12);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand-primary, #0d5c3d) 12%, transparent);
 }
 
 .emp-role-card input:focus-visible + .emp-role-card-inner {
@@ -812,7 +812,7 @@
   padding: 1rem;
   border-radius: 12px;
   background: linear-gradient(135deg, #f8fafc 0%, #f0fdf4 100%);
-  border: 1px solid #d1fae5;
+  border: 1px solid var(--brand-soft-strong, #d1fae5);
 }
 
 .emp-login-panel-head {
@@ -991,7 +991,7 @@
 .emp-textarea:focus {
   outline: none;
   border-color: var(--emp-primary);
-  box-shadow: 0 0 0 3px rgba(13, 92, 61, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary, #0d5c3d) 12%, transparent);
 }
 
 .emp-panel-header {
@@ -1105,7 +1105,7 @@
 .emp-filter-field input:focus,
 .emp-filter-field button[role='combobox']:focus {
   border-color: var(--emp-primary) !important;
-  box-shadow: 0 0 0 3px rgba(13, 92, 61, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary, #0d5c3d) 12%, transparent);
 }
 
 .emp-mobile-filters {

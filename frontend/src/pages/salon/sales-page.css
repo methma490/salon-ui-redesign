@@ -1,6 +1,6 @@
 .sales-page {
-  --sale-primary: #0d5c3d;
-  --sale-primary-light: #ecfdf3;
+  --sale-primary: var(--brand-primary, #0d5c3d);
+  --sale-primary-light: var(--brand-soft, #ecfdf3);
   --sale-border: #dbe3df;
   --sale-muted: #64748b;
   --sale-surface: #ffffff;
@@ -30,7 +30,7 @@
   border: 1px solid var(--sale-border);
   border-radius: var(--sale-radius);
   background: var(--sale-surface);
-  box-shadow: 0 2px 12px rgba(13, 92, 61, 0.06);
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--brand-primary, #0d5c3d) 6%, transparent);
 }
 
 .sales-stat-icon {
@@ -72,7 +72,7 @@
   border: 1px solid var(--sale-border);
   border-radius: var(--sale-radius);
   background: var(--sale-surface);
-  box-shadow: 0 2px 12px rgba(13, 92, 61, 0.05);
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--brand-primary, #0d5c3d) 5%, transparent);
 }
 
 .sales-filters-title {
@@ -115,14 +115,14 @@
 .sales-filter-field input:focus,
 .sales-filter-field button[role='combobox']:focus {
   border-color: var(--sale-primary) !important;
-  box-shadow: 0 0 0 3px rgba(13, 92, 61, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary, #0d5c3d) 12%, transparent);
 }
 
 .sales-panel {
   border: 1px solid var(--sale-border);
   border-radius: var(--sale-radius);
   background: var(--sale-surface);
-  box-shadow: 0 2px 12px rgba(13, 92, 61, 0.05);
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--brand-primary, #0d5c3d) 5%, transparent);
   overflow: hidden;
 }
 
@@ -310,8 +310,8 @@
 
 /* Detail / invoice page */
 .sale-detail-page {
-  --sale-primary: #0d5c3d;
-  --sale-primary-light: #ecfdf3;
+  --sale-primary: var(--brand-primary, #0d5c3d);
+  --sale-primary-light: var(--brand-soft, #ecfdf3);
   --sale-border: #e2e8f0;
   --sale-muted: #64748b;
   width: 100%;
@@ -361,12 +361,12 @@
   font-size: 0.875rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(13, 92, 61, 0.2);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--brand-primary, #0d5c3d) 20%, transparent);
   flex-shrink: 0;
 }
 
 .sale-print-btn:hover {
-  background: #0a4a31;
+  background: var(--brand-hover, #0a4a31);
 }
 
 /* Unified invoice document */
@@ -656,7 +656,7 @@
 }
 
 .sale-type-service {
-  background: #ecfdf3;
+  background: var(--brand-soft, #ecfdf3);
   color: #166534;
 }
 

@@ -23,9 +23,10 @@ import { TenantContextGuard } from '../../tenant/guards/tenant-context.guard';
 import { TenantContext } from '../../tenant/interfaces/tenant-context.interface';
 import {
   ChangePasswordDto,
+  UpdateAccountSettingsDto,
+  UpdateAppearanceSettingsDto,
   ChangeSubscriptionPlanDto,
   CreateRoleDto,
-  UpdateAccountSettingsDto,
   UpdateSalonSettingsDto,
   UpdateRolePermissionsDto,
   UpdateUserAccessDto,
@@ -41,6 +42,25 @@ export class SettingsController {
   @Get()
   getSettings(@CurrentTenant() tenant: TenantContext, @CurrentUser() user: AuthenticatedUser) {
     return this.settingsService.getSettings(tenant.tenantId, tenant.schemaName, user.id);
+  }
+
+  @Get('appearance')
+  getAppearance(@CurrentTenant() tenant: TenantContext) {
+    return this.settingsService.getAppearance(tenant.tenantId);
+  }
+
+  @Patch('appearance')
+  updateAppearance(
+    @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateAppearanceSettingsDto,
+  ) {
+    return this.settingsService.updateAppearance(tenant.tenantId, dto, user.roles);
+  }
+
+  @Post('appearance/reset')
+  resetAppearance(@CurrentTenant() tenant: TenantContext, @CurrentUser() user: AuthenticatedUser) {
+    return this.settingsService.resetAppearance(tenant.tenantId, user.roles);
   }
 
   @Patch('salon')

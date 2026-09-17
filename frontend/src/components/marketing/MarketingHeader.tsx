@@ -15,7 +15,7 @@ export function MarketingHeader() {
             <Scissors className="h-4 w-4" />
           </span>
           <span>
-            Salon <span className="text-primary">SaaS</span>
+            Dart Smart <span className="text-primary">Salon</span>
           </span>
         </Link>
 

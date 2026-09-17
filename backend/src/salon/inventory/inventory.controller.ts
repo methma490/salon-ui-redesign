@@ -12,6 +12,8 @@ import { TenantContext } from '../../tenant/interfaces/tenant-context.interface'
 import {
   CreateProductCategoryDto,
   CreateProductDto,
+  CreateStockCreditPaymentDto,
+  ListStockCreditsQueryDto,
   ListStockMovementsQueryDto,
   StockAdjustmentDto,
   StockInDto,
@@ -125,5 +127,31 @@ export class InventoryController {
     @Query() query: ListStockMovementsQueryDto,
   ) {
     return this.inventoryService.listStockMovements(tenant.schemaName, query);
+  }
+
+  @Get('stock/credits')
+  @RequirePermission('PRODUCT_VIEW')
+  listStockCredits(
+    @CurrentTenant() tenant: TenantContext,
+    @Query() query: ListStockCreditsQueryDto,
+  ) {
+    return this.inventoryService.listStockCredits(tenant.schemaName, query);
+  }
+
+  @Get('stock/credits/:id')
+  @RequirePermission('PRODUCT_VIEW')
+  getStockCredit(@CurrentTenant() tenant: TenantContext, @Param('id') id: string) {
+    return this.inventoryService.getStockCredit(tenant.schemaName, id);
+  }
+
+  @Post('stock/credits/:id/payments')
+  @RequirePermission('PRODUCT_UPDATE')
+  addStockCreditPayment(
+    @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() dto: CreateStockCreditPaymentDto,
+  ) {
+    return this.inventoryService.addStockCreditPayment(tenant.schemaName, id, dto, user.id);
   }
 }

@@ -148,7 +148,7 @@ describe('buildInvoiceHtml', () => {
           },
         ],
       },
-      { name: 'Salon360', email: 'billing@salon360.local', address: 'Colombo' },
+      { name: 'Dart Smart Salon', email: 'billing@dartsmartsalon.local', address: 'Colombo' },
     );
 
     expect(html).toContain('INV-2026-000001');

@@ -11,7 +11,12 @@
   align-items: center;
   gap: 1rem;
   padding: 1.25rem 1.5rem;
-  background: linear-gradient(135deg, #0d5c3d 0%, #147a52 55%, #1a9666 100%);
+  background: linear-gradient(
+    135deg,
+    var(--brand-primary, #0d5c3d) 0%,
+    var(--brand-hover, #147a52) 55%,
+    color-mix(in srgb, var(--brand-primary, #0d5c3d) 75%, white) 100%
+  );
   border-radius: var(--emp-radius);
   color: #fff;
   box-shadow: var(--emp-shadow);
@@ -125,7 +130,7 @@
 .settings-tab-active {
   background: var(--emp-surface);
   color: var(--emp-primary);
-  box-shadow: 0 1px 4px rgba(13, 92, 61, 0.12);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--brand-primary, #0d5c3d) 12%, transparent);
 }
 
 /* ── Panel cards ── */
@@ -279,7 +284,7 @@
 .settings-plan-banner-name {
   font-size: 1.125rem;
   font-weight: 800;
-  color: #0d5c3d;
+  color: var(--brand-primary, #0d5c3d);
   margin: 0 0 0.25rem;
 }
 
@@ -401,7 +406,7 @@
 .settings-user-card-active {
   border-color: var(--emp-primary);
   background: #f0fdf4;
-  box-shadow: 0 0 0 1px rgba(13, 92, 61, 0.15);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand-primary, #0d5c3d) 15%, transparent);
 }
 
 .settings-user-avatar {
@@ -493,7 +498,7 @@
 .settings-role-radio input:checked + .settings-role-radio-card {
   border-color: var(--emp-primary);
   background: #f0fdf4;
-  box-shadow: 0 0 0 1px rgba(13, 92, 61, 0.12);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand-primary, #0d5c3d) 12%, transparent);
 }
 
 .settings-role-radio input:focus-visible + .settings-role-radio-card {
@@ -645,14 +650,14 @@
 .settings-perm-radio input:checked + .settings-perm-radio-label {
   border-color: var(--emp-primary);
   background: #ecfdf5;
-  color: #0d5c3d;
+  color: var(--brand-primary, #0d5c3d);
   font-weight: 700;
 }
 
 .settings-perm-radio-active .settings-perm-radio-label {
   border-color: var(--emp-primary);
   background: #ecfdf5;
-  color: #0d5c3d;
+  color: var(--brand-primary, #0d5c3d);
   font-weight: 700;
 }
 
@@ -911,4 +916,207 @@
   border: 1px solid var(--emp-border);
   border-radius: 8px;
   font-size: 0.875rem;
+}
+
+/* Appearance tab */
+.settings-appearance-layout {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 900px) {
+  .settings-appearance-layout {
+    grid-template-columns: minmax(0, 1.2fr) minmax(16rem, 0.9fr);
+    align-items: start;
+  }
+}
+
+.settings-swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+@media (min-width: 480px) {
+  .settings-swatch-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 720px) {
+  .settings-swatch-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.settings-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.65rem 0.4rem;
+  border: 1px solid var(--emp-border);
+  border-radius: 0.75rem;
+  background: #fff;
+  cursor: pointer;
+  min-height: 4.5rem;
+}
+
+.settings-swatch:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.settings-swatch.is-selected {
+  border-color: var(--brand-primary, #0d5c3d);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-primary, #0d5c3d) 25%, transparent);
+  background: var(--brand-soft, #ecfdf3);
+}
+
+.settings-swatch-color {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.12);
+}
+
+.settings-swatch-label {
+  font-size: 0.7rem;
+  font-weight: 650;
+  color: #334155;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.settings-custom-color {
+  display: grid;
+  grid-template-columns: 3rem 1fr;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.settings-custom-color input[type='color'] {
+  width: 3rem;
+  height: 2.55rem;
+  padding: 0.2rem;
+  border: 1px solid var(--emp-border);
+  border-radius: 0.65rem;
+  background: #fff;
+}
+
+.settings-field-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.75rem;
+  color: var(--emp-muted);
+}
+
+.settings-appearance-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.settings-preview-card {
+  border: 1px solid var(--emp-border);
+  border-radius: 0.9rem;
+  padding: 1rem;
+  background: #f8fafc;
+}
+
+.settings-preview-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--emp-muted);
+  margin-bottom: 0.75rem;
+}
+
+.settings-preview-nav {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.settings-preview-nav span {
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.55rem;
+  font-size: 0.8rem;
+  color: #64748b;
+  background: #fff;
+  border: 1px solid var(--emp-border);
+}
+
+.settings-preview-nav span.is-active {
+  background: var(--brand-soft, #ecfdf3);
+  color: var(--brand-primary, #0d5c3d);
+  border-color: transparent;
+  font-weight: 650;
+  box-shadow: inset 3px 0 0 var(--brand-primary, #0d5c3d);
+}
+
+.settings-preview-btn {
+  width: 100%;
+  min-height: 2.5rem;
+  border: none;
+  border-radius: 0.65rem;
+  font-weight: 650;
+  margin-bottom: 0.75rem;
+  cursor: default;
+}
+
+.settings-preview-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
+}
+
+.settings-preview-badge {
+  display: inline-flex;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid;
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.settings-preview-success {
+  font-size: 0.72rem;
+  font-weight: 650;
+  color: #16a34a;
+  background: #dcfce7;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+}
+
+.settings-preview-error {
+  font-size: 0.72rem;
+  font-weight: 650;
+  color: #dc2626;
+  background: #fee2e2;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+}
+
+.settings-preview-input {
+  width: 100%;
+  min-height: 2.4rem;
+  border-radius: 0.65rem;
+  border: 2px solid;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.8rem;
+  background: #fff;
+  margin-bottom: 0.55rem;
+}
+
+.settings-preview-hex {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #0f172a;
 }

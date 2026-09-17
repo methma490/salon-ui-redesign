@@ -249,7 +249,7 @@ export default function PremiumDashboardPage() {
               <h3 className="s360-card-title">Sales Performance</h3>
               <p className="s360-card-sub">Revenue trend for selected period</p>
             </div>
-            <TrendingUp size={18} color="#0d5c3d" />
+            <TrendingUp size={18} color="var(--brand-primary, #0d5c3d)" />
           </div>
           <div className="s360-card-body chart">
             {charts.salesTrend.length > 0 ? (
@@ -321,7 +321,10 @@ export default function PremiumDashboardPage() {
                 <AppointmentStackedChart data={charts.appointmentAnalytics} />
                 <div className="s360-legend">
                   <span className="s360-legend-item">
-                    <span className="s360-legend-dot" style={{ background: '#0d5c3d' }} />
+                    <span
+                      className="s360-legend-dot"
+                      style={{ background: 'var(--brand-primary, #0d5c3d)' }}
+                    />
                     Completed
                   </span>
                   <span className="s360-legend-item">

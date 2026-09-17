@@ -74,3 +74,24 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.sa-page .sa-filter-grid {
+  max-width: 56rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .sa-page .sa-filter-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.sa-page .sa-stats {
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .sa-page .settings-tabs {
+    flex-wrap: wrap;
+  }
+}

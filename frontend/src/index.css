@@ -39,6 +39,44 @@
   }
 }
 
+/* Salon Admin brand tokens — overridden at runtime by TenantThemeProvider */
+.salon-theme-root {
+  --brand-primary: #0d5c3d;
+  --brand-hover: #0a4a31;
+  --brand-active: #064e32;
+  --brand-soft: #ecfdf3;
+  --brand-soft-strong: #d1fae5;
+  --brand-border: #a7f3d0;
+  --brand-focus: #6ee7b7;
+  --brand-ring: #34d399;
+  --brand-foreground: #ffffff;
+  --brand-soft-bg: #ecfdf3;
+
+  /* Shared s360-* dashboard accents (also used by Super Admin with green defaults) */
+  --s360-brand: var(--brand-primary);
+  --s360-brand-hover: var(--brand-hover);
+  --s360-brand-soft: var(--brand-soft);
+  --s360-brand-dot: var(--brand-primary);
+
+  --emp-primary: var(--brand-primary);
+  --emp-primary-hover: var(--brand-hover);
+  --pos-primary: var(--brand-primary);
+  --sale-primary: var(--brand-primary);
+  --sd-primary: var(--brand-primary);
+  --sub-primary: var(--brand-primary);
+  --dash-primary: var(--brand-primary);
+  --pr-brand: var(--brand-primary);
+
+  /* Tailwind semantic primary follows brand inside salon workspace only */
+  --color-primary: var(--brand-primary);
+  --color-primary-foreground: var(--brand-foreground);
+  --color-ring: var(--brand-ring);
+  --color-accent: var(--brand-soft);
+  --color-accent-foreground: var(--brand-primary);
+  --color-secondary: var(--brand-soft);
+  --color-secondary-foreground: var(--brand-primary);
+}
+
 @layer utilities {
   .marketing-card-shadow {
     box-shadow:

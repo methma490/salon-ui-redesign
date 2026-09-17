@@ -4,6 +4,7 @@ import { TenantSchemaService } from '../../tenant/services/tenant-schema.service
 import { tenantTable } from '../../tenant/utils/schema-name.util';
 import { calculateCommissionAmount } from '../sales/sale-assignment.util';
 import {
+  commissionableServiceLineSql,
   eligibleSaleStatusSql,
   netSaleAmountSql,
 } from '../sales/sale-eligibility';
@@ -212,6 +213,8 @@ export class SalesAnalyticsService {
     const branches = tenantTable(schemaName, 'branches');
     const customers = tenantTable(schemaName, 'customers');
     const saleEmployees = tenantTable(schemaName, 'sale_employees');
+    const saleItems = tenantTable(schemaName, 'sale_items');
+    const saleItemEmployees = tenantTable(schemaName, 'sale_item_employees');
     const employees = tenantTable(schemaName, 'employees');
     const { page, limit, offset } = resolvePagination(query.page, query.limit ?? 20);
 
@@ -221,8 +224,9 @@ export class SalesAnalyticsService {
       let employeeFilter = '';
       if (query.employeeId) {
         employeeFilter = `AND EXISTS (
-          SELECT 1 FROM ${saleEmployees} sex
-          WHERE sex.sale_id = s.id AND sex.employee_id = $${idx++}::uuid
+          SELECT 1 FROM ${saleItemEmployees} siex
+          INNER JOIN ${saleItems} six ON six.id = siex.sale_item_id AND six.item_type = 'service'
+          WHERE six.sale_id = s.id AND siex.employee_id = $${idx++}::uuid
         )`;
         params.push(query.employeeId);
       }
@@ -301,8 +305,9 @@ export class SalesAnalyticsService {
   async getByEmployee(schemaName: string, query: SalesAnalyticsQueryDto) {
     const range = this.resolveDateRange(query);
     const sales = tenantTable(schemaName, 'sales');
+    const saleItems = tenantTable(schemaName, 'sale_items');
+    const saleItemEmployees = tenantTable(schemaName, 'sale_item_employees');
     const branches = tenantTable(schemaName, 'branches');
-    const saleEmployees = tenantTable(schemaName, 'sale_employees');
     const employees = tenantTable(schemaName, 'employees');
     const { page, limit, offset } = resolvePagination(query.page, query.limit ?? 20);
 
@@ -310,6 +315,7 @@ export class SalesAnalyticsService {
       const params: unknown[] = [range.from, range.to];
       let idx = 3;
       const filters: string[] = [
+        `si.item_type = 'service'`,
         eligibleSaleStatusSql('s'),
         `s.created_at >= $1::date`,
         `s.created_at < ($2::date + INTERVAL '1 day')`,
@@ -319,7 +325,7 @@ export class SalesAnalyticsService {
         params.push(query.branchId);
       }
       if (query.employeeId) {
-        filters.push(`se.employee_id = $${idx++}::uuid`);
+        filters.push(`sie.employee_id = $${idx++}::uuid`);
         params.push(query.employeeId);
       }
       if (query.search?.trim()) {
@@ -329,15 +335,17 @@ export class SalesAnalyticsService {
       }
 
       const where = filters.join(' AND ');
+      const lineValue = commissionableServiceLineSql('s', 'si');
       const fromClause = `
-        FROM ${saleEmployees} se
-        INNER JOIN ${sales} s ON s.id = se.sale_id
-        INNER JOIN ${employees} e ON e.id = se.employee_id
+        FROM ${saleItemEmployees} sie
+        INNER JOIN ${saleItems} si ON si.id = sie.sale_item_id
+        INNER JOIN ${sales} s ON s.id = si.sale_id
+        INNER JOIN ${employees} e ON e.id = sie.employee_id
         INNER JOIN ${branches} b ON b.id = e.branch_id
         WHERE ${where}`;
 
       const countRows = await tx.$queryRawUnsafe<Array<{ count: bigint }>>(
-        `SELECT COUNT(DISTINCT se.employee_id)::bigint AS count ${fromClause}`,
+        `SELECT COUNT(DISTINCT sie.employee_id)::bigint AS count ${fromClause}`,
         ...params,
       );
       const total = Number(countRows[0]?.count ?? 0);
@@ -352,11 +360,11 @@ export class SalesAnalyticsService {
            b.name AS "branchName",
            COALESCE(e.commission_rate, 0)::float AS "commissionRate",
            COUNT(DISTINCT s.id)::int AS "attendedInvoiceCount",
-           COALESCE(SUM(se.commissionable_amount), 0)::float AS "allocatedSales",
-           COALESCE(SUM(se.commissionable_amount), 0)::float AS "commissionableSales"
+           COALESCE(SUM(${lineValue}), 0)::float AS "allocatedSales",
+           COALESCE(SUM(${lineValue}), 0)::float AS "commissionableSales"
          ${fromClause}
          GROUP BY e.id, e.name, e.code, e.designation, e.branch_id, b.name, e.commission_rate
-         ORDER BY COALESCE(SUM(se.commissionable_amount), 0) DESC
+         ORDER BY COALESCE(SUM(${lineValue}), 0) DESC
          LIMIT $${idx} OFFSET $${idx + 1}`,
         ...params,
         limit,
@@ -401,9 +409,10 @@ export class SalesAnalyticsService {
   ) {
     const range = this.resolveDateRange(query);
     const sales = tenantTable(schemaName, 'sales');
+    const saleItems = tenantTable(schemaName, 'sale_items');
+    const saleItemEmployees = tenantTable(schemaName, 'sale_item_employees');
     const branches = tenantTable(schemaName, 'branches');
     const customers = tenantTable(schemaName, 'customers');
-    const saleEmployees = tenantTable(schemaName, 'sale_employees');
     const employees = tenantTable(schemaName, 'employees');
     const { page, limit, offset } = resolvePagination(query.page, query.limit ?? 20);
 
@@ -435,7 +444,8 @@ export class SalesAnalyticsService {
       const params: unknown[] = [employeeId, range.from, range.to];
       let idx = 4;
       const filters = [
-        `se.employee_id = $1::uuid`,
+        `sie.employee_id = $1::uuid`,
+        `si.item_type = 'service'`,
         eligibleSaleStatusSql('s'),
         `s.created_at >= $2::date`,
         `s.created_at < ($3::date + INTERVAL '1 day')`,
@@ -446,13 +456,18 @@ export class SalesAnalyticsService {
       }
 
       const where = filters.join(' AND ');
+      const lineValue = commissionableServiceLineSql('s', 'si');
+      const lineFrom = `
+        FROM ${saleItemEmployees} sie
+        INNER JOIN ${saleItems} si ON si.id = sie.sale_item_id
+        INNER JOIN ${sales} s ON s.id = si.sale_id`;
+
       const summaryRows = await tx.$queryRawUnsafe<
         Array<{ invoiceCount: bigint; allocatedSales: number }>
       >(
         `SELECT COUNT(DISTINCT s.id)::bigint AS "invoiceCount",
-                COALESCE(SUM(se.commissionable_amount), 0)::float AS "allocatedSales"
-         FROM ${saleEmployees} se
-         INNER JOIN ${sales} s ON s.id = se.sale_id
+                COALESCE(SUM(${lineValue}), 0)::float AS "allocatedSales"
+         ${lineFrom}
          WHERE ${where}`,
         ...params,
       );
@@ -464,8 +479,7 @@ export class SalesAnalyticsService {
 
       const countRows = await tx.$queryRawUnsafe<Array<{ count: bigint }>>(
         `SELECT COUNT(*)::bigint AS count
-         FROM ${saleEmployees} se
-         INNER JOIN ${sales} s ON s.id = se.sale_id
+         ${lineFrom}
          WHERE ${where}`,
         ...params,
       );
@@ -474,17 +488,17 @@ export class SalesAnalyticsService {
       const invoices = await tx.$queryRawUnsafe(
         `SELECT s.id, s.sale_number AS "saleNumber", s.created_at AS "createdAt",
                 b.name AS "branchName", c.name AS "customerName",
+                si.name AS "serviceName",
                 s.total::float AS "invoiceTotal",
-                se.commissionable_amount::float AS "employeeSales",
-                se.allocation_percentage::float AS "allocationPercentage",
-                se.assignment_type::text AS "assignmentType",
+                (${lineValue})::float AS "employeeSales",
+                100::float AS "allocationPercentage",
+                'LINE'::text AS "assignmentType",
                 s.status::text AS status
-         FROM ${saleEmployees} se
-         INNER JOIN ${sales} s ON s.id = se.sale_id
+         ${lineFrom}
          INNER JOIN ${branches} b ON b.id = s.branch_id
          LEFT JOIN ${customers} c ON c.id = s.customer_id
          WHERE ${where}
-         ORDER BY s.created_at DESC
+         ORDER BY s.created_at DESC, si.name ASC
          LIMIT $${idx} OFFSET $${idx + 1}`,
         ...params,
         limit,
@@ -617,7 +631,8 @@ export class SalesAnalyticsService {
   async getByDay(schemaName: string, query: SalesAnalyticsQueryDto) {
     const range = this.resolveDateRange(query);
     const sales = tenantTable(schemaName, 'sales');
-    const saleEmployees = tenantTable(schemaName, 'sale_employees');
+    const saleItems = tenantTable(schemaName, 'sale_items');
+    const saleItemEmployees = tenantTable(schemaName, 'sale_item_employees');
     const { page, limit, offset } = resolvePagination(query.page, query.limit ?? 50);
 
     return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
@@ -634,8 +649,9 @@ export class SalesAnalyticsService {
       }
       if (query.employeeId) {
         filters.push(`EXISTS (
-          SELECT 1 FROM ${saleEmployees} se
-          WHERE se.sale_id = s.id AND se.employee_id = $${idx++}::uuid
+          SELECT 1 FROM ${saleItemEmployees} sie
+          INNER JOIN ${saleItems} si ON si.id = sie.sale_item_id AND si.item_type = 'service'
+          WHERE si.sale_id = s.id AND sie.employee_id = $${idx++}::uuid
         )`);
         params.push(query.employeeId);
       }
@@ -670,7 +686,7 @@ export class SalesAnalyticsService {
     });
   }
 
-  /** Used by payroll — month allocated sales + commission for one employee. */
+  /** Used by payroll — monthly SUM of assigned service lines × commission rate. */
   async getEmployeeCommissionForPeriod(
     schemaName: string,
     employeeId: string,
@@ -691,7 +707,8 @@ export class SalesAnalyticsService {
 
     const run = async (client: TenantTx) => {
       const sales = tenantTable(schemaName, 'sales');
-      const saleEmployees = tenantTable(schemaName, 'sale_employees');
+      const saleItems = tenantTable(schemaName, 'sale_items');
+      const saleItemEmployees = tenantTable(schemaName, 'sale_item_employees');
       const employees = tenantTable(schemaName, 'employees');
 
       const rateRows = await client.$queryRawUnsafe<Array<{ commissionRate: number }>>(
@@ -705,10 +722,11 @@ export class SalesAnalyticsService {
         Array<{ invoiceCount: bigint; commissionableSales: number }>
       >(
         `SELECT COUNT(DISTINCT s.id)::bigint AS "invoiceCount",
-                COALESCE(SUM(se.commissionable_amount), 0)::float AS "commissionableSales"
-         FROM ${saleEmployees} se
-         INNER JOIN ${sales} s ON s.id = se.sale_id
-         WHERE se.employee_id = $1::uuid
+                COALESCE(SUM(${commissionableServiceLineSql('s', 'si')}), 0)::float AS "commissionableSales"
+         FROM ${saleItemEmployees} sie
+         INNER JOIN ${saleItems} si ON si.id = sie.sale_item_id AND si.item_type = 'service'
+         INNER JOIN ${sales} s ON s.id = si.sale_id
+         WHERE sie.employee_id = $1::uuid
            AND ${eligibleSaleStatusSql('s')}
            AND s.created_at >= $2::date
            AND s.created_at < ($3::date + INTERVAL '1 day')`,

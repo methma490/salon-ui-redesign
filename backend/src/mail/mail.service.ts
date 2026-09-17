@@ -17,7 +17,7 @@ export class MailService {
     resetUrl: string;
     portalLabel: string;
   }): Promise<void> {
-    const from = this.configService.get<string>('mail.from', 'Salon360 <noreply@salon360.local>');
+    const from = this.configService.get<string>('mail.from', 'Dart Smart Salon <noreply@dartsmartsalon.local>');
     const subject = 'Reset your password';
     const text = [
       `You requested a password reset for your ${input.portalLabel} account.`,

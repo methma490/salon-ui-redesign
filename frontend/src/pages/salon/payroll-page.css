@@ -1,209 +1,661 @@
-/* Payroll section layout — scoped so other emp pages stay unchanged */
+/* Payroll — mobile-first layout */
 
 .payroll-page {
+  --pr-ink: #0f172a;
+  --pr-muted: #64748b;
+  --pr-line: #e2e8f0;
+  --pr-soft: #f8fafc;
+  --pr-brand: var(--brand-primary, #0d5c3d);
+  --pr-brand-soft: var(--brand-soft, #ecfdf3);
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 0.85rem;
+  padding-bottom: 0.5rem;
 }
 
-.payroll-page .emp-header {
-  margin-bottom: 0;
+.payroll-page.has-sticky-actions {
+  padding-bottom: 5.5rem;
 }
 
-.payroll-page .emp-stats {
-  margin-bottom: 0;
-}
-
-.payroll-page .emp-form-panel {
-  padding: 1.25rem 1.35rem 1.35rem;
-}
-
-.payroll-page .payroll-toolbar {
-  padding: 1.25rem 1.35rem 1.35rem;
-  border-bottom: 1px solid var(--emp-border, #e5ebe8);
-}
-
-.payroll-page .emp-form-panel-title,
-.payroll-page .payroll-toolbar-title {
-  margin: 0 0 1rem;
-  font-size: 0.9375rem;
-  font-weight: 700;
-  color: #0f172a;
-}
-
-.payroll-page .emp-form-panel-desc {
-  margin: -0.5rem 0 1rem;
-}
-
-.payroll-page .emp-filter-grid {
-  display: grid;
-  gap: 1rem 1.25rem;
-}
-
-@media (min-width: 640px) {
-  .payroll-page .emp-filter-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .payroll-page .emp-filter-grid.cols-3 {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-.payroll-page .emp-filter-field {
+/* Hero */
+.pr-hero {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.75rem;
+  padding: 1rem 1.05rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, var(--pr-brand) 0%, var(--brand-hover, #0a4a31) 100%);
+  color: #fff;
+}
+
+.pr-hero-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   min-width: 0;
 }
 
-.payroll-page .emp-filter-field label,
-.payroll-page .emp-filter-field .text-sm {
-  display: block;
+.pr-hero-icon {
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 1.15rem;
+}
+
+.pr-hero h1 {
   margin: 0;
-  font-size: 0.6875rem;
+  font-size: 1.2rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--emp-muted, #64748b);
+  line-height: 1.2;
 }
 
-.payroll-page .emp-filter-field input,
-.payroll-page .emp-filter-field button[role='combobox'] {
-  width: 100%;
-  min-height: 2.5rem;
+.pr-hero p {
+  margin: 0.15rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.78);
 }
 
-.payroll-page .payroll-generate-actions {
+.pr-hero-pills {
   display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.4rem;
 }
 
-.payroll-page .payroll-generate-label-spacer {
-  visibility: hidden;
-  pointer-events: none;
+.pr-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
-.payroll-page.settings-shell .payroll-generate-grid {
-  grid-template-columns: 1fr;
-  max-width: 52rem;
+.pr-pill-net {
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 @media (min-width: 640px) {
-  .payroll-page.settings-shell .payroll-generate-grid {
-    grid-template-columns: 1fr 1fr auto;
-    align-items: end;
+  .pr-hero {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.15rem 1.35rem;
+  }
+
+  .pr-hero h1 {
+    font-size: 1.35rem;
+  }
+
+  .pr-hero p {
+    font-size: 0.875rem;
   }
 }
 
-.payroll-page.settings-shell .emp-stats {
-  margin-top: 0.25rem;
+/* Cards */
+.pr-card {
+  background: #fff;
+  border: 1px solid var(--pr-line);
+  border-radius: 1rem;
+  padding: 1rem;
 }
 
-.payroll-page.settings-shell .settings-panel + .settings-panel {
-  margin-top: 0;
+@media (min-width: 640px) {
+  .pr-card {
+    padding: 1.2rem 1.35rem;
+  }
 }
 
-.payroll-page .payroll-generate-actions .emp-btn {
+.pr-card-head {
+  margin-bottom: 0.9rem;
+}
+
+.pr-card-head h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--pr-ink);
+}
+
+.pr-card-head p {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--pr-muted);
+}
+
+.pr-empty {
+  padding: 1.25rem 0.5rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--pr-muted);
+}
+
+/* Generate */
+.pr-generate {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.pr-generate-btn {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 720px) {
+  .pr-generate {
+    grid-template-columns: 8rem 11rem minmax(8rem, auto);
+    align-items: end;
+    max-width: 32rem;
+  }
+
+  .pr-generate-btn {
+    grid-column: auto;
+    width: auto;
+    min-width: 8.5rem;
+  }
+}
+
+.pr-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.pr-field > span,
+.pr-field > label,
+.pr-field Label,
+.pr-emp-fields .pr-field > span {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--pr-muted);
+}
+
+.pr-select,
+.pr-input {
   width: 100%;
-  min-height: 2.5rem;
+  min-height: 2.55rem;
+  border: 1px solid var(--pr-line);
+  border-radius: 0.65rem;
+  background: #fff;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.9rem;
+  color: var(--pr-ink);
 }
 
-.payroll-page .emp-panel-header {
-  padding: 1.25rem 1.35rem;
-  border-bottom: 1px solid var(--emp-border, #e5ebe8);
+.pr-input {
+  font-variant-numeric: tabular-nums;
+}
+
+.pr-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.55rem;
+  padding: 0.55rem 1rem;
+  border-radius: 0.65rem;
+  border: 1px solid transparent;
+  font-size: 0.875rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.pr-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.pr-btn-primary {
+  background: var(--pr-brand);
+  color: #fff;
+}
+
+.pr-btn-primary:hover:not(:disabled) {
+  background: var(--brand-hover, #0a4a31);
+}
+
+.pr-btn-secondary {
+  background: #fff;
+  border-color: var(--pr-line);
+  color: var(--pr-ink);
+}
+
+.pr-btn-secondary:hover:not(:disabled) {
+  background: var(--pr-soft);
+}
+
+/* Run picker */
+.pr-runs {
+  display: flex;
+  gap: 0.65rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.1rem 0.1rem 0.35rem;
+  margin: 0 -0.15rem;
+  scrollbar-width: thin;
+}
+
+.pr-run {
+  flex: 0 0 min(78vw, 15.5rem);
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--pr-line);
+  border-radius: 0.85rem;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pr-run:hover {
+  border-color: #cbd5e1;
+  background: var(--pr-soft);
+}
+
+.pr-run.is-active {
+  border-color: var(--pr-brand);
+  background: var(--pr-brand-soft);
+  box-shadow: 0 0 0 1px rgba(15, 118, 110, 0.22);
+}
+
+.pr-run-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.pr-run-period {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--pr-ink);
+}
+
+.pr-run-net {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--pr-brand);
+  font-variant-numeric: tabular-nums;
+}
+
+.pr-run-meta {
+  font-size: 0.7rem;
+  color: var(--pr-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 900px) {
+  .pr-runs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+    overflow: visible;
+    scroll-snap-type: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .pr-run {
+    flex: none;
+    width: auto;
+  }
+}
+
+/* Badges */
+.pr-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.pr-badge-draft {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.pr-badge-done,
+.pr-badge-paid {
+  background: #ccfbf1;
+  color: var(--pr-brand);
+}
+
+/* Detail */
+.pr-detail-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-bottom: 0.9rem;
+}
+
+.pr-detail-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pr-detail-title h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--pr-ink);
+}
+
+.pr-detail-sub {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: var(--pr-muted);
+}
+
+.pr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pr-actions-desktop {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .pr-detail-head {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .pr-actions-desktop {
+    display: flex;
+  }
+}
+
+.pr-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+
+.pr-summary-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 0.75rem;
+  background: var(--pr-soft);
+  border: 1px solid var(--pr-line);
+}
+
+.pr-summary-cell span {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--pr-muted);
+}
+
+.pr-summary-cell strong {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--pr-ink);
+  font-variant-numeric: tabular-nums;
+  word-break: break-word;
+}
+
+.pr-summary-net {
+  background: var(--pr-brand-soft);
+  border-color: #99f6e4;
+}
+
+.pr-summary-net strong {
+  color: var(--pr-brand);
+}
+
+@media (min-width: 720px) {
+  .pr-summary-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Employee cards — primary on mobile */
+.pr-employee-cards {
+  display: flex;
+  flex-direction: column;
   gap: 0.75rem;
 }
 
-.payroll-page .emp-panel-title {
-  margin: 0;
-  font-size: 1.0625rem;
+.pr-emp-card {
+  border: 1px solid var(--pr-line);
+  border-radius: 0.9rem;
+  padding: 0.9rem;
+  background: #fff;
 }
 
-.payroll-page .emp-panel-desc {
-  margin: 0.4rem 0 0;
-  line-height: 1.4;
+.pr-emp-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
 }
 
-.payroll-page .emp-panel > .emp-empty {
-  padding: 2.75rem 1.5rem;
+.pr-emp-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--pr-ink);
 }
 
-.payroll-page .emp-panel > .emp-cards {
-  padding: 1rem 1.25rem 1.25rem;
-  gap: 0.875rem;
+.pr-emp-code {
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+  color: var(--pr-muted);
 }
 
-.payroll-page .emp-panel > .emp-table-wrap {
-  border-top: none;
+.pr-emp-net {
+  text-align: right;
+  flex-shrink: 0;
 }
 
-.payroll-page .emp-table th.num,
-.payroll-page .emp-table td.num {
+.pr-emp-net span {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--pr-muted);
+}
+
+.pr-emp-net strong {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--pr-brand);
+  font-variant-numeric: tabular-nums;
+}
+
+.pr-emp-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
+}
+
+.pr-emp-stats > div {
+  padding: 0.5rem 0.6rem;
+  border-radius: 0.55rem;
+  background: var(--pr-soft);
+}
+
+.pr-emp-stats span {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--pr-muted);
+}
+
+.pr-emp-stats strong {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.82rem;
+  font-weight: 650;
+  color: var(--pr-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.pr-emp-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+  margin-bottom: 0.75rem;
+}
+
+.pr-emp-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.85rem;
+  font-size: 0.75rem;
+  color: var(--pr-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.pr-link {
+  color: var(--pr-brand);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.pr-link:hover {
+  text-decoration: underline;
+}
+
+/* Desktop table */
+.pr-table-wrap {
+  display: none;
+  overflow-x: auto;
+  margin: 0 -0.15rem;
+  border: 1px solid var(--pr-line);
+  border-radius: 0.85rem;
+}
+
+.pr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.pr-table th,
+.pr-table td {
+  padding: 0.7rem 0.75rem;
+  border-bottom: 1px solid var(--pr-line);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.pr-table th {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--pr-muted);
+  background: var(--pr-soft);
+  white-space: nowrap;
+}
+
+.pr-table th.num,
+.pr-table td.num {
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-.payroll-page .emp-card-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
+.pr-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
-.payroll-page .payroll-settings-panel form {
-  padding: 0 1.25rem 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.payroll-page .payroll-settings-panel .emp-filter-grid {
-  gap: 1rem;
-}
-
-@media (min-width: 768px) {
-  .payroll-page .payroll-settings-panel .emp-filter-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-.payroll-page .payroll-run-detail {
-  margin-top: 0;
-}
-
-.payroll-page .payroll-run-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.payroll-page .payroll-items-table {
-  overflow-x: auto;
-}
-
-.payroll-page .payroll-items-table input.emp-input {
-  width: 100%;
-  min-width: 4.5rem;
+.pr-table .pr-input {
   min-height: 2.25rem;
-  padding: 0.35rem 0.5rem;
+  min-width: 4.5rem;
+  padding: 0.3rem 0.45rem;
   font-size: 0.8125rem;
 }
 
-.payroll-page .payroll-commission-preview {
-  font-size: 0.75rem;
-  color: var(--emp-muted, #64748b);
-  margin-top: 0.25rem;
+.pr-net-cell {
+  font-weight: 700;
 }
 
-.payroll-page .payroll-readonly {
-  font-variant-numeric: tabular-nums;
-  font-size: 0.875rem;
+@media (min-width: 960px) {
+  .pr-employee-cards {
+    display: none;
+  }
+
+  .pr-table-wrap {
+    display: block;
+  }
 }
 
-/* Payslip modal & print */
+/* Sticky mobile actions */
+.pr-sticky-actions {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+  padding: 0.75rem 0.85rem calc(0.75rem + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.96);
+  border-top: 1px solid var(--pr-line);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.pr-sticky-actions .pr-btn {
+  width: 100%;
+}
+
+.pr-sticky-actions .pr-btn-primary:only-child {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 768px) {
+  .payroll-page.has-sticky-actions {
+    padding-bottom: 0.5rem;
+  }
+
+  .pr-sticky-actions {
+    display: none;
+  }
+}
+
+/* Payslip print (shared) */
 .payslip-modal-actions {
   display: flex;
   flex-wrap: wrap;
@@ -213,37 +665,37 @@
 
 .payslip-print-area {
   background: #fff;
-  border: 1px solid var(--emp-border, #e2e8f0);
+  border: 1px solid var(--pr-line);
   border-radius: 0.5rem;
-  padding: 1.5rem;
+  padding: 1.25rem;
   max-width: 640px;
   margin: 0 auto;
 }
 
 .payslip-header {
   text-align: center;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.85rem;
   border-bottom: 2px solid #1e293b;
 }
 
 .payslip-header h2 {
   margin: 0 0 0.25rem;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 700;
 }
 
 .payslip-header p {
   margin: 0.125rem 0;
-  font-size: 0.875rem;
-  color: var(--emp-muted, #64748b);
+  font-size: 0.85rem;
+  color: var(--pr-muted);
 }
 
 .payslip-meta {
   display: grid;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
-  font-size: 0.875rem;
+  gap: 0.45rem;
+  margin-bottom: 1.1rem;
+  font-size: 0.85rem;
 }
 
 .payslip-section {
@@ -251,19 +703,20 @@
 }
 
 .payslip-section-title {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--emp-muted, #64748b);
-  margin-bottom: 0.5rem;
+  color: var(--pr-muted);
+  margin-bottom: 0.45rem;
 }
 
 .payslip-row {
   display: flex;
   justify-content: space-between;
-  padding: 0.375rem 0;
-  font-size: 0.875rem;
+  gap: 0.75rem;
+  padding: 0.35rem 0;
+  font-size: 0.85rem;
   border-bottom: 1px solid #f1f5f9;
 }
 
@@ -271,13 +724,9 @@
   font-weight: 700;
   border-top: 2px solid #1e293b;
   border-bottom: none;
-  padding-top: 0.75rem;
-  margin-top: 0.5rem;
-  font-size: 1rem;
-}
-
-.payslip-row .label {
-  color: #334155;
+  padding-top: 0.7rem;
+  margin-top: 0.4rem;
+  font-size: 0.95rem;
 }
 
 .payslip-row .value {
@@ -306,24 +755,5 @@
 
   .payslip-no-print {
     display: none !important;
-  }
-}
-
-@media (max-width: 639px) {
-  .payroll-page .emp-form-panel,
-  .payroll-page .payroll-toolbar {
-    padding: 1rem;
-  }
-
-  .payroll-page .emp-panel-header {
-    padding: 1rem;
-  }
-
-  .payroll-page .payroll-settings-panel form {
-    padding: 0 1rem 1rem;
-  }
-
-  .payroll-page .emp-panel > .emp-cards {
-    padding: 0.875rem 1rem 1rem;
   }
 }

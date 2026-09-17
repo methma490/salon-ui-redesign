@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { tenantApi, type AssignableEmployeeRole, type Employee } from '@/api/tenant.api';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -679,6 +680,12 @@ export default function EmployeesPage() {
                       <td>
                         <div className="emp-actions">
                           <OpsEditButton onClick={() => openEdit(emp)} />
+                          <Link
+                            className="emp-btn emp-btn-secondary"
+                            to={`/salon/sales-analytics?employeeId=${emp.id}&preset=this_month`}
+                          >
+                            Sales
+                          </Link>
                           {payrollEnabled && emp.status === 'ACTIVE' && (
                             <button
                               type="button"

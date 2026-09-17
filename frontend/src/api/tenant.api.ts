@@ -173,6 +173,7 @@ export interface TenantSettings {
     email: string | null;
     phone: string | null;
     logoUrl: string | null;
+    primaryColor?: string;
     status: string;
     createdAt: string;
   };
@@ -195,6 +196,12 @@ export interface TenantSettings {
     currency: string;
   } | null;
   features: Array<{ code: string; name: string; description: string | null }>;
+}
+
+export interface AppearanceSettings {
+  primaryColor: string;
+  isDefault: boolean;
+  defaultPrimaryColor: string;
 }
 
 export interface ExpenseCategory {
@@ -306,6 +313,7 @@ export interface PayrollItem {
   employerEpf: number;
   employerEtf: number;
   loanDeduction: number;
+  advanceDeduction?: number;
   otherDeduction: number;
   totalDeductions: number;
   netSalary: number;
@@ -388,7 +396,58 @@ export interface StockMovement {
   type: string;
   quantity: number;
   notes: string | null;
+  referenceType?: string | null;
+  referenceId?: string | null;
   createdAt: string;
+}
+
+export type StockReceiptPaymentStatus = 'UNPAID' | 'PARTIALLY_PAID' | 'PAID';
+
+export interface StockCreditSummary {
+  totalPurchases: number;
+  totalPaid: number;
+  totalOutstanding: number;
+}
+
+export interface StockCreditListItem {
+  id: string;
+  branchId: string;
+  branchName: string;
+  referenceNo: string | null;
+  purchaseDate: string;
+  totalAmount: number;
+  paidAmount: number;
+  outstandingAmount: number;
+  paymentStatus: StockReceiptPaymentStatus;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface StockCreditPayment {
+  id: string;
+  amount: number;
+  paymentMethod: string;
+  paymentDate: string;
+  paymentReference: string | null;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface StockCreditDetail extends StockCreditListItem {
+  items: Array<{
+    id: string;
+    productId: string;
+    productName: string;
+    productCode: string;
+    quantity: number;
+    unitCost: number;
+    lineTotal: number;
+  }>;
+  payments: StockCreditPayment[];
+}
+
+export interface StockCreditsResponse extends PaginatedResponse<StockCreditListItem> {
+  summary: StockCreditSummary;
 }
 
 // --- Sales ---
@@ -502,6 +561,7 @@ export interface SalesAnalyticsEmployeeInvoice {
   createdAt: string;
   branchName: string;
   customerName: string | null;
+  serviceName?: string;
   invoiceTotal: number;
   employeeSales: number;
   allocationPercentage: number;
@@ -726,6 +786,12 @@ export const tenantApi = {
           params,
         })
         .then((r) => unwrapPaginatedList(r.data)),
+    credits: (params?: Record<string, string | number | undefined>) =>
+      api.get<StockCreditsResponse>('/tenant/stock/credits', { params }).then((r) => r.data),
+    credit: (id: string) =>
+      api.get<StockCreditDetail>(`/tenant/stock/credits/${id}`).then((r) => r.data),
+    payCredit: (id: string, data: Record<string, unknown>) =>
+      api.post(`/tenant/stock/credits/${id}/payments`, data).then((r) => r.data),
   },
 
   pos: {
@@ -884,6 +950,16 @@ export const tenantApi = {
 
   settings: {
     get: () => api.get<TenantSettings>('/tenant/settings').then((r) => r.data),
+    getAppearance: () =>
+      api.get<AppearanceSettings>('/tenant/settings/appearance').then((r) => r.data),
+    updateAppearance: (data: { primaryColor: string }) =>
+      api
+        .patch<AppearanceSettings>('/tenant/settings/appearance', data)
+        .then((r) => r.data),
+    resetAppearance: () =>
+      api
+        .post<AppearanceSettings>('/tenant/settings/appearance/reset')
+        .then((r) => r.data),
     updateSalon: (data: { name?: string; email?: string; phone?: string }) =>
       api.patch('/tenant/settings/salon', data).then((r) => r.data),
     uploadLogo: (file: File) => {

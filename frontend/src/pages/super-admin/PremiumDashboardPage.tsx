@@ -82,7 +82,7 @@ export default function PremiumDashboardPage() {
       <div className="s360-hero">
         <div>
           <h1>{getGreeting()}, Admin 👋</h1>
-          <p>Here is your Salon360 platform overview</p>
+          <p>Here is your Dart Smart Salon platform overview</p>
         </div>
         <div className="s360-hero-right">
           <Link to="/super-admin/salons?create=1" className="s360-btn-primary">
@@ -400,7 +400,7 @@ export default function PremiumDashboardPage() {
         <div className="s360-promo-banner">
           <div>
             <h3>Together for a more beautiful tomorrow</h3>
-            <p>Onboard new salon partners and grow the Salon360 ecosystem.</p>
+            <p>Onboard new salon partners and grow the Dart Smart Salon ecosystem.</p>
             <Link to="/super-admin/salons?create=1" className="s360-btn-outline">
               <Plus size={14} />
               Add New Salon

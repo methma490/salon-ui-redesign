@@ -8,6 +8,7 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
   MinLength,
   ValidateNested,
@@ -32,6 +33,14 @@ export class UpdateSalonSettingsDto {
   @Transform(emptyToUndefined)
   @IsString()
   phone?: string;
+}
+
+export class UpdateAppearanceSettingsDto {
+  @IsString()
+  @Matches(/^#[0-9A-Fa-f]{6}$/, {
+    message: 'primaryColor must be a valid HEX color (#RRGGBB)',
+  })
+  primaryColor!: string;
 }
 
 export class UpdateAccountSettingsDto {

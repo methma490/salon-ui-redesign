@@ -3,6 +3,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { tenantApi, type PayrollSettings } from '@/api/tenant.api';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTenantTheme } from '@/contexts/TenantThemeContext';
+import {
+  BRAND_COLOR_PRESETS,
+  isValidHexColor,
+  normalizeHexColor,
+} from '@/lib/brand-theme';
 import { resolveUploadUrl } from '@/lib/upload-url';
 import {
   FEATURE_MODULES,
@@ -19,7 +25,7 @@ import {
 } from './salon-ops-ui';
 import './settings-page.css';
 
-type SettingsTab = 'account' | 'business' | 'subscription' | 'access' | 'payroll';
+type SettingsTab = 'account' | 'business' | 'appearance' | 'subscription' | 'access' | 'payroll';
 
 const FEATURE_ICONS: Record<string, string> = {
   CORE: '👥',
@@ -93,11 +99,26 @@ export default function SettingsPage() {
     employerEpfRate: '',
     employerEtfRate: '',
   });
+  const [customHex, setCustomHex] = useState('');
+  const theme = useTenantTheme();
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['tenant-settings'],
     queryFn: tenantApi.settings.get,
   });
+
+  const { data: appearanceSettings } = useQuery({
+    queryKey: ['tenant-appearance'],
+    queryFn: tenantApi.settings.getAppearance,
+  });
+
+  useEffect(() => {
+    if (appearanceSettings?.primaryColor) {
+      setCustomHex(appearanceSettings.primaryColor);
+    }
+  }, [appearanceSettings?.primaryColor]);
+
+  const draftAppearanceColor = theme.previewColor ?? theme.primaryColor;
 
   const { data: tenantFeatures = [] } = useQuery({
     queryKey: ['tenant-features'],
@@ -315,6 +336,30 @@ export default function SettingsPage() {
     onError: (err) => setFormError(getErrorMessage(err)),
   });
 
+  const appearanceMutation = useMutation({
+    mutationFn: (primaryColor: string) => tenantApi.settings.updateAppearance({ primaryColor }),
+    onSuccess: (result) => {
+      qc.setQueryData(['tenant-appearance'], result);
+      theme.applySaved(result);
+      setCustomHex(result.primaryColor);
+      setFormError(null);
+      setSuccessMessage('Appearance updated successfully.');
+    },
+    onError: (err) => setFormError(getErrorMessage(err)),
+  });
+
+  const resetAppearanceMutation = useMutation({
+    mutationFn: () => tenantApi.settings.resetAppearance(),
+    onSuccess: (result) => {
+      qc.setQueryData(['tenant-appearance'], result);
+      theme.applySaved(result);
+      setCustomHex(result.primaryColor);
+      setFormError(null);
+      setSuccessMessage('Appearance reset to default.');
+    },
+    onError: (err) => setFormError(getErrorMessage(err)),
+  });
+
   const selectedRoleDef = accessControl?.roles.find((role) => role.code === selectedRoleCode);
   const selectedModuleAccess = moduleAccessDrafts[selectedRoleCode] ?? {};
   const permissionsLocked = selectedRoleCode === 'SALON_ADMIN';
@@ -427,11 +472,14 @@ export default function SettingsPage() {
   const tabs: { id: SettingsTab; label: string }[] = [
     { id: 'access', label: 'Role Permissions' },
     { id: 'business', label: 'Business & Brand' },
+    { id: 'appearance', label: 'Appearance' },
     ...(payrollEnabled ? [{ id: 'payroll' as const, label: 'Payroll' }] : []),
     { id: 'subscription', label: 'Subscription' },
     { id: 'account', label: 'Account & Security' },
   ];
 
+  const appearanceDirty =
+    normalizeHexColor(draftAppearanceColor) !== normalizeHexColor(theme.primaryColor);
   return (
     <div className="emp-page settings-shell">
       <header className="settings-hero">
@@ -463,7 +511,13 @@ export default function SettingsPage() {
             key={tab.id}
             type="button"
             className={`settings-tab ${activeTab === tab.id ? 'settings-tab-active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => {
+              if (activeTab === 'appearance' && tab.id !== 'appearance') {
+                theme.setPreviewColor(null);
+                setCustomHex(theme.primaryColor);
+              }
+              setActiveTab(tab.id);
+            }}
           >
             {tab.label}
           </button>
@@ -838,6 +892,188 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Appearance ── */}
+      {activeTab === 'appearance' && (
+        <section className="settings-panel">
+          <div className="settings-panel-header">
+            <h2>Appearance</h2>
+            <p>
+              {isSalonAdmin
+                ? 'Customize the primary brand color used across your salon workspace. Neutral backgrounds stay white.'
+                : 'View-only — only Salon Admin can change appearance'}
+            </p>
+          </div>
+
+          <div className="settings-appearance-layout">
+            <div className="settings-appearance-controls">
+              <div className="settings-field">
+                <label>Brand color presets</label>
+                <div className="settings-swatch-grid" role="listbox" aria-label="Brand color presets">
+                  {BRAND_COLOR_PRESETS.map((preset) => {
+                    const selected =
+                      normalizeHexColor(draftAppearanceColor) ===
+                      normalizeHexColor(preset.color);
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        role="option"
+                        aria-selected={selected}
+                        className={`settings-swatch${selected ? ' is-selected' : ''}`}
+                        disabled={!isSalonAdmin}
+                        title={preset.label}
+                        onClick={() => {
+                          if (!isSalonAdmin) return;
+                          theme.setPreviewColor(preset.color);
+                          setCustomHex(preset.color);
+                        }}
+                      >
+                        <span
+                          className="settings-swatch-color"
+                          style={{ background: preset.color }}
+                        />
+                        <span className="settings-swatch-label">{preset.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="settings-field">
+                <label htmlFor="appearance-custom-hex">Custom color</label>
+                <div className="settings-custom-color">
+                  <input
+                    type="color"
+                    aria-label="Pick custom brand color"
+                    value={
+                      isValidHexColor(draftAppearanceColor)
+                        ? draftAppearanceColor
+                        : theme.defaultPrimaryColor
+                    }
+                    disabled={!isSalonAdmin}
+                    onChange={(e) => {
+                      const next = normalizeHexColor(e.target.value);
+                      theme.setPreviewColor(next);
+                      setCustomHex(next);
+                    }}
+                  />
+                  <input
+                    id="appearance-custom-hex"
+                    className="settings-input"
+                    value={customHex}
+                    disabled={!isSalonAdmin}
+                    placeholder="#0D5C3D"
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setCustomHex(raw);
+                      if (isValidHexColor(raw)) {
+                        theme.setPreviewColor(normalizeHexColor(raw));
+                      }
+                    }}
+                  />
+                </div>
+                <p className="settings-field-hint">Use #RRGGBB format (example #2563EB).</p>
+              </div>
+
+              {isSalonAdmin && (
+                <div className="settings-form-actions settings-appearance-actions">
+                  <button
+                    type="button"
+                    className="emp-btn emp-btn-secondary"
+                    disabled={
+                      resetAppearanceMutation.isPending || appearanceMutation.isPending
+                    }
+                    onClick={() => {
+                      theme.setPreviewColor(null);
+                      setCustomHex(theme.primaryColor);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="emp-btn emp-btn-secondary"
+                    disabled={
+                      resetAppearanceMutation.isPending || appearanceMutation.isPending
+                    }
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          'Reset brand color to the default forest green?',
+                        )
+                      ) {
+                        resetAppearanceMutation.mutate();
+                      }
+                    }}
+                  >
+                    {resetAppearanceMutation.isPending ? 'Resetting…' : 'Reset to Default'}
+                  </button>
+                  <button
+                    type="button"
+                    className="emp-btn emp-btn-primary"
+                    disabled={
+                      !appearanceDirty ||
+                      !isValidHexColor(draftAppearanceColor) ||
+                      appearanceMutation.isPending
+                    }
+                    onClick={() =>
+                      appearanceMutation.mutate(normalizeHexColor(draftAppearanceColor))
+                    }
+                  >
+                    {appearanceMutation.isPending ? 'Saving…' : 'Save Changes'}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="settings-appearance-preview">
+              <div className="settings-preview-card">
+                <div className="settings-preview-title">Live preview</div>
+                <div className="settings-preview-nav">
+                  <span className="is-active">Dashboard</span>
+                  <span>POS</span>
+                  <span>Customers</span>
+                </div>
+                <button
+                  type="button"
+                  className="settings-preview-btn"
+                  style={{
+                    background: draftAppearanceColor,
+                    color: theme.palette.foreground,
+                  }}
+                >
+                  Primary button
+                </button>
+                <div className="settings-preview-row">
+                  <span
+                    className="settings-preview-badge"
+                    style={{
+                      background: theme.palette.soft,
+                      color: draftAppearanceColor,
+                      borderColor: theme.palette.border,
+                    }}
+                  >
+                    Brand badge
+                  </span>
+                  <span className="settings-preview-success">Success stays green</span>
+                  <span className="settings-preview-error">Error stays red</span>
+                </div>
+                <input
+                  className="settings-preview-input"
+                  readOnly
+                  value="Focus ring uses brand color"
+                  style={{
+                    borderColor: draftAppearanceColor,
+                    boxShadow: `0 0 0 3px ${theme.palette.softStrong}`,
+                  }}
+                />
+                <p className="settings-preview-hex">{draftAppearanceColor}</p>
+              </div>
+            </div>
+          </div>
+        </section>
       )}
 
       {/* ── Business & Brand ── */}

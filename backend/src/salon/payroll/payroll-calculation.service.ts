@@ -6,10 +6,13 @@ export interface PayrollRates {
   employerEtfRate: number;
 }
 
+export type PayrollDeductionSource = 'loan' | 'advance';
+
 export interface LoanDeductionInput {
   id: string;
   remainingBalance: number;
   monthlyInstallment: number;
+  source?: PayrollDeductionSource;
 }
 
 export interface LoanDeductionResult {
@@ -17,6 +20,7 @@ export interface LoanDeductionResult {
   amount: number;
   balanceBefore: number;
   balanceAfter: number;
+  source: PayrollDeductionSource;
 }
 
 export interface PayrollLineInput {
@@ -41,7 +45,10 @@ export interface PayrollLineResult {
   employeeEpf: number;
   employerEpf: number;
   employerEtf: number;
+  /** Personal/other loan installments only (excludes salary advances). */
   loanDeduction: number;
+  /** Salary advance recovery for this payroll period. */
+  advanceDeduction: number;
   loanDeductions: LoanDeductionResult[];
   otherDeduction: number;
   totalDeductions: number;
@@ -102,13 +109,25 @@ export function calculatePayrollLine(input: PayrollLineInput): PayrollLineResult
         amount,
         balanceBefore: roundMoney(loan.remainingBalance),
         balanceAfter: roundMoney(Math.max(0, loan.remainingBalance - amount)),
+        source: loan.source === 'advance' ? ('advance' as const) : ('loan' as const),
       };
     })
     .filter((entry) => entry.amount > 0);
 
-  const loanDeduction = roundMoney(loanDeductions.reduce((sum, entry) => sum + entry.amount, 0));
+  const loanDeduction = roundMoney(
+    loanDeductions
+      .filter((entry) => entry.source === 'loan')
+      .reduce((sum, entry) => sum + entry.amount, 0),
+  );
+  const advanceDeduction = roundMoney(
+    loanDeductions
+      .filter((entry) => entry.source === 'advance')
+      .reduce((sum, entry) => sum + entry.amount, 0),
+  );
 
-  const totalDeductions = roundMoney(employeeEpf + loanDeduction + otherDeduction);
+  const totalDeductions = roundMoney(
+    employeeEpf + loanDeduction + advanceDeduction + otherDeduction,
+  );
   const netSalary = roundMoney(Math.max(0, grossSalary - totalDeductions));
 
   return {
@@ -122,6 +141,7 @@ export function calculatePayrollLine(input: PayrollLineInput): PayrollLineResult
     employerEpf,
     employerEtf,
     loanDeduction,
+    advanceDeduction,
     loanDeductions,
     otherDeduction,
     totalDeductions,

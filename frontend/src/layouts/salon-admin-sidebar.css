@@ -25,7 +25,7 @@
 }
 
 .salon-sidebar-section.active {
-  color: #0d5c3d;
+  color: var(--brand-primary, #0d5c3d);
 }
 
 .salon-sidebar-section-icon {
@@ -53,10 +53,10 @@
 }
 
 .salon-sidebar-link.active {
-  background: #ecfdf3;
-  color: #0d5c3d;
+  background: var(--brand-soft, #ecfdf3);
+  color: var(--brand-primary, #0d5c3d);
   font-weight: 600;
-  box-shadow: inset 3px 0 0 #0d5c3d;
+  box-shadow: inset 3px 0 0 var(--brand-primary, #0d5c3d);
   padding-left: 9px;
 }
 
@@ -73,7 +73,7 @@
 }
 
 .salon-sidebar-link.active .salon-sidebar-link-icon {
-  color: #0d5c3d;
+  color: var(--brand-primary, #0d5c3d);
 }
 
 .salon-sidebar-link-label {

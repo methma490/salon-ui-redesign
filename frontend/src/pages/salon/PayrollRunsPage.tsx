@@ -54,12 +54,12 @@ function monthLabel(month: number) {
 function PayrollStatusBadge({ status }: { status: string }) {
   const cls =
     status === 'DRAFT'
-      ? 'emp-badge emp-badge-inactive'
+      ? 'pr-badge pr-badge-draft'
       : status === 'FINALIZED'
-        ? 'emp-badge emp-badge-active'
+        ? 'pr-badge pr-badge-done'
         : status === 'PAID'
-          ? 'emp-badge emp-badge-active'
-          : 'emp-badge';
+          ? 'pr-badge pr-badge-paid'
+          : 'pr-badge';
   return <span className={cls}>{status}</span>;
 }
 
@@ -134,6 +134,12 @@ export default function PayrollRunsPage() {
     }
   }, [selectedRun]);
 
+  useEffect(() => {
+    if (!selectedRunId && runs.length > 0) {
+      setSelectedRunId(runs[0].id);
+    }
+  }, [runs, selectedRunId]);
+
   const createRunMutation = useMutation({
     mutationFn: () => tenantApi.payroll.createRun({ year, month }),
     onSuccess: (run) => {
@@ -207,9 +213,23 @@ export default function PayrollRunsPage() {
     }));
   };
 
+  const confirmFinalize = () => {
+    if (!selectedRun) return;
+    if (
+      window.confirm(
+        'Finalize this payroll run? Edits will be locked and payslips will be generated.',
+      )
+    ) {
+      finalizeMutation.mutate(selectedRun.id);
+    }
+  };
+
   const yearOptions = Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i);
   const isDraft = selectedRun?.status === 'DRAFT';
   const items = selectedRun?.items ?? [];
+  const showStickyActions =
+    !!selectedRun &&
+    (isDraft || selectedRun.status === 'FINALIZED');
 
   if (runsLoading) return <OpsLoading />;
   if (runsError) {
@@ -217,20 +237,24 @@ export default function PayrollRunsPage() {
   }
 
   return (
-    <div className="emp-page settings-shell payroll-page">
-      <header className="settings-hero">
-        <div className="settings-hero-logo">
-          <span>💼</span>
+    <div
+      className={`emp-page settings-shell payroll-page${showStickyActions ? ' has-sticky-actions' : ''}`}
+    >
+      <header className="pr-hero">
+        <div className="pr-hero-main">
+          <div className="pr-hero-icon" aria-hidden>
+            💼
+          </div>
+          <div>
+            <h1>Payroll</h1>
+            <p>Generate, adjust, finalize monthly pay</p>
+          </div>
         </div>
-        <div className="settings-hero-text">
-          <h1>Payroll</h1>
-          <p>Generate monthly payroll, adjust commissions and deductions, then finalize</p>
-        </div>
-        <div className="settings-hero-meta">
-          <span className="settings-hero-pill">{runs.length} runs</span>
+        <div className="pr-hero-pills">
+          <span className="pr-pill">{runs.length} runs</span>
           {selectedRun && (
-            <span className="settings-hero-pill">
-              Net LKR {formatMoney(selectedRun.totalNet)}
+            <span className="pr-pill pr-pill-net">
+              Net {formatMoney(selectedRun.totalNet)}
             </span>
           )}
         </div>
@@ -240,290 +264,289 @@ export default function PayrollRunsPage() {
         <div className="settings-alert settings-alert-error">{actionError}</div>
       )}
 
-      <div className="emp-stats">
-            <div className="emp-stat">
-              <div className="emp-stat-value">{runs.length}</div>
-              <div className="emp-stat-label">Payroll runs</div>
-            </div>
-            {selectedRun && (
-              <>
-                <div className="emp-stat">
-                  <div className="emp-stat-value">LKR {formatMoney(selectedRun.totalNet)}</div>
-                  <div className="emp-stat-label">Total net</div>
-                </div>
-                <div className="emp-stat">
-                  <div className="emp-stat-value">{items.length}</div>
-                  <div className="emp-stat-label">Employees</div>
-                </div>
-              </>
-            )}
+      <section className="pr-card">
+        <div className="pr-card-head">
+          <h2>Generate</h2>
+          <p>Commission from service sales · EPF/ETF in Settings</p>
+        </div>
+
+        <div className="pr-generate">
+          <div className="pr-field">
+            <Label htmlFor="pr-year">Year</Label>
+            <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
+              <SelectTrigger id="pr-year" className="pr-select">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {yearOptions.map((y) => (
+                  <SelectItem key={y} value={String(y)}>
+                    {y}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+          <div className="pr-field">
+            <Label htmlFor="pr-month">Month</Label>
+            <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
+              <SelectTrigger id="pr-month" className="pr-select">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {MONTHS.map((m) => (
+                  <SelectItem key={m.value} value={String(m.value)}>
+                    {m.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <button
+            type="button"
+            className="pr-btn pr-btn-primary pr-generate-btn"
+            disabled={createRunMutation.isPending}
+            onClick={() => createRunMutation.mutate()}
+          >
+            {createRunMutation.isPending ? 'Generating…' : 'Generate'}
+          </button>
+        </div>
 
-          <section className="settings-panel">
-            <div className="settings-panel-header">
-              <h2>Generate Payroll</h2>
-              <p>
-                Create a draft run for a month. Commission is filled from employee sales. EPF / ETF
-                rates are configured in Settings → Payroll.
-              </p>
-            </div>
-            <div className="settings-form-grid payroll-generate-grid">
-              <div className="settings-field">
-                <Label>Year</Label>
-                <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
-                  <SelectTrigger className="settings-input">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {yearOptions.map((y) => (
-                      <SelectItem key={y} value={String(y)}>
-                        {y}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="settings-field">
-                <Label>Month</Label>
-                <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
-                  <SelectTrigger className="settings-input">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MONTHS.map((m) => (
-                      <SelectItem key={m.value} value={String(m.value)}>
-                        {m.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="settings-field payroll-generate-actions">
-                <Label className="payroll-generate-label-spacer">&nbsp;</Label>
+        {runs.length === 0 ? (
+          <div className="pr-empty">No runs yet. Pick a month and generate.</div>
+        ) : (
+          <div className="pr-runs" role="list">
+            {runs.map((run) => {
+              const active = selectedRunId === run.id;
+              return (
                 <button
+                  key={run.id}
                   type="button"
-                  className="emp-btn emp-btn-primary"
-                  disabled={createRunMutation.isPending}
-                  onClick={() => createRunMutation.mutate()}
+                  role="listitem"
+                  className={`pr-run${active ? ' is-active' : ''}`}
+                  onClick={() => setSelectedRunId(run.id)}
+                  aria-pressed={active}
                 >
-                  {createRunMutation.isPending ? 'Generating…' : 'Generate Payroll'}
+                  <div className="pr-run-top">
+                    <span className="pr-run-period">
+                      {monthLabel(run.month)} {run.year}
+                    </span>
+                    <PayrollStatusBadge status={run.status} />
+                  </div>
+                  <div className="pr-run-net">LKR {formatMoney(run.totalNet)}</div>
+                  <div className="pr-run-meta">
+                    Gross {formatMoney(run.totalGross)} · Ded. {formatMoney(run.totalDeductions)}
+                  </div>
                 </button>
-              </div>
-            </div>
-          </section>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
-          <section className="settings-panel">
-            <div className="settings-panel-header">
-              <h2>Payroll runs</h2>
-              <p>Select a run to view or edit employee payroll</p>
-            </div>
+      {selectedRunId && (
+        <section className="pr-card pr-detail">
+          {runLoading && <div className="emp-skeleton" style={{ height: 100 }} />}
 
-            {runs.length === 0 ? (
-              <div className="emp-empty">No payroll runs yet. Generate one for a month above.</div>
-            ) : (
-              <>
-                <div className="emp-cards">
-                  {runs.map((run) => (
-                    <article
-                      key={run.id}
-                      className={`emp-card${selectedRunId === run.id ? ' emp-card-selected' : ''}`}
-                      style={
-                        selectedRunId === run.id
-                          ? { borderColor: 'var(--emp-primary, #0f766e)' }
-                          : undefined
-                      }
-                    >
+          {!runLoading && selectedRun && (
+            <>
+              <div className="pr-detail-head">
+                <div>
+                  <div className="pr-detail-title">
+                    <h2>
+                      {monthLabel(selectedRun.month)} {selectedRun.year}
+                    </h2>
+                    <PayrollStatusBadge status={selectedRun.status} />
+                  </div>
+                  <p className="pr-detail-sub">
+                    {items.length} employee{items.length === 1 ? '' : 's'}
+                  </p>
+                </div>
+                <div className="pr-actions pr-actions-desktop">
+                  {isDraft && (
+                    <>
                       <button
                         type="button"
-                        className="emp-card-top"
-                        style={{
-                          width: '100%',
-                          textAlign: 'left',
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          padding: 0,
-                        }}
-                        onClick={() => setSelectedRunId(run.id)}
+                        className="pr-btn pr-btn-secondary"
+                        disabled={updateItemMutation.isPending}
+                        onClick={saveAllDraft}
                       >
-                        <div>
-                          <div className="emp-name-cell">
-                            {monthLabel(run.month)} {run.year}
-                          </div>
-                          <div className="emp-code">Net: LKR {formatMoney(run.totalNet)}</div>
-                        </div>
-                        <PayrollStatusBadge status={run.status} />
+                        Save Draft
                       </button>
-                    </article>
-                  ))}
-                </div>
-
-                <div className="emp-table-wrap">
-                  <table className="emp-table">
-                    <thead>
-                      <tr>
-                        <th>Period</th>
-                        <th>Status</th>
-                        <th className="num">Gross</th>
-                        <th className="num">Deductions</th>
-                        <th className="num">Net</th>
-                        <th style={{ textAlign: 'right' }}>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {runs.map((run) => (
-                        <tr
-                          key={run.id}
-                          style={
-                            selectedRunId === run.id ? { background: '#f1f5f9' } : undefined
-                          }
-                        >
-                          <td className="emp-name-cell">
-                            {monthLabel(run.month)} {run.year}
-                          </td>
-                          <td>
-                            <PayrollStatusBadge status={run.status} />
-                          </td>
-                          <td className="num">LKR {formatMoney(run.totalGross)}</td>
-                          <td className="num">LKR {formatMoney(run.totalDeductions)}</td>
-                          <td className="num" style={{ fontWeight: 700 }}>
-                            LKR {formatMoney(run.totalNet)}
-                          </td>
-                          <td>
-                            <button
-                              type="button"
-                              className="emp-link-btn"
-                              onClick={() => setSelectedRunId(run.id)}
-                            >
-                              {selectedRunId === run.id ? 'Selected' : 'Open'}
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
-          </section>
-
-          {selectedRunId && (
-            <section className="settings-panel payroll-run-detail">
-              <div className="settings-panel-header settings-panel-header-row">
-                <div>
-                  <h2>
-                    {selectedRun
-                      ? `${monthLabel(selectedRun.month)} ${selectedRun.year}`
-                      : 'Run detail'}
-                  </h2>
-                  {selectedRun && (
-                    <p>
-                      Status: <PayrollStatusBadge status={selectedRun.status} />
-                    </p>
+                      <button
+                        type="button"
+                        className="pr-btn pr-btn-primary"
+                        disabled={finalizeMutation.isPending}
+                        onClick={confirmFinalize}
+                      >
+                        Finalize
+                      </button>
+                    </>
+                  )}
+                  {selectedRun.status === 'FINALIZED' && (
+                    <button
+                      type="button"
+                      className="pr-btn pr-btn-primary"
+                      disabled={markPaidMutation.isPending}
+                      onClick={() => markPaidMutation.mutate(selectedRun.id)}
+                    >
+                      Mark Paid
+                    </button>
                   )}
                 </div>
-                {selectedRun && (
-                  <div className="payroll-run-actions">
-                    {isDraft && (
-                      <>
-                        <button
-                          type="button"
-                          className="emp-btn emp-btn-secondary"
-                          disabled={updateItemMutation.isPending}
-                          onClick={saveAllDraft}
-                        >
-                          Save Draft
-                        </button>
-                        <button
-                          type="button"
-                          className="emp-btn emp-btn-primary"
-                          disabled={finalizeMutation.isPending}
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                'Finalize this payroll run? Edits will be locked and payslips will be generated.',
-                              )
-                            ) {
-                              finalizeMutation.mutate(selectedRun.id);
-                            }
-                          }}
-                        >
-                          Finalize
-                        </button>
-                      </>
-                    )}
-                    {selectedRun.status === 'FINALIZED' && (
-                      <button
-                        type="button"
-                        className="emp-btn emp-btn-primary"
-                        disabled={markPaidMutation.isPending}
-                        onClick={() => markPaidMutation.mutate(selectedRun.id)}
-                      >
-                        Mark Paid
-                      </button>
-                    )}
-                  </div>
-                )}
               </div>
 
-              {runLoading && <div className="emp-skeleton" style={{ height: 120 }} />}
+              <div className="pr-summary-grid">
+                <div className="pr-summary-cell">
+                  <span>Gross</span>
+                  <strong>LKR {formatMoney(selectedRun.totalGross)}</strong>
+                </div>
+                <div className="pr-summary-cell">
+                  <span>Deductions</span>
+                  <strong>LKR {formatMoney(selectedRun.totalDeductions)}</strong>
+                </div>
+                <div className="pr-summary-cell pr-summary-net">
+                  <span>Net</span>
+                  <strong>LKR {formatMoney(selectedRun.totalNet)}</strong>
+                </div>
+                <div className="pr-summary-cell">
+                  <span>Staff</span>
+                  <strong>{items.length}</strong>
+                </div>
+              </div>
 
-              {!runLoading && selectedRun && items.length === 0 && (
-                <div className="emp-empty">No employees in this payroll run.</div>
-              )}
-
-              {!runLoading && items.length > 0 && (
+              {items.length === 0 ? (
+                <div className="pr-empty">No employees in this run.</div>
+              ) : (
                 <>
-                  <div className="emp-cards">
-                    {items.map((item) => (
-                      <article key={item.id} className="emp-card">
-                        <div className="emp-card-top">
-                          <div>
-                            <div className="emp-name-cell">{item.employeeName}</div>
-                            <div className="emp-code">{item.employeeCode}</div>
+                  <div className="pr-employee-cards">
+                    {items.map((item) => {
+                      const draft = itemDrafts[item.id] ?? itemToDraft(item);
+                      const liveCommission = previewCommission(draft);
+                      return (
+                        <article key={item.id} className="pr-emp-card">
+                          <div className="pr-emp-card-top">
+                            <div>
+                              <div className="pr-emp-name">{item.employeeName}</div>
+                              <div className="pr-emp-code">
+                                {item.designation || item.employeeCode}
+                              </div>
+                            </div>
+                            <div className="pr-emp-net">
+                              <span>Net</span>
+                              <strong>LKR {formatMoney(item.netSalary)}</strong>
+                            </div>
                           </div>
-                          <span style={{ fontWeight: 700 }}>
-                            LKR {formatMoney(item.netSalary)}
-                          </span>
-                        </div>
-                        <div className="emp-card-meta">
-                          <span>
-                            <strong>Basic:</strong> LKR {formatMoney(item.basicSalary)}
-                          </span>
-                          <span>
-                            <strong>Commission:</strong> LKR {formatMoney(item.commissionAmount)}
-                            {item.commissionPercentage != null && (
-                              <>
-                                {' '}
-                                ({item.commissionPercentage}% of LKR{' '}
-                                {formatMoney(item.commissionBase)})
-                              </>
-                            )}
-                          </span>
-                          {(item.commissionInvoiceCount ?? 0) > 0 && (
-                            <span>
-                              <strong>Sales invoices:</strong> {item.commissionInvoiceCount}
-                              {item.commissionPeriodFrom && item.commissionPeriodTo
-                                ? ` (${item.commissionPeriodFrom} → ${item.commissionPeriodTo})`
-                                : ''}{' '}
+
+                          <div className="pr-emp-stats">
+                            <div>
+                              <span>Basic</span>
+                              <strong>{formatMoney(item.basicSalary)}</strong>
+                            </div>
+                            <div>
+                              <span>Commission</span>
+                              <strong>
+                                {formatMoney(isDraft ? liveCommission : item.commissionAmount)}
+                              </strong>
+                            </div>
+                            <div>
+                              <span>Advance</span>
+                              <strong>{formatMoney(item.advanceDeduction ?? 0)}</strong>
+                            </div>
+                            <div>
+                              <span>Loan</span>
+                              <strong>{formatMoney(item.loanDeduction)}</strong>
+                            </div>
+                          </div>
+
+                          {isDraft ? (
+                            <div className="pr-emp-fields">
+                              <label className="pr-field">
+                                <span>Comm. base</span>
+                                <input
+                                  className="pr-input"
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  inputMode="decimal"
+                                  value={draft.commissionBase}
+                                  onChange={(e) =>
+                                    updateDraft(item.id, { commissionBase: e.target.value })
+                                  }
+                                  onBlur={() => saveItem(item.id)}
+                                />
+                              </label>
+                              <label className="pr-field">
+                                <span>Comm. %</span>
+                                <input
+                                  className="pr-input"
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  step="0.01"
+                                  inputMode="decimal"
+                                  value={draft.commissionPercentage}
+                                  onChange={(e) =>
+                                    updateDraft(item.id, {
+                                      commissionPercentage: e.target.value,
+                                    })
+                                  }
+                                  onBlur={() => saveItem(item.id)}
+                                />
+                              </label>
+                              <label className="pr-field">
+                                <span>Bonus</span>
+                                <input
+                                  className="pr-input"
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  inputMode="decimal"
+                                  value={draft.bonus}
+                                  onChange={(e) =>
+                                    updateDraft(item.id, { bonus: e.target.value })
+                                  }
+                                  onBlur={() => saveItem(item.id)}
+                                />
+                              </label>
+                              <label className="pr-field">
+                                <span>Other ded.</span>
+                                <input
+                                  className="pr-input"
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  inputMode="decimal"
+                                  value={draft.otherDeduction}
+                                  onChange={(e) =>
+                                    updateDraft(item.id, {
+                                      otherDeduction: e.target.value,
+                                    })
+                                  }
+                                  onBlur={() => saveItem(item.id)}
+                                />
+                              </label>
+                            </div>
+                          ) : null}
+
+                          <div className="pr-emp-foot">
+                            <span>Gross {formatMoney(item.grossSalary)}</span>
+                            <span>EPF {formatMoney(item.employeeEpf)}</span>
+                            {(item.commissionInvoiceCount ?? 0) > 0 && (
                               <a
-                                className="emp-link-btn"
+                                className="pr-link"
                                 href={`/salon/sales-analytics?employeeId=${item.employeeId}&from=${item.commissionPeriodFrom}&to=${item.commissionPeriodTo}`}
                               >
-                                View contributing invoices
+                                Sales ({item.commissionInvoiceCount})
                               </a>
-                            </span>
-                          )}
-                          <span>
-                            <strong>Gross:</strong> LKR {formatMoney(item.grossSalary)}
-                          </span>
-                        </div>
-                      </article>
-                    ))}
+                            )}
+                          </div>
+                        </article>
+                      );
+                    })}
                   </div>
 
-                  <div className="emp-table-wrap payroll-items-table">
-                    <table className="emp-table">
+                  <div className="pr-table-wrap">
+                    <table className="pr-table">
                       <thead>
                         <tr>
                           <th>Employee</th>
@@ -532,11 +555,10 @@ export default function PayrollRunsPage() {
                           <th className="num">Comm. %</th>
                           <th className="num">Commission</th>
                           <th className="num">Bonus</th>
-                          <th className="num">Loan Ded.</th>
-                          <th className="num">Other Ded.</th>
-                          <th className="num">EPF (Emp)</th>
-                          <th className="num">EPF (Er)</th>
-                          <th className="num">ETF</th>
+                          <th className="num">Advance</th>
+                          <th className="num">Loan</th>
+                          <th className="num">Other</th>
+                          <th className="num">EPF</th>
                           <th className="num">Gross</th>
                           <th className="num">Net</th>
                         </tr>
@@ -548,8 +570,8 @@ export default function PayrollRunsPage() {
                           return (
                             <tr key={item.id}>
                               <td>
-                                <div className="emp-name-cell">{item.employeeName}</div>
-                                <div className="emp-code">
+                                <div className="pr-emp-name">{item.employeeName}</div>
+                                <div className="pr-emp-code">
                                   {item.designation || item.employeeCode}
                                 </div>
                               </td>
@@ -557,13 +579,15 @@ export default function PayrollRunsPage() {
                               <td className="num">
                                 {isDraft ? (
                                   <input
-                                    className="emp-input"
+                                    className="pr-input"
                                     type="number"
                                     min="0"
                                     step="0.01"
                                     value={draft.commissionBase}
                                     onChange={(e) =>
-                                      updateDraft(item.id, { commissionBase: e.target.value })
+                                      updateDraft(item.id, {
+                                        commissionBase: e.target.value,
+                                      })
                                     }
                                     onBlur={() => saveItem(item.id)}
                                   />
@@ -574,7 +598,7 @@ export default function PayrollRunsPage() {
                               <td className="num">
                                 {isDraft ? (
                                   <input
-                                    className="emp-input"
+                                    className="pr-input"
                                     type="number"
                                     min="0"
                                     max="100"
@@ -592,17 +616,14 @@ export default function PayrollRunsPage() {
                                 )}
                               </td>
                               <td className="num">
-                                {formatMoney(isDraft ? liveCommission : item.commissionAmount)}
-                                {isDraft && (
-                                  <div className="payroll-commission-preview">
-                                    Preview (backend recalculates)
-                                  </div>
+                                {formatMoney(
+                                  isDraft ? liveCommission : item.commissionAmount,
                                 )}
                               </td>
                               <td className="num">
                                 {isDraft ? (
                                   <input
-                                    className="emp-input"
+                                    className="pr-input"
                                     type="number"
                                     min="0"
                                     step="0.01"
@@ -616,11 +637,14 @@ export default function PayrollRunsPage() {
                                   formatMoney(item.bonus)
                                 )}
                               </td>
+                              <td className="num">
+                                {formatMoney(item.advanceDeduction ?? 0)}
+                              </td>
                               <td className="num">{formatMoney(item.loanDeduction)}</td>
                               <td className="num">
                                 {isDraft ? (
                                   <input
-                                    className="emp-input"
+                                    className="pr-input"
                                     type="number"
                                     min="0"
                                     step="0.01"
@@ -637,10 +661,8 @@ export default function PayrollRunsPage() {
                                 )}
                               </td>
                               <td className="num">{formatMoney(item.employeeEpf)}</td>
-                              <td className="num">{formatMoney(item.employerEpf)}</td>
-                              <td className="num">{formatMoney(item.employerEtf)}</td>
                               <td className="num">{formatMoney(item.grossSalary)}</td>
-                              <td className="num" style={{ fontWeight: 700 }}>
+                              <td className="num pr-net-cell">
                                 {formatMoney(item.netSalary)}
                               </td>
                             </tr>
@@ -651,8 +673,45 @@ export default function PayrollRunsPage() {
                   </div>
                 </>
               )}
-            </section>
+            </>
           )}
+        </section>
+      )}
+
+      {showStickyActions && selectedRun && (
+        <div className="pr-sticky-actions">
+          {isDraft && (
+            <>
+              <button
+                type="button"
+                className="pr-btn pr-btn-secondary"
+                disabled={updateItemMutation.isPending}
+                onClick={saveAllDraft}
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                className="pr-btn pr-btn-primary"
+                disabled={finalizeMutation.isPending}
+                onClick={confirmFinalize}
+              >
+                Finalize
+              </button>
+            </>
+          )}
+          {selectedRun.status === 'FINALIZED' && (
+            <button
+              type="button"
+              className="pr-btn pr-btn-primary"
+              disabled={markPaidMutation.isPending}
+              onClick={() => markPaidMutation.mutate(selectedRun.id)}
+            >
+              Mark Paid
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

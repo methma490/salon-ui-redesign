@@ -101,15 +101,9 @@ export class PosService {
 
         let performerId = item.employeeId;
         if (!performerId) {
-          if (soleEmployeeId) {
-            performerId = soleEmployeeId;
-          } else if (dto.employees?.[0]?.employeeId) {
-            performerId = dto.employees[0].employeeId;
-          } else {
-            throw new BadRequestException(
-              'Each service must have a performer assigned when multiple employees exist',
-            );
-          }
+          throw new BadRequestException(
+            `Each service must have a performer assigned (service: ${item.serviceId})`,
+          );
         }
 
         if (!branchEmployeeIds.has(performerId)) {

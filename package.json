@@ -2,7 +2,7 @@
   "name": "salon-saas",
   "private": true,
   "version": "0.0.1",
-  "description": "Salon SaaS - multi-tenant salon management platform",
+  "description": "Dart Smart Salon - multi-tenant salon management platform",
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:frontend": "npm run dev --prefix frontend",

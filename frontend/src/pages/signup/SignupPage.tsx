@@ -142,7 +142,7 @@ export default function SignupPage() {
             <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
               <Scissors className="h-3 w-3" />
             </span>
-            Salon SaaS
+            Dart Smart Salon
           </Link>
         </div>
 
