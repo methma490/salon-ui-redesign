@@ -23,6 +23,12 @@ import { SettingsController } from './settings/settings.controller';
 import { SettingsService } from './settings/settings.service';
 import { AppointmentsController } from './appointments/appointments.controller';
 import { AppointmentsService } from './appointments/appointments.service';
+import { ExpensesController } from './expenses/expenses.controller';
+import { ExpensesService } from './expenses/expenses.service';
+import { PayrollController } from './payroll/payroll.controller';
+import { PayrollService } from './payroll/payroll.service';
+import { SalesAnalyticsController } from './sales-analytics/sales-analytics.controller';
+import { SalesAnalyticsService } from './sales-analytics/sales-analytics.service';
 
 @Module({
   imports: [TenantModule, SubscriptionsModule],
@@ -34,11 +40,14 @@ import { AppointmentsService } from './appointments/appointments.service';
     InventoryController,
     PosController,
     SalesController,
+    SalesAnalyticsController,
     DashboardController,
     ReportsController,
     TenantFeaturesController,
     SettingsController,
     AppointmentsController,
+    ExpensesController,
+    PayrollController,
   ],
   providers: [
     BranchesService,
@@ -48,10 +57,13 @@ import { AppointmentsService } from './appointments/appointments.service';
     InventoryService,
     PosService,
     SalesService,
+    SalesAnalyticsService,
     DashboardService,
     DashboardCacheInterceptor,
     SettingsService,
     AppointmentsService,
+    ExpensesService,
+    PayrollService,
   ],
 })
 export class SalonModule {}

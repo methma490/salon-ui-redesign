@@ -21,7 +21,11 @@ describe('PaymentProcessorService', () => {
     $transaction: jest.Mock;
   };
   let gatewayRegistry: { get: jest.Mock };
-  let subscriptionsService: { activateSubscription: jest.Mock; renewSubscription: jest.Mock };
+  let subscriptionsService: {
+    activateSubscription: jest.Mock;
+    renewSubscription: jest.Mock;
+    upgradeSubscriptionFromPayment: jest.Mock;
+  };
   let invoicesService: { generateFromPayment: jest.Mock };
   let notificationQueue: {
     enqueuePaymentSuccess: jest.Mock;
@@ -41,6 +45,7 @@ describe('PaymentProcessorService', () => {
     subscriptionsService = {
       activateSubscription: jest.fn(),
       renewSubscription: jest.fn(),
+      upgradeSubscriptionFromPayment: jest.fn(),
     };
     invoicesService = {
       generateFromPayment: jest.fn().mockResolvedValue(null),
@@ -86,9 +91,9 @@ describe('PaymentProcessorService', () => {
       subscription: { id: subscriptionId, status: SubscriptionStatus.PENDING },
     });
 
-    await expect(
-      service.processWebhook(PaymentGatewayProvider.PAYHERE, {}),
-    ).rejects.toThrow(BadRequestException);
+    await expect(service.processWebhook(PaymentGatewayProvider.PAYHERE, {})).rejects.toThrow(
+      BadRequestException,
+    );
   });
 
   it('prevents duplicate paid transactions (idempotency)', async () => {
@@ -173,6 +178,7 @@ describe('PaymentProcessorService', () => {
       subscriptionId,
       tenantId,
       expect.objectContaining({ paymentReference: 'TX-456' }),
+      { fromPaymentProcessor: true },
     );
   });
 });

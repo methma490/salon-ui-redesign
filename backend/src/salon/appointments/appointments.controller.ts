@@ -42,10 +42,7 @@ export class AppointmentsController {
 
   @Get('calendar')
   @RequirePermission('APPOINTMENT_VIEW')
-  calendar(
-    @CurrentTenant() tenant: TenantContext,
-    @Query() query: CalendarAppointmentsQueryDto,
-  ) {
+  calendar(@CurrentTenant() tenant: TenantContext, @Query() query: CalendarAppointmentsQueryDto) {
     return this.appointmentsService.calendar(tenant.schemaName, query);
   }
 

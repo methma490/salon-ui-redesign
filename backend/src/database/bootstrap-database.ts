@@ -46,9 +46,7 @@ export async function bootstrapDatabase(): Promise<void> {
   try {
     await prisma.$connect();
 
-    await prisma.$executeRawUnsafe(
-      `CREATE EXTENSION IF NOT EXISTS pg_trgm SCHEMA public`,
-    );
+    await prisma.$executeRawUnsafe(`CREATE EXTENSION IF NOT EXISTS pg_trgm SCHEMA public`);
 
     const planCount = await prisma.plan.count();
 

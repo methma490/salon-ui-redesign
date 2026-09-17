@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import {
   BillingCycle,
   FeatureStatus,
@@ -202,13 +198,11 @@ describe('SubscriptionsService', () => {
         plan: { id: planSilverId },
       };
 
-      prisma.subscription.findFirst
-        .mockResolvedValueOnce(subscription)
-        .mockResolvedValueOnce({
-          id: subscriptionId,
-          tenantId: tenantAId,
-          subscriptionFeatures: [{ featureId: 'f1' }],
-        });
+      prisma.subscription.findFirst.mockResolvedValueOnce(subscription).mockResolvedValueOnce({
+        id: subscriptionId,
+        tenantId: tenantAId,
+        subscriptionFeatures: [{ featureId: 'f1' }],
+      });
       prisma.paymentOrder.findFirst.mockResolvedValue(null);
 
       prisma.$transaction
@@ -246,9 +240,9 @@ describe('SubscriptionsService', () => {
     it('denies cross-tenant activation', async () => {
       prisma.subscription.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.activateSubscription(subscriptionId, tenantBId, {}),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.activateSubscription(subscriptionId, tenantBId, {})).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -326,6 +320,12 @@ describe('SubscriptionsService', () => {
   });
 
   describe('upgradeSubscription', () => {
+    it('requires payment for salon-admin upgrade attempts', async () => {
+      await expect(
+        service.upgradeSubscription(subscriptionId, tenantAId, { planId: planGoldId }),
+      ).rejects.toThrow('Plan upgrades require payment');
+    });
+
     it('rejects downgrade attempts via upgrade endpoint', async () => {
       prisma.subscription.findFirst.mockResolvedValue({
         id: subscriptionId,
@@ -345,7 +345,12 @@ describe('SubscriptionsService', () => {
       } as never);
 
       await expect(
-        service.upgradeSubscription(subscriptionId, tenantAId, { planId: planSilverId }),
+        service.upgradeSubscription(
+          subscriptionId,
+          tenantAId,
+          { planId: planSilverId },
+          { allowWithoutPayment: true },
+        ),
       ).rejects.toThrow(BadRequestException);
     });
   });

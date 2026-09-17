@@ -49,6 +49,10 @@ export interface Employee {
   userId: string | null;
   systemRoles: string[];
   status: string;
+  basicSalary?: number;
+  commissionRate?: number;
+  epfEnabled?: boolean;
+  etfEnabled?: boolean;
 }
 
 export interface AssignableEmployeeRole {
@@ -193,6 +197,165 @@ export interface TenantSettings {
   features: Array<{ code: string; name: string; description: string | null }>;
 }
 
+export interface ExpenseCategory {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Expense {
+  id: string;
+  code: string;
+  branchId: string;
+  branchName: string;
+  categoryId: string | null;
+  categoryName: string | null;
+  title: string;
+  amount: number;
+  expenseDate: string;
+  paymentMethod: string;
+  notes: string | null;
+  status: string;
+  createdBy: string;
+  createdByName: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ExpensesListResponse {
+  data: Expense[];
+  meta: PaginationMeta;
+  summary: { totalAmount: number };
+}
+
+export interface PayrollSettings {
+  id: string;
+  employeeEpfRate: number;
+  employerEpfRate: number;
+  employerEtfRate: number;
+}
+
+export interface EmployeeLoan {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  employeeCode: string;
+  loanType: string;
+  originalAmount: number;
+  remainingBalance: number;
+  monthlyInstallment: number;
+  startDate: string;
+  status: string;
+  notes: string | null;
+}
+
+export interface EmployeeAdvance {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  employeeCode: string;
+  originalAmount: number;
+  remainingBalance: number;
+  monthlyInstallment: number;
+  startDate: string;
+  status: string;
+  notes: string | null;
+}
+
+export interface LoanRepayment {
+  id: string;
+  loanId: string;
+  payrollItemId: string;
+  amount: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  paidAt: string;
+  payrollYear: number | null;
+  payrollMonth: number | null;
+}
+
+export interface AdvanceRepayment {
+  id: string;
+  advanceId: string;
+  payrollItemId: string;
+  amount: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  paidAt: string;
+  payrollYear: number | null;
+  payrollMonth: number | null;
+}
+
+export interface PayrollItem {
+  id: string;
+  payrollRunId: string;
+  employeeId: string;
+  employeeName: string;
+  employeeCode: string;
+  designation: string | null;
+  basicSalary: number;
+  commissionPercentage: number;
+  commissionBase: number;
+  commissionAmount: number;
+  bonus: number;
+  grossSalary: number;
+  employeeEpf: number;
+  employerEpf: number;
+  employerEtf: number;
+  loanDeduction: number;
+  otherDeduction: number;
+  totalDeductions: number;
+  netSalary: number;
+  epfEnabled?: boolean;
+  etfEnabled?: boolean;
+  commissionInvoiceCount?: number;
+  commissionPeriodFrom?: string;
+  commissionPeriodTo?: string;
+}
+
+export interface PayrollRun {
+  id: string;
+  year: number;
+  month: number;
+  status: string;
+  totalBasic: number;
+  totalCommission: number;
+  totalBonus: number;
+  totalGross: number;
+  totalDeductions: number;
+  totalNet: number;
+  createdAt: string;
+  finalizedAt: string | null;
+  paidAt: string | null;
+  items?: PayrollItem[];
+}
+
+export interface PayslipListItem {
+  id: string;
+  payrollRunId: string;
+  year: number;
+  month: number;
+  status: string;
+  employeeId: string;
+  employeeName: string;
+  employeeCode: string;
+  designation: string | null;
+  grossSalary: number;
+  totalDeductions: number;
+  netSalary: number;
+}
+
+export interface PayslipDetail extends PayrollItem {
+  year: number;
+  month: number;
+  status: string;
+  finalizedAt: string | null;
+  paidAt: string | null;
+}
+
 export interface Product {
   id: string;
   code: string;
@@ -243,6 +406,140 @@ export interface SaleListItem {
   cashierId: string | null;
   cashierName: string | null;
   createdAt: string;
+}
+
+// --- Sales Analytics ---
+export type SalesAnalyticsPreset =
+  | 'today'
+  | 'yesterday'
+  | 'this_week'
+  | 'this_month'
+  | 'last_month'
+  | 'custom';
+
+export interface SalesAnalyticsQueryParams {
+  preset?: string;
+  from?: string;
+  to?: string;
+  branchId?: string;
+  employeeId?: string;
+  search?: string;
+  page?: number | string;
+  limit?: number | string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  status?: string;
+}
+
+export interface SalesAnalyticsRange {
+  from: string;
+  to: string;
+}
+
+export interface SalesAnalyticsOverviewSummary {
+  totalSales: number;
+  invoiceCount: number;
+  averageInvoiceValue: number;
+  employeesGeneratedSales: number;
+  grossSales: number;
+  refundAmount: number;
+  netSales: number;
+  todaySales: number;
+  monthSales: number;
+}
+
+export interface SalesAnalyticsOverview {
+  range: SalesAnalyticsRange;
+  summary: SalesAnalyticsOverviewSummary;
+}
+
+export interface SalesAnalyticsInvoiceEmployee {
+  employeeId: string;
+  employeeName: string;
+  assignmentType: string;
+  allocationPercentage: number;
+  commissionableAmount: number;
+}
+
+export interface SalesAnalyticsInvoice {
+  id: string;
+  saleNumber: string;
+  createdAt: string;
+  branchId: string;
+  branchName: string;
+  customerId: string | null;
+  customerName: string | null;
+  customerPhone: string | null;
+  invoiceTotal: number;
+  refundedAmount: number;
+  netAmount: number;
+  status: string;
+  employees: SalesAnalyticsInvoiceEmployee[];
+}
+
+export interface SalesAnalyticsEmployeeRow {
+  employeeId: string;
+  employeeName: string;
+  employeeCode: string;
+  designation: string | null;
+  branchId: string;
+  branchName: string;
+  commissionRate: number;
+  attendedInvoiceCount: number;
+  allocatedSales: number;
+  commissionableSales: number;
+  commissionAmount: number;
+}
+
+export interface SalesAnalyticsEmployeeDetailSummary extends SalesAnalyticsEmployeeRow {
+  invoiceCount: number;
+  averageInvoice: number;
+}
+
+export interface SalesAnalyticsEmployeeInvoice {
+  id: string;
+  saleNumber: string;
+  createdAt: string;
+  branchName: string;
+  customerName: string | null;
+  invoiceTotal: number;
+  employeeSales: number;
+  allocationPercentage: number;
+  assignmentType: string;
+  status: string;
+}
+
+export interface SalesAnalyticsEmployeeDetail {
+  range: SalesAnalyticsRange;
+  summary: SalesAnalyticsEmployeeDetailSummary;
+  data: SalesAnalyticsEmployeeInvoice[];
+  meta: PaginationMeta;
+}
+
+export interface SalesAnalyticsBranchRow {
+  branchId: string;
+  branchName: string;
+  invoiceCount: number;
+  grossSales: number;
+  refunds: number;
+  netSales: number;
+}
+
+export interface SalesAnalyticsBranchDetail {
+  branch: { id: string; name: string };
+  range: SalesAnalyticsRange;
+  summary: SalesAnalyticsOverviewSummary;
+  employees: SalesAnalyticsEmployeeRow[];
+  daily: SalesAnalyticsDayRow[];
+  invoices: SalesAnalyticsInvoice[];
+}
+
+export interface SalesAnalyticsDayRow {
+  date: string;
+  invoiceCount: number;
+  grossSales: number;
+  refunds: number;
+  netSales: number;
 }
 
 export type SalonDashboardPeriod = 'today' | 'week' | 'month' | 'year';
@@ -448,6 +745,129 @@ export const tenantApi = {
         .get<PaginatedResponse<SaleListItem> | SaleListItem[]>('/tenant/sales', { params })
         .then((r) => unwrapPaginatedList(r.data)),
     get: (id: string) => api.get(`/tenant/sales/${id}`).then((r) => r.data),
+  },
+
+  salesAnalytics: {
+    overview: (params?: SalesAnalyticsQueryParams) =>
+      api
+        .get<SalesAnalyticsOverview>('/tenant/sales-analytics/overview', { params })
+        .then((r) => r.data),
+    invoices: (params?: SalesAnalyticsQueryParams) =>
+      api
+        .get<PaginatedResponse<SalesAnalyticsInvoice>>('/tenant/sales-analytics/invoices', {
+          params,
+        })
+        .then((r) => r.data),
+    byEmployee: (params?: SalesAnalyticsQueryParams) =>
+      api
+        .get<PaginatedResponse<SalesAnalyticsEmployeeRow> & { range: SalesAnalyticsRange }>(
+          '/tenant/sales-analytics/by-employee',
+          { params },
+        )
+        .then((r) => r.data),
+    employeeDetail: (employeeId: string, params?: SalesAnalyticsQueryParams) =>
+      api
+        .get<SalesAnalyticsEmployeeDetail>(`/tenant/sales-analytics/by-employee/${employeeId}`, {
+          params,
+        })
+        .then((r) => r.data),
+    byBranch: (params?: SalesAnalyticsQueryParams) =>
+      api
+        .get<PaginatedResponse<SalesAnalyticsBranchRow> & { range: SalesAnalyticsRange }>(
+          '/tenant/sales-analytics/by-branch',
+          { params },
+        )
+        .then((r) => r.data),
+    branchDetail: (branchId: string, params?: SalesAnalyticsQueryParams) =>
+      api
+        .get<SalesAnalyticsBranchDetail>(`/tenant/sales-analytics/by-branch/${branchId}`, {
+          params,
+        })
+        .then((r) => r.data),
+    byDay: (params?: SalesAnalyticsQueryParams) =>
+      api
+        .get<PaginatedResponse<SalesAnalyticsDayRow> & { range: SalesAnalyticsRange }>(
+          '/tenant/sales-analytics/by-day',
+          { params },
+        )
+        .then((r) => r.data),
+  },
+
+  expenseCategories: {
+    list: () => api.get<ExpenseCategory[]>('/tenant/expense-categories').then((r) => r.data),
+    create: (data: Record<string, unknown>) =>
+      api.post<ExpenseCategory>('/tenant/expense-categories', data).then((r) => r.data),
+    update: (id: string, data: Record<string, unknown>) =>
+      api.patch<ExpenseCategory>(`/tenant/expense-categories/${id}`, data).then((r) => r.data),
+  },
+
+  expenses: {
+    list: (params?: Record<string, string>) =>
+      api.get<ExpensesListResponse>('/tenant/expenses', { params }).then((r) => r.data),
+    get: (id: string) => api.get<Expense>(`/tenant/expenses/${id}`).then((r) => r.data),
+    create: (data: Record<string, unknown>) =>
+      api.post<Expense>('/tenant/expenses', data).then((r) => r.data),
+    update: (id: string, data: Record<string, unknown>) =>
+      api.patch<Expense>(`/tenant/expenses/${id}`, data).then((r) => r.data),
+    updateStatus: (id: string, status: string) =>
+      api.patch<Expense>(`/tenant/expenses/${id}/status`, { status }).then((r) => r.data),
+  },
+
+  payroll: {
+    getSettings: () =>
+      api.get<PayrollSettings>('/tenant/payroll/settings').then((r) => r.data),
+    updateSettings: (data: Partial<PayrollSettings>) =>
+      api.patch<PayrollSettings>('/tenant/payroll/settings', data).then((r) => r.data),
+    listLoans: (params?: Record<string, string>) =>
+      api
+        .get<PaginatedResponse<EmployeeLoan> | EmployeeLoan[]>('/tenant/payroll/loans', { params })
+        .then((r) => r.data),
+    getLoan: (id: string) =>
+      api.get<EmployeeLoan & { repayments: LoanRepayment[] }>(`/tenant/payroll/loans/${id}`).then((r) => r.data),
+    createLoan: (data: Record<string, unknown>) =>
+      api.post<EmployeeLoan>('/tenant/payroll/loans', data).then((r) => r.data),
+    updateLoan: (id: string, data: Record<string, unknown>) =>
+      api.patch<EmployeeLoan>(`/tenant/payroll/loans/${id}`, data).then((r) => r.data),
+    listAdvances: (params?: Record<string, string>) =>
+      api
+        .get<PaginatedResponse<EmployeeAdvance> | EmployeeAdvance[]>(
+          '/tenant/payroll/advances',
+          { params },
+        )
+        .then((r) => r.data),
+    getAdvance: (id: string) =>
+      api
+        .get<EmployeeAdvance & { repayments: AdvanceRepayment[] }>(
+          `/tenant/payroll/advances/${id}`,
+        )
+        .then((r) => r.data),
+    createAdvance: (data: Record<string, unknown>) =>
+      api.post<EmployeeAdvance>('/tenant/payroll/advances', data).then((r) => r.data),
+    updateAdvance: (id: string, data: Record<string, unknown>) =>
+      api.patch<EmployeeAdvance>(`/tenant/payroll/advances/${id}`, data).then((r) => r.data),
+    listRuns: (params?: Record<string, string>) =>
+      api
+        .get<PaginatedResponse<PayrollRun> | PayrollRun[]>('/tenant/payroll/runs', { params })
+        .then((r) => r.data),
+    getRun: (id: string) => api.get<PayrollRun>(`/tenant/payroll/runs/${id}`).then((r) => r.data),
+    createRun: (data: { year: number; month: number }) =>
+      api.post<PayrollRun>('/tenant/payroll/runs', data).then((r) => r.data),
+    updateItem: (runId: string, itemId: string, data: Record<string, unknown>) =>
+      api
+        .patch<PayrollItem>(`/tenant/payroll/runs/${runId}/items/${itemId}`, data)
+        .then((r) => r.data),
+    finalize: (id: string) =>
+      api.post<PayrollRun>(`/tenant/payroll/runs/${id}/finalize`).then((r) => r.data),
+    markPaid: (id: string) =>
+      api.post<PayrollRun>(`/tenant/payroll/runs/${id}/mark-paid`).then((r) => r.data),
+    listPayslips: (params?: Record<string, string>) =>
+      api
+        .get<PaginatedResponse<PayslipListItem> | PayslipListItem[]>('/tenant/payroll/payslips', {
+          params,
+        })
+        .then((r) => r.data),
+    getPayslip: (payrollItemId: string) =>
+      api.get<PayslipDetail>(`/tenant/payroll/payslips/${payrollItemId}`).then((r) => r.data),
   },
 
   dashboard: {

@@ -19,6 +19,13 @@ import StockPage from '@/pages/salon/StockPage';
 import PosPage from '@/pages/salon/PosPage';
 import SalesPage from '@/pages/salon/SalesPage';
 import SaleDetailsPage from '@/pages/salon/SaleDetailsPage';
+import SalesAnalyticsPage from '@/pages/salon/SalesAnalyticsPage';
+import ExpensesPage from '@/pages/salon/ExpensesPage';
+import ExpenseCategoriesPage from '@/pages/salon/ExpenseCategoriesPage';
+import PayrollRunsPage from '@/pages/salon/PayrollRunsPage';
+import EmployeeLoansPage from '@/pages/salon/EmployeeLoansPage';
+import EmployeeAdvancesPage from '@/pages/salon/EmployeeAdvancesPage';
+import PayslipsPage from '@/pages/salon/PayslipsPage';
 import ReportsPage from '@/pages/salon/ReportsPage';
 import SettingsPage from '@/pages/salon/SettingsPage';
 import SubscriptionPage from '@/pages/salon/SubscriptionPage';
@@ -45,6 +52,13 @@ export default function SalonAdminRoutes() {
           <Route path="pos" element={<PosPage />} />
           <Route path="sales" element={<SalesPage />} />
           <Route path="sales/:id" element={<SaleDetailsPage />} />
+          <Route path="sales-analytics" element={<SalesAnalyticsPage />} />
+          <Route path="expenses" element={<ExpensesPage />} />
+          <Route path="expense-categories" element={<ExpenseCategoriesPage />} />
+          <Route path="payroll" element={<PayrollRunsPage />} />
+          <Route path="payroll/advances" element={<EmployeeAdvancesPage />} />
+          <Route path="payroll/loans" element={<EmployeeLoansPage />} />
+          <Route path="payroll/payslips" element={<PayslipsPage />} />
           <Route path="reports" element={<ReportsPage />} />
           <Route path="subscription" element={<SubscriptionPage />} />
           <Route path="settings" element={<SettingsPage />} />

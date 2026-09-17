@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { tenantApi } from '@/api/tenant.api';
+import { tenantApi, type PayrollSettings } from '@/api/tenant.api';
 import { useAuth } from '@/contexts/AuthContext';
 import { resolveUploadUrl } from '@/lib/upload-url';
 import {
@@ -19,16 +19,25 @@ import {
 } from './salon-ops-ui';
 import './settings-page.css';
 
-type SettingsTab = 'account' | 'business' | 'subscription' | 'access';
+type SettingsTab = 'account' | 'business' | 'subscription' | 'access' | 'payroll';
 
 const FEATURE_ICONS: Record<string, string> = {
   CORE: '👥',
   MULTI_BRANCH: '🏢',
   CUSTOMERS: '🤝',
+  APPOINTMENTS: '📅',
   SERVICES: '✂️',
   INVENTORY: '📦',
   POS: '💳',
+  EXPENSES: '💰',
+  PAYROLL: '💼',
 };
+
+function hasRoleManagementFeature(featureCodes: string[]): boolean {
+  return (
+    featureCodes.includes('STAFF_MANAGEMENT') || featureCodes.includes('ROLE_MANAGEMENT')
+  );
+}
 
 const ACCESS_LABELS: Record<FeatureAccessLevel, { label: string; icon: string }> = {
   none: { label: 'No access', icon: '🚫' },
@@ -79,6 +88,11 @@ export default function SettingsPage() {
   const [createRoleOpen, setCreateRoleOpen] = useState(false);
   const [newRoleForm, setNewRoleForm] = useState({ name: '', description: '', code: '' });
   const [newRoleAccess, setNewRoleAccess] = useState<Record<string, FeatureAccessLevel>>({});
+  const [payrollForm, setPayrollForm] = useState({
+    employeeEpfRate: '',
+    employerEpfRate: '',
+    employerEtfRate: '',
+  });
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['tenant-settings'],
@@ -90,13 +104,36 @@ export default function SettingsPage() {
     queryFn: tenantApi.features,
   });
 
-  const roleManagementEnabled = tenantFeatures.includes('STAFF_MANAGEMENT');
+  const roleManagementEnabled =
+    hasRoleManagementFeature(tenantFeatures) ||
+    hasRoleManagementFeature((data?.features ?? []).map((f) => f.code));
+
+  const payrollEnabled = tenantFeatures.includes('PAYROLL');
+
+  const { data: payrollSettings } = useQuery({
+    queryKey: ['payroll-settings'],
+    queryFn: tenantApi.payroll.getSettings,
+    enabled: payrollEnabled,
+  });
+
+  useEffect(() => {
+    if (payrollSettings) {
+      setPayrollForm({
+        employeeEpfRate: String(payrollSettings.employeeEpfRate),
+        employerEpfRate: String(payrollSettings.employerEpfRate),
+        employerEtfRate: String(payrollSettings.employerEtfRate),
+      });
+    }
+  }, [payrollSettings]);
 
   const { data: accessControl, isLoading: accessLoading } = useQuery({
     queryKey: ['tenant-access-control'],
     queryFn: tenantApi.settings.getAccessControl,
     enabled: roleManagementEnabled,
   });
+
+  const roleMgmtActive =
+    roleManagementEnabled || accessControl?.roleManagementEnabled === true;
 
   useEffect(() => {
     if (!data) return;
@@ -108,9 +145,37 @@ export default function SettingsPage() {
     });
   }, [data]);
 
-  const enabledFeatureCodes = useMemo(
-    () => new Set(accessControl?.enabledFeatures.map((f) => f.code) ?? []),
-    [accessControl],
+  const enabledFeatureCodes = useMemo(() => {
+    const codes = new Set<string>(tenantFeatures);
+    for (const feature of data?.features ?? []) {
+      codes.add(feature.code);
+    }
+    for (const feature of accessControl?.enabledFeatures ?? []) {
+      codes.add(feature.code);
+    }
+    return codes;
+  }, [tenantFeatures, data?.features, accessControl?.enabledFeatures]);
+
+  const planFeatureList = useMemo(() => {
+    if (data?.features?.length) return data.features;
+    if (accessControl?.enabledFeatures?.length) return accessControl.enabledFeatures;
+    return [...enabledFeatureCodes].map((code) => ({
+      code,
+      name: code.replace(/_/g, ' '),
+      description: null as string | null,
+    }));
+  }, [data?.features, accessControl?.enabledFeatures, enabledFeatureCodes]);
+
+  const assignablePlanFeatures = useMemo(
+    () =>
+      planFeatureList.filter(
+        (feature) =>
+          FEATURE_MODULES.some((module) => module.code === feature.code) ||
+          feature.code === 'STAFF_MANAGEMENT' ||
+          feature.code === 'ROLE_MANAGEMENT' ||
+          feature.code === 'REPORTS',
+      ),
+    [planFeatureList],
   );
 
   const visibleModules = useMemo(
@@ -240,6 +305,16 @@ export default function SettingsPage() {
     onError: (err) => setFormError(getErrorMessage(err)),
   });
 
+  const payrollMutation = useMutation({
+    mutationFn: (payload: Partial<PayrollSettings>) => tenantApi.payroll.updateSettings(payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['payroll-settings'] });
+      setFormError(null);
+      setSuccessMessage('Payroll EPF / ETF settings saved.');
+    },
+    onError: (err) => setFormError(getErrorMessage(err)),
+  });
+
   const selectedRoleDef = accessControl?.roles.find((role) => role.code === selectedRoleCode);
   const selectedModuleAccess = moduleAccessDrafts[selectedRoleCode] ?? {};
   const permissionsLocked = selectedRoleCode === 'SALON_ADMIN';
@@ -352,6 +427,7 @@ export default function SettingsPage() {
   const tabs: { id: SettingsTab; label: string }[] = [
     { id: 'access', label: 'Role Permissions' },
     { id: 'business', label: 'Business & Brand' },
+    ...(payrollEnabled ? [{ id: 'payroll' as const, label: 'Payroll' }] : []),
     { id: 'subscription', label: 'Subscription' },
     { id: 'account', label: 'Account & Security' },
   ];
@@ -401,21 +477,21 @@ export default function SettingsPage() {
             <div>
               <h2>Role Permissions</h2>
               <p>
-                {roleManagementEnabled
+                {roleMgmtActive
                   ? isSalonAdmin
-                    ? 'Create custom roles and configure what each role can access. Assign roles from the Employees page.'
+                    ? 'Your plan features are listed below. Assign each feature to roles, then set employee roles from the Employees page.'
                     : 'View role permissions configured for your salon.'
-                  : 'Role creation and permission management is available on plans that include Role Management.'}
+                  : 'Role creation and permission management is available on plans that include Role Management / Staff Management.'}
               </p>
             </div>
-            {roleManagementEnabled && isSalonAdmin && (
+            {roleMgmtActive && isSalonAdmin && (
               <button type="button" className="emp-btn emp-btn-primary" onClick={openCreateRole}>
                 + Create Role
               </button>
             )}
           </div>
 
-          {!roleManagementEnabled ? (
+          {!roleMgmtActive ? (
             <div className="settings-upgrade-panel">
               <div className="settings-upgrade-icon">🔐</div>
               <h3>Role Management is not on your plan</h3>
@@ -431,20 +507,58 @@ export default function SettingsPage() {
                 View subscription plans
               </button>
             </div>
-          ) : accessControl?.enabledFeatures && accessControl.enabledFeatures.length > 0 && (
-            <div className="settings-plan-chips">
-              <span style={{ fontSize: '0.75rem', color: 'var(--emp-muted)', alignSelf: 'center' }}>
-                Plan features:
-              </span>
-              {accessControl.enabledFeatures.map((feature) => (
-                <span key={feature.code} className="settings-plan-chip" title={feature.description ?? ''}>
-                  {feature.name}
-                </span>
-              ))}
-            </div>
+          ) : (
+            <>
+              <div className="settings-plan-features-card">
+                <div className="settings-plan-features-header">
+                  <h3>Your plan features</h3>
+                  <p>
+                    {data.subscription?.plan
+                      ? `${data.subscription.plan} — features you can assign to roles`
+                      : 'Features included in your subscription'}
+                  </p>
+                </div>
+                {visibleModules.length > 0 || assignablePlanFeatures.length > 0 ? (
+                  <div className="settings-plan-chips">
+                    {visibleModules.map((module) => (
+                      <span
+                        key={module.code}
+                        className="settings-plan-chip"
+                        title={module.description}
+                      >
+                        {FEATURE_ICONS[module.code] ?? '•'} {module.name}
+                        {module.alwaysOn ? ' · Always on' : ''}
+                      </span>
+                    ))}
+                    {assignablePlanFeatures
+                      .filter(
+                        (feature) =>
+                          !FEATURE_MODULES.some((module) => module.code === feature.code),
+                      )
+                      .map((feature) => (
+                        <span
+                          key={feature.code}
+                          className="settings-plan-chip"
+                          title={feature.description ?? ''}
+                        >
+                          {feature.name}
+                        </span>
+                      ))}
+                  </div>
+                ) : (
+                  <div className="settings-readonly">No plan features found for this salon.</div>
+                )}
+              </div>
+              {isSalonAdmin && (
+                <p className="settings-role-assign-hint">
+                  Select a role on the left, then set None / View / Manage for each plan feature.
+                  Salon Admin always keeps full access to every feature on your plan.
+                </p>
+              )}
+            </>
           )}
 
-          {roleManagementEnabled && (accessLoading ? (
+          {roleMgmtActive && (accessLoading ? (
             <div className="settings-readonly">Loading role permissions…</div>
           ) : !accessControl ? (
             <div className="settings-readonly">Unable to load access control data.</div>
@@ -499,16 +613,18 @@ export default function SettingsPage() {
 
                     <div className="settings-perm-section">
                       <h4 className="settings-perm-section-title">
-                        Feature permissions
+                        Assign plan features
                         {permissionsLocked && (
                           <span style={{ fontWeight: 500, textTransform: 'none', marginLeft: '0.5rem' }}>
-                            (Salon Admin always has full access)
+                            (Salon Admin — full access to all plan features)
                           </span>
                         )}
                       </h4>
                       <div className="settings-perm-rows">
                         {visibleModules.map((module) => {
-                          const access = selectedModuleAccess[module.code] ?? 'none';
+                          const access = permissionsLocked
+                            ? 'manage'
+                            : (selectedModuleAccess[module.code] ?? 'none');
                           const levels: FeatureAccessLevel[] = ['none', 'view', 'manage'];
                           const canEdit =
                             isSalonAdmin && !permissionsLocked && !rolePermissionsMutation.isPending;
@@ -659,7 +775,7 @@ export default function SettingsPage() {
               </div>
 
               <h4 className="settings-perm-section-title" style={{ marginTop: '1.25rem' }}>
-                Feature permissions
+                Assign plan features
               </h4>
               <div className="settings-perm-rows">
                 {visibleModules.map((module) => {
@@ -857,6 +973,106 @@ export default function SettingsPage() {
                   disabled={salonMutation.isPending}
                 >
                   {salonMutation.isPending ? 'Saving…' : 'Save Business Info'}
+                </button>
+              </div>
+            )}
+          </form>
+        </section>
+      )}
+
+      {/* ── Payroll ── */}
+      {activeTab === 'payroll' && payrollEnabled && (
+        <section className="settings-panel">
+          <div className="settings-panel-header">
+            <h2>EPF / ETF Rates</h2>
+            <p>
+              {isSalonAdmin
+                ? 'Default statutory contribution percentages used when generating payroll'
+                : 'View-only — only Salon Admin can edit payroll rates'}
+            </p>
+          </div>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!isSalonAdmin) return;
+              setFormError(null);
+              setSuccessMessage(null);
+              payrollMutation.mutate({
+                employeeEpfRate: Number(payrollForm.employeeEpfRate),
+                employerEpfRate: Number(payrollForm.employerEpfRate),
+                employerEtfRate: Number(payrollForm.employerEtfRate),
+              });
+            }}
+          >
+            <div className="settings-form-grid">
+              <div className="settings-field">
+                <label className="emp-label" htmlFor="settings-emp-epf">
+                  Employee EPF %
+                </label>
+                <input
+                  id="settings-emp-epf"
+                  className="settings-input"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={payrollForm.employeeEpfRate}
+                  onChange={(e) =>
+                    setPayrollForm({ ...payrollForm, employeeEpfRate: e.target.value })
+                  }
+                  disabled={!isSalonAdmin}
+                  required
+                />
+              </div>
+              <div className="settings-field">
+                <label className="emp-label" htmlFor="settings-er-epf">
+                  Employer EPF %
+                </label>
+                <input
+                  id="settings-er-epf"
+                  className="settings-input"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={payrollForm.employerEpfRate}
+                  onChange={(e) =>
+                    setPayrollForm({ ...payrollForm, employerEpfRate: e.target.value })
+                  }
+                  disabled={!isSalonAdmin}
+                  required
+                />
+              </div>
+              <div className="settings-field">
+                <label className="emp-label" htmlFor="settings-er-etf">
+                  Employer ETF %
+                </label>
+                <input
+                  id="settings-er-etf"
+                  className="settings-input"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={payrollForm.employerEtfRate}
+                  onChange={(e) =>
+                    setPayrollForm({ ...payrollForm, employerEtfRate: e.target.value })
+                  }
+                  disabled={!isSalonAdmin}
+                  required
+                />
+              </div>
+            </div>
+
+            {isSalonAdmin && (
+              <div className="settings-actions">
+                <button
+                  type="submit"
+                  className="emp-btn emp-btn-primary"
+                  disabled={payrollMutation.isPending}
+                >
+                  {payrollMutation.isPending ? 'Saving…' : 'Save Payroll Settings'}
                 </button>
               </div>
             )}

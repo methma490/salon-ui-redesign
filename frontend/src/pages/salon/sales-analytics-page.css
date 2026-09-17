@@ -1,0 +1,76 @@
+.sa-row-click {
+  cursor: pointer;
+}
+
+.sa-row-click:hover {
+  background: #f8fafc;
+}
+
+.sa-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.875rem 1rem;
+  border-top: 1px solid var(--emp-border, #e2e8f0);
+}
+
+.sa-pagination-info {
+  font-size: 0.8125rem;
+  color: var(--emp-muted, #64748b);
+  font-weight: 600;
+}
+
+.sa-pagination-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sa-dialog-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+@media (min-width: 640px) {
+  .sa-dialog-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.sa-dialog-stat {
+  border: 1px solid var(--emp-border, #e2e8f0);
+  border-radius: 10px;
+  padding: 0.75rem;
+  background: #f8fafc;
+}
+
+.sa-dialog-stat-value {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.sa-dialog-stat-label {
+  margin-top: 0.15rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--emp-muted, #64748b);
+}
+
+.sa-dialog-section-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.sa-employees-cell {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

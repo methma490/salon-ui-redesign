@@ -194,7 +194,7 @@ export default function SalesPage() {
                   </div>
                   <Link to={`/salon/sales/${sale.id}`} className="sales-view-btn">
                     <Eye size={15} />
-                    View receipt
+                    View invoice
                   </Link>
                 </article>
               ))}

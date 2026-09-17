@@ -3,10 +3,7 @@ import { PayHereService } from '../payhere.service';
 
 describe('PayHereGateway', () => {
   let payHereService: jest.Mocked<
-    Pick<
-      PayHereService,
-      'isConfigured' | 'verifyNotifySignature' | 'buildCheckoutParams'
-    >
+    Pick<PayHereService, 'isConfigured' | 'verifyNotifySignature' | 'buildCheckoutParams'>
   >;
   let gateway: PayHereGateway;
 

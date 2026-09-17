@@ -28,7 +28,10 @@ export interface PaginatedResponse<T> {
   meta: PaginationMeta;
 }
 
-export function resolvePagination(page = 1, limit = 50): {
+export function resolvePagination(
+  page = 1,
+  limit = 50,
+): {
   page: number;
   limit: number;
   offset: number;

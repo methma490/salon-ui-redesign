@@ -52,6 +52,15 @@ interface CartProduct {
   discount: number;
 }
 
+interface SaleAssignee {
+  employeeId: string;
+  employeeName: string;
+  designation: string | null;
+  branchName: string;
+  assignmentType: 'PRIMARY' | 'ASSISTANT';
+  allocationPercentage: number;
+}
+
 type PaymentMode = 'CASH' | 'CARD' | 'BANK_TRANSFER' | 'MIX';
 type PayMethod = 'CASH' | 'CARD' | 'BANK_TRANSFER';
 
@@ -60,6 +69,16 @@ interface PaymentLine {
   method: PayMethod;
   amount: string;
   referenceNumber: string;
+}
+
+function equalSplitPercents(count: number): number[] {
+  if (count <= 0) return [];
+  if (count === 1) return [100];
+  const base = Math.floor(10000 / count) / 100;
+  const parts = Array.from({ length: count }, () => base);
+  const sumExceptLast = Math.round(base * (count - 1) * 100) / 100;
+  parts[count - 1] = Math.round((100 - sumExceptLast) * 100) / 100;
+  return parts;
 }
 
 const PAYMENT_MODES: { value: PaymentMode; label: string }[] = [
@@ -142,6 +161,8 @@ export default function PosPage() {
 
   const [cartServices, setCartServices] = useState<CartService[]>([]);
   const [cartProducts, setCartProducts] = useState<CartProduct[]>([]);
+  const [saleAssignees, setSaleAssignees] = useState<SaleAssignee[]>([]);
+  const [assigneeSearch, setAssigneeSearch] = useState('');
   const [discountInput, setDiscountInput] = useState('');
   const [discountMode, setDiscountMode] = useState<DiscountMode>('amount');
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('CASH');
@@ -181,6 +202,86 @@ export default function PosPage() {
   const soleEmployee = employees.length === 1 ? employees[0] : null;
   const hasMultipleEmployees = employees.length > 1;
   const hasNoEmployees = employees.length === 0;
+
+  const employeeIdsKey = employees.map((e) => e.id).join(',');
+
+  useEffect(() => {
+    if (soleEmployee) {
+      setSaleAssignees([
+        {
+          employeeId: soleEmployee.id,
+          employeeName: soleEmployee.name,
+          designation: soleEmployee.designation,
+          branchName: soleEmployee.branchName,
+          assignmentType: 'PRIMARY',
+          allocationPercentage: 100,
+        },
+      ]);
+      return;
+    }
+    setSaleAssignees((prev) =>
+      prev.filter((a) => employees.some((e) => e.id === a.employeeId)),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- employeeIdsKey tracks roster changes
+  }, [branchId, soleEmployee?.id, employeeIdsKey]);
+
+  const applyEqualSplit = (list: SaleAssignee[]) => {
+    const pcts = equalSplitPercents(list.length);
+    return list.map((item, index) => ({
+      ...item,
+      assignmentType: (index === 0 ? 'PRIMARY' : 'ASSISTANT') as 'PRIMARY' | 'ASSISTANT',
+      allocationPercentage: pcts[index] ?? 0,
+    }));
+  };
+
+  const toggleSaleAssignee = (emp: (typeof employees)[number]) => {
+    setSaleAssignees((prev) => {
+      const exists = prev.some((a) => a.employeeId === emp.id);
+      if (exists) {
+        const next = prev.filter((a) => a.employeeId !== emp.id);
+        return applyEqualSplit(next);
+      }
+      return applyEqualSplit([
+        ...prev,
+        {
+          employeeId: emp.id,
+          employeeName: emp.name,
+          designation: emp.designation,
+          branchName: emp.branchName,
+          assignmentType: 'ASSISTANT',
+          allocationPercentage: 0,
+        },
+      ]);
+    });
+  };
+
+  const updateAssigneePct = (employeeId: string, value: string) => {
+    const pct = Number(value);
+    setSaleAssignees((prev) =>
+      prev.map((a) =>
+        a.employeeId === employeeId
+          ? { ...a, allocationPercentage: Number.isFinite(pct) ? pct : 0 }
+          : a,
+      ),
+    );
+  };
+
+  const allocationSum = Math.round(
+    saleAssignees.reduce((sum, a) => sum + a.allocationPercentage, 0) * 100,
+  ) / 100;
+  const allocationValid =
+    saleAssignees.length === 0 || Math.abs(allocationSum - 100) < 0.02;
+
+  const filteredAssigneeOptions = employees.filter((e) => {
+    if (saleAssignees.some((a) => a.employeeId === e.id)) return false;
+    const q = assigneeSearch.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      e.name.toLowerCase().includes(q) ||
+      e.code.toLowerCase().includes(q) ||
+      (e.designation ?? '').toLowerCase().includes(q)
+    );
+  });
 
   const { data: services = [] } = useQuery({
     queryKey: ['services'],
@@ -265,6 +366,10 @@ export default function PosPage() {
   const createSaleMutation = useMutation({
     mutationFn: tenantApi.pos.createSale,
     onSuccess: (sale: { id: string }) => {
+      qc.invalidateQueries({ queryKey: ['sales'] });
+      qc.invalidateQueries({ queryKey: ['sales-analytics'] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+      qc.invalidateQueries({ queryKey: ['reports'] });
       navigate(`/salon/sales/${sale.id}`);
     },
     onError: (err) => setFormError(getErrorMessage(err)),
@@ -439,6 +544,14 @@ export default function PosPage() {
       setFormError('Select a branch so your stylist profile can be loaded.');
       return;
     }
+    if ((cartServices.length > 0 || saleAssignees.length > 0) && saleAssignees.length === 0) {
+      setFormError('Assign at least one employee to this sale.');
+      return;
+    }
+    if (saleAssignees.length > 0 && !allocationValid) {
+      setFormError(`Employee allocation must total 100% (currently ${allocationSum}%).`);
+      return;
+    }
     if (!paymentBalanced) {
       setFormError(`Payment total must equal ${formatMoney(total)}.`);
       return;
@@ -466,13 +579,18 @@ export default function PosPage() {
       customerId: customerId || undefined,
       services: cartServices.map((s) => ({
         serviceId: s.serviceId,
-        employeeId: s.employeeId || undefined,
+        employeeId: s.employeeId || saleAssignees[0]?.employeeId || undefined,
         discount: s.discount || undefined,
       })),
       products: cartProducts.map((p) => ({
         productId: p.productId,
         quantity: p.quantity,
         discount: p.discount || undefined,
+      })),
+      employees: saleAssignees.map((a) => ({
+        employeeId: a.employeeId,
+        assignmentType: a.assignmentType,
+        allocationPercentage: a.allocationPercentage,
       })),
       discount: discount || undefined,
       payments,
@@ -492,7 +610,9 @@ export default function PosPage() {
     !branchId ||
     cartCount === 0 ||
     !paymentBalanced ||
-    (cartServices.length > 0 && hasNoEmployees);
+    (cartServices.length > 0 && hasNoEmployees) ||
+    (cartServices.length > 0 && saleAssignees.length === 0) ||
+    (saleAssignees.length > 0 && !allocationValid);
 
   const cartRows = [
     ...cartServices.map((s, index) => ({
@@ -661,6 +781,101 @@ export default function PosPage() {
   const showCashFields =
     paymentMode === 'CASH' ||
     (paymentMode === 'MIX' && paymentLines.some((line) => line.method === 'CASH'));
+
+  const renderSaleEmployeesPanel = (className?: string) => (
+    <div className={`pos-panel pos-employees-panel ${className ?? ''}`.trim()}>
+      <div className="pos-panel-head">
+        <h2>Employees</h2>
+        <span className={allocationValid ? 'pos-alloc-ok' : 'pos-alloc-bad'}>
+          {saleAssignees.length === 0 ? 'None' : `${allocationSum}%`}
+        </span>
+      </div>
+      {hasNoEmployees ? (
+        <p className="pos-muted">No active employees for this branch.</p>
+      ) : (
+        <>
+          {saleAssignees.length > 0 && (
+            <div className="pos-assignee-list">
+              {saleAssignees.map((a) => (
+                <div key={a.employeeId} className="pos-assignee-row">
+                  <div className="pos-assignee-info">
+                    <strong>{a.employeeName}</strong>
+                    <span>
+                      {a.designation || 'Staff'} · {a.branchName}
+                    </span>
+                    <em>{a.assignmentType}</em>
+                  </div>
+                  <div className="pos-assignee-pct">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      value={a.allocationPercentage}
+                      onChange={(e) => updateAssigneePct(a.employeeId, e.target.value)}
+                      aria-label={`${a.employeeName} allocation`}
+                    />
+                    <span>%</span>
+                    {!soloOwnerMode && (
+                      <button
+                        type="button"
+                        className="pos-cart-remove"
+                        aria-label={`Remove ${a.employeeName}`}
+                        onClick={() =>
+                          setSaleAssignees((prev) =>
+                            applyEqualSplit(prev.filter((x) => x.employeeId !== a.employeeId)),
+                          )
+                        }
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {saleAssignees.length > 1 && (
+                <button
+                  type="button"
+                  className="pos-add-split-btn"
+                  onClick={() => setSaleAssignees((prev) => applyEqualSplit(prev))}
+                >
+                  Equal split
+                </button>
+              )}
+            </div>
+          )}
+          {!soloOwnerMode && (
+            <div className="pos-assignee-picker">
+              <Input
+                placeholder="Search employee…"
+                value={assigneeSearch}
+                onChange={(e) => setAssigneeSearch(e.target.value)}
+              />
+              <div className="pos-assignee-options">
+                {filteredAssigneeOptions.length === 0 ? (
+                  <p className="pos-muted">No more employees to add.</p>
+                ) : (
+                  filteredAssigneeOptions.slice(0, 8).map((emp) => (
+                    <button
+                      key={emp.id}
+                      type="button"
+                      className="pos-assignee-option"
+                      onClick={() => toggleSaleAssignee(emp)}
+                    >
+                      <strong>{emp.name}</strong>
+                      <span>
+                        {emp.designation || 'Staff'} · {emp.branchName}
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
 
   const renderPaymentPanel = (options?: { hideActions?: boolean; className?: string }) => (
     <div className={`pos-panel ${options?.className ?? ''}`.trim()}>
@@ -1081,6 +1296,7 @@ export default function PosPage() {
 
         <aside className="pos-checkout-panel">
           {renderCartPanel('pos-checkout-cart')}
+          {renderSaleEmployeesPanel('pos-checkout-employees')}
           {renderPaymentPanel({ className: 'pos-checkout-pay' })}
         </aside>
       </div>
@@ -1136,6 +1352,7 @@ export default function PosPage() {
                 </div>
               </DialogHeader>
               <div className="pos-sheet-body">
+                {renderSaleEmployeesPanel('pos-panel-mobile-employees')}
                 {renderPaymentPanel({ hideActions: true, className: 'pos-panel-mobile-pay' })}
               </div>
               <div className="pos-sheet-footer">

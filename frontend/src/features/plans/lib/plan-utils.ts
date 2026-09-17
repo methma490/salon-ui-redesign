@@ -7,6 +7,7 @@ export const FEATURE_LABELS: Record<string, string> = {
   REPORTS: 'Reports',
   STAFF_MANAGEMENT: 'Staff Management',
   EXPENSES: 'Expenses',
+  PAYROLL: 'Payroll',
   MULTI_BRANCH: 'Multi-Branch',
   ANALYTICS: 'Analytics',
 };

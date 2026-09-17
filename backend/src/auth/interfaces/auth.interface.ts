@@ -31,6 +31,7 @@ export interface AuthUserResponse {
   email: string;
   tenantId: string | null;
   roles: string[];
+  permissions?: string[];
   tenant?: {
     id: string;
     name: string;

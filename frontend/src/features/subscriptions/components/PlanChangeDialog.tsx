@@ -96,8 +96,8 @@ export function PlanChangeDialog({
             {selectedPlan && (
               <p className="rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
                 {mode === 'downgrade'
-                  ? 'Downgrade takes effect at the end of your current billing period.'
-                  : 'Upgrade applies immediately. Your features update right away.'}
+                  ? 'Downgrade takes effect at the end of your current billing period. You will pay the new plan price when you renew.'
+                  : 'You will be redirected to PayHere to pay the prorated upgrade amount. Features update after payment succeeds.'}
               </p>
             )}
           </div>
@@ -111,7 +111,7 @@ export function PlanChangeDialog({
             disabled={!selectedPlanId || isPending || eligiblePlans.length === 0}
             onClick={() => onConfirm(selectedPlanId)}
           >
-            {isPending ? 'Processing…' : mode === 'upgrade' ? 'Confirm Upgrade' : 'Schedule Downgrade'}
+            {isPending ? 'Processing…' : mode === 'upgrade' ? 'Pay & Upgrade' : 'Schedule Downgrade'}
           </Button>
         </DialogFooter>
       </DialogContent>

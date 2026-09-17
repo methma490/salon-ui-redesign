@@ -1,14 +1,6 @@
-import {
-  BadRequestException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  PasswordResetAccountType,
-  SuperAdminStatus,
-  TenantStatus,
-} from '@prisma/client';
+import { PasswordResetAccountType, SuperAdminStatus, TenantStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../database/prisma.service';
 import { MailService } from '../mail/mail.service';
@@ -82,8 +74,7 @@ export class PasswordResetService {
     }
 
     return {
-      message:
-        'If an account exists for this email, password reset instructions have been sent.',
+      message: 'If an account exists for this email, password reset instructions have been sent.',
     };
   }
 

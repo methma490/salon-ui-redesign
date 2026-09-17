@@ -58,6 +58,7 @@ export const FEATURE_CATALOG = [
     description: 'Advanced roles, permissions, and staff controls',
   },
   { code: 'EXPENSES', name: 'Expenses', description: 'Expense tracking and management' },
+  { code: 'PAYROLL', name: 'Payroll', description: 'Employee payroll, loans, and payslips' },
   { code: 'MULTI_BRANCH', name: 'Multi Branch', description: 'Manage multiple salon branches' },
   { code: 'ANALYTICS', name: 'Analytics', description: 'Advanced analytics and insights' },
 ] as const;
@@ -120,6 +121,7 @@ export const PLAN_SEED_DEFINITIONS: PlanSeedDefinition[] = [
       'STAFF_MANAGEMENT',
       'MULTI_BRANCH',
       'EXPENSES',
+      'PAYROLL',
       'ANALYTICS',
     ],
     prices: readPlanPrices('SEED_PLATINUM', { monthly: 25000, yearly: 250000, trial: 14 }),

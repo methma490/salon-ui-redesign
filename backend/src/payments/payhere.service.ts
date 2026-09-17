@@ -44,10 +44,7 @@ export class PayHereService implements OnModuleInit {
       return;
     }
 
-    if (
-      this.merchantId === 'your_merchant_id' ||
-      this.merchantSecret === 'your_merchant_secret'
-    ) {
+    if (this.merchantId === 'your_merchant_id' || this.merchantSecret === 'your_merchant_secret') {
       this.logger.error(
         'PayHere is using placeholder credentials from .env.example — update backend/.env and restart the server',
       );

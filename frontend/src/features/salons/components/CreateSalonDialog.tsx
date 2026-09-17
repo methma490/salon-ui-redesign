@@ -10,6 +10,7 @@ import {
   ShoppingCart,
   Store,
   Users,
+  Wallet,
   X,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -29,6 +30,7 @@ const FEATURE_ICONS: Record<string, typeof Users> = {
   REPORTS: BarChart3,
   STAFF_MANAGEMENT: Shield,
   EXPENSES: Coins,
+  PAYROLL: Wallet,
   MULTI_BRANCH: Building2,
   ANALYTICS: Layers3,
 };

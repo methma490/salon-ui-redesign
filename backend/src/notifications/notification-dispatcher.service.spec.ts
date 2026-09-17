@@ -1,8 +1,4 @@
-import {
-  NotificationChannel,
-  NotificationDeliveryStatus,
-  NotificationType,
-} from '@prisma/client';
+import { NotificationChannel, NotificationDeliveryStatus, NotificationType } from '@prisma/client';
 import { NotificationDispatcherService } from './notification-dispatcher.service';
 import { EmailNotificationChannel } from './channels/email-notification.channel';
 import { SmsNotificationChannel } from './channels/sms-notification.channel';

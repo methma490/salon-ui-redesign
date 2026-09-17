@@ -532,44 +532,30 @@ export default function SubscriptionPage() {
 
 
 
-  const handlePayHereCheckout = async (purpose: 'SUBSCRIPTION_ACTIVATE' | 'SUBSCRIPTION_RENEW') => {
-
+  const handlePayHereCheckout = async (
+    purpose: 'SUBSCRIPTION_ACTIVATE' | 'SUBSCRIPTION_RENEW' | 'SUBSCRIPTION_UPGRADE',
+    options?: { planId?: string; planPriceId?: string },
+  ) => {
     if (!subscription || !isSalonAdmin) return;
 
-
-
     setActionError(null);
-
     setActionSuccess(null);
-
     setCheckoutLoading(true);
 
-
-
     try {
-
       const result = await tenantSubscriptionsApi.createCheckout({
-
         subscriptionId: subscription.id,
-
         gateway: 'PAYHERE',
-
         purpose,
-
+        planId: options?.planId,
+        planPriceId: options?.planPriceId,
       });
-
       redirectToPayHereCheckout(result.checkout);
-
     } catch (err) {
-
       setActionError(getErrorMessage(err));
-
     } finally {
-
       setCheckoutLoading(false);
-
     }
-
   };
 
 
@@ -633,34 +619,41 @@ export default function SubscriptionPage() {
 
 
   const handlePlanChange = async (planId: string) => {
-
     if (!subscription || !isSalonAdmin || !planAction) return;
 
+    setActionError(null);
+    setActionSuccess(null);
 
+    try {
+      if (planAction === 'upgrade') {
+        setPlanAction(null);
+        await handlePayHereCheckout('SUBSCRIPTION_UPGRADE', { planId });
+        return;
+      }
+
+      await mutations.scheduleDowngrade.mutateAsync({ planId });
+      setActionSuccess('Downgrade scheduled for end of billing period.');
+      setPlanAction(null);
+    } catch (err) {
+      setActionError(getErrorMessage(err));
+    }
+  };
+
+
+
+  const handleCancelPendingDowngrade = async () => {
+
+    if (!subscription || !isSalonAdmin) return;
 
     setActionError(null);
 
     setActionSuccess(null);
 
-
-
     try {
 
-      if (planAction === 'upgrade') {
+      await mutations.cancelPendingDowngrade.mutateAsync();
 
-        await mutations.upgrade.mutateAsync({ planId });
-
-        setActionSuccess('Plan upgraded successfully.');
-
-      } else {
-
-        await mutations.scheduleDowngrade.mutateAsync({ planId });
-
-        setActionSuccess('Downgrade scheduled for end of billing period.');
-
-      }
-
-      setPlanAction(null);
+      setActionSuccess('Pending downgrade cancelled. You will keep your current plan.');
 
     } catch (err) {
 
@@ -830,7 +823,48 @@ export default function SubscriptionPage() {
 
       {actionError && <div className="sub-alert sub-alert-error">{actionError}</div>}
 
-
+      {subscription?.pendingPlan &&
+        (subscription.status === 'ACTIVE' || subscription.status === 'EXPIRED') && (
+        <div
+          className="sub-alert sub-alert-info"
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '0.75rem',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <span>
+            {subscription.status === 'EXPIRED' ? (
+              <>
+                Your subscription expired. Renew to switch to{' '}
+                <strong>{subscription.pendingPlan.name}</strong>
+                {subscription.pendingPlanPrice
+                  ? ` (${formatAmount(subscription.pendingPlanPrice.price, subscription.pendingPlanPrice.currency)}/${billingCycleLabel(subscription.pendingPlanPrice.billingCycle)})`
+                  : ''}
+                .
+              </>
+            ) : (
+              <>
+                Downgrade to <strong>{subscription.pendingPlan.name}</strong> is scheduled for{' '}
+                <strong>{formatDate(subscription.endDate)}</strong>. Features stay on your current
+                plan until then. You will pay the new plan price when you renew.
+              </>
+            )}
+          </span>
+          {isSalonAdmin && (
+            <button
+              type="button"
+              className="emp-btn emp-btn-secondary emp-btn-sm"
+              disabled={mutations.cancelPendingDowngrade.isPending}
+              onClick={() => void handleCancelPendingDowngrade()}
+            >
+              {mutations.cancelPendingDowngrade.isPending ? 'Cancelling…' : 'Cancel downgrade'}
+            </button>
+          )}
+        </div>
+      )}
 
       <section className="sub-stats" aria-label="Subscription summary">
 
@@ -1086,7 +1120,11 @@ export default function SubscriptionPage() {
 
                 >
 
-                  {checkoutLoading ? 'Redirecting…' : 'Renew Subscription'}
+                  {checkoutLoading
+                    ? 'Redirecting…'
+                    : subscription.pendingPlanPrice
+                      ? `Renew (${formatAmount(subscription.pendingPlanPrice.price, subscription.pendingPlanPrice.currency)})`
+                      : 'Renew Subscription'}
 
                 </button>
 
@@ -1302,7 +1340,7 @@ export default function SubscriptionPage() {
 
         title="Upgrade Plan"
 
-        description="Choose a higher plan. Changes apply immediately."
+        description="Choose a higher plan. You will pay the prorated difference via PayHere."
 
         plans={publicPlans}
 
@@ -1310,7 +1348,7 @@ export default function SubscriptionPage() {
 
         mode="upgrade"
 
-        isPending={mutations.upgrade.isPending}
+        isPending={checkoutLoading}
 
         onConfirm={(planId) => void handlePlanChange(planId)}
 

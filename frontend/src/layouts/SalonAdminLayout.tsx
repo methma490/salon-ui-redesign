@@ -3,6 +3,7 @@ import {
   Bell,
   Boxes,
   CalendarDays,
+  Coins,
   CreditCard,
   GitBranch,
   LayoutDashboard,
@@ -18,6 +19,7 @@ import {
   User,
   Users,
   UserSquare2,
+  Wallet,
   type LucideIcon,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -39,7 +41,19 @@ import { SalonBranchProvider, useSalonBranch } from '@/contexts/SalonBranchConte
 import { useAuth } from '@/contexts/AuthContext';
 import { resolveUploadUrl } from '@/lib/upload-url';
 import { cn } from '@/lib/utils';
+import { resolveNavAccess, type NavAccessState } from '@/lib/salon-access';
+import SalonPermissionGate from '@/routes/SalonPermissionGate';
+import { formatRoleLabel } from '@/pages/salon/settings-feature-modules';
 import './salon-admin-sidebar.css';
+
+function primaryRoleLabel(roles: string[] | undefined | null): string | null {
+  if (!roles?.length) return null;
+  const preferred =
+    roles.find((role) => role === 'SALON_ADMIN') ??
+    roles.find((role) => role !== 'SUPER_ADMIN') ??
+    roles[0];
+  return formatRoleLabel(preferred);
+}
 
 function SalonLogo({
   logoUrl,
@@ -89,6 +103,8 @@ type NavLinkItem = {
   label: string;
   icon: LucideIcon;
   feature?: string;
+  module?: string;
+  adminOnly?: boolean;
 };
 
 type NavGroup = {
@@ -96,29 +112,41 @@ type NavGroup = {
   to?: string;
   icon?: LucideIcon;
   feature?: string;
+  module?: string;
+  adminOnly?: boolean;
   children?: NavLinkItem[];
 };
 
 const navGroups: NavGroup[] = [
-  { to: '/salon/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/salon/dashboard', label: 'Dashboard', icon: LayoutDashboard, module: 'POS' },
   {
     label: 'Sales',
     icon: ShoppingCart,
+    module: 'POS',
     children: [
-      { to: '/salon/pos', label: 'POS', icon: ShoppingCart, feature: 'POS' },
-      { to: '/salon/sales', label: 'Transactions', icon: Receipt },
+      { to: '/salon/pos', label: 'POS', icon: ShoppingCart, feature: 'POS', module: 'POS' },
+      { to: '/salon/sales', label: 'Transactions', icon: Receipt, module: 'POS' },
+      {
+        to: '/salon/sales-analytics',
+        label: 'Sales Analytics',
+        icon: BarChart3,
+        feature: 'POS',
+        module: 'POS',
+      },
     ],
   },
   {
     label: 'Appointments',
     icon: CalendarDays,
     feature: 'APPOINTMENTS',
+    module: 'APPOINTMENTS',
     children: [
       {
         to: '/salon/appointments',
         label: 'Calendar & Bookings',
         icon: CalendarDays,
         feature: 'APPOINTMENTS',
+        module: 'APPOINTMENTS',
       },
     ],
   },
@@ -126,21 +154,36 @@ const navGroups: NavGroup[] = [
     label: 'Customers',
     icon: Users,
     feature: 'CUSTOMERS',
+    module: 'CUSTOMERS',
     children: [
-      { to: '/salon/customers', label: 'Customer List', icon: Users, feature: 'CUSTOMERS' },
+      {
+        to: '/salon/customers',
+        label: 'Customer List',
+        icon: Users,
+        feature: 'CUSTOMERS',
+        module: 'CUSTOMERS',
+      },
     ],
   },
   {
     label: 'Services',
     icon: Scissors,
     feature: 'SERVICES',
+    module: 'SERVICES',
     children: [
-      { to: '/salon/services', label: 'Service Catalog', icon: Scissors, feature: 'SERVICES' },
+      {
+        to: '/salon/services',
+        label: 'Service Catalog',
+        icon: Scissors,
+        feature: 'SERVICES',
+        module: 'SERVICES',
+      },
       {
         to: '/salon/service-categories',
         label: 'Categories',
         icon: Sparkles,
         feature: 'SERVICES',
+        module: 'SERVICES',
       },
     ],
   },
@@ -148,33 +191,149 @@ const navGroups: NavGroup[] = [
     label: 'Inventory',
     icon: Package,
     feature: 'INVENTORY',
+    module: 'INVENTORY',
     children: [
-      { to: '/salon/products', label: 'Products', icon: Package, feature: 'INVENTORY' },
-      { to: '/salon/stock', label: 'Stock Management', icon: Boxes, feature: 'INVENTORY' },
+      {
+        to: '/salon/products',
+        label: 'Products',
+        icon: Package,
+        feature: 'INVENTORY',
+        module: 'INVENTORY',
+      },
+      {
+        to: '/salon/stock',
+        label: 'Stock Management',
+        icon: Boxes,
+        feature: 'INVENTORY',
+        module: 'INVENTORY',
+      },
       {
         to: '/salon/product-categories',
         label: 'Categories',
         icon: Sparkles,
         feature: 'INVENTORY',
+        module: 'INVENTORY',
+      },
+    ],
+  },
+  {
+    label: 'Expenses',
+    icon: Coins,
+    feature: 'EXPENSES',
+    module: 'EXPENSES',
+    children: [
+      {
+        to: '/salon/expenses',
+        label: 'Expense List',
+        icon: Coins,
+        feature: 'EXPENSES',
+        module: 'EXPENSES',
+      },
+      {
+        to: '/salon/expense-categories',
+        label: 'Categories',
+        icon: Sparkles,
+        feature: 'EXPENSES',
+        module: 'EXPENSES',
+      },
+    ],
+  },
+  {
+    label: 'Payroll',
+    icon: Wallet,
+    feature: 'PAYROLL',
+    module: 'PAYROLL',
+    children: [
+      {
+        to: '/salon/payroll',
+        label: 'Run Payroll',
+        icon: Wallet,
+        feature: 'PAYROLL',
+        module: 'PAYROLL',
+      },
+      {
+        to: '/salon/employees',
+        label: 'Employee Registration',
+        icon: UserSquare2,
+        feature: 'PAYROLL',
+        module: 'CORE',
+      },
+      {
+        to: '/salon/payroll/advances',
+        label: 'Advance Payments',
+        icon: Wallet,
+        feature: 'PAYROLL',
+        module: 'PAYROLL',
+      },
+      {
+        to: '/salon/payroll/loans',
+        label: 'Employee Loans',
+        icon: Wallet,
+        feature: 'PAYROLL',
+        module: 'PAYROLL',
+      },
+      {
+        to: '/salon/payroll/payslips',
+        label: 'Payslips',
+        icon: Wallet,
+        feature: 'PAYROLL',
+        module: 'PAYROLL',
       },
     ],
   },
   {
     label: 'Employees',
     icon: UserSquare2,
-    children: [{ to: '/salon/employees', label: 'Staff Management', icon: UserSquare2 }],
+    module: 'CORE',
+    children: [
+      {
+        to: '/salon/employees',
+        label: 'Staff Management',
+        icon: UserSquare2,
+        module: 'CORE',
+      },
+    ],
   },
   {
     label: 'Reports',
     icon: BarChart3,
     feature: 'REPORTS',
+    module: 'POS',
     children: [
-      { to: '/salon/reports', label: 'Business Reports', icon: BarChart3, feature: 'REPORTS' },
+      {
+        to: '/salon/reports',
+        label: 'Business Reports',
+        icon: BarChart3,
+        feature: 'REPORTS',
+        module: 'POS',
+      },
+      {
+        to: '/salon/sales-analytics',
+        label: 'Sales Analytics',
+        icon: BarChart3,
+        feature: 'POS',
+        module: 'POS',
+      },
     ],
   },
-  { to: '/salon/branches', label: 'Branches', icon: GitBranch },
-  { to: '/salon/subscription', label: 'Subscription', icon: CreditCard },
-  { to: '/salon/settings', label: 'Settings', icon: Settings },
+  {
+    to: '/salon/branches',
+    label: 'Branches',
+    icon: GitBranch,
+    module: 'MULTI_BRANCH',
+  },
+  {
+    to: '/salon/subscription',
+    label: 'Subscription',
+    icon: CreditCard,
+    adminOnly: true,
+  },
+  {
+    to: '/salon/settings',
+    label: 'Settings',
+    icon: Settings,
+    adminOnly: true,
+  },
 ];
 
 function SidebarLink({
@@ -182,12 +341,27 @@ function SidebarLink({
   label,
   icon: Icon,
   onNavigate,
+  access = 'allowed',
 }: {
   to: string;
   label: string;
   icon: LucideIcon;
   onNavigate?: () => void;
+  access?: NavAccessState;
 }) {
+  if (access === 'disabled') {
+    return (
+      <div
+        className="salon-sidebar-link salon-sidebar-link-disabled"
+        title="No access for your role"
+        aria-disabled="true"
+      >
+        <Icon className="salon-sidebar-link-icon" strokeWidth={2} />
+        <span className="salon-sidebar-link-label">{label}</span>
+      </div>
+    );
+  }
+
   return (
     <NavLink
       to={to}
@@ -200,27 +374,41 @@ function SidebarLink({
   );
 }
 
-function isGroupEnabled(group: NavGroup, enabledFeatures: string[]) {
-  if (group.feature && !enabledFeatures.includes(group.feature)) return false;
-  if (group.children) {
-    return group.children.some((c) => !c.feature || enabledFeatures.includes(c.feature));
-  }
-  return true;
+function itemAccess(
+  item: Pick<NavLinkItem, 'feature' | 'module' | 'adminOnly'>,
+  enabledFeatures: string[],
+  roles: string[],
+  permissions: string[],
+): NavAccessState {
+  return resolveNavAccess({
+    feature: item.feature,
+    module: item.module,
+    adminOnly: item.adminOnly,
+    enabledFeatures,
+    roles,
+    permissions,
+  });
 }
 
 function NavItems({
   enabledFeatures,
+  roles,
+  permissions,
   onNavigate,
 }: {
   enabledFeatures: string[];
+  roles: string[];
+  permissions: string[];
   onNavigate?: () => void;
 }) {
   const location = useLocation();
 
   return (
     <nav className="salon-sidebar">
-      {navGroups.filter((g) => isGroupEnabled(g, enabledFeatures)).map((group) => {
+      {navGroups.map((group) => {
         if (group.to && group.icon) {
+          const access = itemAccess(group, enabledFeatures, roles, permissions);
+          if (access === 'hidden') return null;
           return (
             <SidebarLink
               key={group.to}
@@ -228,17 +416,25 @@ function NavItems({
               label={group.label ?? ''}
               icon={group.icon}
               onNavigate={onNavigate}
+              access={access}
             />
           );
         }
 
-        const visibleChildren = (group.children ?? []).filter(
-          (c) => !c.feature || enabledFeatures.includes(c.feature),
-        );
-        if (visibleChildren.length === 0) return null;
+        const childrenWithAccess = (group.children ?? [])
+          .map((c) => ({
+            item: c,
+            access: itemAccess(c, enabledFeatures, roles, permissions),
+          }))
+          .filter((entry) => entry.access !== 'hidden');
+
+        if (childrenWithAccess.length === 0) return null;
 
         const GroupIcon = group.icon ?? LayoutDashboard;
-        const isChildActive = visibleChildren.some((c) => location.pathname.startsWith(c.to));
+        const isChildActive = childrenWithAccess.some(
+          (entry) =>
+            entry.access === 'allowed' && location.pathname.startsWith(entry.item.to),
+        );
 
         return (
           <div key={group.label}>
@@ -247,13 +443,14 @@ function NavItems({
               <span>{group.label}</span>
             </div>
             <div className="salon-sidebar-children">
-              {visibleChildren.map((item) => (
+              {childrenWithAccess.map(({ item, access }) => (
                 <SidebarLink
-                  key={item.to}
+                  key={`${item.to}-${item.label}`}
                   to={item.to}
                   label={item.label}
                   icon={item.icon}
                   onNavigate={onNavigate}
+                  access={access}
                 />
               ))}
             </div>
@@ -269,11 +466,15 @@ function SalonAdminHeader({
   salonLogoUrl,
   onLogout,
   enabledFeatures,
+  roles,
+  permissions,
 }: {
   salonName: string;
   salonLogoUrl: string | null;
   onLogout: () => void;
   enabledFeatures: string[];
+  roles: string[];
+  permissions: string[];
 }) {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -296,6 +497,7 @@ function SalonAdminHeader({
   });
 
   const lowStockCount = dashboard?.kpis.lowStockCount ?? 0;
+  const roleLabel = primaryRoleLabel(roles);
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -340,8 +542,15 @@ function SalonAdminHeader({
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
             <User className="h-4 w-4" />
           </div>
-          <span className="hidden max-w-[120px] truncate text-sm font-medium sm:inline">
-            {user?.name ?? 'Profile'}
+          <span className="hidden min-w-0 flex-col items-start text-left sm:flex">
+            <span className="max-w-[140px] truncate text-sm font-medium leading-tight">
+              {user?.name ?? 'Profile'}
+            </span>
+            {roleLabel && (
+              <span className="max-w-[140px] truncate text-[11px] font-normal text-muted-foreground leading-tight">
+                {roleLabel}
+              </span>
+            )}
           </span>
         </Button>
 
@@ -349,6 +558,9 @@ function SalonAdminHeader({
           <div className="absolute right-0 top-full z-50 mt-1 w-56 rounded-lg border border-border bg-card py-1 shadow-lg">
             <div className="border-b border-border px-3 py-2">
               <p className="truncate text-sm font-medium">{user?.name}</p>
+              {roleLabel && (
+                <p className="truncate text-xs font-medium text-primary">{roleLabel}</p>
+              )}
               <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
             </div>
             <button
@@ -397,12 +609,19 @@ function SalonAdminHeader({
               <div className="salon-mobile-sheet-nav">
                 <NavItems
                   enabledFeatures={enabledFeatures}
+                  roles={roles}
+                  permissions={permissions}
                   onNavigate={() => setMenuOpen(false)}
                 />
               </div>
               <div className="salon-mobile-sheet-footer">
                 {user?.email && (
-                  <p className="mb-3 truncate px-1 text-xs text-muted-foreground">{user.email}</p>
+                  <div className="mb-3 px-1">
+                    {roleLabel && (
+                      <p className="truncate text-xs font-medium text-foreground">{roleLabel}</p>
+                    )}
+                    <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                  </div>
                 )}
                 <Button
                   variant="outline"
@@ -478,6 +697,9 @@ function SalonAdminLayoutInner() {
 
   const salonName = settings?.salon.name ?? 'Salon Admin';
   const salonLogoUrl = settings?.salon.logoUrl ?? null;
+  const roles = user?.roles ?? [];
+  const permissions = user?.permissions ?? [];
+  const roleLabel = primaryRoleLabel(roles);
 
   const handleLogout = async () => {
     await logout();
@@ -509,10 +731,19 @@ function SalonAdminLayoutInner() {
           <SalonBrand salonName={salonName} logoUrl={salonLogoUrl} />
         </div>
         <div className="salon-sidebar-scroll flex min-h-0 flex-1 flex-col justify-between overflow-y-auto p-3">
-          <NavItems enabledFeatures={features} />
+          <NavItems
+            enabledFeatures={features}
+            roles={roles}
+            permissions={permissions}
+          />
           <div className="mt-4 shrink-0">
             <Separator className="mb-4" />
-            <div className="mb-3 px-3 text-xs text-muted-foreground">{user?.email}</div>
+            <div className="mb-3 px-3">
+              {roleLabel && (
+                <div className="truncate text-xs font-medium text-foreground">{roleLabel}</div>
+              )}
+              <div className="truncate text-xs text-muted-foreground">{user?.email}</div>
+            </div>
             <Button
               variant="outline"
               className="w-full justify-start gap-2"
@@ -531,13 +762,17 @@ function SalonAdminLayoutInner() {
           salonLogoUrl={salonLogoUrl}
           onLogout={() => void handleLogout()}
           enabledFeatures={features}
+          roles={roles}
+          permissions={permissions}
         />
 
         <main
           ref={mainRef}
           className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-[#f8fafc] p-4 md:p-6"
         >
-          <Outlet />
+          <SalonPermissionGate>
+            <Outlet />
+          </SalonPermissionGate>
         </main>
       </div>
     </div>

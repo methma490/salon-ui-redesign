@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { buildPaginatedResponse, resolvePagination } from '../../common/dto/pagination.dto';
 import { TenantSchemaService } from '../../tenant/services/tenant-schema.service';
 import { tenantTable } from '../../tenant/utils/schema-name.util';
@@ -282,9 +278,7 @@ export class AppointmentsService {
     const params: unknown[] = [];
     const conditions = this.buildListConditions(schemaName, query, params);
     let idx = params.length + 1;
-    const paginationClause = pagination
-      ? ` LIMIT $${idx++} OFFSET $${idx++}`
-      : '';
+    const paginationClause = pagination ? ` LIMIT $${idx++} OFFSET $${idx++}` : '';
     const paginationParams = pagination ? [pagination.limit, pagination.offset] : [];
 
     return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {

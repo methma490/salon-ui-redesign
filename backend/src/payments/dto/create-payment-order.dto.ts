@@ -5,6 +5,7 @@ export enum PaymentPurpose {
   SIGNUP = 'SIGNUP',
   SUBSCRIPTION_ACTIVATE = 'SUBSCRIPTION_ACTIVATE',
   SUBSCRIPTION_RENEW = 'SUBSCRIPTION_RENEW',
+  SUBSCRIPTION_UPGRADE = 'SUBSCRIPTION_UPGRADE',
 }
 
 export class CreatePaymentOrderDto {
@@ -37,4 +38,13 @@ export class CreateSubscriptionCheckoutDto {
 
   @IsEnum(PaymentPurpose)
   purpose!: PaymentPurpose;
+
+  /** Required when purpose is SUBSCRIPTION_UPGRADE */
+  @IsOptional()
+  @IsUUID()
+  planId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  planPriceId?: string;
 }

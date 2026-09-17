@@ -18,4 +18,3 @@ import { InvoicesService } from './invoices.service';
   exports: [InvoicesService],
 })
 export class InvoicesModule {}
-

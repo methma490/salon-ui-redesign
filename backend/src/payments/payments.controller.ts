@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -73,11 +74,22 @@ export class PaymentsController {
     @CurrentTenant() tenant: TenantContext,
     @Body() dto: CreateSubscriptionCheckoutDto,
   ) {
+    if (dto.purpose === 'SUBSCRIPTION_UPGRADE' && !dto.planId) {
+      throw new BadRequestException('planId is required for subscription upgrade checkout');
+    }
+
     const order = await this.paymentOrders.createOrder({
       tenantId: tenant.tenantId,
       subscriptionId: dto.subscriptionId,
       gateway: dto.gateway,
       purpose: dto.purpose,
+      metadata:
+        dto.purpose === 'SUBSCRIPTION_UPGRADE'
+          ? {
+              planId: dto.planId,
+              planPriceId: dto.planPriceId,
+            }
+          : undefined,
     });
 
     // Fetch actual tenant contact info for payment gateway
@@ -87,7 +99,9 @@ export class PaymentsController {
     });
 
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
-    const [firstName, ...lastParts] = (tenantRecord?.name ?? tenant.tenantName ?? 'Salon').split(' ');
+    const [firstName, ...lastParts] = (tenantRecord?.name ?? tenant.tenantName ?? 'Salon').split(
+      ' ',
+    );
     const lastName = lastParts.join(' ') || 'Admin';
 
     const session = await this.paymentOrders.buildCheckoutSession(

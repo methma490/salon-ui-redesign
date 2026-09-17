@@ -3,10 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { NotificationType } from '@prisma/client';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../database/prisma.service';
-import {
-  NOTIFICATION_JOB_OPTIONS,
-  NotificationJobName,
-} from './constants/notification-jobs';
+import { NOTIFICATION_JOB_OPTIONS, NotificationJobName } from './constants/notification-jobs';
 import { NotificationDispatcherService } from './notification-dispatcher.service';
 import { DeliverNotificationPayload } from './interfaces/notification-job.interface';
 import { NotificationReminderService } from './notification-reminder.service';
@@ -34,10 +31,7 @@ export class NotificationQueueService implements OnModuleInit {
     }
 
     try {
-      const queueName = this.configService.get<string>(
-        'redis.notificationQueue',
-        'notifications',
-      );
+      const queueName = this.configService.get<string>('redis.notificationQueue', 'notifications');
 
       this.queue = new Queue(queueName, {
         connection: this.getRedisConnection(),

@@ -1,0 +1,329 @@
+/* Payroll section layout — scoped so other emp pages stay unchanged */
+
+.payroll-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.payroll-page .emp-header {
+  margin-bottom: 0;
+}
+
+.payroll-page .emp-stats {
+  margin-bottom: 0;
+}
+
+.payroll-page .emp-form-panel {
+  padding: 1.25rem 1.35rem 1.35rem;
+}
+
+.payroll-page .payroll-toolbar {
+  padding: 1.25rem 1.35rem 1.35rem;
+  border-bottom: 1px solid var(--emp-border, #e5ebe8);
+}
+
+.payroll-page .emp-form-panel-title,
+.payroll-page .payroll-toolbar-title {
+  margin: 0 0 1rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.payroll-page .emp-form-panel-desc {
+  margin: -0.5rem 0 1rem;
+}
+
+.payroll-page .emp-filter-grid {
+  display: grid;
+  gap: 1rem 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .payroll-page .emp-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .payroll-page .emp-filter-grid.cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.payroll-page .emp-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.payroll-page .emp-filter-field label,
+.payroll-page .emp-filter-field .text-sm {
+  display: block;
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--emp-muted, #64748b);
+}
+
+.payroll-page .emp-filter-field input,
+.payroll-page .emp-filter-field button[role='combobox'] {
+  width: 100%;
+  min-height: 2.5rem;
+}
+
+.payroll-page .payroll-generate-actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.payroll-page .payroll-generate-label-spacer {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.payroll-page.settings-shell .payroll-generate-grid {
+  grid-template-columns: 1fr;
+  max-width: 52rem;
+}
+
+@media (min-width: 640px) {
+  .payroll-page.settings-shell .payroll-generate-grid {
+    grid-template-columns: 1fr 1fr auto;
+    align-items: end;
+  }
+}
+
+.payroll-page.settings-shell .emp-stats {
+  margin-top: 0.25rem;
+}
+
+.payroll-page.settings-shell .settings-panel + .settings-panel {
+  margin-top: 0;
+}
+
+.payroll-page .payroll-generate-actions .emp-btn {
+  width: 100%;
+  min-height: 2.5rem;
+}
+
+.payroll-page .emp-panel-header {
+  padding: 1.25rem 1.35rem;
+  border-bottom: 1px solid var(--emp-border, #e5ebe8);
+  gap: 0.75rem;
+}
+
+.payroll-page .emp-panel-title {
+  margin: 0;
+  font-size: 1.0625rem;
+}
+
+.payroll-page .emp-panel-desc {
+  margin: 0.4rem 0 0;
+  line-height: 1.4;
+}
+
+.payroll-page .emp-panel > .emp-empty {
+  padding: 2.75rem 1.5rem;
+}
+
+.payroll-page .emp-panel > .emp-cards {
+  padding: 1rem 1.25rem 1.25rem;
+  gap: 0.875rem;
+}
+
+.payroll-page .emp-panel > .emp-table-wrap {
+  border-top: none;
+}
+
+.payroll-page .emp-table th.num,
+.payroll-page .emp-table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.payroll-page .emp-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.payroll-page .payroll-settings-panel form {
+  padding: 0 1.25rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.payroll-page .payroll-settings-panel .emp-filter-grid {
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .payroll-page .payroll-settings-panel .emp-filter-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.payroll-page .payroll-run-detail {
+  margin-top: 0;
+}
+
+.payroll-page .payroll-run-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.payroll-page .payroll-items-table {
+  overflow-x: auto;
+}
+
+.payroll-page .payroll-items-table input.emp-input {
+  width: 100%;
+  min-width: 4.5rem;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8125rem;
+}
+
+.payroll-page .payroll-commission-preview {
+  font-size: 0.75rem;
+  color: var(--emp-muted, #64748b);
+  margin-top: 0.25rem;
+}
+
+.payroll-page .payroll-readonly {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.875rem;
+}
+
+/* Payslip modal & print */
+.payslip-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.payslip-print-area {
+  background: #fff;
+  border: 1px solid var(--emp-border, #e2e8f0);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.payslip-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #1e293b;
+}
+
+.payslip-header h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.payslip-header p {
+  margin: 0.125rem 0;
+  font-size: 0.875rem;
+  color: var(--emp-muted, #64748b);
+}
+
+.payslip-meta {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
+}
+
+.payslip-section {
+  margin-bottom: 1rem;
+}
+
+.payslip-section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--emp-muted, #64748b);
+  margin-bottom: 0.5rem;
+}
+
+.payslip-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.375rem 0;
+  font-size: 0.875rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.payslip-row.total {
+  font-weight: 700;
+  border-top: 2px solid #1e293b;
+  border-bottom: none;
+  padding-top: 0.75rem;
+  margin-top: 0.5rem;
+  font-size: 1rem;
+}
+
+.payslip-row .label {
+  color: #334155;
+}
+
+.payslip-row .value {
+  font-variant-numeric: tabular-nums;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .payslip-print-area,
+  .payslip-print-area * {
+    visibility: visible;
+  }
+
+  .payslip-print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    border: none;
+    padding: 0;
+    max-width: none;
+  }
+
+  .payslip-no-print {
+    display: none !important;
+  }
+}
+
+@media (max-width: 639px) {
+  .payroll-page .emp-form-panel,
+  .payroll-page .payroll-toolbar {
+    padding: 1rem;
+  }
+
+  .payroll-page .emp-panel-header {
+    padding: 1rem;
+  }
+
+  .payroll-page .payroll-settings-panel form {
+    padding: 0 1rem 1rem;
+  }
+
+  .payroll-page .emp-panel > .emp-cards {
+    padding: 0.875rem 1rem 1rem;
+  }
+}

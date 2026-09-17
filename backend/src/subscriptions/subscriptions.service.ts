@@ -27,10 +27,7 @@ import {
   normalizeFeatureCodes,
   validateFeatureRecords,
 } from '../super-admin/salons/utils/feature-validation.util';
-import {
-  buildPaginatedResponse,
-  resolvePagination,
-} from '../common/dto/pagination.dto';
+import { buildPaginatedResponse, resolvePagination } from '../common/dto/pagination.dto';
 import {
   ActivateSubscriptionDto,
   CreateCustomSubscriptionDto,
@@ -135,7 +132,9 @@ export class SubscriptionsService {
     });
 
     await this.syncTenantFeaturesFromSubscription(subscription.id, tenantId);
-    this.logger.log(`Trial subscription created: tenant=${tenantId}, subscription=${subscription.id}`);
+    this.logger.log(
+      `Trial subscription created: tenant=${tenantId}, subscription=${subscription.id}`,
+    );
     return this.findById(subscription.id, tenantId);
   }
 
@@ -143,6 +142,7 @@ export class SubscriptionsService {
     subscriptionId: string,
     tenantId: string,
     dto: ActivateSubscriptionDto,
+    options?: { fromPaymentProcessor?: boolean },
   ) {
     const subscription = await this.findTenantSubscriptionOrThrow(subscriptionId, tenantId, {
       plan: true,
@@ -155,16 +155,18 @@ export class SubscriptionsService {
       throw new BadRequestException('Only pending or trial subscriptions can be activated');
     }
 
-    const existingPaid = await this.prisma.paymentOrder.findFirst({
-      where: {
-        subscriptionId,
-        tenantId,
-        status: PaymentOrderStatus.PAID,
-      },
-    });
+    if (!options?.fromPaymentProcessor) {
+      const existingPaid = await this.prisma.paymentOrder.findFirst({
+        where: {
+          subscriptionId,
+          tenantId,
+          status: PaymentOrderStatus.PAID,
+        },
+      });
 
-    if (existingPaid) {
-      throw new ConflictException('Subscription payment has already been applied');
+      if (existingPaid) {
+        throw new ConflictException('Subscription payment has already been applied');
+      }
     }
 
     const paidAt = new Date();
@@ -177,16 +179,18 @@ export class SubscriptionsService {
         : paidAt;
 
     const updated = await this.prisma.$transaction(async (tx) => {
-      await this.recordSubscriptionPayment(tx, {
-        tenantId,
-        subscriptionId,
-        amount: subscription.price,
-        currency: subscription.currency,
-        purpose: PaymentPurpose.SUBSCRIPTION_ACTIVATE,
-        paymentMethod: dto.paymentMethod ?? 'MANUAL',
-        paymentReference: dto.paymentReference,
-        paidAt,
-      });
+      if (!options?.fromPaymentProcessor) {
+        await this.recordSubscriptionPayment(tx, {
+          tenantId,
+          subscriptionId,
+          amount: subscription.price,
+          currency: subscription.currency,
+          purpose: PaymentPurpose.SUBSCRIPTION_ACTIVATE,
+          paymentMethod: dto.paymentMethod ?? 'MANUAL',
+          paymentReference: dto.paymentReference,
+          paidAt,
+        });
+      }
 
       const existingSnapshot = await tx.subscriptionFeature.count({ where: { subscriptionId } });
       if (existingSnapshot === 0) {
@@ -223,15 +227,27 @@ export class SubscriptionsService {
     });
 
     await this.syncTenantFeaturesFromSubscription(subscriptionId, tenantId);
-    this.logger.log(`Subscription activated: tenant=${tenantId}, subscription=${subscriptionId}, from=${fromStatus}`);
+    this.logger.log(
+      `Subscription activated: tenant=${tenantId}, subscription=${subscriptionId}, from=${fromStatus}`,
+    );
     return updated;
   }
 
-  async renewSubscription(subscriptionId: string, tenantId: string, dto: RenewSubscriptionDto) {
-    const subscription = await this.findTenantSubscriptionOrThrow(subscriptionId, tenantId);
+  async renewSubscription(
+    subscriptionId: string,
+    tenantId: string,
+    dto: RenewSubscriptionDto,
+    options?: { fromPaymentProcessor?: boolean },
+  ) {
+    const subscription = await this.findTenantSubscriptionOrThrow(subscriptionId, tenantId, {
+      plan: true,
+    });
 
-    if (subscription.status !== SubscriptionStatus.ACTIVE) {
-      throw new BadRequestException('Only active subscriptions can be renewed');
+    if (
+      subscription.status !== SubscriptionStatus.ACTIVE &&
+      subscription.status !== SubscriptionStatus.EXPIRED
+    ) {
+      throw new BadRequestException('Only active or expired subscriptions can be renewed');
     }
 
     if (!subscription.endDate) {
@@ -242,23 +258,30 @@ export class SubscriptionsService {
       throw new BadRequestException('Cancelled subscriptions cannot be renewed');
     }
 
+    if (subscription.pendingPlanId && subscription.pendingPlanPriceId) {
+      return this.renewWithPendingPlanChange(subscription, tenantId, dto, options);
+    }
+
     const paidAt = new Date();
     const previousEnd = subscription.endDate;
-    const newEndDate = extendBillingPeriod(previousEnd, subscription.billingCycle);
+    const anchorEnd = isPastDate(previousEnd) ? paidAt : previousEnd;
+    const newEndDate = extendBillingPeriod(anchorEnd, subscription.billingCycle);
 
-    return this.prisma.$transaction(async (tx) => {
-      await this.recordSubscriptionPayment(tx, {
-        tenantId,
-        subscriptionId,
-        amount: subscription.price,
-        currency: subscription.currency,
-        purpose: PaymentPurpose.SUBSCRIPTION_RENEW,
-        paymentMethod: dto.paymentMethod ?? 'MANUAL',
-        paymentReference: dto.paymentReference,
-        paidAt,
-      });
+    const updated = await this.prisma.$transaction(async (tx) => {
+      if (!options?.fromPaymentProcessor) {
+        await this.recordSubscriptionPayment(tx, {
+          tenantId,
+          subscriptionId,
+          amount: subscription.price,
+          currency: subscription.currency,
+          purpose: PaymentPurpose.SUBSCRIPTION_RENEW,
+          paymentMethod: dto.paymentMethod ?? 'MANUAL',
+          paymentReference: dto.paymentReference,
+          paidAt,
+        });
+      }
 
-      const updated = await tx.subscription.update({
+      const result = await tx.subscription.update({
         where: { id: subscriptionId },
         data: {
           endDate: newEndDate,
@@ -271,7 +294,7 @@ export class SubscriptionsService {
       await this.recordHistory(tx, {
         subscriptionId,
         action: SubscriptionHistoryAction.RENEWED,
-        fromStatus: SubscriptionStatus.ACTIVE,
+        fromStatus: subscription.status,
         toStatus: SubscriptionStatus.ACTIVE,
         metadata: {
           previousEndDate: previousEnd,
@@ -280,8 +303,87 @@ export class SubscriptionsService {
         },
       });
 
-      return updated;
+      return result;
     });
+
+    return updated;
+  }
+
+  private async renewWithPendingPlanChange(
+    subscription: Prisma.SubscriptionGetPayload<{ include: { plan: true } }>,
+    tenantId: string,
+    dto: RenewSubscriptionDto,
+    options?: { fromPaymentProcessor?: boolean },
+  ) {
+    const pendingPrice = await this.prisma.planPrice.findUnique({
+      where: { id: subscription.pendingPlanPriceId! },
+    });
+
+    if (!pendingPrice) {
+      throw new NotFoundException('Pending plan price not found');
+    }
+
+    const paidAt = new Date();
+    const previousEnd = subscription.endDate!;
+    const anchorEnd = isPastDate(previousEnd) ? paidAt : previousEnd;
+    const newEndDate = extendBillingPeriod(anchorEnd, pendingPrice.billingCycle);
+    const fromPlanId = subscription.planId;
+    const fromPlanPriceId = subscription.planPriceId;
+    const toPlanId = subscription.pendingPlanId!;
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      if (!options?.fromPaymentProcessor) {
+        await this.recordSubscriptionPayment(tx, {
+          tenantId,
+          subscriptionId: subscription.id,
+          amount: pendingPrice.price,
+          currency: pendingPrice.currency,
+          purpose: PaymentPurpose.SUBSCRIPTION_RENEW,
+          paymentMethod: dto.paymentMethod ?? 'MANUAL',
+          paymentReference: dto.paymentReference,
+          paidAt,
+        });
+      }
+
+      await this.applyPlanChange(tx, subscription.id, toPlanId, pendingPrice);
+
+      const result = await tx.subscription.update({
+        where: { id: subscription.id },
+        data: {
+          pendingPlanId: null,
+          pendingPlanPriceId: null,
+          endDate: newEndDate,
+          nextBillingDate: newEndDate,
+          status: SubscriptionStatus.ACTIVE,
+        },
+        include: this.subscriptionInclude(),
+      });
+
+      await this.recordHistory(tx, {
+        subscriptionId: subscription.id,
+        action: SubscriptionHistoryAction.PLAN_CHANGED,
+        fromPlanId,
+        toPlanId,
+        fromPlanPriceId,
+        toPlanPriceId: pendingPrice.id,
+        fromStatus: subscription.status,
+        toStatus: SubscriptionStatus.ACTIVE,
+        metadata: { scheduledDowngradeApplied: true, previousEndDate: previousEnd, newEndDate },
+      });
+
+      await this.recordHistory(tx, {
+        subscriptionId: subscription.id,
+        action: SubscriptionHistoryAction.RENEWED,
+        fromStatus: subscription.status,
+        toStatus: SubscriptionStatus.ACTIVE,
+        metadata: { previousEndDate: previousEnd, newEndDate, planChangedOnRenew: true },
+      });
+
+      return result;
+    });
+
+    await this.syncTenantFeaturesFromSubscription(subscription.id, tenantId);
+    return updated;
   }
 
   async cancelAtPeriodEnd(subscriptionId: string, tenantId: string) {
@@ -350,7 +452,14 @@ export class SubscriptionsService {
     subscriptionId: string,
     tenantId: string,
     dto: UpgradeSubscriptionDto,
+    options?: { fromPaymentProcessor?: boolean; allowWithoutPayment?: boolean },
   ) {
+    if (!options?.fromPaymentProcessor && !options?.allowWithoutPayment) {
+      throw new BadRequestException(
+        'Plan upgrades require payment. Complete checkout before upgrading.',
+      );
+    }
+
     const subscription = await this.findTenantSubscriptionOrThrow(subscriptionId, tenantId, {
       plan: true,
     });
@@ -400,6 +509,7 @@ export class SubscriptionsService {
         toPlanPriceId: targetPrice.id,
         fromStatus: SubscriptionStatus.ACTIVE,
         toStatus: SubscriptionStatus.ACTIVE,
+        metadata: dto.paymentReference ? { paymentReference: dto.paymentReference } : undefined,
       });
 
       return result;
@@ -409,17 +519,36 @@ export class SubscriptionsService {
     return updated;
   }
 
-  async scheduleDowngrade(
+  async upgradeSubscriptionFromPayment(
     subscriptionId: string,
     tenantId: string,
-    dto: ScheduleDowngradeDto,
+    metadata: { planId: string; planPriceId?: string; billingCycle?: BillingCycle },
+    dto: ActivateSubscriptionDto,
   ) {
+    return this.upgradeSubscription(
+      subscriptionId,
+      tenantId,
+      {
+        planId: metadata.planId,
+        planPriceId: metadata.planPriceId,
+        billingCycle: metadata.billingCycle,
+        paymentReference: dto.paymentReference,
+      },
+      { fromPaymentProcessor: true },
+    );
+  }
+
+  async scheduleDowngrade(subscriptionId: string, tenantId: string, dto: ScheduleDowngradeDto) {
     const subscription = await this.findTenantSubscriptionOrThrow(subscriptionId, tenantId, {
       plan: true,
     });
 
     if (subscription.status !== SubscriptionStatus.ACTIVE) {
       throw new BadRequestException('Only active subscriptions can be downgraded');
+    }
+
+    if (subscription.cancelAtPeriodEnd) {
+      throw new BadRequestException('Cannot downgrade a subscription scheduled for cancellation');
     }
 
     const targetPlan = await this.plansService.findById(dto.planId);
@@ -467,6 +596,45 @@ export class SubscriptionsService {
     });
   }
 
+  async cancelPendingDowngrade(subscriptionId: string, tenantId: string) {
+    const subscription = await this.findTenantSubscriptionOrThrow(subscriptionId, tenantId, {
+      plan: true,
+    });
+
+    if (subscription.status !== SubscriptionStatus.ACTIVE) {
+      throw new BadRequestException('Only active subscriptions can cancel a pending downgrade');
+    }
+
+    if (!subscription.pendingPlanId) {
+      throw new BadRequestException('No pending downgrade to cancel');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.subscription.update({
+        where: { id: subscriptionId },
+        data: {
+          pendingPlanId: null,
+          pendingPlanPriceId: null,
+        },
+        include: this.subscriptionInclude(),
+      });
+
+      await this.recordHistory(tx, {
+        subscriptionId,
+        action: SubscriptionHistoryAction.PLAN_CHANGED,
+        fromPlanId: subscription.pendingPlanId,
+        toPlanId: subscription.planId,
+        fromPlanPriceId: subscription.pendingPlanPriceId,
+        toPlanPriceId: subscription.planPriceId,
+        fromStatus: SubscriptionStatus.ACTIVE,
+        toStatus: SubscriptionStatus.ACTIVE,
+        metadata: { cancelledPendingDowngrade: true },
+      });
+
+      return updated;
+    });
+  }
+
   async processDueSubscriptions(asOf: Date = new Date()) {
     const due = await this.prisma.subscription.findMany({
       where: {
@@ -508,15 +676,7 @@ export class SubscriptionsService {
       return this.finalizeCancellation(subscription);
     }
 
-    if (
-      subscription.pendingPlanId &&
-      subscription.pendingPlanPriceId &&
-      subscription.autoRenew &&
-      !subscription.cancelAtPeriodEnd
-    ) {
-      return this.applyScheduledDowngrade(subscription);
-    }
-
+    // Scheduled downgrades require payment at renewal — expire and keep pending plan for checkout
     return this.expireSubscription(subscription, SubscriptionHistoryAction.EXPIRED);
   }
 
@@ -606,7 +766,11 @@ export class SubscriptionsService {
         },
       });
 
-      await this.snapshotFeatures(tx, created.id, features.map((f) => f.id));
+      await this.snapshotFeatures(
+        tx,
+        created.id,
+        features.map((f) => f.id),
+      );
       return created;
     });
 
@@ -717,9 +881,25 @@ export class SubscriptionsService {
             cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
             cancelledAt: subscription.cancelledAt,
             pendingPlanId: subscription.pendingPlanId,
+            pendingPlan: subscription.pendingPlan
+              ? {
+                  id: subscription.pendingPlan.id,
+                  code: subscription.pendingPlan.code,
+                  name: subscription.pendingPlan.name,
+                }
+              : null,
+            pendingPlanPrice: subscription.pendingPlanPrice
+              ? {
+                  id: subscription.pendingPlanPrice.id,
+                  price: subscription.pendingPlanPrice.price,
+                  currency: subscription.pendingPlanPrice.currency,
+                  billingCycle: subscription.pendingPlanPrice.billingCycle,
+                }
+              : null,
             price: subscription.price,
             currency: subscription.currency,
             billingCycle: subscription.billingCycle,
+            features,
           }
         : null,
       features,
@@ -747,33 +927,47 @@ export class SubscriptionsService {
       throw new BadRequestException('Only active subscriptions can change plan');
     }
 
+    if (subscription.planId === newPlanId) {
+      throw new BadRequestException('This plan is already active on the subscription');
+    }
+
     const planPrice = this.plansService.resolvePlanPrice(plan, {
       billingCycle: subscription.billingCycle,
     });
 
     const updated = await this.prisma.$transaction(async (tx) => {
-      await this.snapshotPlanFeatures(tx, subscriptionId, newPlanId);
-      return tx.subscription.update({
+      // Full replace snapshot so downgrades remove old entitlements
+      await this.applyPlanChange(tx, subscriptionId, newPlanId, planPrice);
+
+      const result = await tx.subscription.update({
         where: { id: subscriptionId },
         data: {
-          planId: newPlanId,
-          planPriceId: planPrice.id,
-          price: planPrice.price,
-          billingCycle: planPrice.billingCycle,
-          currency: planPrice.currency,
+          pendingPlanId: null,
+          pendingPlanPriceId: null,
         },
         include: this.subscriptionInclude(),
       });
+
+      await this.recordHistory(tx, {
+        subscriptionId,
+        action: SubscriptionHistoryAction.PLAN_CHANGED,
+        fromPlanId: subscription.planId,
+        toPlanId: newPlanId,
+        fromPlanPriceId: subscription.planPriceId,
+        toPlanPriceId: planPrice.id,
+        fromStatus: SubscriptionStatus.ACTIVE,
+        toStatus: SubscriptionStatus.ACTIVE,
+        metadata: { source: 'admin_change_plan' },
+      });
+
+      return result;
     });
 
     await this.syncTenantFeaturesFromSubscription(subscriptionId, tenantId);
     return updated;
   }
 
-  private async expireSubscription(
-    subscription: Subscription,
-    action: SubscriptionHistoryAction,
-  ) {
+  private async expireSubscription(subscription: Subscription, action: SubscriptionHistoryAction) {
     const fromStatus = subscription.status;
 
     await this.prisma.$transaction(async (tx) => {
@@ -927,12 +1121,17 @@ export class SubscriptionsService {
             SubscriptionStatus.ACTIVE,
             SubscriptionStatus.TRIAL,
             SubscriptionStatus.PENDING,
+            SubscriptionStatus.EXPIRED,
           ],
         },
       },
       orderBy: { createdAt: 'desc' },
       include: {
         plan: { select: { id: true, code: true, name: true, displayOrder: true } },
+        pendingPlan: { select: { id: true, code: true, name: true } },
+        pendingPlanPrice: {
+          select: { id: true, price: true, currency: true, billingCycle: true },
+        },
       },
     });
   }
@@ -942,11 +1141,7 @@ export class SubscriptionsService {
       where: {
         tenantId,
         status: {
-          in: [
-            SubscriptionStatus.PENDING,
-            SubscriptionStatus.TRIAL,
-            SubscriptionStatus.ACTIVE,
-          ],
+          in: [SubscriptionStatus.PENDING, SubscriptionStatus.TRIAL, SubscriptionStatus.ACTIVE],
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -963,10 +1158,7 @@ export class SubscriptionsService {
       throw new ConflictException('Tenant already has an active subscription');
     }
 
-    if (
-      existing.status === SubscriptionStatus.TRIAL &&
-      !isPastDate(existing.endDate)
-    ) {
+    if (existing.status === SubscriptionStatus.TRIAL && !isPastDate(existing.endDate)) {
       throw new ConflictException('Tenant already has an active trial');
     }
 
@@ -1117,8 +1309,7 @@ export class SubscriptionsService {
     },
   ) {
     const reference =
-      params.paymentReference?.trim() ||
-      `${params.purpose}-${params.subscriptionId}-${Date.now()}`;
+      params.paymentReference?.trim() || `${params.purpose}-${params.subscriptionId}-${Date.now()}`;
 
     const order = await tx.paymentOrder.create({
       data: {

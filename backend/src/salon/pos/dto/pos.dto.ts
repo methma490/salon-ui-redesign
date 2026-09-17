@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsUUID,
   Min,
+  Max,
   ValidateNested,
 } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination.dto';
@@ -50,6 +51,21 @@ export class PosPaymentDto {
   referenceNumber?: string;
 }
 
+export class SaleEmployeeDto {
+  @IsUUID()
+  employeeId!: string;
+
+  @IsOptional()
+  @IsEnum(['PRIMARY', 'ASSISTANT'])
+  assignmentType?: 'PRIMARY' | 'ASSISTANT';
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 4 })
+  @Min(0)
+  @Max(100)
+  allocationPercentage?: number;
+}
+
 export class CreateSaleDto {
   @IsUUID()
   branchId!: string;
@@ -72,6 +88,13 @@ export class CreateSaleDto {
   @IsNumber()
   @Min(0)
   discount?: number;
+
+  /** Sale-level employee assignments with allocation (preferred). */
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SaleEmployeeDto)
+  employees?: SaleEmployeeDto[];
 
   @IsArray()
   @ValidateNested({ each: true })

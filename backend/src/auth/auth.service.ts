@@ -296,12 +296,18 @@ export class AuthService {
       return profile;
     }
 
+    const permissions = await this.tenantPermissionService.getUserPermissionCodes(
+      schemaName,
+      userId,
+    );
+
     const subscriptionContext = await this.subscriptionsService.getTenantSubscriptionContext(
       profile.tenantId,
     );
 
     return {
       ...profile,
+      permissions,
       tenant: subscriptionContext.tenant,
       subscription: subscriptionContext.subscription
         ? {
@@ -667,6 +673,7 @@ export class AuthService {
       email: user.email,
       tenantId: user.tenantId,
       roles: user.roles,
+      permissions: user.permissions ?? [],
     };
   }
 

@@ -1,14 +1,17 @@
 import {
+  IsBoolean,
   IsEmail,
   IsEnum,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
   MaxLength,
+  Min,
   MinLength,
   ValidateIf,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { PaginationQueryDto } from '../../../common/dto/pagination.dto';
 
 const emptyToUndefined = ({ value }: { value: unknown }) =>
@@ -43,11 +46,29 @@ export class CreateEmployeeDto {
   @IsUUID()
   userId?: string;
 
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  basicSalary?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 4 })
+  @Min(0)
+  commissionRate?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  epfEnabled?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  etfEnabled?: boolean;
+
   /** When set, creates a login user and assigns this role (requires email + password). */
   @IsOptional()
-  @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toUpperCase() : value,
-  )
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
   @IsString()
   @MaxLength(50)
   roleCode?: string;
@@ -92,9 +113,27 @@ export class UpdateEmployeeDto {
   userId?: string | null;
 
   @IsOptional()
-  @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toUpperCase() : value,
-  )
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  basicSalary?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 4 })
+  @Min(0)
+  commissionRate?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  epfEnabled?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  etfEnabled?: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
   @IsString()
   @MaxLength(50)
   roleCode?: string;

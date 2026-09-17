@@ -231,7 +231,9 @@ export class DashboardService {
            GROUP BY DATE_TRUNC('month', created_at)
            ORDER BY month ASC`,
         ),
-        tx.$queryRawUnsafe<Array<{ label: string; completed: bigint; pending: bigint; cancelled: bigint }>>(
+        tx.$queryRawUnsafe<
+          Array<{ label: string; completed: bigint; pending: bigint; cancelled: bigint }>
+        >(
           period === 'year'
             ? `SELECT TO_CHAR(DATE_TRUNC('month', a.appointment_date), 'Mon') AS label,
                       COUNT(*) FILTER (WHERE a.status = 'COMPLETED')::bigint AS completed,
@@ -346,12 +348,16 @@ export class DashboardService {
             revenue: Number(row.total),
             sales: Number(row.saleCount),
           })),
-          revenueByService: (
-            revenueByService as Array<{ name: string; revenue: string }>
-          ).map((s) => ({ name: s.name, value: Number(s.revenue) })),
+          revenueByService: (revenueByService as Array<{ name: string; revenue: string }>).map(
+            (s) => ({ name: s.name, value: Number(s.revenue) }),
+          ),
           topServices: (
             topServices as Array<{ id: string; name: string; revenue: string; saleCount: bigint }>
-          ).map((s) => ({ name: s.name, bookings: Number(s.saleCount), revenue: Number(s.revenue) })),
+          ).map((s) => ({
+            name: s.name,
+            bookings: Number(s.saleCount),
+            revenue: Number(s.revenue),
+          })),
           employeePerformance: (
             employeePerformance as Array<{
               employeeId: string;

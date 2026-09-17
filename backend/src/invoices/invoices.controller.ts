@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  ParseUUIDPipe,
-  Query,
-  Res,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -45,10 +37,7 @@ export class InvoicesController {
   }
 
   @Get(':id')
-  getOne(
-    @CurrentTenant() tenant: TenantContext,
-    @Param('id', ParseUUIDPipe) id: string,
-  ) {
+  getOne(@CurrentTenant() tenant: TenantContext, @Param('id', ParseUUIDPipe) id: string) {
     return this.invoicesService.findByIdForTenant(id, tenant.tenantId);
   }
 }

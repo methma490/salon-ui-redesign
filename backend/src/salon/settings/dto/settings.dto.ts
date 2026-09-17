@@ -89,9 +89,7 @@ export class CreateRoleDto {
   @IsOptional()
   @IsString()
   @MaxLength(50)
-  @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toUpperCase() : value,
-  )
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
   code?: string;
 
   @IsArray()

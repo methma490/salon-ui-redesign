@@ -95,6 +95,7 @@ export class SalesService {
     const users = tenantTable(schemaName, 'users');
     const saleItems = tenantTable(schemaName, 'sale_items');
     const saleItemEmployees = tenantTable(schemaName, 'sale_item_employees');
+    const saleEmployees = tenantTable(schemaName, 'sale_employees');
     const services = tenantTable(schemaName, 'services');
     const products = tenantTable(schemaName, 'products');
     const employees = tenantTable(schemaName, 'employees');
@@ -108,6 +109,7 @@ export class SalesService {
           subtotal: string;
           discount: string;
           total: string;
+          refundedAmount: string;
           status: string;
           branchId: string;
           branchName: string;
@@ -120,6 +122,7 @@ export class SalesService {
       >(
         `SELECT s.id, s.sale_number AS "saleNumber",
                 s.subtotal::text, s.discount::text, s.total::text,
+                COALESCE(s.refunded_amount, 0)::text AS "refundedAmount",
                 s.status::text AS status,
                 s.branch_id AS "branchId", b.name AS "branchName",
                 s.customer_id AS "customerId", c.name AS "customerName",
@@ -136,6 +139,19 @@ export class SalesService {
       if (saleRows.length === 0) {
         throw new NotFoundException('Sale not found');
       }
+
+      const assignedEmployees = await tx.$queryRawUnsafe(
+        `SELECT se.id, se.employee_id AS "employeeId", e.name AS "employeeName",
+                e.code AS "employeeCode", e.designation,
+                se.assignment_type::text AS "assignmentType",
+                se.allocation_percentage::float AS "allocationPercentage",
+                se.commissionable_amount::float AS "commissionableAmount"
+         FROM ${saleEmployees} se
+         INNER JOIN ${employees} e ON e.id = se.employee_id
+         WHERE se.sale_id = $1::uuid
+         ORDER BY CASE WHEN se.assignment_type::text = 'PRIMARY' THEN 0 ELSE 1 END, e.name`,
+        id,
+      );
 
       const items = await tx.$queryRawUnsafe(
         `SELECT si.id, si.item_type AS "itemType",
@@ -171,6 +187,8 @@ export class SalesService {
         subtotal: Number(saleRows[0].subtotal),
         discount: Number(saleRows[0].discount),
         total: Number(saleRows[0].total),
+        refundedAmount: Number(saleRows[0].refundedAmount ?? 0),
+        assignedEmployees,
         items,
         payments: paymentRows,
       };

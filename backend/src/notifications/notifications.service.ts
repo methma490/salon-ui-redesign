@@ -1,9 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InAppNotificationStatus, Prisma } from '@prisma/client';
-import {
-  buildPaginatedResponse,
-  resolvePagination,
-} from '../common/dto/pagination.dto';
+import { buildPaginatedResponse, resolvePagination } from '../common/dto/pagination.dto';
 import { PrismaService } from '../database/prisma.service';
 import { NotificationQueryDto } from './dto/notification-query.dto';
 

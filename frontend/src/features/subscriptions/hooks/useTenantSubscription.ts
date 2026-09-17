@@ -31,7 +31,12 @@ export function useSubscriptionMutations(subscriptionId: string | undefined) {
   const queryClient = useQueryClient();
 
   const invalidate = async () => {
-    await queryClient.invalidateQueries({ queryKey: tenantSubscriptionKeys.all });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: tenantSubscriptionKeys.all }),
+      queryClient.invalidateQueries({ queryKey: ['tenant-features'] }),
+      queryClient.invalidateQueries({ queryKey: ['tenant-settings'] }),
+      queryClient.invalidateQueries({ queryKey: ['tenant-access-control'] }),
+    ]);
   };
 
   return {
@@ -51,6 +56,10 @@ export function useSubscriptionMutations(subscriptionId: string | undefined) {
     scheduleDowngrade: useMutation({
       mutationFn: (data: { planId: string; billingCycle?: 'MONTHLY' | 'YEARLY' }) =>
         tenantSubscriptionsApi.scheduleDowngrade(subscriptionId!, data),
+      onSuccess: invalidate,
+    }),
+    cancelPendingDowngrade: useMutation({
+      mutationFn: () => tenantSubscriptionsApi.cancelPendingDowngrade(subscriptionId!),
       onSuccess: invalidate,
     }),
     checkout: useMutation({

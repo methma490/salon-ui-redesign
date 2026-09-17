@@ -134,7 +134,7 @@ export function ManageSubscriptionDialog({
           {mode === 'pending' &&
             `${salonName} has a pending ${subscription?.planName} subscription. Activate it to enable plan features.`}
           {mode === 'active' &&
-            `Change the active plan for ${salonName}. Features will update immediately.`}
+            `Change the active plan for ${salonName}. Features are fully replaced to match the new plan immediately (upgrade or downgrade).`}
         </p>
 
         {subscription && (

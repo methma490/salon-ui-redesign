@@ -254,6 +254,7 @@ export class PaymentProcessorService {
             paymentMethod: order.gateway,
             paymentReference: transactionId,
           },
+          { fromPaymentProcessor: true },
         );
         return;
 
@@ -265,18 +266,39 @@ export class PaymentProcessorService {
             paymentMethod: order.gateway,
             paymentReference: transactionId,
           },
+          { fromPaymentProcessor: true },
         );
         return;
 
-      default:
-        await this.subscriptionsService.activateSubscription(
+      case PaymentPurpose.SUBSCRIPTION_UPGRADE: {
+        const metadata = order.metadata as {
+          planId?: string;
+          planPriceId?: string;
+          billingCycle?: 'MONTHLY' | 'YEARLY';
+        } | null;
+
+        if (!metadata?.planId) {
+          throw new BadRequestException('Upgrade payment order is missing target plan metadata');
+        }
+
+        await this.subscriptionsService.upgradeSubscriptionFromPayment(
           order.subscriptionId,
           order.tenantId,
+          {
+            planId: metadata.planId,
+            planPriceId: metadata.planPriceId,
+            billingCycle: metadata.billingCycle,
+          },
           {
             paymentMethod: order.gateway,
             paymentReference: transactionId,
           },
         );
+        return;
+      }
+
+      default:
+        throw new BadRequestException(`Unsupported payment purpose: ${purpose}`);
     }
   }
 

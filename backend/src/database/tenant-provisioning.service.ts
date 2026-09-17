@@ -242,6 +242,21 @@ export class TenantProvisioningService {
       { code: 'APPOINTMENT_CREATE', name: 'Create Appointments' },
       { code: 'APPOINTMENT_UPDATE', name: 'Update Appointments' },
       { code: 'APPOINTMENT_DELETE', name: 'Cancel Appointments' },
+      { code: 'EXPENSE_VIEW', name: 'View Expenses' },
+      { code: 'EXPENSE_CREATE', name: 'Create Expenses' },
+      { code: 'EXPENSE_UPDATE', name: 'Update Expenses' },
+      { code: 'EXPENSE_DELETE', name: 'Void Expenses' },
+      { code: 'PAYROLL_VIEW', name: 'View Payroll' },
+      { code: 'PAYROLL_RUN', name: 'Generate Payroll Runs' },
+      { code: 'PAYROLL_UPDATE', name: 'Update Draft Payroll' },
+      { code: 'PAYROLL_FINALIZE', name: 'Finalize Payroll' },
+      { code: 'PAYROLL_MARK_PAID', name: 'Mark Payroll Paid' },
+      { code: 'LOAN_VIEW', name: 'View Employee Loans' },
+      { code: 'LOAN_CREATE', name: 'Create Employee Loans' },
+      { code: 'LOAN_UPDATE', name: 'Update Employee Loans' },
+      { code: 'PAYSLIP_VIEW', name: 'View Payslips' },
+      { code: 'PAYROLL_SETTINGS_VIEW', name: 'View Payroll Settings' },
+      { code: 'PAYROLL_SETTINGS_UPDATE', name: 'Update Payroll Settings' },
     ];
 
     await this.prisma.$executeRawUnsafe(`SET search_path TO "${schemaName}"`);

@@ -36,6 +36,11 @@ export interface EmployeeRecord {
   userId: string | null;
   systemRoles: string[];
   status: string;
+  basicSalary: number;
+  commissionRate: number;
+  commissionType: string;
+  epfEnabled: boolean;
+  etfEnabled: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -74,6 +79,11 @@ export class EmployeesService {
                      ARRAY[]::text[]
                    ) AS "systemRoles",
                    e.status::text AS status,
+                   COALESCE(e.basic_salary, 0)::float AS "basicSalary",
+                   COALESCE(e.commission_rate, 0)::float AS "commissionRate",
+                   COALESCE(e.commission_type, 'PERCENTAGE_OF_INVOICE_SALES') AS "commissionType",
+                   COALESCE(e.epf_enabled, true) AS "epfEnabled",
+                   COALESCE(e.etf_enabled, true) AS "etfEnabled",
                    e.created_at AS "createdAt", e.updated_at AS "updatedAt"
             FROM ${employees} e
             INNER JOIN ${branches} b ON e.branch_id = b.id`;
@@ -117,10 +127,7 @@ export class EmployeesService {
     return map;
   }
 
-  async getAssignableRoles(
-    tenantId: string,
-    schemaName: string,
-  ): Promise<AssignableRoleOption[]> {
+  async getAssignableRoles(tenantId: string, schemaName: string): Promise<AssignableRoleOption[]> {
     const subscriptionContext =
       await this.subscriptionsService.getTenantSubscriptionContext(tenantId);
     const enabledFeatures = subscriptionContext.features;
@@ -297,7 +304,7 @@ export class EmployeesService {
       params.push(query.branchId);
     }
     if (query.status) {
-      conditions.push(`e.status = $${idx++}::employee_status`);
+      conditions.push(`e.status::text = $${idx++}`);
       params.push(query.status);
     }
     if (query.search) {
@@ -402,8 +409,9 @@ export class EmployeesService {
       const code = await generateSequentialCode(tx, employees, 'EMP-');
 
       const rows = (await tx.$queryRawUnsafe(
-        `INSERT INTO ${employees} (branch_id, user_id, code, name, email, phone, designation, status)
-         VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, 'ACTIVE')
+        `INSERT INTO ${employees}
+           (branch_id, user_id, code, name, email, phone, designation, status, basic_salary, commission_rate, epf_enabled, etf_enabled)
+         VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, 'ACTIVE', $8::numeric, $9::numeric, $10::boolean, $11::boolean)
          RETURNING id`,
         dto.branchId,
         linkedUserId,
@@ -412,6 +420,10 @@ export class EmployeesService {
         dto.email ?? null,
         dto.phone ?? null,
         dto.designation,
+        dto.basicSalary ?? 0,
+        dto.commissionRate ?? 0,
+        dto.epfEnabled ?? true,
+        dto.etfEnabled ?? true,
       )) as Array<{ id: string }>;
 
       await logAudit(tx, schemaName, {
@@ -490,7 +502,9 @@ export class EmployeesService {
             throw new BadRequestException('Email is required to assign a system role');
           }
           if (!dto.password) {
-            throw new BadRequestException('Password is required to create a login for this employee');
+            throw new BadRequestException(
+              'Password is required to create a login for this employee',
+            );
           }
           linkedUserId = await this.createEmployeeUser(tx, schemaName, {
             name: nextName,
@@ -510,6 +524,10 @@ export class EmployeesService {
              designation = COALESCE($5, designation),
              branch_id = COALESCE($6::uuid, branch_id),
              user_id = COALESCE($7::uuid, user_id),
+             basic_salary = COALESCE($8::numeric, basic_salary),
+             commission_rate = COALESCE($9::numeric, commission_rate),
+             epf_enabled = COALESCE($10::boolean, epf_enabled),
+             etf_enabled = COALESCE($11::boolean, etf_enabled),
              updated_at = NOW()
          WHERE id = $1::uuid`,
         id,
@@ -519,6 +537,10 @@ export class EmployeesService {
         dto.designation ?? null,
         dto.branchId ?? null,
         linkedUserId,
+        dto.basicSalary ?? null,
+        dto.commissionRate ?? null,
+        dto.epfEnabled ?? null,
+        dto.etfEnabled ?? null,
       );
 
       await logAudit(tx, schemaName, {
@@ -544,7 +566,7 @@ export class EmployeesService {
 
     await this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
       await tx.$queryRawUnsafe(
-        `UPDATE ${employees} SET status = $2::employee_status, updated_at = NOW() WHERE id = $1::uuid`,
+        `UPDATE ${employees} SET status = $2, updated_at = NOW() WHERE id = $1::uuid`,
         id,
         dto.status,
       );
@@ -575,7 +597,11 @@ export class EmployeesService {
 
     return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
       const active = (await tx.$queryRawUnsafe(
-        `${this.employeeSelectSql(employees, branches, schemaName)} WHERE e.status = 'ACTIVE' ORDER BY e.name ASC`,
+        `${this.employeeSelectSql(employees, branches, schemaName)}
+         WHERE e.status = 'ACTIVE'
+           ${branchId ? 'AND e.branch_id = $1::uuid' : ''}
+         ORDER BY e.name ASC`,
+        ...(branchId ? [branchId] : []),
       )) as EmployeeRecord[];
 
       if (active.length > 0) {
@@ -621,8 +647,9 @@ export class EmployeesService {
 
       const code = await generateSequentialCode(tx, employees, 'EMP-');
       const rows = (await tx.$queryRawUnsafe(
-        `INSERT INTO ${employees} (branch_id, user_id, code, name, email, designation, status)
-         VALUES ($1::uuid, $2::uuid, $3, $4, $5, 'Owner', 'ACTIVE')
+        `INSERT INTO ${employees}
+           (branch_id, user_id, code, name, email, designation, status, basic_salary, epf_enabled, etf_enabled)
+         VALUES ($1::uuid, $2::uuid, $3, $4, $5, 'Owner', 'ACTIVE', 0, true, true)
          RETURNING id`,
         branchRows[0].id,
         user.id,

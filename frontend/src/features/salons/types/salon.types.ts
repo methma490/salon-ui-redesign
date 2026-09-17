@@ -18,6 +18,7 @@ export interface AuthUser {
   email: string;
   tenantId: string | null;
   roles: string[];
+  permissions?: string[];
   subscription?: {
     plan: string;
     planCode: string;

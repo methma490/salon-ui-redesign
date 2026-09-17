@@ -27,19 +27,13 @@ export class NotificationProcessor implements OnModuleInit, OnModuleDestroy {
 
     const queueName = this.configService.get<string>('redis.notificationQueue', 'notifications');
 
-    this.worker = new Worker(
-      queueName,
-      async (job: Job) => this.handleJob(job),
-      {
-        connection: this.queueService.getRedisConnection(),
-        concurrency: 5,
-      },
-    );
+    this.worker = new Worker(queueName, async (job: Job) => this.handleJob(job), {
+      connection: this.queueService.getRedisConnection(),
+      concurrency: 5,
+    });
 
     this.worker.on('failed', (job, error) => {
-      this.logger.error(
-        `Notification job ${job?.id} (${job?.name}) failed: ${error.message}`,
-      );
+      this.logger.error(`Notification job ${job?.id} (${job?.name}) failed: ${error.message}`);
     });
 
     this.logger.log(`Notification worker listening on queue "${queueName}"`);

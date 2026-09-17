@@ -50,9 +50,7 @@ describe('PlansService', () => {
       planFeatures: [],
     };
 
-    prisma.plan.findUnique
-      .mockResolvedValueOnce(null)
-      .mockResolvedValue(createdPlan);
+    prisma.plan.findUnique.mockResolvedValueOnce(null).mockResolvedValue(createdPlan);
     prisma.plan.create.mockResolvedValue(createdPlan);
     prisma.plan.update.mockResolvedValue(createdPlan);
 

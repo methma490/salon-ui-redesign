@@ -553,9 +553,7 @@ export class SalonsService {
 
   private isAwaitingActivation(salon: TenantWithRelations): boolean {
     const sub = salon.subscriptions[0];
-    return (
-      salon.status === TenantStatus.SUSPENDED && sub?.status === SubscriptionStatus.ACTIVE
-    );
+    return salon.status === TenantStatus.SUSPENDED && sub?.status === SubscriptionStatus.ACTIVE;
   }
 
   private mapSubscriptionSummary(salon: TenantWithRelations) {
@@ -586,7 +584,9 @@ export class SalonsService {
     return salon.tenantFeatures.map((tf) => tf.feature.code);
   }
 
-  private getEffectiveFeatureDetails(salon: TenantWithRelations): Array<{ code: string; name: string }> {
+  private getEffectiveFeatureDetails(
+    salon: TenantWithRelations,
+  ): Array<{ code: string; name: string }> {
     const sub = salon.subscriptions[0];
     if (sub && sub.subscriptionFeatures.length > 0) {
       return sub.subscriptionFeatures.map((sf) => ({

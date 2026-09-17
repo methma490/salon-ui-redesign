@@ -20,9 +20,7 @@ export function findPlanPrice(
   const resolvedCurrency = currency ?? getPlanCurrency(plan);
   return plan.planPrices.find(
     (price) =>
-      price.isActive &&
-      price.billingCycle === billingCycle &&
-      price.currency === resolvedCurrency,
+      price.isActive && price.billingCycle === billingCycle && price.currency === resolvedCurrency,
   );
 }
 

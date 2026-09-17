@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  ParseUUIDPipe,
-  Patch,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Patch, Query, UseGuards } from '@nestjs/common';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -38,10 +30,7 @@ export class NotificationsController {
   }
 
   @Patch(':id/read')
-  markRead(
-    @CurrentTenant() tenant: TenantContext,
-    @Param('id', ParseUUIDPipe) id: string,
-  ) {
+  markRead(@CurrentTenant() tenant: TenantContext, @Param('id', ParseUUIDPipe) id: string) {
     return this.notificationsService.markRead(id, tenant.tenantId);
   }
 }

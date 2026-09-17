@@ -1,8 +1,10 @@
 import { BillingCycle } from '@prisma/client';
 import {
   addTrialDays,
+  calculateProratedUpgradeAmount,
   comparePlanTier,
   extendBillingPeriod,
+  getCurrentPeriodStart,
   isPastDate,
 } from './subscription-billing.util';
 
@@ -54,6 +56,26 @@ describe('subscription-billing.util', () => {
 
     it('detects downgrade', () => {
       expect(comparePlanTier(3, 1)).toBe('downgrade');
+    });
+  });
+
+  describe('calculateProratedUpgradeAmount', () => {
+    it('charges half the price difference halfway through the period', () => {
+      const periodStart = new Date('2026-09-01T00:00:00.000Z');
+      const periodEnd = new Date('2026-10-01T00:00:00.000Z');
+      const asOf = new Date('2026-09-16T00:00:00.000Z');
+
+      expect(calculateProratedUpgradeAmount(5000, 8000, periodStart, periodEnd, asOf)).toBe(1500);
+    });
+  });
+
+  describe('getCurrentPeriodStart', () => {
+    it('returns one month before the end date for monthly billing', () => {
+      const end = new Date('2026-10-01T00:00:00.000Z');
+      const start = getCurrentPeriodStart(end, BillingCycle.MONTHLY);
+
+      expect(start.getUTCMonth()).toBe(8);
+      expect(start.getUTCDate()).toBe(1);
     });
   });
 });

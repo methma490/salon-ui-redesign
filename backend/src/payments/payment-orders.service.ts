@@ -1,14 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import {
+  BillingCycle,
   PaymentGatewayProvider,
   PaymentOrderStatus,
   Prisma,
   SubscriptionStatus,
 } from '@prisma/client';
-import {
-  buildPaginatedResponse,
-  resolvePagination,
-} from '../common/dto/pagination.dto';
+import { buildPaginatedResponse, resolvePagination } from '../common/dto/pagination.dto';
 import { PaymentListFilter, PaymentListQueryDto } from './dto/payment-list-query.dto';
 import { randomUUID } from 'crypto';
 import { ConfigService } from '@nestjs/config';
@@ -16,6 +14,17 @@ import { PrismaService } from '../database/prisma.service';
 import { PaymentPurpose } from './dto/create-payment-order.dto';
 import { PaymentGatewayRegistry } from './payment-gateway.registry';
 import { CheckoutCustomerInfo, CreateCheckoutInput } from './interfaces/payment-gateway.interface';
+import {
+  calculateProratedUpgradeAmount,
+  comparePlanTier,
+  getCurrentPeriodStart,
+} from '../subscriptions/utils/subscription-billing.util';
+
+export interface UpgradeOrderMetadata {
+  planId: string;
+  planPriceId: string;
+  billingCycle: BillingCycle;
+}
 
 export interface CreatePaymentOrderInput {
   tenantId: string;
@@ -49,7 +58,9 @@ export class PaymentOrdersService {
   async createOrder(input: CreatePaymentOrderInput) {
     const subscription = await this.prisma.subscription.findFirst({
       where: { id: input.subscriptionId, tenantId: input.tenantId },
-      include: { plan: { select: { name: true } } },
+      include: {
+        plan: { select: { id: true, name: true, displayOrder: true, status: true } },
+      },
     });
 
     if (!subscription) {
@@ -74,19 +85,142 @@ export class PaymentOrdersService {
       throw new BadRequestException('Payment order reference already exists');
     }
 
+    const { amount, currency, metadata } = await this.resolveOrderPricing(
+      subscription,
+      input.purpose as PaymentPurpose,
+      input.metadata,
+    );
+
     return this.prisma.paymentOrder.create({
       data: {
         tenantId: input.tenantId,
         subscriptionId: input.subscriptionId,
-        amount: subscription.price,
-        currency: subscription.currency,
+        amount,
+        currency,
         gateway: input.gateway,
         reference,
         purpose: input.purpose,
-        metadata: input.metadata,
+        metadata,
         status: PaymentOrderStatus.PENDING,
       },
     });
+  }
+
+  private async resolveOrderPricing(
+    subscription: Prisma.SubscriptionGetPayload<{
+      include: { plan: { select: { id: true; displayOrder: true; status: true } } };
+    }>,
+    purpose: PaymentPurpose,
+    metadata?: Prisma.InputJsonValue,
+  ): Promise<{ amount: number; currency: string; metadata?: Prisma.InputJsonValue }> {
+    if (purpose === PaymentPurpose.SUBSCRIPTION_UPGRADE) {
+      return this.resolveUpgradePricing(subscription, metadata);
+    }
+
+    if (purpose === PaymentPurpose.SUBSCRIPTION_RENEW) {
+      if (subscription.pendingPlanPriceId) {
+        const pendingPrice = await this.prisma.planPrice.findUnique({
+          where: { id: subscription.pendingPlanPriceId },
+        });
+
+        if (!pendingPrice) {
+          throw new NotFoundException('Pending plan price not found');
+        }
+
+        return {
+          amount: Number(pendingPrice.price),
+          currency: pendingPrice.currency,
+          metadata: {
+            ...(typeof metadata === 'object' && metadata !== null && !Array.isArray(metadata)
+              ? metadata
+              : {}),
+            pendingPlanId: subscription.pendingPlanId,
+            pendingPlanPriceId: subscription.pendingPlanPriceId,
+          },
+        };
+      }
+    }
+
+    return {
+      amount: Number(subscription.price),
+      currency: subscription.currency,
+      metadata,
+    };
+  }
+
+  private async resolveUpgradePricing(
+    subscription: Prisma.SubscriptionGetPayload<{
+      include: { plan: { select: { id: true; displayOrder: true; status: true } } };
+    }>,
+    metadata?: Prisma.InputJsonValue,
+  ): Promise<{ amount: number; currency: string; metadata: Prisma.InputJsonValue }> {
+    if (subscription.status !== SubscriptionStatus.ACTIVE) {
+      throw new BadRequestException('Only active subscriptions can be upgraded');
+    }
+
+    if (subscription.cancelAtPeriodEnd) {
+      throw new BadRequestException('Cannot upgrade a subscription scheduled for cancellation');
+    }
+
+    if (!subscription.endDate) {
+      throw new BadRequestException('Subscription has no billing period end date');
+    }
+
+    const meta = metadata as Partial<UpgradeOrderMetadata> | undefined;
+    if (!meta?.planId) {
+      throw new BadRequestException('planId is required for subscription upgrade checkout');
+    }
+
+    const targetPlan = await this.prisma.plan.findUnique({
+      where: { id: meta.planId },
+      select: { id: true, status: true, displayOrder: true },
+    });
+
+    if (!targetPlan || targetPlan.status !== 'ACTIVE') {
+      throw new BadRequestException('Target plan is not active');
+    }
+
+    const tierChange = comparePlanTier(subscription.plan.displayOrder, targetPlan.displayOrder);
+    if (tierChange !== 'upgrade') {
+      throw new BadRequestException('Target plan must be a higher tier than the current plan');
+    }
+
+    const billingCycle = meta.billingCycle ?? subscription.billingCycle;
+    const targetPrice = meta.planPriceId
+      ? await this.prisma.planPrice.findFirst({
+          where: { id: meta.planPriceId, planId: targetPlan.id, isActive: true },
+        })
+      : await this.prisma.planPrice.findFirst({
+          where: { planId: targetPlan.id, billingCycle, isActive: true },
+        });
+
+    if (!targetPrice) {
+      throw new NotFoundException('Target plan price not found');
+    }
+
+    const currentPrice = Number(subscription.price);
+    const newPrice = Number(targetPrice.price);
+    const periodStart = getCurrentPeriodStart(subscription.endDate, subscription.billingCycle);
+    const amount = calculateProratedUpgradeAmount(
+      currentPrice,
+      newPrice,
+      periodStart,
+      subscription.endDate,
+    );
+
+    if (amount <= 0) {
+      throw new BadRequestException('No payment is due for this upgrade');
+    }
+
+    return {
+      amount,
+      currency: targetPrice.currency,
+      metadata: {
+        planId: targetPlan.id,
+        planPriceId: targetPrice.id,
+        billingCycle: targetPrice.billingCycle,
+      } as Prisma.InputJsonValue,
+    };
   }
 
   async buildCheckoutSession(
@@ -107,8 +241,7 @@ export class PaymentOrdersService {
     }
 
     const gatewayAdapter = this.gatewayRegistry.getConfigured(gateway);
-    const apiBase =
-      this.configService.get<string>('API_PUBLIC_URL') ?? 'http://localhost:3000/api';
+    const apiBase = this.configService.get<string>('API_PUBLIC_URL') ?? 'http://localhost:3000/api';
     const notifyUrl =
       checkout.notifyUrl ??
       `${apiBase.replace(/\/$/, '')}/payments/webhooks/${gateway.toLowerCase()}`;

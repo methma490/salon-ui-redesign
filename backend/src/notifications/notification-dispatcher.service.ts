@@ -1,9 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import {
-  NotificationChannel,
-  NotificationDeliveryStatus,
-  Prisma,
-} from '@prisma/client';
+import { NotificationChannel, NotificationDeliveryStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { EmailNotificationChannel } from './channels/email-notification.channel';
 import { InAppNotificationChannel } from './channels/in-app-notification.channel';
@@ -120,10 +116,7 @@ export class NotificationDispatcherService {
     }
   }
 
-  private hasRecipient(
-    payload: DeliverNotificationPayload,
-    channel: NotificationChannel,
-  ): boolean {
+  private hasRecipient(payload: DeliverNotificationPayload, channel: NotificationChannel): boolean {
     if (channel === NotificationChannel.EMAIL) return !!payload.recipient.email;
     if (channel === NotificationChannel.SMS) return !!payload.recipient.phone;
     return true;

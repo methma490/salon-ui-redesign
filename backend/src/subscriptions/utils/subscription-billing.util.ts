@@ -41,3 +41,40 @@ export function comparePlanTier(
 
   return 'same';
 }
+
+/** Start of the current billing period given its end date. */
+export function getCurrentPeriodStart(endDate: Date, billingCycle: BillingCycle): Date {
+  const start = new Date(endDate);
+
+  if (billingCycle === BillingCycle.YEARLY) {
+    start.setFullYear(start.getFullYear() - 1);
+  } else {
+    start.setMonth(start.getMonth() - 1);
+  }
+
+  return start;
+}
+
+/** Prorated upgrade charge for the remaining time in the current billing period. */
+export function calculateProratedUpgradeAmount(
+  currentPrice: number,
+  newPrice: number,
+  periodStart: Date,
+  periodEnd: Date,
+  asOf: Date = new Date(),
+): number {
+  const totalMs = periodEnd.getTime() - periodStart.getTime();
+  if (totalMs <= 0) {
+    return Math.max(0, newPrice - currentPrice);
+  }
+
+  const remainingMs = Math.max(0, periodEnd.getTime() - asOf.getTime());
+  const ratio = Math.min(1, remainingMs / totalMs);
+  const difference = newPrice - currentPrice;
+
+  if (difference <= 0) {
+    return 0;
+  }
+
+  return Math.round(difference * ratio * 100) / 100;
+}

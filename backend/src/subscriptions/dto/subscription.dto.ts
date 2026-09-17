@@ -83,6 +83,11 @@ export class UpgradeSubscriptionDto {
   @IsOptional()
   @IsEnum(['MONTHLY', 'YEARLY'])
   billingCycle?: 'MONTHLY' | 'YEARLY';
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  paymentReference?: string;
 }
 
 export class UpgradeSubscriptionForTenantDto extends UpgradeSubscriptionDto {

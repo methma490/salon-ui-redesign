@@ -3,12 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { NotificationType, SubscriptionStatus } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { DeliverNotificationPayload } from './interfaces/notification-job.interface';
-import {
-  addDays,
-  endOfDay,
-  formatDisplayDate,
-  startOfDay,
-} from './utils/date-window.util';
+import { addDays, endOfDay, formatDisplayDate, startOfDay } from './utils/date-window.util';
 
 @Injectable()
 export class NotificationReminderService {

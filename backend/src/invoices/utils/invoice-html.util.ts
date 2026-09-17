@@ -26,10 +26,7 @@ function formatBillingCycle(cycle: BillingCycle): string {
   return cycle === BillingCycle.YEARLY ? 'Yearly' : 'Monthly';
 }
 
-export function buildInvoiceHtml(
-  invoice: InvoiceWithItems,
-  issuer: InvoiceIssuerInfo,
-): string {
+export function buildInvoiceHtml(invoice: InvoiceWithItems, issuer: InvoiceIssuerInfo): string {
   const itemRows = invoice.items
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map(

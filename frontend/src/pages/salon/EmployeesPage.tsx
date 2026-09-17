@@ -13,6 +13,7 @@ import {
 import {
   FormError,
   FormSubmit,
+  FormTextarea,
   getErrorMessage,
   OpsEditButton,
   OpsToggleStatusButton,
@@ -29,7 +30,23 @@ type EmployeeForm = {
   branchId: string;
   roleCode: string;
   password: string;
+  basicSalary: string;
+  commissionRate: string;
+  epfEnabled: boolean;
+  etfEnabled: boolean;
 };
+
+type AdvanceForm = {
+  amount: string;
+  startDate: string;
+  notes: string;
+};
+
+const emptyAdvanceForm = (): AdvanceForm => ({
+  amount: '',
+  startDate: new Date().toISOString().slice(0, 10),
+  notes: '',
+});
 
 const emptyForm: EmployeeForm = {
   name: '',
@@ -39,6 +56,10 @@ const emptyForm: EmployeeForm = {
   branchId: '',
   roleCode: '',
   password: '',
+  basicSalary: '0',
+  commissionRate: '0',
+  epfEnabled: true,
+  etfEnabled: true,
 };
 
 const ROLE_ICONS: Record<string, string> = {
@@ -54,10 +75,14 @@ function formatSystemRole(code: string) {
 }
 
 function toCreatePayload(form: EmployeeForm) {
-  const payload: Record<string, string> = {
+  const payload: Record<string, string | number | boolean> = {
     name: form.name.trim(),
     designation: form.designation.trim(),
     branchId: form.branchId,
+    basicSalary: Number(form.basicSalary) || 0,
+    commissionRate: Number(form.commissionRate) || 0,
+    epfEnabled: form.epfEnabled,
+    etfEnabled: form.etfEnabled,
   };
   const phone = form.phone.trim();
   const email = form.email.trim();
@@ -71,10 +96,14 @@ function toCreatePayload(form: EmployeeForm) {
 }
 
 function toEditPayload(form: EmployeeForm, hasLogin: boolean) {
-  const payload: Record<string, string> = {
+  const payload: Record<string, string | number | boolean> = {
     name: form.name.trim(),
     designation: form.designation.trim(),
     branchId: form.branchId,
+    basicSalary: Number(form.basicSalary) || 0,
+    commissionRate: Number(form.commissionRate) || 0,
+    epfEnabled: form.epfEnabled,
+    etfEnabled: form.etfEnabled,
   };
   const phone = form.phone.trim();
   const email = form.email.trim();
@@ -85,6 +114,13 @@ function toEditPayload(form: EmployeeForm, hasLogin: boolean) {
     if (!hasLogin && form.password) payload.password = form.password;
   }
   return payload;
+}
+
+function formatSalary(value: number | undefined) {
+  return Number(value ?? 0).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -111,6 +147,7 @@ function EmployeeFormFields({
   branches,
   assignableRoles,
   showRoleFields,
+  showPayrollFields,
   requirePassword = true,
   hasLogin = false,
 }: {
@@ -119,6 +156,7 @@ function EmployeeFormFields({
   branches: Array<{ id: string; name: string }>;
   assignableRoles?: AssignableEmployeeRole[];
   showRoleFields?: boolean;
+  showPayrollFields?: boolean;
   requirePassword?: boolean;
   hasLogin?: boolean;
 }) {
@@ -172,6 +210,67 @@ function EmployeeFormFields({
           placeholder="Optional"
         />
       </div>
+
+      {showPayrollFields && (
+        <div className="space-y-3 rounded-md border border-border bg-muted/30 p-3">
+          <p className="text-sm font-medium">Payroll</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="emp-basic-salary">Basic Salary</Label>
+              <Input
+                id="emp-basic-salary"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.basicSalary}
+                onChange={(e) => setForm({ ...form, basicSalary: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="emp-commission-rate">Commission Rate (%)</Label>
+              <Input
+                id="emp-commission-rate"
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                value={form.commissionRate}
+                onChange={(e) => setForm({ ...form, commissionRate: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="emp-epf">EPF Enabled</Label>
+              <Select
+                value={form.epfEnabled ? 'yes' : 'no'}
+                onValueChange={(v) => setForm({ ...form, epfEnabled: v === 'yes' })}
+              >
+                <SelectTrigger id="emp-epf">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="yes">Yes</SelectItem>
+                  <SelectItem value="no">No</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="emp-etf">ETF Enabled</Label>
+              <Select
+                value={form.etfEnabled ? 'yes' : 'no'}
+                onValueChange={(v) => setForm({ ...form, etfEnabled: v === 'yes' })}
+              >
+                <SelectTrigger id="emp-etf">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="yes">Yes</SelectItem>
+                  <SelectItem value="no">No</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showRoleFields && assignableRoles && assignableRoles.length > 0 && (
         <div className="space-y-2">
@@ -240,8 +339,10 @@ export default function EmployeesPage() {
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [editEmployee, setEditEmployee] = useState<Employee | null>(null);
+  const [advanceEmployee, setAdvanceEmployee] = useState<Employee | null>(null);
   const [form, setForm] = useState<EmployeeForm>(emptyForm);
   const [editForm, setEditForm] = useState<EmployeeForm>(emptyForm);
+  const [advanceForm, setAdvanceForm] = useState<AdvanceForm>(emptyAdvanceForm());
   const [formError, setFormError] = useState<string | null>(null);
 
   const { data: branches = [], isLoading: branchesLoading } = useQuery({
@@ -254,7 +355,10 @@ export default function EmployeesPage() {
     queryFn: tenantApi.features,
   });
 
-  const roleManagementEnabled = tenantFeatures.includes('STAFF_MANAGEMENT');
+  const roleManagementEnabled =
+    tenantFeatures.includes('STAFF_MANAGEMENT') ||
+    tenantFeatures.includes('ROLE_MANAGEMENT');
+  const payrollEnabled = tenantFeatures.includes('PAYROLL');
 
   const { data: assignableRoles = [] } = useQuery({
     queryKey: ['employee-assignable-roles'],
@@ -314,6 +418,17 @@ export default function EmployeesPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['employees'] }),
   });
 
+  const advanceMutation = useMutation({
+    mutationFn: tenantApi.payroll.createAdvance,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['payroll-advances'] });
+      setAdvanceEmployee(null);
+      setAdvanceForm(emptyAdvanceForm());
+      setFormError(null);
+    },
+    onError: (err) => setFormError(getErrorMessage(err)),
+  });
+
   const openEdit = (emp: Employee) => {
     setFormError(null);
     setEditEmployee(emp);
@@ -323,8 +438,12 @@ export default function EmployeesPage() {
       email: emp.email || '',
       designation: emp.designation || '',
       branchId: emp.branchId,
-      roleCode: emp.systemRoles?.[0] ?? assignableRoles[0]?.code ?? '',
+      roleCode: emp.systemRoles?.[0] ?? '',
       password: '',
+      basicSalary: String(emp.basicSalary ?? 0),
+      commissionRate: String(emp.commissionRate ?? 0),
+      epfEnabled: emp.epfEnabled ?? true,
+      etfEnabled: emp.etfEnabled ?? true,
     });
   };
 
@@ -359,7 +478,11 @@ export default function EmployeesPage() {
           <div className="emp-title-row">
             <h1>Employees</h1>
           </div>
-          <p className="emp-subtitle">Manage staff profiles and assign system roles</p>
+          <p className="emp-subtitle">
+            {payrollEnabled
+              ? 'Manage staff profiles, basic salary, and EPF/ETF settings'
+              : 'Manage staff profiles and assign system roles'}
+          </p>
         </div>
         <button
           type="button"
@@ -449,6 +572,18 @@ export default function EmployeesPage() {
                     <span>
                       <strong>Branch:</strong> {emp.branchName}
                     </span>
+                    {payrollEnabled && (
+                      <>
+                        <span>
+                          <strong>Basic salary:</strong> LKR {formatSalary(emp.basicSalary)}
+                        </span>
+                        <span>
+                          <strong>EPF:</strong> {emp.epfEnabled === false ? 'No' : 'Yes'}
+                          {' · '}
+                          <strong>ETF:</strong> {emp.etfEnabled === false ? 'No' : 'Yes'}
+                        </span>
+                      </>
+                    )}
                     {emp.email && (
                       <span>
                         <strong>Email:</strong> {emp.email}
@@ -457,6 +592,19 @@ export default function EmployeesPage() {
                   </div>
                   <div className="emp-card-actions">
                     <OpsEditButton onClick={() => openEdit(emp)} />
+                    {payrollEnabled && emp.status === 'ACTIVE' && (
+                      <button
+                        type="button"
+                        className="emp-btn emp-btn-secondary"
+                        onClick={() => {
+                          setFormError(null);
+                          setAdvanceForm(emptyAdvanceForm());
+                          setAdvanceEmployee(emp);
+                        }}
+                      >
+                        Advance
+                      </button>
+                    )}
                     {emp.status !== 'RESIGNED' && (
                       <OpsToggleStatusButton
                         isActive={emp.status === 'ACTIVE'}
@@ -483,6 +631,8 @@ export default function EmployeesPage() {
                     <th>Designation</th>
                     <th>System role</th>
                     <th>Branch</th>
+                    {payrollEnabled && <th>Basic salary</th>}
+                    {payrollEnabled && <th>EPF / ETF</th>}
                     <th>Contact</th>
                     <th>Status</th>
                     <th style={{ textAlign: 'right' }}>Actions</th>
@@ -506,6 +656,16 @@ export default function EmployeesPage() {
                         )}
                       </td>
                       <td>{emp.branchName}</td>
+                      {payrollEnabled && (
+                        <td>LKR {formatSalary(emp.basicSalary)}</td>
+                      )}
+                      {payrollEnabled && (
+                        <td>
+                          {emp.epfEnabled === false ? 'EPF off' : 'EPF on'}
+                          {' / '}
+                          {emp.etfEnabled === false ? 'ETF off' : 'ETF on'}
+                        </td>
+                      )}
                       <td>
                         <div className="emp-contact-cell">
                           {emp.phone && <span>{emp.phone}</span>}
@@ -519,6 +679,19 @@ export default function EmployeesPage() {
                       <td>
                         <div className="emp-actions">
                           <OpsEditButton onClick={() => openEdit(emp)} />
+                          {payrollEnabled && emp.status === 'ACTIVE' && (
+                            <button
+                              type="button"
+                              className="emp-btn emp-btn-secondary"
+                              onClick={() => {
+                                setFormError(null);
+                                setAdvanceForm(emptyAdvanceForm());
+                                setAdvanceEmployee(emp);
+                              }}
+                            >
+                              Advance
+                            </button>
+                          )}
                           {emp.status !== 'RESIGNED' && (
                             <OpsToggleStatusButton
                               isActive={emp.status === 'ACTIVE'}
@@ -576,6 +749,7 @@ export default function EmployeesPage() {
             branches={branches}
             assignableRoles={assignableRoles}
             showRoleFields={roleManagementEnabled}
+            showPayrollFields={payrollEnabled}
           />
           <FormSubmit pending={createMutation.isPending} disabled={!form.branchId}>
             Create Employee
@@ -620,11 +794,78 @@ export default function EmployeesPage() {
             branches={branches}
             assignableRoles={assignableRoles}
             showRoleFields={roleManagementEnabled}
+            showPayrollFields={payrollEnabled}
             requirePassword={!editEmployee?.userId}
             hasLogin={!!editEmployee?.userId}
           />
           <FormSubmit pending={updateMutation.isPending}>Save Changes</FormSubmit>
         </SimpleForm>
+      </SimpleFormDialog>
+
+      <SimpleFormDialog
+        open={advanceEmployee !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAdvanceEmployee(null);
+            setFormError(null);
+          }
+        }}
+        title={advanceEmployee ? `Advance — ${advanceEmployee.name}` : 'Give Advance'}
+      >
+        {advanceEmployee && (
+          <SimpleForm
+            onSubmit={(e) => {
+              e.preventDefault();
+              setFormError(null);
+              const amount = Number(advanceForm.amount);
+              if (!(amount > 0)) {
+                setFormError('Advance amount must be greater than 0.');
+                return;
+              }
+              advanceMutation.mutate({
+                employeeId: advanceEmployee.id,
+                originalAmount: amount,
+                startDate: advanceForm.startDate,
+                notes: advanceForm.notes.trim() || undefined,
+              });
+            }}
+          >
+            <FormError message={formError} />
+            <div className="space-y-2">
+              <Label>Advance amount</Label>
+              <Input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={advanceForm.amount}
+                onChange={(e) => setAdvanceForm({ ...advanceForm, amount: e.target.value })}
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Full amount is deducted from the same month’s payroll.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Date</Label>
+              <Input
+                type="date"
+                value={advanceForm.startDate}
+                onChange={(e) => setAdvanceForm({ ...advanceForm, startDate: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Notes</Label>
+              <FormTextarea
+                value={advanceForm.notes}
+                onChange={(e) => setAdvanceForm({ ...advanceForm, notes: e.target.value })}
+                placeholder="Optional"
+                rows={3}
+              />
+            </div>
+            <FormSubmit pending={advanceMutation.isPending}>Save Advance</FormSubmit>
+          </SimpleForm>
+        )}
       </SimpleFormDialog>
     </div>
   );

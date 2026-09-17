@@ -16,9 +16,21 @@ export interface TenantSubscription {
   cancelAtPeriodEnd: boolean;
   cancelledAt: string | null;
   pendingPlanId: string | null;
+  pendingPlan: {
+    id: string;
+    code: string;
+    name: string;
+  } | null;
+  pendingPlanPrice: {
+    id: string;
+    price: number | string;
+    currency: string;
+    billingCycle: string;
+  } | null;
   price: number | string;
   currency: string;
   billingCycle: string;
+  features?: string[];
 }
 
 export interface TenantSubscriptionContext {
@@ -34,6 +46,7 @@ export interface TenantSubscriptionContext {
 export type PaymentPurpose =
   | 'SUBSCRIPTION_ACTIVATE'
   | 'SUBSCRIPTION_RENEW'
+  | 'SUBSCRIPTION_UPGRADE'
   | 'SIGNUP';
 
 export const tenantSubscriptionsApi = {
@@ -58,10 +71,15 @@ export const tenantSubscriptionsApi = {
     data: { planId: string; planPriceId?: string; billingCycle?: 'MONTHLY' | 'YEARLY' },
   ) => api.post(`/subscriptions/${subscriptionId}/downgrade`, data).then((r) => r.data),
 
+  cancelPendingDowngrade: (subscriptionId: string) =>
+    api.delete(`/subscriptions/${subscriptionId}/pending-downgrade`).then((r) => r.data),
+
   createCheckout: (data: {
     subscriptionId: string;
     gateway: 'PAYHERE';
     purpose: PaymentPurpose;
+    planId?: string;
+    planPriceId?: string;
   }) =>
     api
       .post<{

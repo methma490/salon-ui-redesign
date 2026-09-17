@@ -168,8 +168,7 @@ export class SignupService {
 
     const orderId = `SIGNUP-${randomUUID()}`;
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
-    const apiBase =
-      this.configService.get<string>('API_PUBLIC_URL') ?? 'http://localhost:3000/api';
+    const apiBase = this.configService.get<string>('API_PUBLIC_URL') ?? 'http://localhost:3000/api';
 
     const [firstName, ...lastParts] = dto.admin.name.trim().split(/\s+/);
     const lastName = lastParts.join(' ') || firstName;
@@ -320,10 +319,7 @@ export class SignupService {
       );
 
       if (result.status === 'paid' || result.alreadyProcessed) {
-        return this.finalizePaidSignup(
-          payload.order_id,
-          payload.payment_id ?? payload.order_id,
-        );
+        return this.finalizePaidSignup(payload.order_id, payload.payment_id ?? payload.order_id);
       }
 
       if (result.status === 'failed') {

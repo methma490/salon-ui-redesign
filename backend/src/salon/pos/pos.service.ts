@@ -5,7 +5,8 @@ import { tenantTable } from '../../tenant/utils/schema-name.util';
 import { EmployeesService } from '../employees/employees.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { logAudit } from '../utils/audit.util';
-import { CreateSaleDto } from './dto/pos.dto';
+import { normalizeSaleAssignments } from '../sales/sale-assignment.util';
+import { CreateSaleDto, SaleEmployeeDto } from './dto/pos.dto';
 
 @Injectable()
 export class PosService {
@@ -27,9 +28,6 @@ export class PosService {
   async createSale(schemaName: string, dto: CreateSaleDto, user: AuthenticatedUser) {
     const cashierUserId = user.id;
 
-    if (dto.services.length > 0) {
-      await this.employeesService.listPosPerformers(schemaName, user, dto.branchId);
-    }
     if (dto.services.length === 0 && dto.products.length === 0) {
       throw new BadRequestException('Sale must include at least one service or product');
     }
@@ -42,6 +40,7 @@ export class PosService {
     const sales = tenantTable(schemaName, 'sales');
     const saleItems = tenantTable(schemaName, 'sale_items');
     const saleItemEmployees = tenantTable(schemaName, 'sale_item_employees');
+    const saleEmployees = tenantTable(schemaName, 'sale_employees');
     const payments = tenantTable(schemaName, 'payments');
     const services = tenantTable(schemaName, 'services');
     const products = tenantTable(schemaName, 'products');
@@ -57,17 +56,25 @@ export class PosService {
         throw new NotFoundException('Active branch not found');
       }
 
-      const activeEmployees = await tx.$queryRawUnsafe<Array<{ id: string }>>(
-        `SELECT id FROM ${employees} WHERE status = 'ACTIVE'`,
-      );
+      // Ensure performers exist (auto-provision solo owner when needed)
+      if (dto.services.length > 0 || (dto.employees && dto.employees.length > 0)) {
+        await this.employeesService.listPosPerformers(schemaName, user, dto.branchId);
+      }
 
-      if (dto.services.length > 0 && activeEmployees.length === 0) {
+      const branchEmployees = await tx.$queryRawUnsafe<Array<{ id: string }>>(
+        `SELECT id FROM ${employees}
+         WHERE status = 'ACTIVE' AND branch_id = $1::uuid`,
+        dto.branchId,
+      );
+      const branchEmployeeIds = new Set(branchEmployees.map((e) => e.id));
+
+      if (dto.services.length > 0 && branchEmployeeIds.size === 0) {
         throw new BadRequestException(
-          'No active employees available. Cannot complete a service sale.',
+          'No active employees available for this branch. Cannot complete a service sale.',
         );
       }
 
-      const soleEmployeeId = activeEmployees.length === 1 ? activeEmployees[0].id : null;
+      const soleEmployeeId = branchEmployeeIds.size === 1 ? [...branchEmployeeIds][0] : null;
 
       let subtotal = 0;
       const lineItems: Array<{
@@ -96,6 +103,8 @@ export class PosService {
         if (!performerId) {
           if (soleEmployeeId) {
             performerId = soleEmployeeId;
+          } else if (dto.employees?.[0]?.employeeId) {
+            performerId = dto.employees[0].employeeId;
           } else {
             throw new BadRequestException(
               'Each service must have a performer assigned when multiple employees exist',
@@ -103,12 +112,10 @@ export class PosService {
           }
         }
 
-        const emp = await tx.$queryRawUnsafe<Array<{ id: string }>>(
-          `SELECT id FROM ${employees} WHERE id = $1::uuid AND status = 'ACTIVE' LIMIT 1`,
-          performerId,
-        );
-        if (emp.length === 0) {
-          throw new BadRequestException(`Employee not found or inactive: ${performerId}`);
+        if (!branchEmployeeIds.has(performerId)) {
+          throw new BadRequestException(
+            `Employee is not an active member of the selected branch: ${performerId}`,
+          );
         }
 
         const unitPrice = Number(svc[0].price);
@@ -162,12 +169,26 @@ export class PosService {
         );
       }
 
+      const assignmentInputs = this.resolveAssignmentInputs(dto, lineItems, soleEmployeeId);
+      for (const assignment of assignmentInputs) {
+        if (!branchEmployeeIds.has(assignment.employeeId)) {
+          throw new BadRequestException(
+            `Employee is not an active member of the selected branch: ${assignment.employeeId}`,
+          );
+        }
+      }
+
+      const normalizedAssignments =
+        assignmentInputs.length > 0
+          ? normalizeSaleAssignments(assignmentInputs, total)
+          : [];
+
       const saleNumber = await this.generateSaleNumber(tx, sales);
 
       const saleRows = await tx.$queryRawUnsafe<Array<{ id: string }>>(
         `INSERT INTO ${sales}
-           (branch_id, customer_id, sale_number, subtotal, discount, tax, total, status, created_by, cashier_id)
-         VALUES ($1::uuid, $2::uuid, $3, $4, $5, 0, $6, 'COMPLETED', $7::uuid, $8::uuid)
+           (branch_id, customer_id, sale_number, subtotal, discount, tax, total, status, created_by, cashier_id, refunded_amount)
+         VALUES ($1::uuid, $2::uuid, $3, $4, $5, 0, $6, 'COMPLETED', $7::uuid, $8::uuid, 0)
          RETURNING id`,
         dto.branchId,
         dto.customerId ?? null,
@@ -180,6 +201,24 @@ export class PosService {
       );
 
       const saleId = saleRows[0].id;
+
+      const assignmentTypeCast = this.tenantEnumCast(schemaName, 'sale_assignment_type', 3);
+      for (const assignment of normalizedAssignments) {
+        await tx.$queryRawUnsafe(
+          `INSERT INTO ${saleEmployees}
+             (sale_id, employee_id, assignment_type, allocation_percentage, commissionable_amount)
+           VALUES ($1::uuid, $2::uuid, ${assignmentTypeCast}, $4::numeric, $5::numeric)`,
+          saleId,
+          assignment.employeeId,
+          assignment.assignmentType,
+          assignment.allocationPercentage,
+          assignment.commissionableAmount,
+        );
+      }
+
+      const primaryEmployeeId =
+        normalizedAssignments.find((a) => a.assignmentType === 'PRIMARY')?.employeeId ??
+        normalizedAssignments[0]?.employeeId;
 
       for (const line of lineItems) {
         const itemRows = await tx.$queryRawUnsafe<Array<{ id: string }>>(
@@ -197,13 +236,16 @@ export class PosService {
           line.total,
         );
 
-        if (line.itemType === 'service' && line.employeeId) {
-          await tx.$queryRawUnsafe(
-            `INSERT INTO ${saleItemEmployees} (sale_item_id, employee_id)
-             VALUES ($1::uuid, $2::uuid)`,
-            itemRows[0].id,
-            line.employeeId,
-          );
+        if (line.itemType === 'service') {
+          const lineEmployeeId = line.employeeId ?? primaryEmployeeId;
+          if (lineEmployeeId) {
+            await tx.$queryRawUnsafe(
+              `INSERT INTO ${saleItemEmployees} (sale_item_id, employee_id)
+               VALUES ($1::uuid, $2::uuid)`,
+              itemRows[0].id,
+              lineEmployeeId,
+            );
+          }
         }
 
         if (line.itemType === 'product' && line.productId) {
@@ -236,11 +278,60 @@ export class PosService {
         action: 'SALE_CREATE',
         entityType: 'sale',
         entityId: saleId,
-        details: { saleNumber, total },
+        details: {
+          saleNumber,
+          total,
+          employees: normalizedAssignments.map((a) => ({
+            employeeId: a.employeeId,
+            assignmentType: a.assignmentType,
+            allocationPercentage: a.allocationPercentage,
+            commissionableAmount: a.commissionableAmount,
+          })),
+        },
       });
 
-      return { id: saleId, saleNumber, subtotal, discount: saleDiscount, total };
+      return {
+        id: saleId,
+        saleNumber,
+        subtotal,
+        discount: saleDiscount,
+        total,
+        employees: normalizedAssignments,
+      };
     });
+  }
+
+  private resolveAssignmentInputs(
+    dto: CreateSaleDto,
+    lineItems: Array<{ employeeId?: string }>,
+    soleEmployeeId: string | null,
+  ): SaleEmployeeDto[] {
+    if (dto.employees && dto.employees.length > 0) {
+      return dto.employees;
+    }
+
+    const fromLines = [
+      ...new Set(
+        lineItems.map((l) => l.employeeId).filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    if (fromLines.length > 0) {
+      return fromLines.map((employeeId, index) => ({
+        employeeId,
+        assignmentType: index === 0 ? ('PRIMARY' as const) : ('ASSISTANT' as const),
+      }));
+    }
+
+    if (soleEmployeeId) {
+      return [{ employeeId: soleEmployeeId, assignmentType: 'PRIMARY' }];
+    }
+
+    // Product-only sale with no employees — allowed with empty assignment
+    if (dto.services.length === 0) {
+      return [];
+    }
+
+    throw new BadRequestException('Assign at least one employee to the sale');
   }
 
   private async generateSaleNumber(

@@ -72,10 +72,7 @@ export class SettingsService {
 
       const users = await tx.$queryRawUnsafe<
         Array<{ id: string; name: string; email: string; phone: string | null }>
-      >(
-        `SELECT id, name, email, phone FROM ${usersTable} WHERE id = $1::uuid LIMIT 1`,
-        userId,
-      );
+      >(`SELECT id, name, email, phone FROM ${usersTable} WHERE id = $1::uuid LIMIT 1`, userId);
 
       if (users.length === 0) {
         return null;
@@ -112,9 +109,7 @@ export class SettingsService {
 
     const featureMap = new Map(featureRecords.map((f) => [f.code, f]));
 
-    const logoThumbnailUrl = tenant.logoUrl
-      ? `/uploads/tenants/${tenantId}_thumb.webp`
-      : null;
+    const logoThumbnailUrl = tenant.logoUrl ? `/uploads/tenants/${tenantId}_thumb.webp` : null;
 
     return {
       salon: {
@@ -165,11 +160,7 @@ export class SettingsService {
     return tenant;
   }
 
-  async updateAccount(
-    schemaName: string,
-    userId: string,
-    dto: UpdateAccountSettingsDto,
-  ) {
+  async updateAccount(schemaName: string, userId: string, dto: UpdateAccountSettingsDto) {
     const usersTable = tenantTable(schemaName, 'users');
 
     await this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
@@ -190,11 +181,7 @@ export class SettingsService {
     return { name: dto.name.trim() };
   }
 
-  async changePassword(
-    schemaName: string,
-    userId: string,
-    dto: ChangePasswordDto,
-  ) {
+  async changePassword(schemaName: string, userId: string, dto: ChangePasswordDto) {
     const usersTable = tenantTable(schemaName, 'users');
 
     await this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
@@ -223,11 +210,7 @@ export class SettingsService {
     return { message: 'Password updated successfully' };
   }
 
-  async saveLogo(
-    tenantId: string,
-    roles: string[],
-    file: Express.Multer.File | undefined,
-  ) {
+  async saveLogo(tenantId: string, roles: string[], file: Express.Multer.File | undefined) {
     if (!roles.includes('SALON_ADMIN')) {
       throw new ForbiddenException('Only salon admins can update the salon logo');
     }
@@ -326,11 +309,7 @@ export class SettingsService {
     });
   }
 
-  async changeSubscriptionPlan(
-    tenantId: string,
-    roles: string[],
-    dto: ChangeSubscriptionPlanDto,
-  ) {
+  async changeSubscriptionPlan(tenantId: string, roles: string[], dto: ChangeSubscriptionPlanDto) {
     if (!roles.includes('SALON_ADMIN')) {
       throw new ForbiddenException('Only salon admins can change the subscription plan');
     }
@@ -497,10 +476,7 @@ export class SettingsService {
         rolesByUser.set(row.user_id, list);
       }
 
-      const permissionsByRole = new Map<
-        string,
-        Array<{ code: string; name: string }>
-      >();
+      const permissionsByRole = new Map<string, Array<{ code: string; name: string }>>();
       for (const row of rolePermissions) {
         const list = permissionsByRole.get(row.role_code) ?? [];
         list.push({ code: row.permission_code, name: row.permission_name });
@@ -560,10 +536,7 @@ export class SettingsService {
             roles: userRoleList,
             hasCustomPermissions,
             permissionCodes: effectivePermissionCodes,
-            moduleAccess: permissionCodesToModuleAccess(
-              effectivePermissionCodes,
-              enabledFeatures,
-            ),
+            moduleAccess: permissionCodesToModuleAccess(effectivePermissionCodes, enabledFeatures),
           };
         }),
         roles: planRoles,
@@ -571,12 +544,7 @@ export class SettingsService {
     });
   }
 
-  async createRole(
-    tenantId: string,
-    schemaName: string,
-    actorRoles: string[],
-    dto: CreateRoleDto,
-  ) {
+  async createRole(tenantId: string, schemaName: string, actorRoles: string[], dto: CreateRoleDto) {
     if (!actorRoles.includes('SALON_ADMIN')) {
       throw new ForbiddenException('Only salon admins can create roles');
     }
@@ -651,12 +619,7 @@ export class SettingsService {
     });
   }
 
-  async deleteRole(
-    tenantId: string,
-    schemaName: string,
-    roleCode: string,
-    actorRoles: string[],
-  ) {
+  async deleteRole(tenantId: string, schemaName: string, roleCode: string, actorRoles: string[]) {
     if (!actorRoles.includes('SALON_ADMIN')) {
       throw new ForbiddenException('Only salon admins can delete roles');
     }
@@ -678,9 +641,7 @@ export class SettingsService {
       const rolesTable = tenantTable(schemaName, 'roles');
       const userRolesTable = tenantTable(schemaName, 'user_roles');
 
-      const role = await tx.$queryRawUnsafe<
-        Array<{ id: string; isSystem: boolean }>
-      >(
+      const role = await tx.$queryRawUnsafe<Array<{ id: string; isSystem: boolean }>>(
         `SELECT id, COALESCE(is_system, false) AS "isSystem"
          FROM ${rolesTable} WHERE code = $1 LIMIT 1`,
         normalizedRoleCode,
@@ -854,9 +815,7 @@ export class SettingsService {
         throw new BadRequestException('Selected role is invalid');
       }
 
-      const rolePermissionRows = await tx.$queryRawUnsafe<
-        Array<{ permission_code: string }>
-      >(
+      const rolePermissionRows = await tx.$queryRawUnsafe<Array<{ permission_code: string }>>(
         `SELECT p.code AS permission_code
          FROM ${rolePermissionsTable} rp
          INNER JOIN ${permissionsTable} p ON rp.permission_id = p.id
@@ -884,7 +843,9 @@ export class SettingsService {
         );
 
         if (Number(adminCount[0]?.count ?? 0) <= 1) {
-          throw new BadRequestException('You cannot remove the last salon admin role from yourself');
+          throw new BadRequestException(
+            'You cannot remove the last salon admin role from yourself',
+          );
         }
       }
 
@@ -1044,7 +1005,9 @@ export class SettingsService {
         );
 
         if (Number(adminCount[0]?.count ?? 0) <= 1) {
-          throw new BadRequestException('You cannot remove the last salon admin role from yourself');
+          throw new BadRequestException(
+            'You cannot remove the last salon admin role from yourself',
+          );
         }
       }
 

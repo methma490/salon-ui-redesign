@@ -12,3 +12,12 @@ export function tenantTable(schemaName: string, tableName: string): string {
   assertTrustedTenantSchemaName(schemaName);
   return `"${schemaName}"."${tableName}"`;
 }
+
+/** Schema-qualified enum/type reference, e.g. "tenant_000001"."expense_status" */
+export function tenantType(schemaName: string, typeName: string): string {
+  assertTrustedTenantSchemaName(schemaName);
+  if (!/^[a-z_][a-z0-9_]*$/i.test(typeName)) {
+    throw new ForbiddenException('Invalid type name');
+  }
+  return `"${schemaName}"."${typeName}"`;
+}

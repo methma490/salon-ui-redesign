@@ -23,7 +23,11 @@
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:setup": "prisma migrate deploy && prisma db seed",
-    "db:indexes:tenants": "ts-node scripts/apply-performance-indexes-migration.ts"
+    "db:indexes:tenants": "ts-node scripts/apply-performance-indexes-migration.ts",
+    "db:expenses:tenants": "ts-node scripts/apply-expenses-migration.ts",
+    "db:payroll:tenants": "ts-node scripts/apply-payroll-migration.ts",
+    "db:sale-employees:tenants": "ts-node scripts/apply-sale-employees-migration.ts",
+    "db:advances:tenants": "ts-node scripts/apply-employee-advances-migration.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

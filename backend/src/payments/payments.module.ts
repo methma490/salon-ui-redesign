@@ -35,11 +35,6 @@ import { SuperAdminPaymentsController } from './super-admin-payments.controller'
     PaymentOrdersService,
     PaymentProcessorService,
   ],
-  exports: [
-    PayHereService,
-    PaymentGatewayRegistry,
-    PaymentOrdersService,
-    PaymentProcessorService,
-  ],
+  exports: [PayHereService, PaymentGatewayRegistry, PaymentOrdersService, PaymentProcessorService],
 })
 export class PaymentsModule {}

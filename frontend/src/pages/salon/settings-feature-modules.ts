@@ -60,6 +60,33 @@ export const FEATURE_MODULES: FeatureModule[] = [
     viewPermissions: ['SALE_VIEW'],
     managePermissions: ['SALE_CREATE', 'SALE_UPDATE'],
   },
+  {
+    code: 'EXPENSES',
+    name: 'Expenses',
+    description: 'Track salon operating expenses',
+    viewPermissions: ['EXPENSE_VIEW'],
+    managePermissions: ['EXPENSE_CREATE', 'EXPENSE_UPDATE', 'EXPENSE_DELETE'],
+  },
+  {
+    code: 'PAYROLL',
+    name: 'Payroll',
+    description: 'Salaries, loans, and payslips',
+    viewPermissions: [
+      'PAYROLL_VIEW',
+      'LOAN_VIEW',
+      'PAYSLIP_VIEW',
+      'PAYROLL_SETTINGS_VIEW',
+    ],
+    managePermissions: [
+      'PAYROLL_RUN',
+      'PAYROLL_UPDATE',
+      'PAYROLL_FINALIZE',
+      'PAYROLL_MARK_PAID',
+      'LOAN_CREATE',
+      'LOAN_UPDATE',
+      'PAYROLL_SETTINGS_UPDATE',
+    ],
+  },
 ];
 
 export function resolveFeatureAccess(

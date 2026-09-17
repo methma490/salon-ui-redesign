@@ -53,10 +53,7 @@ export class SubscriptionsController {
   @Post('trial')
   @UseGuards(JwtAuthGuard, TenantContextGuard, RolesGuard)
   @Roles('SALON_ADMIN')
-  createTrial(
-    @CurrentTenant() tenant: TenantContext,
-    @Body() dto: CreateTrialSubscriptionDto,
-  ) {
+  createTrial(@CurrentTenant() tenant: TenantContext, @Body() dto: CreateTrialSubscriptionDto) {
     return this.subscriptionsService.createTrialSubscription(tenant.tenantId, dto);
   }
 
@@ -112,6 +109,16 @@ export class SubscriptionsController {
   ) {
     return this.subscriptionsService.scheduleDowngrade(id, tenant.tenantId, dto);
   }
+
+  @Delete(':id/pending-downgrade')
+  @UseGuards(JwtAuthGuard, TenantContextGuard, RolesGuard)
+  @Roles('SALON_ADMIN')
+  cancelPendingDowngrade(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.subscriptionsService.cancelPendingDowngrade(id, tenant.tenantId);
+  }
 }
 
 @Controller('super-admin/subscriptions')
@@ -158,17 +165,16 @@ export class SuperAdminSubscriptionsController {
   }
 
   @Post(':id/cancel')
-  cancel(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() body: { tenantId: string },
-  ) {
+  cancel(@Param('id', ParseUUIDPipe) id: string, @Body() body: { tenantId: string }) {
     return this.subscriptionsService.cancelAtPeriodEnd(id, body.tenantId);
   }
 
   @Post(':id/upgrade')
   upgrade(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpgradeSubscriptionForTenantDto) {
     const { tenantId, ...upgradeDto } = dto;
-    return this.subscriptionsService.upgradeSubscription(id, tenantId, upgradeDto);
+    return this.subscriptionsService.upgradeSubscription(id, tenantId, upgradeDto, {
+      allowWithoutPayment: true,
+    });
   }
 
   @Post(':id/downgrade')
@@ -178,6 +184,14 @@ export class SuperAdminSubscriptionsController {
   ) {
     const { tenantId, ...downgradeDto } = dto;
     return this.subscriptionsService.scheduleDowngrade(id, tenantId, downgradeDto);
+  }
+
+  @Delete(':id/pending-downgrade')
+  cancelPendingDowngrade(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('tenantId', ParseUUIDPipe) tenantId: string,
+  ) {
+    return this.subscriptionsService.cancelPendingDowngrade(id, tenantId);
   }
 
   @Get('tenant/:tenantId')
@@ -198,10 +212,6 @@ export class SuperAdminSubscriptionsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateSubscriptionFeaturesForTenantDto,
   ) {
-    return this.subscriptionsService.updateSubscriptionFeatures(
-      id,
-      dto.tenantId,
-      dto.features,
-    );
+    return this.subscriptionsService.updateSubscriptionFeatures(id, dto.tenantId, dto.features);
   }
 }

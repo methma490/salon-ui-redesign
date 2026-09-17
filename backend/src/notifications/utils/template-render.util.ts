@@ -1,7 +1,4 @@
-export function renderTemplate(
-  template: string,
-  context: Record<string, string>,
-): string {
+export function renderTemplate(template: string, context: Record<string, string>): string {
   return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => context[key] ?? '');
 }
 

@@ -87,12 +87,7 @@ export class SettingsController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateRoleDto,
   ) {
-    return this.settingsService.createRole(
-      tenant.tenantId,
-      tenant.schemaName,
-      user.roles,
-      dto,
-    );
+    return this.settingsService.createRole(tenant.tenantId, tenant.schemaName, user.roles, dto);
   }
 
   @Delete('roles/:roleCode')
