@@ -6,6 +6,8 @@ import SignupCancelPage from '@/pages/signup/SignupCancelPage';
 import SuperAdminRoutes from '@/routes/SuperAdminRoutes';
 import SalonAdminRoutes from '@/routes/SalonAdminRoutes';
 import LoginPage from '@/pages/super-admin/LoginPage';
+import PublicQuotationPage from '@/pages/public/PublicQuotationPage';
+import PublicEbillPage from '@/pages/public/PublicEbillPage';
 import { SuperAdminGuestRoute } from '@/routes/SuperAdminProtectedRoute';
 import { SUPER_ADMIN_LOGIN_PATH } from '@/config/auth-paths';
 
@@ -16,6 +18,8 @@ export default function AppRoutes() {
       <Route path="/signup/:planId" element={<SignupPage />} />
       <Route path="/signup/success" element={<SignupSuccessPage />} />
       <Route path="/signup/cancel" element={<SignupCancelPage />} />
+      <Route path="/q/:token" element={<PublicQuotationPage />} />
+      <Route path="/ebill/:id" element={<PublicEbillPage />} />
 
       <Route element={<SuperAdminGuestRoute />}>
         <Route path={SUPER_ADMIN_LOGIN_PATH} element={<LoginPage />} />

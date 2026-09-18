@@ -20,12 +20,11 @@ import {
 } from './salon-ops-ui';
 import './sales-page.css';
 
-function formatMoney(value: number) {
-  return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
+import { formatMoneyAmount } from '@/lib/money';
+import { formatSriLankaDateTime, sriLankaTodayIso } from '@/lib/sri-lanka-time';
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  return sriLankaTodayIso();
 }
 
 function monthStartStr() {
@@ -101,7 +100,12 @@ export default function SalesPage() {
             <Banknote size={20} />
           </span>
           <div>
-            <div className="sales-stat-value is-revenue">{formatMoney(stats.revenue)}</div>
+            <div className="sales-stat-value is-revenue">
+              {formatMoneyAmount(stats.revenue, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </div>
             <div className="sales-stat-label">Revenue (LKR)</div>
           </div>
         </div>
@@ -176,7 +180,7 @@ export default function SalesPage() {
                   <div className="sales-card-top">
                     <div>
                       <div className="sales-sale-number">{sale.saleNumber}</div>
-                      <div className="sales-sale-date">{new Date(sale.createdAt).toLocaleString()}</div>
+                      <div className="sales-sale-date">{formatSriLankaDateTime(sale.createdAt)}</div>
                     </div>
                     <SaleStatusBadge status={sale.status} />
                   </div>
@@ -188,8 +192,8 @@ export default function SalesPage() {
                       <strong>Customer:</strong> {sale.customerName || 'Walk-in'}
                     </div>
                     <div>
-                      <strong>Total:</strong>{' '}
-                      <span className="sales-total-cell">LKR {formatMoney(sale.total)}</span>
+                      <strong>Total (LKR):</strong>{' '}
+                      <span className="sales-total-cell">{formatMoneyAmount(sale.total)}</span>
                     </div>
                   </div>
                   <Link to={`/salon/sales/${sale.id}`} className="sales-view-btn">
@@ -217,10 +221,10 @@ export default function SalesPage() {
                   {sales.map((sale) => (
                     <tr key={sale.id}>
                       <td className="sales-sale-number">{sale.saleNumber}</td>
-                      <td className="sales-sale-date">{new Date(sale.createdAt).toLocaleString()}</td>
+                      <td className="sales-sale-date">{formatSriLankaDateTime(sale.createdAt)}</td>
                       <td>{sale.branchName}</td>
                       <td>{sale.customerName || 'Walk-in'}</td>
-                      <td className="num sales-total-cell">{formatMoney(sale.total)}</td>
+                      <td className="num sales-total-cell">{formatMoneyAmount(sale.total)}</td>
                       <td>
                         <SaleStatusBadge status={sale.status} />
                       </td>

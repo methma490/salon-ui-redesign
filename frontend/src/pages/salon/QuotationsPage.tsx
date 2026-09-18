@@ -1,0 +1,197 @@
+import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { tenantApi } from '@/api/tenant.api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { getErrorMessage, OpsError, OpsLoading, OpsPageHeader } from './salon-ops-ui';
+import { formatMoneyAmount, moneyHeader } from '@/lib/money';
+import { formatSriLankaDate } from '@/lib/sri-lanka-time';
+import './employees-page.css';
+
+function statusClass(status: string) {
+  if (status === 'ACCEPTED' || status === 'CONVERTED') return 'emp-qty-badge emp-qty-badge-ok';
+  if (status === 'SENT') return 'emp-qty-badge emp-qty-badge-low';
+  if (status === 'DECLINED' || status === 'CANCELLED' || status === 'EXPIRED') {
+    return 'emp-qty-badge emp-qty-badge-out';
+  }
+  return 'emp-qty-badge';
+}
+
+export default function QuotationsPage() {
+  const [filters, setFilters] = useState({
+    search: '',
+    branchId: 'all',
+    status: 'all',
+    page: 1,
+  });
+
+  const { data: branches = [] } = useQuery({
+    queryKey: ['branches'],
+    queryFn: tenantApi.branches.list,
+  });
+
+  const query = useQuery({
+    queryKey: ['quotations', filters],
+    queryFn: () =>
+      tenantApi.quotations.list({
+        page: filters.page,
+        limit: 20,
+        search: filters.search || undefined,
+        branchId: filters.branchId === 'all' ? undefined : filters.branchId,
+        status: filters.status === 'all' ? undefined : filters.status,
+      }),
+  });
+
+  if (query.isLoading) return <OpsLoading />;
+  if (query.isError) {
+    return <OpsError message={getErrorMessage(query.error)} onRetry={() => void query.refetch()} />;
+  }
+
+  const rows = query.data?.data ?? [];
+  const meta = query.data?.meta;
+
+  return (
+    <div className="emp-page">
+      <OpsPageHeader
+        title="Quotations"
+        subtitle="Create tenant-branded quotations and convert accepted quotes to invoices"
+        action={
+          <Button asChild>
+            <Link to="/salon/quotations/new">New Quotation</Link>
+          </Button>
+        }
+      />
+
+      <div className="emp-toolbar">
+        <div className="emp-toolbar-filters" style={{ flexWrap: 'wrap', gap: 8 }}>
+          <Input
+            placeholder="Search quote / customer / phone"
+            value={filters.search}
+            onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
+            className="w-full sm:w-[240px]"
+          />
+          <Select
+            value={filters.branchId}
+            onValueChange={(v) => setFilters({ ...filters, branchId: v, page: 1 })}
+          >
+            <SelectTrigger className="emp-select w-full sm:w-[160px]">
+              <SelectValue placeholder="Branch" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Branches</SelectItem>
+              {branches.map((b) => (
+                <SelectItem key={b.id} value={b.id}>
+                  {b.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={filters.status}
+            onValueChange={(v) => setFilters({ ...filters, status: v, page: 1 })}
+          >
+            <SelectTrigger className="emp-select w-full sm:w-[150px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              {['DRAFT', 'SENT', 'ACCEPTED', 'DECLINED', 'EXPIRED', 'CONVERTED', 'CANCELLED'].map(
+                (s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
+                ),
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="emp-panel">
+        {rows.length === 0 ? (
+          <div className="emp-empty">No quotations yet.</div>
+        ) : (
+          <div className="emp-table-wrap">
+            <table className="emp-table">
+              <thead>
+                <tr>
+                  <th>Quote</th>
+                  <th>Customer</th>
+                  <th>Phone</th>
+                  <th>Branch</th>
+                  <th>Date</th>
+                  <th>Valid Until</th>
+                  <th>{moneyHeader('Total')}</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.id}>
+                    <td className="emp-name-cell">{row.quotationNo}</td>
+                    <td>{row.customerName}</td>
+                    <td>{row.customerPhone || '—'}</td>
+                    <td>{row.branchName}</td>
+                    <td>{formatSriLankaDate(row.quotationDate)}</td>
+                    <td>{row.validUntil ? formatSriLankaDate(row.validUntil) : '—'}</td>
+                    <td>{formatMoneyAmount(row.totalAmount)}</td>
+                    <td>
+                      <span className={statusClass(row.displayStatus)}>{row.displayStatus}</span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <Button asChild variant="outline" size="sm">
+                          <Link to={`/salon/quotations/${row.id}`}>View</Link>
+                        </Button>
+                        {['DRAFT', 'SENT'].includes(row.status) && (
+                          <Button asChild variant="outline" size="sm">
+                            <Link to={`/salon/quotations/${row.id}/edit`}>Edit</Link>
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {meta && meta.totalPages > 1 && (
+          <div className="emp-toolbar" style={{ marginTop: 12 }}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={filters.page <= 1}
+              onClick={() => setFilters({ ...filters, page: filters.page - 1 })}
+            >
+              Previous
+            </Button>
+            <span style={{ fontSize: 13, color: 'var(--emp-muted)' }}>
+              Page {meta.page} of {meta.totalPages}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={filters.page >= meta.totalPages}
+              onClick={() => setFilters({ ...filters, page: filters.page + 1 })}
+            >
+              Next
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

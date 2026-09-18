@@ -5,6 +5,7 @@ import {
   CalendarDays,
   Coins,
   CreditCard,
+  FileText,
   GitBranch,
   LayoutDashboard,
   LogOut,
@@ -129,6 +130,13 @@ const navGroups: NavGroup[] = [
     children: [
       { to: '/salon/pos', label: 'POS', icon: ShoppingCart, feature: 'POS', module: 'POS' },
       { to: '/salon/sales', label: 'Transactions', icon: Receipt, module: 'POS' },
+      {
+        to: '/salon/quotations',
+        label: 'Quotations',
+        icon: FileText,
+        feature: 'QUOTATIONS',
+        module: 'QUOTATIONS',
+      },
       {
         to: '/salon/sales-analytics',
         label: 'Sales Analytics',

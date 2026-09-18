@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { tenantApi, type Expense, type ExpenseCategory } from '@/api/tenant.api';
+import { formatMoneyAmount, formatMoneyLkr } from '@/lib/money';
 import { useSalonBranch } from '@/contexts/SalonBranchContext';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -48,7 +49,7 @@ function todayIso() {
 }
 
 function formatMoney(value: number) {
-  return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return formatMoneyAmount(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatPaymentMethod(method: string) {
@@ -323,7 +324,7 @@ export default function ExpensesPage() {
           <div className="emp-stat-label">Records</div>
         </div>
         <div className="emp-stat">
-          <div className="emp-stat-value">LKR {formatMoney(totalAmount)}</div>
+          <div className="emp-stat-value">{formatMoneyLkr(totalAmount, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
           <div className="emp-stat-label">Active total</div>
         </div>
         <div className="emp-stat">
@@ -409,7 +410,7 @@ export default function ExpensesPage() {
                   </div>
                   <div className="emp-card-meta">
                     <span>
-                      <strong>Amount:</strong> LKR {formatMoney(expense.amount)}
+                      <strong>Amount:</strong> {formatMoney(expense.amount)}
                     </span>
                     <span>
                       <strong>Date:</strong> {expense.expenseDate.slice(0, 10)}
@@ -452,7 +453,7 @@ export default function ExpensesPage() {
                     <th>Branch</th>
                     <th>Date</th>
                     <th>Payment</th>
-                    <th className="num">Amount</th>
+                    <th className="num">Amount (LKR)</th>
                     <th>Status</th>
                     <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
@@ -470,7 +471,7 @@ export default function ExpensesPage() {
                       <td>{expense.expenseDate.slice(0, 10)}</td>
                       <td>{formatPaymentMethod(expense.paymentMethod)}</td>
                       <td className="num" style={{ fontWeight: 700 }}>
-                        LKR {formatMoney(expense.amount)}
+                        {formatMoney(expense.amount)}
                       </td>
                       <td>
                         <OpsStatusBadge status={expense.status} />

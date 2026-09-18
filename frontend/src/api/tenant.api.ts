@@ -450,6 +450,92 @@ export interface StockCreditsResponse extends PaginatedResponse<StockCreditListI
   summary: StockCreditSummary;
 }
 
+export interface QuotationListItem {
+  id: string;
+  quotationNo: string;
+  branchId: string;
+  branchName: string;
+  customerId: string;
+  customerName: string;
+  customerPhone: string | null;
+  quotationDate: string;
+  validUntil: string | null;
+  subtotal: number;
+  discountAmount: number;
+  totalAmount: number;
+  status: string;
+  displayStatus: string;
+  salonNameSnapshot: string;
+  convertedSaleId: string | null;
+  createdAt: string;
+}
+
+export interface QuotationDetail extends QuotationListItem {
+  taxAmount: number;
+  customerNotes: string | null;
+  internalNotes: string | null;
+  publicToken: string;
+  publicUrl: string;
+  acceptedAt: string | null;
+  declinedAt: string | null;
+  declineReason: string | null;
+  items: Array<{
+    id: string;
+    serviceId: string | null;
+    descriptionSnapshot: string;
+    quantity: number;
+    originalServicePrice: number;
+    quotationUnitPrice: number;
+    discountAmount: number;
+    lineTotal: number;
+    employeeId: string | null;
+  }>;
+  messages: Array<{
+    id: string;
+    channel: string;
+    recipient: string;
+    status: string;
+    sentAt: string | null;
+    createdAt: string;
+    failureReason: string | null;
+  }>;
+  salon: {
+    name: string;
+    phone: string | null;
+    email: string | null;
+    logoUrl: string | null;
+    primaryColor: string | null;
+  };
+  platformName: string;
+}
+
+export interface PublicQuotationView {
+  quotationNo: string;
+  quotationDate: string;
+  validUntil: string | null;
+  customerName: string;
+  customerNotes: string | null;
+  subtotal: number;
+  discountAmount: number;
+  totalAmount: number;
+  status: string;
+  canRespond: boolean;
+  items: Array<{
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    lineTotal: number;
+  }>;
+  salon: {
+    name: string;
+    phone: string | null;
+    email: string | null;
+    logoUrl: string | null;
+    primaryColor: string | null;
+  };
+  platformAttribution: string;
+}
+
 // --- Sales ---
 export interface SaleListItem {
   id: string;
@@ -794,6 +880,35 @@ export const tenantApi = {
       api.post(`/tenant/stock/credits/${id}/payments`, data).then((r) => r.data),
   },
 
+  quotations: {
+    list: (params?: Record<string, string | number | undefined>) =>
+      api
+        .get<PaginatedResponse<QuotationListItem>>('/tenant/quotations', { params })
+        .then((r) => r.data),
+    get: (id: string) =>
+      api.get<QuotationDetail>(`/tenant/quotations/${id}`).then((r) => r.data),
+    create: (data: Record<string, unknown>) =>
+      api.post('/tenant/quotations', data).then((r) => r.data),
+    update: (id: string, data: Record<string, unknown>) =>
+      api.patch(`/tenant/quotations/${id}`, data).then((r) => r.data),
+    cancel: (id: string) => api.post(`/tenant/quotations/${id}/cancel`).then((r) => r.data),
+    whatsapp: (id: string) =>
+      api.post<{ externalUrl: string; salonName: string }>(`/tenant/quotations/${id}/whatsapp`).then((r) => r.data),
+    sms: (id: string) => api.post(`/tenant/quotations/${id}/sms`).then((r) => r.data),
+    convert: (id: string, data: Record<string, unknown>) =>
+      api.post(`/tenant/quotations/${id}/convert`, data).then((r) => r.data),
+    printUrl: (id: string) => `${api.defaults.baseURL}/tenant/quotations/${id}/print`,
+  },
+
+  publicQuotations: {
+    get: (token: string) =>
+      api.get<PublicQuotationView>(`/public/quotations/${token}`).then((r) => r.data),
+    accept: (token: string) =>
+      api.post(`/public/quotations/${token}/accept`).then((r) => r.data),
+    decline: (token: string, reason?: string) =>
+      api.post(`/public/quotations/${token}/decline`, { reason }).then((r) => r.data),
+  },
+
   pos: {
     getPerformers: (params?: { branchId?: string }) =>
       api
@@ -811,6 +926,25 @@ export const tenantApi = {
         .get<PaginatedResponse<SaleListItem> | SaleListItem[]>('/tenant/sales', { params })
         .then((r) => unwrapPaginatedList(r.data)),
     get: (id: string) => api.get(`/tenant/sales/${id}`).then((r) => r.data),
+    sendEbillSms: (id: string, phone?: string) =>
+      api
+        .post<{ success: boolean; message: string; ebillUrl: string }>(
+          `/tenant/sales/${id}/send-ebill-sms`,
+          { phone },
+        )
+        .then((r) => r.data),
+    sendEbillWhatsapp: (id: string, phone?: string) =>
+      api
+        .post<{ success: boolean; externalUrl: string; ebillUrl: string }>(
+          `/tenant/sales/${id}/send-ebill-whatsapp`,
+          { phone },
+        )
+        .then((r) => r.data),
+  },
+
+  publicSales: {
+    getEbill: (id: string) =>
+      api.get(`/public/sales/${id}/ebill`).then((r) => r.data),
   },
 
   salesAnalytics: {

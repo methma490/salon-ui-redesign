@@ -27,7 +27,8 @@
     "db:expenses:tenants": "ts-node scripts/apply-expenses-migration.ts",
     "db:payroll:tenants": "ts-node scripts/apply-payroll-migration.ts",
     "db:sale-employees:tenants": "ts-node scripts/apply-sale-employees-migration.ts",
-    "db:advances:tenants": "ts-node scripts/apply-employee-advances-migration.ts"
+    "db:advances:tenants": "ts-node scripts/apply-employee-advances-migration.ts",
+    "db:quotations:tenants": "ts-node scripts/apply-quotations.ts"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

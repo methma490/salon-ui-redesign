@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { formatMoneyAmount, formatMoneyLkr } from '@/lib/money';
 import {
   getErrorMessage,
   OpsError,
@@ -44,7 +45,7 @@ function unwrapList<T>(payload: PaginatedResponse<T> | T[]): T[] {
 }
 
 function formatMoney(value: number) {
-  return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return formatMoneyAmount(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function monthLabel(month: number) {
@@ -332,7 +333,7 @@ export default function PayrollRunsPage() {
                     </span>
                     <PayrollStatusBadge status={run.status} />
                   </div>
-                  <div className="pr-run-net">LKR {formatMoney(run.totalNet)}</div>
+                  <div className="pr-run-net">{formatMoney(run.totalNet)}</div>
                   <div className="pr-run-meta">
                     Gross {formatMoney(run.totalGross)} · Ded. {formatMoney(run.totalDeductions)}
                   </div>
@@ -398,15 +399,15 @@ export default function PayrollRunsPage() {
               <div className="pr-summary-grid">
                 <div className="pr-summary-cell">
                   <span>Gross</span>
-                  <strong>LKR {formatMoney(selectedRun.totalGross)}</strong>
+                  <strong>{formatMoneyLkr(selectedRun.totalGross, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                 </div>
                 <div className="pr-summary-cell">
                   <span>Deductions</span>
-                  <strong>LKR {formatMoney(selectedRun.totalDeductions)}</strong>
+                  <strong>{formatMoneyLkr(selectedRun.totalDeductions, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                 </div>
                 <div className="pr-summary-cell pr-summary-net">
                   <span>Net</span>
-                  <strong>LKR {formatMoney(selectedRun.totalNet)}</strong>
+                  <strong>{formatMoneyLkr(selectedRun.totalNet, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                 </div>
                 <div className="pr-summary-cell">
                   <span>Staff</span>
@@ -433,7 +434,7 @@ export default function PayrollRunsPage() {
                             </div>
                             <div className="pr-emp-net">
                               <span>Net</span>
-                              <strong>LKR {formatMoney(item.netSalary)}</strong>
+                              <strong>{formatMoney(item.netSalary)}</strong>
                             </div>
                           </div>
 
@@ -550,17 +551,17 @@ export default function PayrollRunsPage() {
                       <thead>
                         <tr>
                           <th>Employee</th>
-                          <th className="num">Basic</th>
-                          <th className="num">Comm. Base</th>
+                          <th className="num">Basic (LKR)</th>
+                          <th className="num">Comm. Base (LKR)</th>
                           <th className="num">Comm. %</th>
-                          <th className="num">Commission</th>
-                          <th className="num">Bonus</th>
-                          <th className="num">Advance</th>
-                          <th className="num">Loan</th>
-                          <th className="num">Other</th>
-                          <th className="num">EPF</th>
-                          <th className="num">Gross</th>
-                          <th className="num">Net</th>
+                          <th className="num">Commission (LKR)</th>
+                          <th className="num">Bonus (LKR)</th>
+                          <th className="num">Advance (LKR)</th>
+                          <th className="num">Loan (LKR)</th>
+                          <th className="num">Other (LKR)</th>
+                          <th className="num">EPF (LKR)</th>
+                          <th className="num">Gross (LKR)</th>
+                          <th className="num">Net (LKR)</th>
                         </tr>
                       </thead>
                       <tbody>

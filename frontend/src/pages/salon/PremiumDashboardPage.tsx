@@ -25,6 +25,7 @@ import {
   TopServicesBarChart,
 } from '@/components/salon/SalonDashboardCharts';
 import { useSalonBranch } from '@/contexts/SalonBranchContext';
+import { formatMoneyAmount, formatMoneyLkr } from '@/lib/money';
 import { cn } from '@/lib/utils';
 import { OpsError, OpsLoading } from './salon-ops-ui';
 import '../super-admin/super-admin-dashboard.css';
@@ -35,10 +36,6 @@ function getGreeting() {
   if (hour < 12) return 'Good morning';
   if (hour < 18) return 'Good afternoon';
   return 'Good evening';
-}
-
-function formatMoney(amount: number) {
-  return `LKR ${amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 }
 
 function formatDate(iso: string) {
@@ -152,7 +149,7 @@ export default function PremiumDashboardPage() {
               <Wallet size={14} />
             </div>
           </div>
-          <div className="sd360-kpi-compact-value green">{formatMoney(kpis.periodRevenue)}</div>
+          <div className="sd360-kpi-compact-value green">{formatMoneyLkr(kpis.periodRevenue, { maximumFractionDigits: 0 })}</div>
           <div className="sd360-kpi-compact-foot">
             <span className="sd360-kpi-compact-stat">
               <span className="s360-dot green" />
@@ -396,7 +393,7 @@ export default function PremiumDashboardPage() {
                   <th>Customer</th>
                   <th>Service</th>
                   <th>Employee</th>
-                  <th>Amount</th>
+                  <th>Amount (LKR)</th>
                   <th>Status</th>
                   <th>Date</th>
                 </tr>
@@ -419,7 +416,7 @@ export default function PremiumDashboardPage() {
                       <td>{tx.customer ?? 'Walk-in'}</td>
                       <td>{tx.service ?? '—'}</td>
                       <td>{tx.employee ?? '—'}</td>
-                      <td>{formatMoney(tx.amount)}</td>
+                      <td>{formatMoneyAmount(tx.amount, { maximumFractionDigits: 0 })}</td>
                       <td>
                         <span className={paymentStatusClass(tx.paymentStatus)}>
                           {paymentStatusLabel(tx.paymentStatus)}

@@ -257,24 +257,34 @@ export class TenantProvisioningService {
       { code: 'PAYSLIP_VIEW', name: 'View Payslips' },
       { code: 'PAYROLL_SETTINGS_VIEW', name: 'View Payroll Settings' },
       { code: 'PAYROLL_SETTINGS_UPDATE', name: 'Update Payroll Settings' },
+      { code: 'QUOTATION_VIEW', name: 'View Quotations' },
+      { code: 'QUOTATION_CREATE', name: 'Create Quotations' },
+      { code: 'QUOTATION_UPDATE', name: 'Update Quotations' },
+      { code: 'QUOTATION_SEND', name: 'Send Quotations' },
+      { code: 'QUOTATION_CONVERT', name: 'Convert Quotations to Invoice' },
+      { code: 'QUOTATION_CANCEL', name: 'Cancel Quotations' },
     ];
 
     await this.prisma.$executeRawUnsafe(`SET search_path TO "${schemaName}"`);
 
-    // Insert roles
+    // Insert roles (idempotent — safe if migration already seeded or retry mid-seed)
     for (const role of roles) {
       await this.prisma.$executeRawUnsafe(
-        `INSERT INTO roles (code, name, description, is_system) VALUES ($1, $2, $3, true)`,
+        `INSERT INTO roles (code, name, description, is_system)
+         VALUES ($1, $2, $3, true)
+         ON CONFLICT (code) DO NOTHING`,
         role.code,
         role.name,
         role.description,
       );
     }
 
-    // Insert permissions
+    // Insert permissions (idempotent — never re-insert QUOTATION_* / others)
     for (const permission of permissions) {
       await this.prisma.$executeRawUnsafe(
-        `INSERT INTO permissions (code, name) VALUES ($1, $2)`,
+        `INSERT INTO permissions (code, name)
+         VALUES ($1, $2)
+         ON CONFLICT (code) DO NOTHING`,
         permission.code,
         permission.name,
       );
@@ -287,6 +297,7 @@ export class TenantProvisioningService {
       FROM roles r
       CROSS JOIN permissions p
       WHERE r.code = 'SALON_ADMIN'
+      ON CONFLICT (role_id, permission_id) DO NOTHING
     `);
 
     // CASHIER permissions
@@ -297,9 +308,11 @@ export class TenantProvisioningService {
       INNER JOIN permissions p ON p.code IN (
         'BRANCH_VIEW', 'CUSTOMER_VIEW', 'CUSTOMER_CREATE',
         'SERVICE_VIEW', 'PRODUCT_VIEW', 'SALE_VIEW', 'SALE_CREATE', 'EMPLOYEE_VIEW',
-        'APPOINTMENT_VIEW', 'APPOINTMENT_CREATE', 'APPOINTMENT_UPDATE'
+        'APPOINTMENT_VIEW', 'APPOINTMENT_CREATE', 'APPOINTMENT_UPDATE',
+        'QUOTATION_VIEW', 'QUOTATION_CREATE', 'QUOTATION_UPDATE', 'QUOTATION_SEND'
       )
       WHERE r.code = 'CASHIER'
+      ON CONFLICT (role_id, permission_id) DO NOTHING
     `);
 
     // STOCK_KEEPER permissions
@@ -311,6 +324,7 @@ export class TenantProvisioningService {
         'BRANCH_VIEW', 'PRODUCT_VIEW', 'PRODUCT_CREATE', 'PRODUCT_UPDATE'
       )
       WHERE r.code = 'STOCK_KEEPER'
+      ON CONFLICT (role_id, permission_id) DO NOTHING
     `);
 
     await this.prisma.$executeRawUnsafe(`SET search_path TO public`);

@@ -24,6 +24,7 @@ import {
   SimpleForm,
   SimpleFormDialog,
 } from './salon-ops-ui';
+import { formatMoneyAmount } from '@/lib/money';
 import './employees-page.css';
 
 type ProductForm = {
@@ -43,10 +44,6 @@ const emptyForm: ProductForm = {
   sellingPrice: '',
   costPrice: '',
 };
-
-function formatMoney(value: number) {
-  return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
 
 function toProductPayload(form: ProductForm) {
   return {
@@ -315,11 +312,11 @@ export default function ProductsPage() {
                       <strong>Unit:</strong> {prod.unit || '—'}
                     </span>
                     <span>
-                      <strong>Price:</strong>{' '}
-                      <span className="emp-price">LKR {formatMoney(prod.sellingPrice)}</span>
+                      <strong>Price (LKR):</strong>{' '}
+                      <span className="emp-price">{formatMoneyAmount(prod.sellingPrice)}</span>
                     </span>
                     <span>
-                      <strong>Cost:</strong> LKR {formatMoney(prod.costPrice)}
+                      <strong>Cost (LKR):</strong> {formatMoneyAmount(prod.costPrice)}
                     </span>
                   </div>
                   <div className="emp-card-actions emp-card-actions-mobile">
@@ -359,8 +356,8 @@ export default function ProductsPage() {
                       <td className="emp-name-cell">{prod.name}</td>
                       <td>{prod.categoryName || '—'}</td>
                       <td>{prod.unit || '—'}</td>
-                      <td className="emp-price">{formatMoney(prod.sellingPrice)}</td>
-                      <td>{formatMoney(prod.costPrice)}</td>
+                      <td className="emp-price">{formatMoneyAmount(prod.sellingPrice)}</td>
+                      <td>{formatMoneyAmount(prod.costPrice)}</td>
                       <td>
                         <OpsStatusBadge status={prod.status} />
                       </td>

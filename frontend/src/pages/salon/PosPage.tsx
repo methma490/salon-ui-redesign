@@ -25,6 +25,7 @@ import {
   SimpleForm,
   SimpleFormDialog,
 } from './salon-ops-ui';
+import { formatMoneyAmount, formatMoneyLkr } from '@/lib/money';
 import './pos-page.css';
 
 type CatalogTab = 'services' | 'products';
@@ -84,14 +85,6 @@ const SPLIT_METHODS: { value: PayMethod; label: string }[] = [
   { value: 'CARD', label: 'Card' },
   { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
 ];
-
-function formatAmount(value: number) {
-  return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function formatMoney(value: number) {
-  return `LKR ${formatAmount(value)}`;
-}
 
 function userInitials(name: string) {
   return name
@@ -483,7 +476,7 @@ export default function PosPage() {
       return;
     }
     if (!paymentBalanced) {
-      setFormError(`Payment total must equal ${formatMoney(total)}.`);
+      setFormError(`Payment total must equal ${formatMoneyLkr(total)}.`);
       return;
     }
 
@@ -631,7 +624,7 @@ export default function PosPage() {
             </div>
           )}
           <div className="pos-mobile-cart-card-bottom">
-            <span className="pos-mobile-cart-price">{formatMoney(row.price)}</span>
+            <span className="pos-mobile-cart-price">{formatMoneyAmount(row.price)}</span>
             {row.onQtyChange ? (
               <div className="pos-qty-stepper">
                 <button
@@ -653,7 +646,7 @@ export default function PosPage() {
             ) : (
               <span className="pos-mobile-cart-qty">Qty {row.qty}</span>
             )}
-            <span className="pos-mobile-cart-line-total">{formatMoney(row.total)}</span>
+            <span className="pos-mobile-cart-line-total">{formatMoneyAmount(row.total)}</span>
           </div>
         </div>
       ))}
@@ -694,7 +687,7 @@ export default function PosPage() {
         <div className="pos-totals">
           <div className="pos-total-row">
             <span>Subtotal</span>
-            <span>{formatMoney(subtotal)}</span>
+            <span>{formatMoneyAmount(subtotal)}</span>
           </div>
           <div className="pos-total-row">
             <span>Discount</span>
@@ -728,7 +721,7 @@ export default function PosPage() {
           </div>
           <div className="pos-total-row pos-total-row-grand">
             <span>Total</span>
-            <span>{formatMoney(total)}</span>
+            <span>{formatMoneyLkr(total)}</span>
           </div>
         </div>
       </div>
@@ -802,9 +795,9 @@ export default function PosPage() {
             >
               <span>Paid</span>
               <span>
-                {formatMoney(paymentTotal)} / {formatMoney(total)}
+                {formatMoneyLkr(paymentTotal)} / {formatMoneyLkr(total)}
                 {!paymentBalanced && paymentRemaining > 0
-                  ? ` · Remaining ${formatMoney(paymentRemaining)}`
+                  ? ` · Remaining ${formatMoneyLkr(paymentRemaining)}`
                   : ''}
               </span>
             </div>
@@ -813,7 +806,7 @@ export default function PosPage() {
           <div className="pos-single-pay">
             <div className="pos-single-pay-amount">
               <span>Amount</span>
-              <strong>{formatMoney(total)}</strong>
+              <strong>{formatMoneyLkr(total)}</strong>
             </div>
             {(paymentMode === 'CARD' || paymentMode === 'BANK_TRANSFER') && (
               <div className="pos-field">
@@ -848,7 +841,7 @@ export default function PosPage() {
             <div className="pos-field">
               <label htmlFor="pos-change">Change</label>
               <div className="pos-change-box">
-                <input id="pos-change" readOnly value={formatAmount(changeDue)} />
+                <input id="pos-change" readOnly value={formatMoneyAmount(changeDue)} />
               </div>
             </div>
           </div>
@@ -1098,7 +1091,7 @@ export default function PosPage() {
                     <div className="pos-item-info">
                       <div className="pos-item-name">{s.name}</div>
                       {s.categoryName && <div className="pos-item-meta">{s.categoryName}</div>}
-                      <div className="pos-item-price">{formatAmount(s.price)}</div>
+                      <div className="pos-item-price">{formatMoneyAmount(s.price)}</div>
                     </div>
                   </button>
                 ))
@@ -1120,7 +1113,7 @@ export default function PosPage() {
                     <div className="pos-item-info">
                       <div className="pos-item-name">{p.name}</div>
                       {p.categoryName && <div className="pos-item-meta">{p.categoryName}</div>}
-                      <div className="pos-item-price">{formatAmount(p.sellingPrice)}</div>
+                      <div className="pos-item-price">{formatMoneyAmount(p.sellingPrice)}</div>
                     </div>
                   </button>
                 ))
@@ -1153,7 +1146,7 @@ export default function PosPage() {
             <>
               <DialogHeader className="pos-sheet-header">
                 <DialogTitle>Your cart</DialogTitle>
-                <p className="pos-sheet-meta">{formatMoney(total)} due</p>
+                <p className="pos-sheet-meta">{formatMoneyLkr(total)} due</p>
               </DialogHeader>
               <div className="pos-sheet-body">
                 {renderCartPanel('pos-panel-mobile pos-panel-mobile-cart', 'mobile')}
@@ -1165,7 +1158,7 @@ export default function PosPage() {
                   disabled={cartCount === 0}
                   onClick={() => setMobileCheckoutStep('payment')}
                 >
-                  Pay {formatMoney(total)}
+                  Pay {formatMoneyLkr(total)}
                 </button>
               </div>
             </>
@@ -1182,7 +1175,7 @@ export default function PosPage() {
                 </button>
                 <div>
                   <DialogTitle>Payment</DialogTitle>
-                  <p className="pos-sheet-meta">{formatMoney(total)} to collect</p>
+                  <p className="pos-sheet-meta">{formatMoneyLkr(total)} to collect</p>
                 </div>
               </DialogHeader>
               <div className="pos-sheet-body">
@@ -1195,7 +1188,7 @@ export default function PosPage() {
                   onClick={completeSale}
                   disabled={completeDisabled}
                 >
-                  {createSaleMutation.isPending ? 'Processing…' : `Complete sale · ${formatMoney(total)}`}
+                  {createSaleMutation.isPending ? 'Processing…' : `Complete sale · ${formatMoneyLkr(total)}`}
                 </button>
               </div>
             </>
@@ -1220,7 +1213,7 @@ export default function PosPage() {
                 <div>
                   <div className="pos-assign-service-name">{pendingService.name}</div>
                   <div className="pos-assign-service-price">
-                    {formatMoney(pendingService.price)}
+                    {formatMoneyLkr(pendingService.price)}
                     {pendingService.categoryName ? ` · ${pendingService.categoryName}` : ''}
                   </div>
                 </div>

@@ -1,16 +1,16 @@
 import { formatPrice } from '@/features/plans/lib/plan-utils';
+import { formatSriLankaDate, formatSriLankaDateTime } from '@/lib/sri-lanka-time';
 
 export function formatAmount(amount: number | string, currency: string): string {
   return formatPrice(Number(amount), currency);
 }
 
 export function formatDate(value: string | null | undefined): string {
-  if (!value) return '—';
-  return new Date(value).toLocaleDateString('en-LK', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+  return formatSriLankaDate(value);
+}
+
+export function formatDateTime(value: string | null | undefined): string {
+  return formatSriLankaDateTime(value);
 }
 
 export function subscriptionStatusBadgeClass(status: string): string {

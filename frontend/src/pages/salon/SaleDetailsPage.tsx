@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Printer, Scissors } from 'lucide-react';
+import { ArrowLeft, Printer, Scissors, Send } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { tenantApi } from '@/api/tenant.api';
+import { formatMoneyAmount, formatMoneyLkr, moneyHeader } from '@/lib/money';
 import { OpsError, OpsLoading, getErrorMessage } from './salon-ops-ui';
+import SendEbillModal from './SendEbillModal';
 import './sales-page.css';
 
 interface SaleItemEmployee {
@@ -64,10 +67,6 @@ interface SaleDetail {
   payments: SalePayment[];
 }
 
-function formatMoney(value: number) {
-  return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
 function formatPaymentMethod(method: string) {
   return method
     .split('_')
@@ -120,6 +119,7 @@ function SaleStatusBadge({ status }: { status: string }) {
 
 export default function SaleDetailsPage() {
   const { id } = useParams<{ id: string }>();
+  const [sendEbillOpen, setSendEbillOpen] = useState(false);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['sale', id],
@@ -153,11 +153,29 @@ export default function SaleDetailsPage() {
           <ArrowLeft size={16} />
           Sales history
         </Link>
-        <button type="button" className="sale-print-btn" onClick={() => window.print()}>
-          <Printer size={16} />
-          Print invoice
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            type="button"
+            className="sale-print-btn"
+            style={{ background: '#0284c7', color: '#fff', border: 'none' }}
+            onClick={() => setSendEbillOpen(true)}
+          >
+            <Send size={16} />
+            Send E-Bill
+          </button>
+          <button type="button" className="sale-print-btn" onClick={() => window.print()}>
+            <Printer size={16} />
+            Print invoice
+          </button>
+        </div>
       </div>
+
+      <SendEbillModal
+        open={sendEbillOpen}
+        onOpenChange={setSendEbillOpen}
+        saleId={data.id}
+        customerName={data.customerName}
+      />
 
       <article className="sale-inv-document">
         <header className="sale-inv-brand-row">
@@ -214,7 +232,7 @@ export default function SaleDetailsPage() {
               {data.assignedEmployees.map((emp) => (
                 <li key={emp.employeeId} className="sale-inv-party-detail">
                   <strong>{emp.employeeName}</strong> · {emp.assignmentType} ·{' '}
-                  {emp.allocationPercentage}% · LKR {formatMoney(emp.commissionableAmount)}
+                  {emp.allocationPercentage}% · {formatMoneyLkr(emp.commissionableAmount)}
                 </li>
               ))}
             </ul>
@@ -247,8 +265,8 @@ export default function SaleDetailsPage() {
                 <th>Type</th>
                 <th>Stylist</th>
                 <th className="num">Qty</th>
-                <th className="num">Unit price</th>
-                <th className="num">Amount</th>
+                <th className="num">{moneyHeader('Unit price')}</th>
+                <th className="num">{moneyHeader('Amount')}</th>
               </tr>
             </thead>
             <tbody>
@@ -265,8 +283,8 @@ export default function SaleDetailsPage() {
                   </td>
                   <td className="sale-inv-muted">{itemStylistName(item) || '—'}</td>
                   <td className="num">{item.quantity}</td>
-                  <td className="num">{formatMoney(Number(item.unitPrice))}</td>
-                  <td className="num sale-inv-line-total">{formatMoney(Number(item.total))}</td>
+                  <td className="num">{formatMoneyAmount(Number(item.unitPrice))}</td>
+                  <td className="num sale-inv-line-total">{formatMoneyAmount(Number(item.total))}</td>
                 </tr>
               ))}
             </tbody>
@@ -279,12 +297,14 @@ export default function SaleDetailsPage() {
               <div className="sale-inv-mobile-line-top">
                 <span className="sale-inv-row-num">{index + 1}</span>
                 <strong>{itemLabel(item)}</strong>
-                <span className="sale-inv-line-total">LKR {formatMoney(Number(item.total))}</span>
+                <span className="sale-inv-line-total">
+                  {formatMoneyAmount(Number(item.total))}
+                </span>
               </div>
               <p className="sale-inv-mobile-line-meta">
                 {itemTypeLabel(item.itemType)}
-                {itemStylistName(item) ? ` · ${itemStylistName(item)}` : ''} · {item.quantity} × LKR{' '}
-                {formatMoney(Number(item.unitPrice))}
+                {itemStylistName(item) ? ` · ${itemStylistName(item)}` : ''} · {item.quantity} ×{' '}
+                {formatMoneyAmount(Number(item.unitPrice))}
               </p>
             </div>
           ))}
@@ -294,15 +314,15 @@ export default function SaleDetailsPage() {
           <div className="sale-inv-totals">
             <div className="sale-inv-totals-row">
               <span>Subtotal</span>
-              <span>LKR {formatMoney(data.subtotal)}</span>
+              <span>{formatMoneyLkr(data.subtotal)}</span>
             </div>
             <div className="sale-inv-totals-row">
               <span>Discount</span>
-              <span>- LKR {formatMoney(data.discount)}</span>
+              <span>- {formatMoneyLkr(data.discount)}</span>
             </div>
             <div className="sale-inv-totals-row sale-inv-totals-grand">
               <span>Total paid</span>
-              <span>LKR {formatMoney(data.total)}</span>
+              <span>{formatMoneyLkr(data.total)}</span>
             </div>
           </div>
         </div>
@@ -314,7 +334,7 @@ export default function SaleDetailsPage() {
               {data.payments.map((payment) => (
                 <li key={payment.id}>
                   <span>{formatPaymentMethod(payment.method)}</span>
-                  <span>LKR {formatMoney(Number(payment.amount))}</span>
+                  <span>{formatMoneyLkr(Number(payment.amount))}</span>
                   {payment.referenceNumber && (
                     <span className="sale-inv-payment-ref">Ref: {payment.referenceNumber}</span>
                   )}

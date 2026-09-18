@@ -15,16 +15,11 @@ import {
   OpsError,
   OpsLoading,
 } from './salon-ops-ui';
+import { formatMoneyAmount } from '@/lib/money';
 import './employees-page.css';
 import './settings-page.css';
 import './report-shell.css';
 import './reports-page.css';
-function formatMoney(value: number | string) {
-  return Number(value).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -164,7 +159,7 @@ export default function ReportsPage() {
       return {
         primary: rows.reduce((s, r) => s + Number(r.saleCount), 0),
         primaryLabel: 'Total sales',
-        secondary: formatMoney(rows.reduce((s, r) => s + Number(r.total), 0)),
+        secondary: formatMoneyAmount(rows.reduce((s, r) => s + Number(r.total), 0)),
         secondaryLabel: 'Revenue (LKR)',
       };
     }
@@ -173,7 +168,7 @@ export default function ReportsPage() {
       return {
         primary: rows.length,
         primaryLabel: 'Branches',
-        secondary: formatMoney(rows.reduce((s, r) => s + Number(r.total), 0)),
+        secondary: formatMoneyAmount(rows.reduce((s, r) => s + Number(r.total), 0)),
         secondaryLabel: 'Revenue (LKR)',
       };
     }
@@ -205,8 +200,8 @@ export default function ReportsPage() {
                 </div>
                 <div className="emp-card-meta">
                   <span>
-                    <strong>Total:</strong>{' '}
-                    <span className="emp-price">LKR {formatMoney(row.total)}</span>
+                    <strong>Total (LKR):</strong>{' '}
+                    <span className="emp-price">{formatMoneyAmount(row.total)}</span>
                   </span>
                 </div>
               </article>
@@ -226,7 +221,7 @@ export default function ReportsPage() {
                   <tr key={row.date}>
                     <td>{new Date(row.date).toLocaleDateString()}</td>
                     <td>{Number(row.saleCount)}</td>
-                    <td className="emp-price">{formatMoney(row.total)}</td>
+                    <td className="emp-price">{formatMoneyAmount(row.total)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -254,8 +249,8 @@ export default function ReportsPage() {
                 </div>
                 <div className="emp-card-meta">
                   <span>
-                    <strong>Total:</strong>{' '}
-                    <span className="emp-price">LKR {formatMoney(row.total)}</span>
+                    <strong>Total (LKR):</strong>{' '}
+                    <span className="emp-price">{formatMoneyAmount(row.total)}</span>
                   </span>
                 </div>
               </article>
@@ -275,7 +270,7 @@ export default function ReportsPage() {
                   <tr key={row.branchId}>
                     <td className="emp-name-cell">{row.branchName}</td>
                     <td>{Number(row.saleCount)}</td>
-                    <td className="emp-price">{formatMoney(row.total)}</td>
+                    <td className="emp-price">{formatMoneyAmount(row.total)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -298,8 +293,8 @@ export default function ReportsPage() {
                 </div>
                 <div className="emp-card-meta">
                   <span>
-                    <strong>Total:</strong>{' '}
-                    <span className="emp-price">LKR {formatMoney(row.total)}</span>
+                    <strong>Total (LKR):</strong>{' '}
+                    <span className="emp-price">{formatMoneyAmount(row.total)}</span>
                   </span>
                 </div>
               </article>
@@ -319,7 +314,7 @@ export default function ReportsPage() {
                   <tr key={row.id}>
                     <td className="emp-name-cell">{row.name}</td>
                     <td>{Number(row.saleCount)}</td>
-                    <td className="emp-price">{formatMoney(row.total)}</td>
+                    <td className="emp-price">{formatMoneyAmount(row.total)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -342,8 +337,8 @@ export default function ReportsPage() {
                 </div>
                 <div className="emp-card-meta">
                   <span>
-                    <strong>Total:</strong>{' '}
-                    <span className="emp-price">LKR {formatMoney(row.total)}</span>
+                    <strong>Total (LKR):</strong>{' '}
+                    <span className="emp-price">{formatMoneyAmount(row.total)}</span>
                   </span>
                 </div>
               </article>
@@ -363,7 +358,7 @@ export default function ReportsPage() {
                   <tr key={row.id}>
                     <td className="emp-name-cell">{row.name}</td>
                     <td>{Number(row.quantity)}</td>
-                    <td className="emp-price">{formatMoney(row.total)}</td>
+                    <td className="emp-price">{formatMoneyAmount(row.total)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -396,8 +391,8 @@ export default function ReportsPage() {
                 </div>
                 <div className="emp-card-meta">
                   <span>
-                    <strong>Revenue:</strong>{' '}
-                    <span className="emp-price">LKR {formatMoney(row.total)}</span>
+                    <strong>Revenue (LKR):</strong>{' '}
+                    <span className="emp-price">{formatMoneyAmount(row.total)}</span>
                   </span>
                 </div>
               </article>
@@ -419,7 +414,7 @@ export default function ReportsPage() {
                     <td className="emp-name-cell">{row.employeeName}</td>
                     <td>{row.designation || '—'}</td>
                     <td>{Number(row.serviceCount)}</td>
-                    <td className="emp-price">{formatMoney(row.total)}</td>
+                    <td className="emp-price">{formatMoneyAmount(row.total)}</td>
                   </tr>
                 ))}
               </tbody>

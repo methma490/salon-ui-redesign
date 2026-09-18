@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { formatMoneyAmount, formatMoneyLkr } from '@/lib/money';
 import {
   FormError,
   FormSubmit,
@@ -33,7 +34,7 @@ function unwrapList<T>(payload: PaginatedResponse<T> | T[]): T[] {
 }
 
 function formatMoney(value: number) {
-  return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return formatMoneyAmount(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function todayIso() {
@@ -194,7 +195,7 @@ export default function EmployeeAdvancesPage() {
           <div className="emp-stat-label">Active</div>
         </div>
         <div className="emp-stat">
-          <div className="emp-stat-value">LKR {formatMoney(totalOutstanding)}</div>
+          <div className="emp-stat-value">{formatMoneyLkr(totalOutstanding, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
           <div className="emp-stat-label">Outstanding</div>
         </div>
       </div>
@@ -253,10 +254,10 @@ export default function EmployeeAdvancesPage() {
                   </div>
                   <div className="emp-card-meta">
                     <span>
-                      <strong>Advance:</strong> LKR {formatMoney(advance.originalAmount)}
+                      <strong>Advance:</strong> {formatMoney(advance.originalAmount)}
                     </span>
                     <span>
-                      <strong>Remaining:</strong> LKR {formatMoney(advance.remainingBalance)}
+                      <strong>Remaining:</strong> {formatMoney(advance.remainingBalance)}
                     </span>
                     <span>
                       <strong>Deduct on payroll:</strong> Full amount (same month)
@@ -286,8 +287,8 @@ export default function EmployeeAdvancesPage() {
                 <thead>
                   <tr>
                     <th>Employee</th>
-                    <th className="num">Advance</th>
-                    <th className="num">Remaining</th>
+                    <th className="num">Advance (LKR)</th>
+                    <th className="num">Remaining (LKR)</th>
                     <th>Deduction</th>
                     <th>Date</th>
                     <th>Status</th>
@@ -301,9 +302,9 @@ export default function EmployeeAdvancesPage() {
                         <div className="emp-name-cell">{advance.employeeName}</div>
                         <div className="emp-code">{advance.employeeCode}</div>
                       </td>
-                      <td className="num">LKR {formatMoney(advance.originalAmount)}</td>
+                      <td className="num">{formatMoney(advance.originalAmount)}</td>
                       <td className="num" style={{ fontWeight: 700 }}>
-                        LKR {formatMoney(advance.remainingBalance)}
+                        {formatMoney(advance.remainingBalance)}
                       </td>
                       <td>Full amount (same month)</td>
                       <td>{advance.startDate.slice(0, 10)}</td>
@@ -443,7 +444,11 @@ export default function EmployeeAdvancesPage() {
           >
             <FormError message={formError} />
             <p className="text-sm text-muted-foreground">
-              {editAdvance.employeeName} · Remaining LKR {formatMoney(editAdvance.remainingBalance)}
+              {editAdvance.employeeName} · Remaining{' '}
+              {formatMoneyLkr(editAdvance.remainingBalance, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
               <br />
               Full remaining balance is deducted on the next payroll.
             </p>
@@ -485,7 +490,11 @@ export default function EmployeeAdvancesPage() {
           {!detailLoading && detail && (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                {detail.employeeName} · Remaining LKR {formatMoney(detail.remainingBalance)}
+                {detail.employeeName} · Remaining{' '}
+                {formatMoneyLkr(detail.remainingBalance, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </p>
               {(detail.repayments?.length ?? 0) === 0 ? (
                 <div className="emp-empty">No payroll deductions yet.</div>
@@ -495,8 +504,8 @@ export default function EmployeeAdvancesPage() {
                     <thead>
                       <tr>
                         <th>Payroll</th>
-                        <th className="num">Amount</th>
-                        <th className="num">Balance after</th>
+                        <th className="num">Amount (LKR)</th>
+                        <th className="num">Balance after (LKR)</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -507,8 +516,8 @@ export default function EmployeeAdvancesPage() {
                               ? `${r.payrollYear}-${String(r.payrollMonth).padStart(2, '0')}`
                               : r.paidAt.slice(0, 10)}
                           </td>
-                          <td className="num">LKR {formatMoney(r.amount)}</td>
-                          <td className="num">LKR {formatMoney(r.balanceAfter)}</td>
+                          <td className="num">{formatMoney(r.amount)}</td>
+                          <td className="num">{formatMoney(r.balanceAfter)}</td>
                         </tr>
                       ))}
                     </tbody>

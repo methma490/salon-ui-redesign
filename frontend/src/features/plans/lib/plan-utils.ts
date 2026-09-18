@@ -2,14 +2,16 @@ export const FEATURE_LABELS: Record<string, string> = {
   CUSTOMERS: 'Customer Management',
   SERVICES: 'Service Catalog',
   APPOINTMENTS: 'Appointments',
+  EMPLOYEES: 'Employee Management',
   POS: 'Point of Sale',
   INVENTORY: 'Inventory & Stock',
   REPORTS: 'Reports',
-  STAFF_MANAGEMENT: 'Staff Management',
+  STAFF_MANAGEMENT: 'Staff Management (User Role Logins)',
   EXPENSES: 'Expenses',
   PAYROLL: 'Payroll',
   MULTI_BRANCH: 'Multi-Branch',
   ANALYTICS: 'Analytics',
+  SMS_NOTIFICATIONS: 'SMS Notifications & Digital Receipts',
 };
 
 export function featureLabel(code: string, fallbackName?: string): string {

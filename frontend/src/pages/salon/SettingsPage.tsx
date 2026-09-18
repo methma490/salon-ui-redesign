@@ -10,6 +10,7 @@ import {
   normalizeHexColor,
 } from '@/lib/brand-theme';
 import { resolveUploadUrl } from '@/lib/upload-url';
+import { formatSriLankaDate } from '@/lib/sri-lanka-time';
 import {
   FEATURE_MODULES,
   formatRoleLabel,
@@ -52,12 +53,7 @@ const ACCESS_LABELS: Record<FeatureAccessLevel, { label: string; icon: string }>
 };
 
 function formatDate(value: string | null | undefined) {
-  if (!value) return '—';
-  return new Date(value).toLocaleDateString('en-LK', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+  return formatSriLankaDate(value);
 }
 
 function formatMoney(amount: number | string | undefined, currency = 'LKR') {

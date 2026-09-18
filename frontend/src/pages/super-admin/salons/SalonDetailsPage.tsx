@@ -9,6 +9,7 @@ import { useSalon } from '@/features/salons/hooks/useSalons';
 import type { SalonStatus } from '@/features/salons/types/salon.types';
 import { ManageSubscriptionDialog } from '@/features/subscriptions/components/ManageSubscriptionDialog';
 import { formatPrice } from '@/features/plans/lib/plan-utils';
+import { formatSriLankaDate, formatSriLankaDateTime } from '@/lib/sri-lanka-time';
 import { OpsError, OpsLoading } from '@/pages/salon/salon-ops-ui';
 import './salon-details-page.css';
 
@@ -24,21 +25,11 @@ function subscriptionStatusClass(status: string): string {
 }
 
 function formatDateTime(value: string): string {
-  return new Date(value).toLocaleString('en-LK', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatSriLankaDateTime(value);
 }
 
 function formatDate(value: string): string {
-  return new Date(value).toLocaleDateString('en-LK', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+  return formatSriLankaDate(value);
 }
 
 export default function SalonDetailsPage() {

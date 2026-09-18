@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { formatMoneyAmount, formatMoneyLkr } from '@/lib/money';
 import {
   FormError,
   FormSubmit,
@@ -41,7 +42,7 @@ function unwrapList<T>(payload: PaginatedResponse<T> | T[]): T[] {
 }
 
 function formatMoney(value: number) {
-  return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return formatMoneyAmount(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function todayIso() {
@@ -198,7 +199,7 @@ export default function EmployeeLoansPage() {
           <div className="emp-stat-label">Active</div>
         </div>
         <div className="emp-stat">
-          <div className="emp-stat-value">LKR {formatMoney(totalOutstanding)}</div>
+          <div className="emp-stat-value">{formatMoneyLkr(totalOutstanding, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
           <div className="emp-stat-label">Outstanding</div>
         </div>
       </div>
@@ -259,13 +260,13 @@ export default function EmployeeLoansPage() {
                   </div>
                   <div className="emp-card-meta">
                     <span>
-                      <strong>Original:</strong> LKR {formatMoney(loan.originalAmount)}
+                      <strong>Original:</strong> {formatMoney(loan.originalAmount)}
                     </span>
                     <span>
-                      <strong>Remaining:</strong> LKR {formatMoney(loan.remainingBalance)}
+                      <strong>Remaining:</strong> {formatMoney(loan.remainingBalance)}
                     </span>
                     <span>
-                      <strong>Installment:</strong> LKR {formatMoney(loan.monthlyInstallment)}/mo
+                      <strong>Installment:</strong> {formatMoney(loan.monthlyInstallment)}/mo
                     </span>
                     <span>
                       <strong>Start:</strong> {loan.startDate.slice(0, 10)}
@@ -291,9 +292,9 @@ export default function EmployeeLoansPage() {
                   <tr>
                     <th>Employee</th>
                     <th>Type</th>
-                    <th className="num">Original</th>
-                    <th className="num">Remaining</th>
-                    <th className="num">Installment</th>
+                    <th className="num">Original (LKR)</th>
+                    <th className="num">Remaining (LKR)</th>
+                    <th className="num">Installment (LKR)</th>
                     <th>Start</th>
                     <th>Status</th>
                     <th style={{ textAlign: 'right' }}>Actions</th>
@@ -307,11 +308,11 @@ export default function EmployeeLoansPage() {
                         <div className="emp-code">{loan.employeeCode}</div>
                       </td>
                       <td>{loan.loanType}</td>
-                      <td className="num">LKR {formatMoney(loan.originalAmount)}</td>
+                      <td className="num">{formatMoney(loan.originalAmount)}</td>
                       <td className="num" style={{ fontWeight: 700 }}>
-                        LKR {formatMoney(loan.remainingBalance)}
+                        {formatMoney(loan.remainingBalance)}
                       </td>
-                      <td className="num">LKR {formatMoney(loan.monthlyInstallment)}</td>
+                      <td className="num">{formatMoney(loan.monthlyInstallment)}</td>
                       <td>{loan.startDate.slice(0, 10)}</td>
                       <td>
                         <LoanStatusBadge status={loan.status} />
@@ -543,9 +544,9 @@ export default function EmployeeLoansPage() {
                 <div>
                   Status: <LoanStatusBadge status={loanDetail.status} />
                 </div>
-                <div>Original: LKR {formatMoney(loanDetail.originalAmount)}</div>
-                <div>Remaining: LKR {formatMoney(loanDetail.remainingBalance)}</div>
-                <div>Installment: LKR {formatMoney(loanDetail.monthlyInstallment)}/month</div>
+                <div>Original: {formatMoneyLkr(loanDetail.originalAmount, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                <div>Remaining: {formatMoneyLkr(loanDetail.remainingBalance, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                <div>Installment: {formatMoneyLkr(loanDetail.monthlyInstallment, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/month</div>
                 <div>Start: {loanDetail.startDate.slice(0, 10)}</div>
                 {loanDetail.notes && <div>Notes: {loanDetail.notes}</div>}
               </div>
@@ -562,8 +563,8 @@ export default function EmployeeLoansPage() {
                       <tr>
                         <th>Date</th>
                         <th>Payroll</th>
-                        <th className="num">Amount</th>
-                        <th className="num">Balance After</th>
+                        <th className="num">Amount (LKR)</th>
+                        <th className="num">Balance After (LKR)</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -575,8 +576,8 @@ export default function EmployeeLoansPage() {
                               ? `${r.payrollMonth}/${r.payrollYear}`
                               : '—'}
                           </td>
-                          <td className="num">LKR {formatMoney(r.amount)}</td>
-                          <td className="num">LKR {formatMoney(r.balanceAfter)}</td>
+                          <td className="num">{formatMoney(r.amount)}</td>
+                          <td className="num">{formatMoney(r.balanceAfter)}</td>
                         </tr>
                       ))}
                     </tbody>

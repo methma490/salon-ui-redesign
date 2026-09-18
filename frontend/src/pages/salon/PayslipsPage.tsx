@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { formatMoneyAmount, formatMoneyLkr } from '@/lib/money';
 import { getErrorMessage, OpsError, OpsLoading, OpsPageHeader } from './salon-ops-ui';
 import './employees-page.css';
 import './payroll-page.css';
@@ -42,7 +43,7 @@ function unwrapList<T>(payload: PaginatedResponse<T> | T[]): T[] {
 }
 
 function formatMoney(value: number) {
-  return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return formatMoneyAmount(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function monthLabel(month: number) {
@@ -303,7 +304,7 @@ export default function PayslipsPage() {
           <div className="emp-stat-label">Payslips</div>
         </div>
         <div className="emp-stat">
-          <div className="emp-stat-value">LKR {formatMoney(totalNet)}</div>
+          <div className="emp-stat-value">{formatMoneyLkr(totalNet, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
           <div className="emp-stat-label">Total net</div>
         </div>
       </div>
@@ -384,10 +385,10 @@ export default function PayslipsPage() {
                   </div>
                   <div className="emp-card-meta">
                     <span>
-                      <strong>Gross:</strong> LKR {formatMoney(p.grossSalary)}
+                      <strong>Gross:</strong> {formatMoney(p.grossSalary)}
                     </span>
                     <span>
-                      <strong>Net:</strong> LKR {formatMoney(p.netSalary)}
+                      <strong>Net:</strong> {formatMoney(p.netSalary)}
                     </span>
                   </div>
                   <div className="emp-card-actions">
@@ -410,9 +411,9 @@ export default function PayslipsPage() {
                     <th>Employee</th>
                     <th>Period</th>
                     <th>Designation</th>
-                    <th className="num">Gross</th>
-                    <th className="num">Deductions</th>
-                    <th className="num">Net</th>
+                    <th className="num">Gross (LKR)</th>
+                    <th className="num">Deductions (LKR)</th>
+                    <th className="num">Net (LKR)</th>
                     <th>Status</th>
                     <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
@@ -428,10 +429,10 @@ export default function PayslipsPage() {
                         {monthLabel(p.month)} {p.year}
                       </td>
                       <td>{p.designation || '—'}</td>
-                      <td className="num">LKR {formatMoney(p.grossSalary)}</td>
-                      <td className="num">LKR {formatMoney(p.totalDeductions)}</td>
+                      <td className="num">{formatMoney(p.grossSalary)}</td>
+                      <td className="num">{formatMoney(p.totalDeductions)}</td>
                       <td className="num" style={{ fontWeight: 700 }}>
-                        LKR {formatMoney(p.netSalary)}
+                        {formatMoney(p.netSalary)}
                       </td>
                       <td>
                         <PayslipStatusBadge status={p.status} />

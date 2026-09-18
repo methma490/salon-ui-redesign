@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 import { TenantModule } from '../tenant/tenant.module';
+import { DatabaseModule } from '../database/database.module';
 import { BranchesController } from './branches/branches.controller';
 import { BranchesService } from './branches/branches.service';
 import { CustomersController } from './customers/customers.controller';
@@ -15,6 +16,7 @@ import { InventoryService } from './inventory/inventory.service';
 import { PosController } from './pos/pos.controller';
 import { PosService } from './pos/pos.service';
 import { SalesController } from './sales/sales.controller';
+import { PublicSalesController } from './sales/public-sales.controller';
 import { SalesService } from './sales/sales.service';
 import { ServicesCatalogController } from './services/services-catalog.controller';
 import { ServicesCatalogService } from './services/services-catalog.service';
@@ -29,9 +31,13 @@ import { PayrollController } from './payroll/payroll.controller';
 import { PayrollService } from './payroll/payroll.service';
 import { SalesAnalyticsController } from './sales-analytics/sales-analytics.controller';
 import { SalesAnalyticsService } from './sales-analytics/sales-analytics.service';
+import { QuotationsController } from './quotations/quotations.controller';
+import { PublicQuotationsController } from './quotations/public-quotations.controller';
+import { QuotationsService } from './quotations/quotations.service';
+import { MessagingService } from './quotations/messaging.service';
 
 @Module({
-  imports: [TenantModule, SubscriptionsModule],
+  imports: [TenantModule, SubscriptionsModule, DatabaseModule],
   controllers: [
     BranchesController,
     EmployeesController,
@@ -40,6 +46,7 @@ import { SalesAnalyticsService } from './sales-analytics/sales-analytics.service
     InventoryController,
     PosController,
     SalesController,
+    PublicSalesController,
     SalesAnalyticsController,
     DashboardController,
     ReportsController,
@@ -48,6 +55,8 @@ import { SalesAnalyticsService } from './sales-analytics/sales-analytics.service
     AppointmentsController,
     ExpensesController,
     PayrollController,
+    QuotationsController,
+    PublicQuotationsController,
   ],
   providers: [
     BranchesService,
@@ -64,6 +73,8 @@ import { SalesAnalyticsService } from './sales-analytics/sales-analytics.service
     AppointmentsService,
     ExpensesService,
     PayrollService,
+    QuotationsService,
+    MessagingService,
   ],
 })
 export class SalonModule {}

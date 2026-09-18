@@ -61,6 +61,19 @@ export const FEATURE_MODULES: FeatureModule[] = [
     managePermissions: ['SALE_CREATE', 'SALE_UPDATE'],
   },
   {
+    code: 'QUOTATIONS',
+    name: 'Quotations',
+    description: 'Customer quotations and convert to invoice',
+    viewPermissions: ['QUOTATION_VIEW'],
+    managePermissions: [
+      'QUOTATION_CREATE',
+      'QUOTATION_UPDATE',
+      'QUOTATION_SEND',
+      'QUOTATION_CONVERT',
+      'QUOTATION_CANCEL',
+    ],
+  },
+  {
     code: 'EXPENSES',
     name: 'Expenses',
     description: 'Track salon operating expenses',

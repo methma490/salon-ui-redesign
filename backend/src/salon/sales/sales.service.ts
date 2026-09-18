@@ -1,12 +1,20 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { buildPaginatedResponse, resolvePagination } from '../../common/dto/pagination.dto';
+import { PrismaService } from '../../database/prisma.service';
 import { TenantSchemaService } from '../../tenant/services/tenant-schema.service';
 import { tenantTable } from '../../tenant/utils/schema-name.util';
 import { ListSalesQueryDto } from '../pos/dto/pos.dto';
+import { MessagingService } from '../quotations/messaging.service';
 
 @Injectable()
 export class SalesService {
-  constructor(private readonly tenantSchemaService: TenantSchemaService) {}
+  constructor(
+    private readonly tenantSchemaService: TenantSchemaService,
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+    private readonly messagingService: MessagingService,
+  ) {}
 
   async list(schemaName: string, query: ListSalesQueryDto) {
     const sales = tenantTable(schemaName, 'sales');
@@ -194,4 +202,117 @@ export class SalesService {
       };
     });
   }
+
+  async getPublicEbill(id: string) {
+    const tenants = await this.prisma.tenant.findMany({
+      where: { status: 'ACTIVE' },
+      select: {
+        id: true,
+        schemaName: true,
+        name: true,
+        phone: true,
+        email: true,
+        logoUrl: true,
+      },
+    });
+
+    for (const tenant of tenants) {
+      try {
+        const sale = await this.findById(tenant.schemaName, id);
+        if (sale) {
+          return {
+            ...sale,
+            salon: {
+              name: tenant.name,
+              phone: tenant.phone,
+              email: tenant.email,
+              logoUrl: tenant.logoUrl,
+            },
+          };
+        }
+      } catch {
+        // Sale not in this schema
+      }
+    }
+
+    throw new NotFoundException('E-Bill receipt not found');
+  }
+
+  async sendEbillSms(tenantId: string, schemaName: string, saleId: string, customPhone?: string) {
+    const sale = await this.findById(schemaName, saleId);
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { name: true },
+    });
+
+    let recipientPhone = customPhone?.trim();
+    if (!recipientPhone && sale.customerId) {
+      const customers = tenantTable(schemaName, 'customers');
+      const custRows = await this.tenantSchemaService.withTenantSchema(schemaName, ({ tx }) =>
+        tx.$queryRawUnsafe<Array<{ phone: string | null }>>(
+          `SELECT phone FROM ${customers} WHERE id = $1::uuid LIMIT 1`,
+          sale.customerId,
+        ),
+      );
+      recipientPhone = custRows[0]?.phone ?? undefined;
+    }
+
+    if (!recipientPhone) {
+      throw new BadRequestException('Customer phone number is required to send SMS');
+    }
+
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
+    const ebillUrl = `${frontendUrl}/ebill/${saleId}`;
+    const salonName = tenant?.name || 'our salon';
+    const message = `Thank you for visiting ${salonName}! View your digital receipt (E-Bill) here: ${ebillUrl}`;
+
+    const result = await this.messagingService.sendSms(recipientPhone, message);
+
+    return {
+      success: result.status !== 'FAILED',
+      status: result.status,
+      message:
+        result.status !== 'FAILED'
+          ? 'E-Bill sent via SMS successfully'
+          : result.failureReason || 'Failed to send SMS',
+      ebillUrl,
+      phone: recipientPhone,
+    };
+  }
+
+  async sendEbillWhatsapp(tenantId: string, schemaName: string, saleId: string, customPhone?: string) {
+    const sale = await this.findById(schemaName, saleId);
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { name: true },
+    });
+
+    let recipientPhone = customPhone?.trim();
+    if (!recipientPhone && sale.customerId) {
+      const customers = tenantTable(schemaName, 'customers');
+      const custRows = await this.tenantSchemaService.withTenantSchema(schemaName, ({ tx }) =>
+        tx.$queryRawUnsafe<Array<{ phone: string | null }>>(
+          `SELECT phone FROM ${customers} WHERE id = $1::uuid LIMIT 1`,
+          sale.customerId,
+        ),
+      );
+      recipientPhone = custRows[0]?.phone ?? undefined;
+    }
+
+    const cleanDigits = recipientPhone ? recipientPhone.replace(/\D/g, '') : '';
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
+    const ebillUrl = `${frontendUrl}/ebill/${saleId}`;
+    const salonName = tenant?.name || 'our salon';
+    const message = `Thank you for visiting ${salonName}! View your digital receipt (E-Bill) here: ${ebillUrl}`;
+
+    const result = this.messagingService.buildWhatsAppDeepLink(cleanDigits, message);
+
+    return {
+      success: true,
+      externalUrl: result.externalUrl,
+      ebillUrl,
+      phone: recipientPhone,
+    };
+  }
 }
+

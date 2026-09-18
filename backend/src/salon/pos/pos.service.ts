@@ -295,6 +295,242 @@ export class PosService {
     });
   }
 
+  /**
+   * Create a COMPLETED sale using quotation snapshot prices (does not re-read service master prices).
+   * Quotation conversion only — normal POS still uses live catalog prices.
+   */
+  async createSaleFromSnapshot(
+    schemaName: string,
+    user: AuthenticatedUser,
+    input: {
+      branchId: string;
+      customerId: string;
+      discount?: number;
+      quotationId?: string;
+      services: Array<{
+        serviceId: string;
+        employeeId: string;
+        quantity: number;
+        unitPrice: number;
+        discount?: number;
+      }>;
+      products: Array<{
+        productId: string;
+        quantity: number;
+        unitPrice: number;
+        discount?: number;
+      }>;
+      payments: Array<{
+        method: 'CASH' | 'CARD' | 'BANK_TRANSFER' | 'OTHER';
+        amount: number;
+        referenceNumber?: string;
+      }>;
+    },
+  ) {
+    const cashierUserId = user.id;
+    if (input.services.length === 0 && input.products.length === 0) {
+      throw new BadRequestException('Sale must include at least one service or product');
+    }
+    const paymentTotal = input.payments.reduce((sum, p) => sum + p.amount, 0);
+    if (paymentTotal <= 0) {
+      throw new BadRequestException('At least one payment is required');
+    }
+
+    const sales = tenantTable(schemaName, 'sales');
+    const saleItems = tenantTable(schemaName, 'sale_items');
+    const saleItemEmployees = tenantTable(schemaName, 'sale_item_employees');
+    const saleEmployees = tenantTable(schemaName, 'sale_employees');
+    const payments = tenantTable(schemaName, 'payments');
+    const services = tenantTable(schemaName, 'services');
+    const products = tenantTable(schemaName, 'products');
+    const employees = tenantTable(schemaName, 'employees');
+    const branches = tenantTable(schemaName, 'branches');
+
+    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      const branch = await tx.$queryRawUnsafe<Array<{ id: string }>>(
+        `SELECT id FROM ${branches} WHERE id = $1::uuid AND status = 'ACTIVE' LIMIT 1`,
+        input.branchId,
+      );
+      if (branch.length === 0) throw new NotFoundException('Active branch not found');
+
+      await this.employeesService.listPosPerformers(schemaName, user, input.branchId);
+      const branchEmployees = await tx.$queryRawUnsafe<Array<{ id: string }>>(
+        `SELECT id FROM ${employees} WHERE status = 'ACTIVE' AND branch_id = $1::uuid`,
+        input.branchId,
+      );
+      const branchEmployeeIds = new Set(branchEmployees.map((e) => e.id));
+
+      let subtotal = 0;
+      const lineItems: Array<{
+        itemType: 'service' | 'product';
+        serviceId?: string;
+        productId?: string;
+        employeeId?: string;
+        quantity: number;
+        unitPrice: number;
+        discount: number;
+        total: number;
+      }> = [];
+
+      for (const item of input.services) {
+        const svc = await tx.$queryRawUnsafe<Array<{ id: string }>>(
+          `SELECT id FROM ${services} WHERE id = $1::uuid LIMIT 1`,
+          item.serviceId,
+        );
+        if (!svc.length) throw new NotFoundException(`Service not found: ${item.serviceId}`);
+        if (!branchEmployeeIds.has(item.employeeId)) {
+          throw new BadRequestException(`Employee not active on branch: ${item.employeeId}`);
+        }
+        const discount = item.discount ?? 0;
+        const total = item.unitPrice * item.quantity - discount;
+        subtotal += total;
+        lineItems.push({
+          itemType: 'service',
+          serviceId: item.serviceId,
+          employeeId: item.employeeId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          discount,
+          total,
+        });
+      }
+
+      for (const item of input.products) {
+        const prod = await tx.$queryRawUnsafe<Array<{ id: string }>>(
+          `SELECT id FROM ${products} WHERE id = $1::uuid LIMIT 1`,
+          item.productId,
+        );
+        if (!prod.length) throw new NotFoundException(`Product not found: ${item.productId}`);
+        const discount = item.discount ?? 0;
+        const total = item.unitPrice * item.quantity - discount;
+        subtotal += total;
+        lineItems.push({
+          itemType: 'product',
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          discount,
+          total,
+        });
+      }
+
+      const saleDiscount = input.discount ?? 0;
+      const total = Math.max(0, subtotal - saleDiscount);
+      if (Math.abs(paymentTotal - total) > 0.01) {
+        throw new BadRequestException(
+          `Payment total (${paymentTotal}) must equal sale total (${total})`,
+        );
+      }
+
+      const assignmentInputs = lineItems
+        .map((l) => l.employeeId)
+        .filter((id): id is string => Boolean(id))
+        .filter((id, i, arr) => arr.indexOf(id) === i)
+        .map((employeeId, index) => ({
+          employeeId,
+          assignmentType: (index === 0 ? 'PRIMARY' : 'ASSISTANT') as 'PRIMARY' | 'ASSISTANT',
+        }));
+
+      const normalizedAssignments =
+        assignmentInputs.length > 0
+          ? normalizeSaleAssignments(assignmentInputs, total)
+          : [];
+
+      const saleNumber = await this.generateSaleNumber(tx, sales);
+      const saleRows = await tx.$queryRawUnsafe<Array<{ id: string }>>(
+        `INSERT INTO ${sales}
+           (branch_id, customer_id, sale_number, subtotal, discount, tax, total, status, created_by, cashier_id, refunded_amount)
+         VALUES ($1::uuid, $2::uuid, $3, $4, $5, 0, $6, 'COMPLETED', $7::uuid, $8::uuid, 0)
+         RETURNING id`,
+        input.branchId,
+        input.customerId,
+        saleNumber,
+        subtotal,
+        saleDiscount,
+        total,
+        cashierUserId,
+        cashierUserId,
+      );
+      const saleId = saleRows[0].id;
+
+      const assignmentTypeCast = this.tenantEnumCast(schemaName, 'sale_assignment_type', 3);
+      for (const assignment of normalizedAssignments) {
+        await tx.$queryRawUnsafe(
+          `INSERT INTO ${saleEmployees}
+             (sale_id, employee_id, assignment_type, allocation_percentage, commissionable_amount)
+           VALUES ($1::uuid, $2::uuid, ${assignmentTypeCast}, $4::numeric, $5::numeric)`,
+          saleId,
+          assignment.employeeId,
+          assignment.assignmentType,
+          assignment.allocationPercentage,
+          assignment.commissionableAmount,
+        );
+      }
+
+      for (const line of lineItems) {
+        const itemRows = await tx.$queryRawUnsafe<Array<{ id: string }>>(
+          `INSERT INTO ${saleItems}
+             (sale_id, item_type, service_id, product_id, quantity, unit_price, discount, total)
+           VALUES ($1::uuid, $2, $3::uuid, $4::uuid, $5, $6, $7, $8)
+           RETURNING id`,
+          saleId,
+          line.itemType,
+          line.serviceId ?? null,
+          line.productId ?? null,
+          line.quantity,
+          line.unitPrice,
+          line.discount,
+          line.total,
+        );
+        if (line.itemType === 'service' && line.employeeId) {
+          await tx.$queryRawUnsafe(
+            `INSERT INTO ${saleItemEmployees} (sale_item_id, employee_id) VALUES ($1::uuid, $2::uuid)`,
+            itemRows[0].id,
+            line.employeeId,
+          );
+        }
+        if (line.itemType === 'product' && line.productId) {
+          await this.inventoryService.reduceStockForSale(tx, schemaName, {
+            branchId: input.branchId,
+            productId: line.productId,
+            quantity: line.quantity,
+            saleId,
+            userId: cashierUserId,
+          });
+        }
+      }
+
+      for (const payment of input.payments) {
+        const methodCast = this.tenantEnumCast(schemaName, 'payment_method', 2);
+        const statusCast = this.tenantEnumCast(schemaName, 'payment_status', 4);
+        await tx.$queryRawUnsafe(
+          `INSERT INTO ${payments} (sale_id, method, amount, status, reference_number)
+           VALUES ($1::uuid, ${methodCast}, $3, ${statusCast}, $5)`,
+          saleId,
+          payment.method,
+          payment.amount,
+          'COMPLETED',
+          payment.referenceNumber ?? null,
+        );
+      }
+
+      await logAudit(tx, schemaName, {
+        userId: cashierUserId,
+        action: 'SALE_CREATE',
+        entityType: 'sale',
+        entityId: saleId,
+        details: {
+          saleNumber,
+          total,
+          fromQuotationId: input.quotationId ?? null,
+          snapshotPricing: true,
+        },
+      });
+
+      return { id: saleId, saleNumber, subtotal, discount: saleDiscount, total };
+    });
+  }
+
   private resolveAssignmentInputs(
     dto: CreateSaleDto,
     lineItems: Array<{ employeeId?: string }>,

@@ -31,6 +31,8 @@ import {
   OpsPageHeader,
   SimpleForm,
 } from './salon-ops-ui';
+import { formatMoneyAmount, formatMoneyLkr } from '@/lib/money';
+import { formatSriLankaDateTime, sriLankaTodayIso } from '@/lib/sri-lanka-time';
 import './employees-page.css';
 
 type Tab = 'levels' | 'stock-in' | 'credits' | 'adjustment' | 'movements';
@@ -39,18 +41,11 @@ type PaymentType = 'PAID' | 'PARTIAL' | 'CREDIT';
 const LOW_STOCK_THRESHOLD = 5;
 
 function todayIso() {
-  return new Date().toISOString().slice(0, 10);
+  return sriLankaTodayIso();
 }
 
 function roundMoney(value: number) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
-}
-
-function formatMoney(value: number) {
-  return `LKR ${Number(value || 0).toLocaleString(undefined, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  })}`;
 }
 
 function qtyBadgeClass(qty: number) {
@@ -365,15 +360,15 @@ export default function StockPage() {
       {tab === 'credits' && (
         <div className="emp-stats">
           <div className="emp-stat">
-            <div className="emp-stat-value">{formatMoney(creditSummary.totalPurchases)}</div>
+            <div className="emp-stat-value">{formatMoneyLkr(creditSummary.totalPurchases)}</div>
             <div className="emp-stat-label">Total purchases</div>
           </div>
           <div className="emp-stat">
-            <div className="emp-stat-value">{formatMoney(creditSummary.totalPaid)}</div>
+            <div className="emp-stat-value">{formatMoneyLkr(creditSummary.totalPaid)}</div>
             <div className="emp-stat-label">Total paid</div>
           </div>
           <div className="emp-stat">
-            <div className="emp-stat-value">{formatMoney(creditSummary.totalOutstanding)}</div>
+            <div className="emp-stat-value">{formatMoneyLkr(creditSummary.totalOutstanding)}</div>
             <div className="emp-stat-label">Outstanding credit</div>
           </div>
         </div>
@@ -597,7 +592,7 @@ export default function StockPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Total Amount</Label>
-                  <Input value={formatMoney(stockInTotals.total)} readOnly disabled />
+                  <Input value={formatMoneyLkr(stockInTotals.total)} readOnly disabled />
                 </div>
                 <div className="space-y-2">
                   <Label>Payment Type</Label>
@@ -640,12 +635,12 @@ export default function StockPage() {
                 ) : (
                   <div className="space-y-2">
                     <Label>Paid Amount</Label>
-                    <Input value={formatMoney(stockInTotals.paid)} readOnly disabled />
+                    <Input value={formatMoneyLkr(stockInTotals.paid)} readOnly disabled />
                   </div>
                 )}
                 <div className="space-y-2">
                   <Label>Outstanding Amount</Label>
-                  <Input value={formatMoney(stockInTotals.outstanding)} readOnly disabled />
+                  <Input value={formatMoneyLkr(stockInTotals.outstanding)} readOnly disabled />
                 </div>
                 <div className="space-y-2" style={{ gridColumn: '1 / -1' }}>
                   <Label htmlFor="stock-in-notes">Notes</Label>
@@ -744,9 +739,9 @@ export default function StockPage() {
                     <th>Reference</th>
                     <th>Date</th>
                     <th>Branch</th>
-                    <th>Total</th>
-                    <th>Paid</th>
-                    <th>Balance</th>
+                    <th>Total (LKR)</th>
+                    <th>Paid (LKR)</th>
+                    <th>Balance (LKR)</th>
                     <th>Status</th>
                     <th>Action</th>
                   </tr>
@@ -757,9 +752,9 @@ export default function StockPage() {
                       <td className="emp-name-cell">{row.referenceNo || '—'}</td>
                       <td>{row.purchaseDate}</td>
                       <td>{row.branchName}</td>
-                      <td>{formatMoney(row.totalAmount)}</td>
-                      <td>{formatMoney(row.paidAmount)}</td>
-                      <td>{formatMoney(row.outstandingAmount)}</td>
+                      <td>{formatMoneyAmount(row.totalAmount)}</td>
+                      <td>{formatMoneyAmount(row.paidAmount)}</td>
+                      <td>{formatMoneyAmount(row.outstandingAmount)}</td>
                       <td>
                         <span className={paymentStatusClass(row.paymentStatus)}>
                           {paymentStatusLabel(row.paymentStatus)}
@@ -853,15 +848,15 @@ export default function StockPage() {
             <>
               <div className="emp-stats">
                 <div className="emp-stat">
-                  <div className="emp-stat-value">{formatMoney(detail.totalAmount)}</div>
+                  <div className="emp-stat-value">{formatMoneyLkr(detail.totalAmount)}</div>
                   <div className="emp-stat-label">Total</div>
                 </div>
                 <div className="emp-stat">
-                  <div className="emp-stat-value">{formatMoney(detail.paidAmount)}</div>
+                  <div className="emp-stat-value">{formatMoneyLkr(detail.paidAmount)}</div>
                   <div className="emp-stat-label">Paid</div>
                 </div>
                 <div className="emp-stat">
-                  <div className="emp-stat-value">{formatMoney(detail.outstandingAmount)}</div>
+                  <div className="emp-stat-value">{formatMoneyLkr(detail.outstandingAmount)}</div>
                   <div className="emp-stat-label">Balance</div>
                 </div>
                 <div className="emp-stat">
@@ -883,8 +878,8 @@ export default function StockPage() {
                     <tr>
                       <th>Product</th>
                       <th>Qty</th>
-                      <th>Unit Cost</th>
-                      <th>Line Total</th>
+                      <th>Unit Cost (LKR)</th>
+                      <th>Line Total (LKR)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -892,8 +887,8 @@ export default function StockPage() {
                       <tr key={item.id}>
                         <td className="emp-name-cell">{item.productName}</td>
                         <td>{item.quantity}</td>
-                        <td>{formatMoney(item.unitCost)}</td>
-                        <td>{formatMoney(item.lineTotal)}</td>
+                        <td>{formatMoneyAmount(item.unitCost)}</td>
+                        <td>{formatMoneyAmount(item.lineTotal)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -911,7 +906,7 @@ export default function StockPage() {
                     <thead>
                       <tr>
                         <th>Date</th>
-                        <th>Amount</th>
+                        <th>Amount (LKR)</th>
                         <th>Method</th>
                         <th>Reference</th>
                         <th>Notes</th>
@@ -921,7 +916,7 @@ export default function StockPage() {
                       {detail.payments.map((p) => (
                         <tr key={p.id}>
                           <td>{p.paymentDate}</td>
-                          <td>{formatMoney(p.amount)}</td>
+                          <td>{formatMoneyAmount(p.amount)}</td>
                           <td>{p.paymentMethod.replace('_', ' ')}</td>
                           <td>{p.paymentReference || '—'}</td>
                           <td>{p.notes || '—'}</td>
@@ -1056,7 +1051,7 @@ export default function StockPage() {
                 <tbody>
                   {movements.map((m) => (
                     <tr key={m.id}>
-                      <td>{new Date(m.createdAt).toLocaleString()}</td>
+                      <td>{formatSriLankaDateTime(m.createdAt)}</td>
                       <td>{m.branchName}</td>
                       <td className="emp-name-cell">{m.productName}</td>
                       <td>
@@ -1089,13 +1084,13 @@ export default function StockPage() {
                 <strong>Reference:</strong> {payTarget.referenceNo || '—'}
               </div>
               <div>
-                <strong>Total:</strong> {formatMoney(payTarget.totalAmount)}
+                <strong>Total:</strong> {formatMoneyLkr(payTarget.totalAmount)}
               </div>
               <div>
-                <strong>Already Paid:</strong> {formatMoney(payTarget.paidAmount)}
+                <strong>Already Paid:</strong> {formatMoneyLkr(payTarget.paidAmount)}
               </div>
               <div>
-                <strong>Outstanding:</strong> {formatMoney(payTarget.outstandingAmount)}
+                <strong>Outstanding:</strong> {formatMoneyLkr(payTarget.outstandingAmount)}
               </div>
             </div>
           )}

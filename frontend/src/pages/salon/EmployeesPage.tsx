@@ -1,7 +1,9 @@
+import { Lock } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { tenantApi, type AssignableEmployeeRole, type Employee } from '@/api/tenant.api';
+import { formatMoneyAmount } from '@/lib/money';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -118,7 +120,7 @@ function toEditPayload(form: EmployeeForm, hasLogin: boolean) {
 }
 
 function formatSalary(value: number | undefined) {
-  return Number(value ?? 0).toLocaleString(undefined, {
+  return formatMoneyAmount(value, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
@@ -273,61 +275,82 @@ function EmployeeFormFields({
         </div>
       )}
 
-      {showRoleFields && assignableRoles && assignableRoles.length > 0 && (
-        <div className="space-y-2">
-          <Label>System role</Label>
-          <Select
-            value={form.roleCode || '__none__'}
-            onValueChange={(v) =>
-              setForm({
-                ...form,
-                roleCode: v === '__none__' ? '' : v,
-                password: v === '__none__' ? '' : form.password,
-              })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__none__">Staff only (no login)</SelectItem>
-              {assignableRoles.map((role) => (
-                <SelectItem key={role.id} value={role.code}>
-                  {role.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      {showLoginFields && (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="emp-email">Login email</Label>
-            <Input
-              id="emp-email"
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              placeholder={hasLogin ? 'Optional' : 'name@example.com'}
-              required={!hasLogin}
-            />
-          </div>
-          {requirePassword && (
+      {showRoleFields ? (
+        <>
+          {assignableRoles && assignableRoles.length > 0 && (
             <div className="space-y-2">
-              <Label htmlFor="emp-password">Password</Label>
-              <Input
-                id="emp-password"
-                type="password"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                placeholder="Minimum 8 characters"
-                minLength={8}
-                required
-              />
+              <Label>System role (Staff Management)</Label>
+              <Select
+                value={form.roleCode || '__none__'}
+                onValueChange={(v) =>
+                  setForm({
+                    ...form,
+                    roleCode: v === '__none__' ? '' : v,
+                    password: v === '__none__' ? '' : form.password,
+                  })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Staff only (no login)</SelectItem>
+                  {assignableRoles.map((role) => (
+                    <SelectItem key={role.id} value={role.code}>
+                      {role.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
+
+          {showLoginFields && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="emp-email">Login email</Label>
+                <Input
+                  id="emp-email"
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  placeholder={hasLogin ? 'Optional' : 'name@example.com'}
+                  required={!hasLogin}
+                />
+              </div>
+              {requirePassword && (
+                <div className="space-y-2">
+                  <Label htmlFor="emp-password">Password</Label>
+                  <Input
+                    id="emp-password"
+                    type="password"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    placeholder="Minimum 8 characters"
+                    minLength={8}
+                    required
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="rounded-md border border-border bg-muted/20 p-3 space-y-1.5">
+          <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+            <Lock className="h-4 w-4 text-amber-500" />
+            <span>Staff User Logins (Staff Management Feature)</span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Granting role-based user logins (Cashier, Stock Keeper, Manager) to employees requires the{' '}
+            <strong className="text-foreground">Staff Management</strong> feature upgrade.
+          </p>
+          <Link
+            to="/salon/subscription"
+            className="inline-block text-xs font-semibold text-sky-600 hover:underline"
+          >
+            Upgrade Plan on Subscription Page &rarr;
+          </Link>
         </div>
       )}
     </>
@@ -576,7 +599,7 @@ export default function EmployeesPage() {
                     {payrollEnabled && (
                       <>
                         <span>
-                          <strong>Basic salary:</strong> LKR {formatSalary(emp.basicSalary)}
+                          <strong>Basic salary:</strong> {formatSalary(emp.basicSalary)}
                         </span>
                         <span>
                           <strong>EPF:</strong> {emp.epfEnabled === false ? 'No' : 'Yes'}
@@ -632,7 +655,7 @@ export default function EmployeesPage() {
                     <th>Designation</th>
                     <th>System role</th>
                     <th>Branch</th>
-                    {payrollEnabled && <th>Basic salary</th>}
+                    {payrollEnabled && <th>Basic salary (LKR)</th>}
                     {payrollEnabled && <th>EPF / ETF</th>}
                     <th>Contact</th>
                     <th>Status</th>
@@ -658,7 +681,7 @@ export default function EmployeesPage() {
                       </td>
                       <td>{emp.branchName}</td>
                       {payrollEnabled && (
-                        <td>LKR {formatSalary(emp.basicSalary)}</td>
+                        <td>{formatSalary(emp.basicSalary)}</td>
                       )}
                       {payrollEnabled && (
                         <td>

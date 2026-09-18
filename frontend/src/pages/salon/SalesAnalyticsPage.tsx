@@ -26,6 +26,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { getErrorMessage, OpsError, OpsLoading } from './salon-ops-ui';
+import { formatMoneyAmount, formatMoneyLkr } from '@/lib/money';
+import {
+  formatSriLankaDate,
+  formatSriLankaDateTime,
+  sriLankaTodayIso,
+} from '@/lib/sri-lanka-time';
 import './employees-page.css';
 import './settings-page.css';
 import './report-shell.css';
@@ -52,40 +58,23 @@ const TABS: Array<{ key: TabKey; label: string }> = [
   { key: 'daily', label: 'Daily' },
 ];
 
-function formatMoney(value: number) {
-  return `LKR ${Number(value ?? 0).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
-
 function formatDate(value: string | Date) {
-  const d = typeof value === 'string' ? new Date(value) : value;
-  if (Number.isNaN(d.getTime())) return String(value).slice(0, 10);
-  return d.toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+  return formatSriLankaDate(value);
 }
 
 function formatDateTime(value: string) {
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return value;
-  return d.toLocaleString();
+  return formatSriLankaDateTime(value);
 }
 
 function toIsoDate(d: Date) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  return sriLankaTodayIso(d);
 }
 
 function defaultCustomRange() {
   const now = new Date();
+  const first = new Date(now.getFullYear(), now.getMonth(), 1);
   return {
-    from: toIsoDate(new Date(now.getFullYear(), now.getMonth(), 1)),
+    from: toIsoDate(first),
     to: toIsoDate(now),
   };
 }
@@ -337,7 +326,7 @@ export default function SalesAnalyticsPage() {
           <p>Invoices, employee commissionables, branch performance, and daily trends</p>
         </div>
         <div className="settings-hero-meta">
-          <span className="settings-hero-pill">{formatMoney(summary?.netSales ?? 0)}</span>
+          <span className="settings-hero-pill">{formatMoneyLkr(summary?.netSales ?? 0)}</span>
           <span className="settings-hero-pill report-shell-pill-secondary">
             {summary?.invoiceCount ?? 0} invoices
           </span>
@@ -462,7 +451,7 @@ export default function SalesAnalyticsPage() {
 
       <div className="emp-stats sa-stats">
         <div className="emp-stat">
-          <div className="emp-stat-value">{formatMoney(summary?.netSales ?? 0)}</div>
+          <div className="emp-stat-value">{formatMoneyLkr(summary?.netSales ?? 0)}</div>
           <div className="emp-stat-label">Net sales</div>
         </div>
         <div className="emp-stat">
@@ -471,7 +460,7 @@ export default function SalesAnalyticsPage() {
         </div>
         <div className="emp-stat">
           <div className="emp-stat-value">
-            {formatMoney(summary?.averageInvoiceValue ?? 0)}
+            {formatMoneyLkr(summary?.averageInvoiceValue ?? 0)}
           </div>
           <div className="emp-stat-label">Avg invoice</div>
         </div>
@@ -480,11 +469,11 @@ export default function SalesAnalyticsPage() {
           <div className="emp-stat-label">Employees with sales</div>
         </div>
         <div className="emp-stat">
-          <div className="emp-stat-value">{formatMoney(summary?.todaySales ?? 0)}</div>
+          <div className="emp-stat-value">{formatMoneyLkr(summary?.todaySales ?? 0)}</div>
           <div className="emp-stat-label">Today</div>
         </div>
         <div className="emp-stat">
-          <div className="emp-stat-value">{formatMoney(summary?.monthSales ?? 0)}</div>
+          <div className="emp-stat-value">{formatMoneyLkr(summary?.monthSales ?? 0)}</div>
           <div className="emp-stat-label">This month</div>
         </div>
       </div>
@@ -505,9 +494,9 @@ export default function SalesAnalyticsPage() {
               <div className="settings-panel-header">
                 <h2>Period summary</h2>
                 <p>
-                  Gross {formatMoney(summary?.grossSales ?? 0)} · Refunds{' '}
-                  {formatMoney(summary?.refundAmount ?? 0)} · Net{' '}
-                  {formatMoney(summary?.netSales ?? 0)}
+                  Gross {formatMoneyLkr(summary?.grossSales ?? 0)} · Refunds{' '}
+                  {formatMoneyLkr(summary?.refundAmount ?? 0)} · Net{' '}
+                  {formatMoneyLkr(summary?.netSales ?? 0)}
                 </p>
               </div>
               {(invoicesQuery.data?.data?.length ?? 0) === 0 ? (
@@ -523,7 +512,7 @@ export default function SalesAnalyticsPage() {
                           <th>Branch</th>
                           <th>Customer</th>
                           <th>Employees</th>
-                          <th className="num">Net</th>
+                          <th className="num">Net (LKR)</th>
                           <th>Status</th>
                         </tr>
                       </thead>
@@ -539,7 +528,7 @@ export default function SalesAnalyticsPage() {
                             <td className="sa-employees-cell" title={employeeNames(inv)}>
                               {employeeNames(inv)}
                             </td>
-                            <td className="num">{formatMoney(inv.netAmount)}</td>
+                            <td className="num">{formatMoneyAmount(inv.netAmount)}</td>
                             <td>{inv.status}</td>
                           </tr>
                         ))}
@@ -625,7 +614,7 @@ export default function SalesAnalyticsPage() {
               <div className="sa-dialog-stats">
                 <div className="sa-dialog-stat">
                   <div className="sa-dialog-stat-value">
-                    {formatMoney(employeeDetailQuery.data.summary.allocatedSales)}
+                    {formatMoneyLkr(employeeDetailQuery.data.summary.allocatedSales)}
                   </div>
                   <div className="sa-dialog-stat-label">Service sales</div>
                 </div>
@@ -637,7 +626,7 @@ export default function SalesAnalyticsPage() {
                 </div>
                 <div className="sa-dialog-stat">
                   <div className="sa-dialog-stat-value">
-                    {formatMoney(employeeDetailQuery.data.summary.commissionAmount)}
+                    {formatMoneyLkr(employeeDetailQuery.data.summary.commissionAmount)}
                   </div>
                   <div className="sa-dialog-stat-label">Estimated commission</div>
                 </div>
@@ -673,7 +662,7 @@ export default function SalesAnalyticsPage() {
                           <th>Date</th>
                           <th>Branch</th>
                           <th>Service</th>
-                          <th className="num">Service value</th>
+                          <th className="num">Service value (LKR)</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -685,7 +674,7 @@ export default function SalesAnalyticsPage() {
                             <td>{formatDateTime(inv.createdAt)}</td>
                             <td>{inv.branchName}</td>
                             <td>{inv.serviceName || '—'}</td>
-                            <td className="num">{formatMoney(inv.employeeSales)}</td>
+                            <td className="num">{formatMoneyAmount(inv.employeeSales)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -727,7 +716,7 @@ export default function SalesAnalyticsPage() {
               <div className="sa-dialog-stats">
                 <div className="sa-dialog-stat">
                   <div className="sa-dialog-stat-value">
-                    {formatMoney(branchDetailQuery.data.summary.netSales)}
+                    {formatMoneyLkr(branchDetailQuery.data.summary.netSales)}
                   </div>
                   <div className="sa-dialog-stat-label">Net sales</div>
                 </div>
@@ -739,7 +728,7 @@ export default function SalesAnalyticsPage() {
                 </div>
                 <div className="sa-dialog-stat">
                   <div className="sa-dialog-stat-value">
-                    {formatMoney(branchDetailQuery.data.summary.averageInvoiceValue)}
+                    {formatMoneyLkr(branchDetailQuery.data.summary.averageInvoiceValue)}
                   </div>
                   <div className="sa-dialog-stat-label">Avg invoice</div>
                 </div>
@@ -754,8 +743,8 @@ export default function SalesAnalyticsPage() {
                       <tr>
                         <th>Employee</th>
                         <th className="num">Invoices</th>
-                        <th className="num">Service sales</th>
-                        <th className="num">Commission</th>
+                        <th className="num">Service sales (LKR)</th>
+                        <th className="num">Commission (LKR)</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -770,8 +759,8 @@ export default function SalesAnalyticsPage() {
                             <div className="emp-panel-desc">{row.employeeCode}</div>
                           </td>
                           <td className="num">{row.attendedInvoiceCount}</td>
-                          <td className="num">{formatMoney(row.allocatedSales)}</td>
-                          <td className="num">{formatMoney(row.commissionAmount)}</td>
+                          <td className="num">{formatMoneyAmount(row.allocatedSales)}</td>
+                          <td className="num">{formatMoneyAmount(row.commissionAmount)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -811,7 +800,7 @@ export default function SalesAnalyticsPage() {
                       <th>Time</th>
                       <th>Branch</th>
                       <th>Customer</th>
-                      <th className="num">Net</th>
+                      <th className="num">Net (LKR)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -823,7 +812,7 @@ export default function SalesAnalyticsPage() {
                         <td>{formatDateTime(inv.createdAt)}</td>
                         <td>{inv.branchName}</td>
                         <td>{inv.customerName || 'Walk-in'}</td>
-                        <td className="num">{formatMoney(inv.netAmount)}</td>
+                        <td className="num">{formatMoneyAmount(inv.netAmount)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -879,9 +868,9 @@ function InvoicesTable({
               <th>Branch</th>
               <th>Customer</th>
               <th>Employees</th>
-              <th className="num">Gross</th>
-              <th className="num">Refund</th>
-              <th className="num">Net</th>
+              <th className="num">Gross (LKR)</th>
+              <th className="num">Refund (LKR)</th>
+              <th className="num">Net (LKR)</th>
               <th>Status</th>
             </tr>
           </thead>
@@ -897,9 +886,9 @@ function InvoicesTable({
                 <td className="sa-employees-cell" title={employeeNames(inv)}>
                   {employeeNames(inv)}
                 </td>
-                <td className="num">{formatMoney(inv.invoiceTotal)}</td>
-                <td className="num">{formatMoney(inv.refundedAmount)}</td>
-                <td className="num">{formatMoney(inv.netAmount)}</td>
+                <td className="num">{formatMoneyAmount(inv.invoiceTotal)}</td>
+                <td className="num">{formatMoneyAmount(inv.refundedAmount)}</td>
+                <td className="num">{formatMoneyAmount(inv.netAmount)}</td>
                 <td>{inv.status}</td>
               </tr>
             ))}
@@ -949,9 +938,9 @@ function EmployeesTable({
               <th>Employee</th>
               <th>Branch</th>
               <th className="num">Invoices</th>
-              <th className="num">Service sales</th>
+              <th className="num">Service sales (LKR)</th>
               <th className="num">Rate</th>
-              <th className="num">Commission</th>
+              <th className="num">Commission (LKR)</th>
             </tr>
           </thead>
           <tbody>
@@ -970,9 +959,9 @@ function EmployeesTable({
                 </td>
                 <td>{row.branchName}</td>
                 <td className="num">{row.attendedInvoiceCount}</td>
-                <td className="num">{formatMoney(row.allocatedSales)}</td>
+                <td className="num">{formatMoneyAmount(row.allocatedSales)}</td>
                 <td className="num">{row.commissionRate}%</td>
-                <td className="num">{formatMoney(row.commissionAmount)}</td>
+                <td className="num">{formatMoneyAmount(row.commissionAmount)}</td>
               </tr>
             ))}
           </tbody>
@@ -1020,9 +1009,9 @@ function BranchesTable({
             <tr>
               <th>Branch</th>
               <th className="num">Invoices</th>
-              <th className="num">Gross</th>
-              <th className="num">Refunds</th>
-              <th className="num">Net</th>
+              <th className="num">Gross (LKR)</th>
+              <th className="num">Refunds (LKR)</th>
+              <th className="num">Net (LKR)</th>
             </tr>
           </thead>
           <tbody>
@@ -1034,9 +1023,9 @@ function BranchesTable({
               >
                 <td>{row.branchName}</td>
                 <td className="num">{row.invoiceCount}</td>
-                <td className="num">{formatMoney(row.grossSales)}</td>
-                <td className="num">{formatMoney(row.refunds)}</td>
-                <td className="num">{formatMoney(row.netSales)}</td>
+                <td className="num">{formatMoneyAmount(row.grossSales)}</td>
+                <td className="num">{formatMoneyAmount(row.refunds)}</td>
+                <td className="num">{formatMoneyAmount(row.netSales)}</td>
               </tr>
             ))}
           </tbody>
@@ -1084,9 +1073,9 @@ function DailyTable({
             <tr>
               <th>Date</th>
               <th className="num">Invoices</th>
-              <th className="num">Gross</th>
-              <th className="num">Refunds</th>
-              <th className="num">Net</th>
+              <th className="num">Gross (LKR)</th>
+              <th className="num">Refunds (LKR)</th>
+              <th className="num">Net (LKR)</th>
             </tr>
           </thead>
           <tbody>
@@ -1096,9 +1085,9 @@ function DailyTable({
                 <tr key={day} className="sa-row-click" onClick={() => onSelect(day)}>
                   <td>{formatDate(day)}</td>
                   <td className="num">{row.invoiceCount}</td>
-                  <td className="num">{formatMoney(row.grossSales)}</td>
-                  <td className="num">{formatMoney(row.refunds)}</td>
-                  <td className="num">{formatMoney(row.netSales)}</td>
+                  <td className="num">{formatMoneyAmount(row.grossSales)}</td>
+                  <td className="num">{formatMoneyAmount(row.refunds)}</td>
+                  <td className="num">{formatMoneyAmount(row.netSales)}</td>
                 </tr>
               );
             })}
