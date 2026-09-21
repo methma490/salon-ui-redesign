@@ -4,7 +4,6 @@ import request from 'supertest';
 import { AppController } from '../src/app.controller';
 import { AppService } from '../src/app.service';
 import { PrismaService } from '../src/database/prisma.service';
-import { afterEach, beforeEach, describe } from 'node:test';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
@@ -43,6 +42,3 @@ describe('AppController (e2e)', () => {
       });
   });
 });
-function expect(status: any) {
-  throw new Error('Function not implemented.');
-}
