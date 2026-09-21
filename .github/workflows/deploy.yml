@@ -1,0 +1,83 @@
+name: Auto Deploy to CapRover
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allows manual trigger from GitHub Actions tab
+
+# ==============================================================================
+# CONFIGURATION SETTINGS
+# You can define these in GitHub Repo Secrets (Recommended):
+#   Settings -> Secrets and variables -> Actions -> New repository secret
+#
+# OR you can replace the placeholder strings below directly with your values:
+# ==============================================================================
+env:
+  # Server URL (e.g. https://captain.your-domain.com)
+  CAPROVER_SERVER: ${{ secrets.CAPROVER_SERVER || 'https://captain.your-domain.com' }}
+
+  # Backend App Settings
+  BACKEND_APP_NAME: ${{ secrets.BACKEND_APP_NAME || 'salon-backend' }}
+  BACKEND_APP_TOKEN: ${{ secrets.BACKEND_APP_TOKEN || '' }}
+
+  # Frontend App Settings
+  FRONTEND_APP_NAME: ${{ secrets.FRONTEND_APP_NAME || 'salon-frontend' }}
+  FRONTEND_APP_TOKEN: ${{ secrets.FRONTEND_APP_TOKEN || '' }}
+
+jobs:
+  # ----------------------------------------------------------------------------
+  # 1. DEPLOY BACKEND SERVICE (NestJS + Prisma)
+  # ----------------------------------------------------------------------------
+  deploy-backend:
+    name: Deploy Backend to CapRover
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Prepare Backend Deployment Archive
+        run: |
+          cd backend
+          tar -cvf ../deploy.tar \
+            --exclude='node_modules' \
+            --exclude='.env' \
+            --exclude='dist' \
+            --exclude='.git' \
+            .
+          cd ..
+
+      - name: Deploy Backend to CapRover
+        uses: caprover/deploy-from-github@v1.1.2
+        with:
+          server: '${{ env.CAPROVER_SERVER }}'
+          app: '${{ env.BACKEND_APP_NAME }}'
+          token: '${{ env.BACKEND_APP_TOKEN }}'
+
+  # ----------------------------------------------------------------------------
+  # 2. DEPLOY FRONTEND SERVICE (Vite React + Nginx)
+  # ----------------------------------------------------------------------------
+  deploy-frontend:
+    name: Deploy Frontend to CapRover
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Prepare Frontend Deployment Archive
+        run: |
+          cd frontend
+          tar -cvf ../deploy.tar \
+            --exclude='node_modules' \
+            --exclude='.env' \
+            --exclude='dist' \
+            --exclude='.git' \
+            .
+          cd ..
+
+      - name: Deploy Frontend to CapRover
+        uses: caprover/deploy-from-github@v1.1.2
+        with:
+          server: '${{ env.CAPROVER_SERVER }}'
+          app: '${{ env.FRONTEND_APP_NAME }}'
+          token: '${{ env.FRONTEND_APP_TOKEN }}'
