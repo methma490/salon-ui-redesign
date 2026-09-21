@@ -1,25 +1,17 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-
+import { BadRequestException, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-
 import { InvoiceStatus, Prisma } from '@prisma/client';
-
 import { buildPaginatedResponse, resolvePagination } from '../common/dto/pagination.dto';
-
 import { PrismaService } from '../database/prisma.service';
-
+import { MailService } from '../mail/mail.service';
 import { AdminInvoiceQueryDto } from './dto/admin-invoice-query.dto';
 import { InvoiceQueryDto } from './dto/invoice-query.dto';
-
 import { buildInvoiceHtml, InvoiceIssuerInfo } from './utils/invoice-html.util';
 
 export interface GenerateInvoiceInput {
   paymentOrderId: string;
-
   paymentId: string;
-
   transactionId: string;
-
   paidAt: Date;
 }
 
@@ -29,8 +21,8 @@ export class InvoicesService {
 
   constructor(
     private readonly prisma: PrismaService,
-
     private readonly configService: ConfigService,
+    @Optional() private readonly mailService?: MailService,
   ) {}
 
   /**
@@ -268,11 +260,71 @@ export class InvoicesService {
 
     return {
       html,
-
       filename: `${invoice.invoiceNumber}.html`,
-
       contentType: 'text/html; charset=utf-8',
     };
+  }
+
+  async sendInvoiceEmail(id: string, customRecipientEmail?: string) {
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { id },
+      include: {
+        tenant: { select: { id: true, name: true, code: true, email: true } },
+        items: { orderBy: { sortOrder: 'asc' } },
+      },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException('Invoice not found');
+    }
+
+    const recipient =
+      customRecipientEmail?.trim() ||
+      invoice.customerEmail?.trim() ||
+      invoice.salonEmail?.trim() ||
+      invoice.tenant?.email?.trim();
+
+    if (!recipient) {
+      throw new BadRequestException('No recipient email found for this invoice');
+    }
+
+    const issuer = this.getIssuerInfo();
+    const html = buildInvoiceHtml(invoice, issuer);
+
+    if (this.mailService) {
+      await this.mailService.sendMail({
+        to: recipient,
+        subject: `Invoice ${invoice.invoiceNumber} from ${issuer.name}`,
+        html,
+        attachments: [
+          {
+            filename: `${invoice.invoiceNumber}.html`,
+            content: html,
+            contentType: 'text/html; charset=utf-8',
+          },
+        ],
+      });
+    } else {
+      this.logger.warn(`MailService not available — cannot send invoice ${invoice.invoiceNumber} email`);
+    }
+
+    return {
+      success: true,
+      invoiceId: invoice.id,
+      invoiceNumber: invoice.invoiceNumber,
+      recipient,
+      message: `Invoice ${invoice.invoiceNumber} sent successfully to ${recipient}`,
+    };
+  }
+
+  async sendInvoiceEmailForTenant(id: string, tenantId: string, customRecipientEmail?: string) {
+    const invoice = await this.findByIdForTenant(id, tenantId);
+    return this.sendInvoiceEmail(invoice.id, customRecipientEmail);
+  }
+
+  async sendInvoiceEmailForAdmin(id: string, customRecipientEmail?: string) {
+    const invoice = await this.findByIdForAdmin(id);
+    return this.sendInvoiceEmail(invoice.id, customRecipientEmail);
   }
 
   private getIssuerInfo(): InvoiceIssuerInfo {

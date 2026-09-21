@@ -752,7 +752,12 @@ export interface DashboardData {
 }
 
 export const tenantApi = {
-  features: () => api.get<string[]>('/tenant/features').then((r) => r.data),
+  features: Object.assign(
+    () => api.get<string[]>('/tenant/features').then((r) => r.data),
+    {
+      listEnabled: () => api.get<string[]>('/tenant/features').then((r) => r.data),
+    },
+  ),
 
   branches: {
     list: () => api.get<Branch[]>('/tenant/branches').then((r) => r.data),
@@ -940,11 +945,49 @@ export const tenantApi = {
           { phone },
         )
         .then((r) => r.data),
+    sendEbillEmail: (id: string, email?: string) =>
+      api
+        .post<{ success: boolean; message: string; email: string; ebillUrl: string }>(
+          `/tenant/sales/${id}/send-ebill-email`,
+          { email },
+        )
+        .then((r) => r.data),
+    getInvoiceLink: (id: string) =>
+      api
+        .get<{
+          id: string;
+          token: string;
+          ebillUrl: string;
+          customerPhone: string | null;
+          smsStatus: 'NOT_SENT' | 'PENDING' | 'SENT' | 'FAILED';
+          smsSentAt: string | null;
+          smsAttempts: number;
+          smsFailureReason: string | null;
+          expiresAt: string | null;
+        }>(`/tenant/sales/${id}/invoice-link`)
+        .then((r) => r.data),
+    resendEbillSms: (id: string, phone?: string) =>
+      api
+        .post<{
+          success: boolean;
+          status: 'NOT_SENT' | 'PENDING' | 'SENT' | 'FAILED';
+          ebillUrl: string;
+          sentAt?: string | null;
+          attempts: number;
+          failureReason?: string | null;
+          message: string;
+        }>(`/tenant/sales/${id}/resend-ebill-sms`, { phone })
+        .then((r) => r.data),
   },
 
   publicSales: {
     getEbill: (id: string) =>
       api.get(`/public/sales/${id}/ebill`).then((r) => r.data),
+  },
+
+  publicInvoices: {
+    getByToken: (token: string) =>
+      api.get(`/public/invoices/${token}`).then((r) => r.data),
   },
 
   salesAnalytics: {

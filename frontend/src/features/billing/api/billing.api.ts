@@ -49,4 +49,12 @@ export const adminBillingApi = {
     const filename = match?.[1] ?? `invoice-${id}.html`;
     return { blob: response.data, filename };
   },
+
+  sendInvoiceEmail: (id: string, email?: string) =>
+    api
+      .post<{ success: boolean; message: string; recipient: string; invoiceNumber: string }>(
+        `/super-admin/invoices/${id}/send-email`,
+        { email },
+      )
+      .then((r) => r.data),
 };

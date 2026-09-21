@@ -22,6 +22,7 @@ import { SignupModule } from './signup/signup.module';
 import { PaymentsModule } from './payments/payments.module';
 import { InvoicesModule } from './invoices/invoices.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { SmsModule } from './sms/sms.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     PaymentsModule,
     InvoicesModule,
     NotificationsModule,
+    SmsModule,
   ],
   controllers: [AppController],
   providers: [

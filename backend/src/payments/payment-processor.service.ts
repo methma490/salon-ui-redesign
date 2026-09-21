@@ -178,7 +178,7 @@ export class PaymentProcessorService {
     await this.fulfillOrder(order, transactionId);
 
     if (paymentId) {
-      await this.invoicesService
+      const invoice = await this.invoicesService
         .generateFromPayment({
           paymentOrderId: order.id,
           paymentId,
@@ -189,7 +189,16 @@ export class PaymentProcessorService {
           this.logger.error(
             `Invoice generation failed for order ${order.reference}: ${error instanceof Error ? error.message : String(error)}`,
           );
+          return null;
         });
+
+      if (invoice) {
+        await this.invoicesService.sendInvoiceEmail(invoice.id).catch((error) => {
+          this.logger.error(
+            `Failed to auto-send invoice email for invoice ${invoice.id}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        });
+      }
 
       await this.notificationQueue
         .enqueuePaymentSuccess({

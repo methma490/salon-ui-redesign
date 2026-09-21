@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseUUIDPipe, Query, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -36,8 +36,18 @@ export class InvoicesController {
     res.send(html);
   }
 
+  @Post(':id/send-email')
+  sendEmail(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body?: { email?: string },
+  ) {
+    return this.invoicesService.sendInvoiceEmailForTenant(id, tenant.tenantId, body?.email);
+  }
+
   @Get(':id')
   getOne(@CurrentTenant() tenant: TenantContext, @Param('id', ParseUUIDPipe) id: string) {
     return this.invoicesService.findByIdForTenant(id, tenant.tenantId);
   }
 }
+

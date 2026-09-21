@@ -105,6 +105,38 @@ describe('InvoicesService', () => {
       NotFoundException,
     );
   });
+
+  it('sends invoice email to customer/tenant email', async () => {
+    const mockMailService = { sendMail: jest.fn().mockResolvedValue({ success: true }) };
+    const serviceWithMail = new InvoicesService(
+      prisma as never,
+      configService as unknown as ConfigService,
+      mockMailService as never,
+    );
+
+    prisma.invoice.findUnique.mockResolvedValue({
+      id: 'inv-1',
+      invoiceNumber: 'INV-2026-000001',
+      customerEmail: 'admin@salon.local',
+      salonEmail: 'salon@local.test',
+      status: InvoiceStatus.PAID,
+      currency: 'LKR',
+      subtotal: 5000,
+      total: 5000,
+      items: [],
+      tenant: { email: 'tenant@test.com' },
+    });
+
+    const result = await serviceWithMail.sendInvoiceEmail('inv-1');
+    expect(result.success).toBe(true);
+    expect(result.recipient).toBe('admin@salon.local');
+    expect(mockMailService.sendMail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'admin@salon.local',
+        subject: expect.stringContaining('INV-2026-000001'),
+      }),
+    );
+  });
 });
 
 describe('buildInvoiceHtml', () => {

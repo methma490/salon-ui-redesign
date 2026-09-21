@@ -59,6 +59,8 @@ interface SaleDetail {
   branchName: string;
   customerId: string | null;
   customerName: string | null;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
   cashierId: string | null;
   cashierName: string | null;
   createdAt: string;
@@ -175,6 +177,7 @@ export default function SaleDetailsPage() {
         onOpenChange={setSendEbillOpen}
         saleId={data.id}
         customerName={data.customerName}
+        defaultPhone={data.customerPhone}
       />
 
       <article className="sale-inv-document">

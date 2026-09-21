@@ -107,4 +107,12 @@ export const tenantSubscriptionsApi = {
       filename: match?.[1] ?? `invoice-${id}.html`,
     };
   },
+
+  sendInvoiceEmail: (id: string, email?: string) =>
+    api
+      .post<{ success: boolean; message: string; recipient: string; invoiceNumber: string }>(
+        `/invoices/${id}/send-email`,
+        { email },
+      )
+      .then((r) => r.data),
 };

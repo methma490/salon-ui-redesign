@@ -19,6 +19,7 @@ export default function AppRoutes() {
       <Route path="/signup/success" element={<SignupSuccessPage />} />
       <Route path="/signup/cancel" element={<SignupCancelPage />} />
       <Route path="/q/:token" element={<PublicQuotationPage />} />
+      <Route path="/i/:token" element={<PublicEbillPage />} />
       <Route path="/ebill/:id" element={<PublicEbillPage />} />
 
       <Route element={<SuperAdminGuestRoute />}>

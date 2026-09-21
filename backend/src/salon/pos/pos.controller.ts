@@ -35,6 +35,6 @@ export class PosController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateSaleDto,
   ) {
-    return this.posService.createSale(tenant.schemaName, dto, user);
+    return this.posService.createSale(tenant.schemaName, dto, user, tenant.tenantId);
   }
 }

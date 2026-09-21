@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseUUIDPipe, Query, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -26,8 +26,17 @@ export class SuperAdminInvoicesController {
     res.send(html);
   }
 
+  @Post(':id/send-email')
+  sendEmail(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body?: { email?: string },
+  ) {
+    return this.invoicesService.sendInvoiceEmailForAdmin(id, body?.email);
+  }
+
   @Get(':id')
   getOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.invoicesService.findByIdForAdmin(id);
   }
 }
+

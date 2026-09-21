@@ -1,13 +1,9 @@
 import {
-
   CalendarDays,
-
   CreditCard,
-
   Download,
-
+  Mail,
   ShieldCheck,
-
 } from 'lucide-react';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -265,59 +261,47 @@ function PaymentRecords({
 
 
 function InvoiceRecords({
-
   invoices,
-
   downloadingInvoiceId,
-
+  emailingInvoiceId,
   onDownload,
-
+  onSendEmail,
 }: {
-
   invoices: AdminInvoiceItem[];
-
   downloadingInvoiceId: string | null;
-
+  emailingInvoiceId: string | null;
   onDownload: (id: string, invoiceNumber: string) => void;
-
+  onSendEmail: (id: string, invoiceNumber: string) => void;
 }) {
-
   return (
-
     <>
-
       <div className="sub-record-list">
-
         {invoices.map((invoice) => (
-
           <article key={invoice.id} className="sub-record-card">
-
             <div className="sub-record-head">
-
               <div>
-
                 <div className="sub-plan-name">{invoice.invoiceNumber}</div>
-
                 <div className="sub-plan-code">{invoice.planName}</div>
-
               </div>
-
-              <button
-
-                type="button"
-
-                className="sub-link-btn"
-
-                disabled={downloadingInvoiceId === invoice.id}
-
-                onClick={() => onDownload(invoice.id, invoice.invoiceNumber)}
-
-              >
-
-                {downloadingInvoiceId === invoice.id ? 'Downloading…' : 'Download'}
-
-              </button>
-
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  className="sub-link-btn"
+                  disabled={emailingInvoiceId === invoice.id}
+                  onClick={() => onSendEmail(invoice.id, invoice.invoiceNumber)}
+                >
+                  <Mail className="mr-1 inline h-3.5 w-3.5" />
+                  {emailingInvoiceId === invoice.id ? 'Sending…' : 'Email'}
+                </button>
+                <button
+                  type="button"
+                  className="sub-link-btn"
+                  disabled={downloadingInvoiceId === invoice.id}
+                  onClick={() => onDownload(invoice.id, invoice.invoiceNumber)}
+                >
+                  {downloadingInvoiceId === invoice.id ? 'Downloading…' : 'Download'}
+                </button>
+              </div>
             </div>
 
             <div className="sub-record-grid">
@@ -389,25 +373,26 @@ function InvoiceRecords({
                 <td>{formatDate(invoice.paidAt ?? invoice.issueDate)}</td>
 
                 <td style={{ textAlign: 'right' }}>
-
-                  <button
-
-                    type="button"
-
-                    className="sub-link-btn"
-
-                    disabled={downloadingInvoiceId === invoice.id}
-
-                    onClick={() => onDownload(invoice.id, invoice.invoiceNumber)}
-
-                  >
-
-                    <Download className="mr-1 inline h-3.5 w-3.5" />
-
-                    {downloadingInvoiceId === invoice.id ? 'Downloading…' : 'Download'}
-
-                  </button>
-
+                  <div style={{ display: 'inline-flex', gap: 8 }}>
+                    <button
+                      type="button"
+                      className="sub-link-btn"
+                      disabled={emailingInvoiceId === invoice.id}
+                      onClick={() => onSendEmail(invoice.id, invoice.invoiceNumber)}
+                    >
+                      <Mail className="mr-1 inline h-3.5 w-3.5" />
+                      {emailingInvoiceId === invoice.id ? 'Sending…' : 'Email'}
+                    </button>
+                    <button
+                      type="button"
+                      className="sub-link-btn"
+                      disabled={downloadingInvoiceId === invoice.id}
+                      onClick={() => onDownload(invoice.id, invoice.invoiceNumber)}
+                    >
+                      <Download className="mr-1 inline h-3.5 w-3.5" />
+                      {downloadingInvoiceId === invoice.id ? 'Downloading…' : 'Download'}
+                    </button>
+                  </div>
                 </td>
 
               </tr>
@@ -445,9 +430,8 @@ export default function SubscriptionPage() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<string | null>(null);
-
+  const [emailingInvoiceId, setEmailingInvoiceId] = useState<string | null>(null);
   const [paymentsPage, setPaymentsPage] = useState(1);
-
   const [invoicesPage, setInvoicesPage] = useState(1);
 
 
@@ -666,35 +650,33 @@ export default function SubscriptionPage() {
 
 
   const handleInvoiceDownload = async (id: string, invoiceNumber: string) => {
-
     setDownloadingInvoiceId(id);
-
     try {
-
       const { blob, filename } = await tenantSubscriptionsApi.downloadInvoice(id);
-
       const url = URL.createObjectURL(blob);
-
       const link = document.createElement('a');
-
       link.href = url;
-
       link.download = filename || `${invoiceNumber}.html`;
-
       link.click();
-
       URL.revokeObjectURL(url);
-
     } catch (err) {
-
       setActionError(getErrorMessage(err));
-
     } finally {
-
       setDownloadingInvoiceId(null);
-
     }
+  };
 
+  const handleSendInvoiceEmail = async (id: string, invoiceNumber: string) => {
+    setEmailingInvoiceId(id);
+    setActionError(null);
+    try {
+      const res = await tenantSubscriptionsApi.sendInvoiceEmail(id);
+      setActionSuccess(res.message || `Invoice ${invoiceNumber} emailed successfully!`);
+    } catch (err) {
+      setActionError(getErrorMessage(err));
+    } finally {
+      setEmailingInvoiceId(null);
+    }
   };
 
 
@@ -1299,13 +1281,11 @@ export default function SubscriptionPage() {
               <>
 
                 <InvoiceRecords
-
                   invoices={invoices.data}
-
                   downloadingInvoiceId={downloadingInvoiceId}
-
+                  emailingInvoiceId={emailingInvoiceId}
                   onDownload={(id, invoiceNumber) => void handleInvoiceDownload(id, invoiceNumber)}
-
+                  onSendEmail={(id, invoiceNumber) => void handleSendInvoiceEmail(id, invoiceNumber)}
                 />
 
                 <PaginationBar

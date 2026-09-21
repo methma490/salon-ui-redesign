@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { Banknote, Eye, Receipt, Users } from 'lucide-react';
+import { Banknote, Eye, Receipt, Smartphone, Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { tenantApi } from '@/api/tenant.api';
+import SendEbillModal from './SendEbillModal';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -47,6 +48,10 @@ export default function SalesPage() {
   const [startDate, setStartDate] = useState(monthStartStr());
   const [endDate, setEndDate] = useState(todayStr());
   const [branchId, setBranchId] = useState<string>('all');
+  const [ebillModalSale, setEbillModalSale] = useState<{
+    id: string;
+    customerName?: string | null;
+  } | null>(null);
 
   const { data: branches = [] } = useQuery({
     queryKey: ['branches'],
@@ -196,10 +201,33 @@ export default function SalesPage() {
                       <span className="sales-total-cell">{formatMoneyAmount(sale.total)}</span>
                     </div>
                   </div>
-                  <Link to={`/salon/sales/${sale.id}`} className="sales-view-btn">
-                    <Eye size={15} />
-                    View invoice
-                  </Link>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                    <button
+                      type="button"
+                      className="sales-view-btn"
+                      style={{
+                        flex: 1,
+                        background: '#f0f9ff',
+                        color: '#0284c7',
+                        border: '1px solid #bae6fd',
+                        justifyContent: 'center',
+                      }}
+                      onClick={() =>
+                        setEbillModalSale({ id: sale.id, customerName: sale.customerName })
+                      }
+                    >
+                      <Smartphone size={14} />
+                      eBill SMS
+                    </button>
+                    <Link
+                      to={`/salon/sales/${sale.id}`}
+                      className="sales-view-btn"
+                      style={{ flex: 1, justifyContent: 'center' }}
+                    >
+                      <Eye size={14} />
+                      View invoice
+                    </Link>
+                  </div>
                 </article>
               ))}
             </div>
@@ -229,10 +257,28 @@ export default function SalesPage() {
                         <SaleStatusBadge status={sale.status} />
                       </td>
                       <td style={{ textAlign: 'right' }}>
-                        <Link to={`/salon/sales/${sale.id}`} className="sales-view-btn">
-                          <Eye size={15} />
-                          View
-                        </Link>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
+                          <button
+                            type="button"
+                            className="sales-view-btn"
+                            title="Send or Resend eBill SMS"
+                            style={{
+                              background: '#f0f9ff',
+                              color: '#0284c7',
+                              border: '1px solid #bae6fd',
+                            }}
+                            onClick={() =>
+                              setEbillModalSale({ id: sale.id, customerName: sale.customerName })
+                            }
+                          >
+                            <Smartphone size={14} />
+                            eBill SMS
+                          </button>
+                          <Link to={`/salon/sales/${sale.id}`} className="sales-view-btn">
+                            <Eye size={14} />
+                            View
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -242,6 +288,17 @@ export default function SalesPage() {
           </>
         )}
       </section>
+
+      {ebillModalSale && (
+        <SendEbillModal
+          open={!!ebillModalSale}
+          onOpenChange={(open) => {
+            if (!open) setEbillModalSale(null);
+          }}
+          saleId={ebillModalSale.id}
+          customerName={ebillModalSale.customerName}
+        />
+      )}
     </div>
   );
 }

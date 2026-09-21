@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { SmsService } from '../../sms/sms.service';
 
 export type MessagingChannel = 'WHATSAPP' | 'SMS';
 
@@ -14,7 +15,10 @@ export type MessagingResult = {
 export class MessagingService {
   private readonly logger = new Logger(MessagingService.name);
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    @Optional() private readonly smsService?: SmsService,
+  ) {}
 
   /**
    * WhatsApp MVP: build a wa.me deep link with pre-filled message.
@@ -31,11 +35,18 @@ export class MessagingService {
   }
 
   /**
-   * SMS adapter hook. Uses SMS_PROVIDER env when configured; otherwise logs and fails softly
-   * so quotation history can record FAILED with a clear reason in production,
-   * or SENT in development for demo flows.
+   * SMS adapter hook. Uses unified SmsService when available, or SMS_PROVIDER env fallback.
    */
   async sendSms(recipientE164: string, message: string): Promise<MessagingResult> {
+    if (this.smsService) {
+      const res = await this.smsService.sendSms(recipientE164, message);
+      return {
+        status: res.success ? 'SENT' : 'FAILED',
+        providerMessageId: res.messageId,
+        failureReason: res.error,
+      };
+    }
+
     const provider = this.configService.get<string>('SMS_PROVIDER') ?? '';
     const allowDevSend =
       (this.configService.get<string>('NODE_ENV') ?? 'development') !== 'production';
@@ -57,7 +68,6 @@ export class MessagingService {
       };
     }
 
-    // Provider-specific integration point (Twilio/Notify/etc.) — not hard-coded.
     this.logger.log(`SMS via ${provider} to ${recipientE164}`);
     return {
       status: 'SENT',

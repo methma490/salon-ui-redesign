@@ -1,4 +1,4 @@
-import { Download } from 'lucide-react';
+import { Download, Mail } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { adminBillingApi } from '@/features/billing/api/billing.api';
 import { useAdminInvoices } from '@/features/billing/hooks/useBilling';
@@ -16,17 +16,21 @@ import {
   AdminPanel,
   AdminStatCard,
 } from '@/pages/super-admin/billing/AdminBillingUi';
-import { OpsError, OpsIconButton, OpsLoading } from '@/pages/salon/salon-ops-ui';
+import { getErrorMessage, OpsError, OpsIconButton, OpsLoading } from '@/pages/salon/salon-ops-ui';
 import '@/pages/super-admin/billing/admin-billing-page.css';
 
 function InvoiceCard({
   invoice,
   downloading,
+  emailing,
   onDownload,
+  onSendEmail,
 }: {
   invoice: AdminInvoiceItem;
   downloading: boolean;
+  emailing: boolean;
   onDownload: () => void;
+  onSendEmail: () => void;
 }) {
   return (
     <article className="admin-card">
@@ -57,6 +61,12 @@ function InvoiceCard({
 
       <div className="admin-row-actions">
         <OpsIconButton
+          label="Email invoice to salon"
+          icon={<Mail size={16} strokeWidth={2} />}
+          disabled={emailing}
+          onClick={onSendEmail}
+        />
+        <OpsIconButton
           label="Download invoice"
           icon={<Download size={16} strokeWidth={2} />}
           disabled={downloading}
@@ -70,11 +80,15 @@ function InvoiceCard({
 function InvoiceTableRow({
   invoice,
   downloading,
+  emailing,
   onDownload,
+  onSendEmail,
 }: {
   invoice: AdminInvoiceItem;
   downloading: boolean;
+  emailing: boolean;
   onDownload: () => void;
+  onSendEmail: () => void;
 }) {
   return (
     <tr>
@@ -98,6 +112,12 @@ function InvoiceTableRow({
       <td>
         <div className="admin-row-actions">
           <OpsIconButton
+            label="Email invoice to salon"
+            icon={<Mail size={16} strokeWidth={2} />}
+            disabled={emailing}
+            onClick={onSendEmail}
+          />
+          <OpsIconButton
             label="Download invoice"
             icon={<Download size={16} strokeWidth={2} />}
             disabled={downloading}
@@ -112,6 +132,8 @@ function InvoiceTableRow({
 export default function InvoiceListPage() {
   const [page, setPage] = useState(1);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [emailingId, setEmailingId] = useState<string | null>(null);
+  const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const params = useMemo(() => ({ page, limit: 10 }), [page]);
   const { data, isLoading, isError, refetch } = useAdminInvoices(params);
@@ -132,6 +154,25 @@ export default function InvoiceListPage() {
     }
   };
 
+  const handleSendEmail = async (id: string, invoiceNumber: string) => {
+    setEmailingId(id);
+    setStatusMsg(null);
+    try {
+      const res = await adminBillingApi.sendInvoiceEmail(id);
+      setStatusMsg({
+        type: 'success',
+        text: res.message || `Invoice ${invoiceNumber} emailed successfully!`,
+      });
+    } catch (err) {
+      setStatusMsg({
+        type: 'error',
+        text: getErrorMessage(err),
+      });
+    } finally {
+      setEmailingId(null);
+    }
+  };
+
   if (isLoading) return <OpsLoading />;
   if (isError) {
     return <OpsError message="Failed to load invoices." onRetry={() => void refetch()} />;
@@ -143,8 +184,24 @@ export default function InvoiceListPage() {
     <div className="admin-page">
       <AdminPageHero
         title="Invoices"
-        subtitle="View and download subscription invoices across all salons"
+        subtitle="View, download, and email subscription invoices across all salons"
       />
+
+      {statusMsg && (
+        <div
+          style={{
+            margin: '0 0 16px',
+            padding: '12px 16px',
+            borderRadius: 8,
+            fontSize: 14,
+            background: statusMsg.type === 'success' ? '#f0fdf4' : '#fef2f2',
+            color: statusMsg.type === 'success' ? '#166534' : '#991b1b',
+            border: `1px solid ${statusMsg.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
+          }}
+        >
+          {statusMsg.text}
+        </div>
+      )}
 
       <section className="admin-stats" aria-label="Invoice summary">
         <AdminStatCard label="Total Invoices" value={data?.meta.total ?? 0} />
@@ -169,7 +226,9 @@ export default function InvoiceListPage() {
                   key={invoice.id}
                   invoice={invoice}
                   downloading={downloadingId === invoice.id}
+                  emailing={emailingId === invoice.id}
                   onDownload={() => void handleDownload(invoice.id, invoice.invoiceNumber)}
+                  onSendEmail={() => void handleSendEmail(invoice.id, invoice.invoiceNumber)}
                 />
               ))}
             </div>
@@ -193,7 +252,9 @@ export default function InvoiceListPage() {
                       key={invoice.id}
                       invoice={invoice}
                       downloading={downloadingId === invoice.id}
+                      emailing={emailingId === invoice.id}
                       onDownload={() => void handleDownload(invoice.id, invoice.invoiceNumber)}
+                      onSendEmail={() => void handleSendEmail(invoice.id, invoice.invoiceNumber)}
                     />
                   ))}
                 </tbody>

@@ -29,9 +29,41 @@ export class SalesController {
     return this.salesService.findById(tenant.schemaName, id);
   }
 
+  @Get(':id/invoice-link')
+  @RequirePermission('SALE_VIEW')
+  async getInvoiceLink(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id') id: string,
+  ) {
+    return this.salesService.getInvoiceLink(tenant.tenantId, id);
+  }
+
   @Post(':id/send-ebill-sms')
   @RequirePermission('SALE_VIEW')
   async sendEbillSms(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id') id: string,
+    @Body() body: { phone?: string },
+  ) {
+    const hasFeature = await this.subscriptionFeatureService.hasFeature(
+      tenant.tenantId,
+      'SMS_NOTIFICATIONS',
+    );
+    if (!hasFeature) {
+      throw new ForbiddenException({
+        statusCode: 403,
+        code: 'FEATURE_UPGRADE_REQUIRED',
+        message:
+          'SMS Notifications feature is not included in your current subscription plan. Please upgrade your plan to send SMS receipts.',
+      });
+    }
+
+    return this.salesService.sendEbillSms(tenant.tenantId, tenant.schemaName, id, body.phone);
+  }
+
+  @Post(':id/resend-ebill-sms')
+  @RequirePermission('SALE_VIEW')
+  async resendEbillSms(
     @CurrentTenant() tenant: TenantContext,
     @Param('id') id: string,
     @Body() body: { phone?: string },
@@ -64,6 +96,36 @@ export class SalesController {
       tenant.schemaName,
       id,
       body.phone,
+    );
+  }
+
+  @Post(':id/send-ebill-email')
+  @RequirePermission('SALE_VIEW')
+  async sendEbillEmail(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id') id: string,
+    @Body() body: { email?: string },
+  ) {
+    return this.salesService.sendEbillEmail(
+      tenant.tenantId,
+      tenant.schemaName,
+      id,
+      body.email,
+    );
+  }
+
+  @Post(':id/send-invoice-email')
+  @RequirePermission('SALE_VIEW')
+  async sendInvoiceEmail(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id') id: string,
+    @Body() body: { email?: string },
+  ) {
+    return this.salesService.sendEbillEmail(
+      tenant.tenantId,
+      tenant.schemaName,
+      id,
+      body.email,
     );
   }
 }

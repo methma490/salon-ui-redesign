@@ -1,19 +1,25 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { AuthenticatedUser } from '../../auth/interfaces/auth.interface';
+import { PrismaService } from '../../database/prisma.service';
 import { TenantSchemaService } from '../../tenant/services/tenant-schema.service';
 import { tenantTable } from '../../tenant/utils/schema-name.util';
 import { EmployeesService } from '../employees/employees.service';
 import { InventoryService } from '../inventory/inventory.service';
+import { InvoiceLinksService } from '../sales/invoice-links.service';
 import { logAudit } from '../utils/audit.util';
 import { normalizeSaleAssignments } from '../sales/sale-assignment.util';
 import { CreateSaleDto, SaleEmployeeDto } from './dto/pos.dto';
 
 @Injectable()
 export class PosService {
+  private readonly logger = new Logger(PosService.name);
+
   constructor(
     private readonly tenantSchemaService: TenantSchemaService,
     private readonly inventoryService: InventoryService,
     private readonly employeesService: EmployeesService,
+    private readonly prisma: PrismaService,
+    private readonly invoiceLinksService: InvoiceLinksService,
   ) {}
 
   /** Tenant enums live in each schema; unqualified casts resolve to public and fail. */
@@ -25,7 +31,12 @@ export class PosService {
     return this.employeesService.listPosPerformers(schemaName, user, branchId);
   }
 
-  async createSale(schemaName: string, dto: CreateSaleDto, user: AuthenticatedUser) {
+  async createSale(
+    schemaName: string,
+    dto: CreateSaleDto,
+    user: AuthenticatedUser,
+    tenantId?: string,
+  ) {
     const cashierUserId = user.id;
 
     if (dto.services.length === 0 && dto.products.length === 0) {
@@ -47,7 +58,7 @@ export class PosService {
     const employees = tenantTable(schemaName, 'employees');
     const branches = tenantTable(schemaName, 'branches');
 
-    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+    const saleResult = await this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
       const branch = await tx.$queryRawUnsafe<Array<{ id: string }>>(
         `SELECT id FROM ${branches} WHERE id = $1::uuid AND status = 'ACTIVE' LIMIT 1`,
         dto.branchId,
@@ -293,6 +304,56 @@ export class PosService {
         employees: normalizedAssignments,
       };
     });
+
+    let invoiceToken: string | undefined;
+    let ebillUrl: string | undefined;
+
+    try {
+      let resolvedTenantId: string | undefined = tenantId;
+      if (!resolvedTenantId) {
+        const t = await this.prisma.tenant.findUnique({
+          where: { schemaName },
+          select: { id: true },
+        });
+        resolvedTenantId = t?.id;
+      }
+
+      if (resolvedTenantId) {
+        const activeTenantId: string = resolvedTenantId;
+        const link = await this.invoiceLinksService.createOrGetLink({
+          tenantId: activeTenantId,
+          schemaName,
+          saleId: saleResult.id,
+          saleNumber: saleResult.saleNumber,
+        });
+
+        invoiceToken = link.token;
+        ebillUrl = this.invoiceLinksService.buildEbillUrl(link.token);
+
+        // Strictly non-blocking background SMS dispatch
+        this.invoiceLinksService
+          .sendOrResendSms({
+            tenantId: activeTenantId,
+            schemaName,
+            saleId: saleResult.id,
+          })
+          .catch((err) => {
+            this.logger.error(
+              `Non-blocking eBill SMS failed for sale ${saleResult.id}: ${err.message}`,
+            );
+          });
+      }
+    } catch (err: any) {
+      this.logger.error(
+        `Failed to generate eBill link for sale ${saleResult.id}: ${err.message}`,
+      );
+    }
+
+    return {
+      ...saleResult,
+      invoiceToken,
+      ebillUrl,
+    };
   }
 
   /**

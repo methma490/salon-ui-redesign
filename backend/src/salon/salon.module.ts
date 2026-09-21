@@ -35,9 +35,12 @@ import { QuotationsController } from './quotations/quotations.controller';
 import { PublicQuotationsController } from './quotations/public-quotations.controller';
 import { QuotationsService } from './quotations/quotations.service';
 import { MessagingService } from './quotations/messaging.service';
+import { PublicInvoicesController } from './sales/public-invoices.controller';
+import { InvoiceLinksService } from './sales/invoice-links.service';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
-  imports: [TenantModule, SubscriptionsModule, DatabaseModule],
+  imports: [TenantModule, SubscriptionsModule, DatabaseModule, MailModule],
   controllers: [
     BranchesController,
     EmployeesController,
@@ -47,6 +50,7 @@ import { MessagingService } from './quotations/messaging.service';
     PosController,
     SalesController,
     PublicSalesController,
+    PublicInvoicesController,
     SalesAnalyticsController,
     DashboardController,
     ReportsController,
@@ -66,6 +70,7 @@ import { MessagingService } from './quotations/messaging.service';
     InventoryService,
     PosService,
     SalesService,
+    InvoiceLinksService,
     SalesAnalyticsService,
     DashboardService,
     DashboardCacheInterceptor,
@@ -76,5 +81,6 @@ import { MessagingService } from './quotations/messaging.service';
     QuotationsService,
     MessagingService,
   ],
+  exports: [InvoiceLinksService],
 })
 export class SalonModule {}
