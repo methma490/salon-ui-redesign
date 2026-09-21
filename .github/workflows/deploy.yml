@@ -1,4 +1,4 @@
-name: Auto Deploy to CapRover
+name: Build Images to GHCR & Deploy to CapRover
 
 on:
   push:
@@ -6,19 +6,26 @@ on:
       - main
   workflow_dispatch: # Allows manual trigger from GitHub Actions tab
 
+permissions:
+  contents: read
+  packages: write
+
 # ==============================================================================
 # CONFIGURATION SETTINGS
-# You can define these in GitHub Repo Secrets (Recommended):
-#   Settings -> Secrets and variables -> Actions -> New repository secret
-#
-# OR you can replace the placeholder strings below directly with your values:
+# Set these in GitHub Repo Secrets (Settings -> Secrets and variables -> Actions):
+#   - CAPROVER_SERVER
+#   - BACKEND_APP_NAME
+#   - BACKEND_APP_TOKEN
+#   - FRONTEND_APP_NAME
+#   - FRONTEND_APP_TOKEN
+#   - VITE_API_BASE_URL (Optional, e.g. https://api.yourdomain.com/api)
 # ==============================================================================
 env:
   # Server URL (e.g. https://captain.your-domain.com)
   CAPROVER_SERVER: ${{ secrets.CAPROVER_SERVER || 'https://captain.your-domain.com' }}
 
   # Backend App Settings
-  BACKEND_APP_NAME: ${{ secrets.BACKEND_APP_NAME || 'salon-backend' }}
+  BACKEND_APP_NAME: ${{ secrets.BACKEND_APP_NAME || 'saloon-server' }}
   BACKEND_APP_TOKEN: ${{ secrets.BACKEND_APP_TOKEN || '' }}
 
   # Frontend App Settings
@@ -27,57 +34,87 @@ env:
 
 jobs:
   # ----------------------------------------------------------------------------
-  # 1. DEPLOY BACKEND SERVICE (NestJS + Prisma)
+  # 1. BUILD BACKEND DOCKER IMAGE & DEPLOY VIA GHCR
   # ----------------------------------------------------------------------------
   deploy-backend:
-    name: Deploy Backend to CapRover
+    name: Build & Deploy Backend (NestJS + Prisma)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Prepare Backend Deployment Archive
+      - name: Convert Owner to Lowercase (Docker requirement)
         run: |
-          cd backend
-          tar -cvf ../deploy.tar \
-            --exclude='node_modules' \
-            --exclude='.env' \
-            --exclude='dist' \
-            --exclude='.git' \
-            .
-          cd ..
+          echo "IMAGE_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
-      - name: Deploy Backend to CapRover
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Backend Image to GHCR
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ env.IMAGE_OWNER }}/salon-backend:latest
+            ghcr.io/${{ env.IMAGE_OWNER }}/salon-backend:${{ github.sha }}
+
+      - name: Deploy Backend Image to CapRover
         uses: caprover/deploy-from-github@v1.1.2
         with:
           server: '${{ env.CAPROVER_SERVER }}'
           app: '${{ env.BACKEND_APP_NAME }}'
           token: '${{ env.BACKEND_APP_TOKEN }}'
+          image: 'ghcr.io/${{ env.IMAGE_OWNER }}/salon-backend:latest'
 
   # ----------------------------------------------------------------------------
-  # 2. DEPLOY FRONTEND SERVICE (Vite React + Nginx)
+  # 2. BUILD FRONTEND DOCKER IMAGE & DEPLOY VIA GHCR
   # ----------------------------------------------------------------------------
   deploy-frontend:
-    name: Deploy Frontend to CapRover
+    name: Build & Deploy Frontend (Vite + Nginx)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Prepare Frontend Deployment Archive
+      - name: Convert Owner to Lowercase (Docker requirement)
         run: |
-          cd frontend
-          tar -cvf ../deploy.tar \
-            --exclude='node_modules' \
-            --exclude='.env' \
-            --exclude='dist' \
-            --exclude='.git' \
-            .
-          cd ..
+          echo "IMAGE_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
-      - name: Deploy Frontend to CapRover
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Frontend Image to GHCR
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          build-args: |
+            VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}
+          tags: |
+            ghcr.io/${{ env.IMAGE_OWNER }}/salon-frontend:latest
+            ghcr.io/${{ env.IMAGE_OWNER }}/salon-frontend:${{ github.sha }}
+
+      - name: Deploy Frontend Image to CapRover
         uses: caprover/deploy-from-github@v1.1.2
         with:
           server: '${{ env.CAPROVER_SERVER }}'
           app: '${{ env.FRONTEND_APP_NAME }}'
           token: '${{ env.FRONTEND_APP_TOKEN }}'
+          image: 'ghcr.io/${{ env.IMAGE_OWNER }}/salon-frontend:latest'
