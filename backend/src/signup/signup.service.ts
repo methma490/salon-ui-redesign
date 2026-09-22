@@ -59,46 +59,52 @@ export class SignupService {
     await this.ensureAdminEmailAvailable(adminEmail);
 
     let tenantId: string | null = null;
+    let createdTenant: Awaited<ReturnType<typeof this.createTenantRecord>> | null = null;
 
     try {
-      const tenant = await this.prisma.$transaction(async (tx) => {
-        const createdTenant = await this.createTenantRecord(tx, dto, adminEmail);
-        tenantId = createdTenant.id;
+      // Step 1: Create tenant record in a short transaction (no provisioning inside)
+      createdTenant = await this.prisma.$transaction(
+        async (tx) => {
+          const t = await this.createTenantRecord(tx, dto, adminEmail);
+          tenantId = t.id;
+          return t;
+        },
+        { timeout: 10000, maxWait: 5000 },
+      );
 
-        const provisioningResult = await this.provisioning.provisionTenantSchema({
-          tenantCode: createdTenant.code,
-          schemaName: createdTenant.schemaName,
-          mainBranchName: 'Main Branch',
-          adminUser: {
-            name: dto.admin.name,
-            email: adminEmail,
-            phone: dto.admin.phone,
-            password: dto.admin.password,
-          },
-        });
-
-        if (!provisioningResult.success) {
-          throw new InternalServerErrorException(
-            `Salon provisioning failed: ${provisioningResult.error}`,
-          );
-        }
-
-        await tx.tenant.update({
-          where: { id: createdTenant.id },
-          data: { status: TenantStatus.ACTIVE },
-        });
-
-        return createdTenant;
+      // Step 2: Provision tenant schema OUTSIDE any transaction (long-running ~10-15s)
+      const provisioningResult = await this.provisioning.provisionTenantSchema({
+        tenantCode: createdTenant.code,
+        schemaName: createdTenant.schemaName,
+        mainBranchName: 'Main Branch',
+        adminUser: {
+          name: dto.admin.name,
+          email: adminEmail,
+          phone: dto.admin.phone,
+          password: dto.admin.password,
+        },
       });
 
-      const subscription = await this.subscriptionsService.createTrialSubscription(tenant.id, {
+      if (!provisioningResult.success) {
+        throw new InternalServerErrorException(
+          `Salon provisioning failed: ${provisioningResult.error}`,
+        );
+      }
+
+      // Step 3: Activate tenant in a short transaction
+      await this.prisma.tenant.update({
+        where: { id: createdTenant.id },
+        data: { status: TenantStatus.ACTIVE },
+      });
+
+      const subscription = await this.subscriptionsService.createTrialSubscription(createdTenant.id, {
         planId: dto.planId,
         planPriceId: dto.planPriceId,
         billingCycle: dto.billingCycle,
       });
 
       return {
-        tenantId: tenant.id,
+        tenantId: createdTenant.id,
         subscriptionId: subscription.id,
         plan: {
           id: plan.id,
@@ -174,70 +180,83 @@ export class SignupService {
     const lastName = lastParts.join(' ') || firstName;
 
     let tenantId: string | null = null;
+    let provisionedTenant: Awaited<ReturnType<typeof this.createTenantRecord>> | null = null;
 
     try {
-      const result = await this.prisma.$transaction(async (tx) => {
-        const tenant = await this.createTenantRecord(tx, dto, adminEmail);
-        tenantId = tenant.id;
+      // Step 1: Create tenant record in a short transaction (no provisioning inside)
+      provisionedTenant = await this.prisma.$transaction(
+        async (tx) => {
+          const tenant = await this.createTenantRecord(tx, dto, adminEmail);
+          tenantId = tenant.id;
+          return tenant;
+        },
+        { timeout: 10000, maxWait: 5000 },
+      );
 
-        const provisioningResult = await this.provisioning.provisionTenantSchema({
-          tenantCode: tenant.code,
-          schemaName: tenant.schemaName,
-          mainBranchName: 'Main Branch',
-          adminUser: {
-            name: dto.admin.name,
-            email: adminEmail,
-            phone: dto.admin.phone,
-            password: dto.admin.password,
-          },
-        });
-
-        if (!provisioningResult.success) {
-          throw new InternalServerErrorException(
-            `Salon provisioning failed: ${provisioningResult.error}`,
-          );
-        }
-
-        const subscription = await tx.subscription.create({
-          data: {
-            tenantId: tenant.id,
-            planId: plan.id,
-            planPriceId: planPrice.id,
-            status: SubscriptionStatus.PENDING,
-            billingCycle: planPrice.billingCycle,
-            price: planPrice.price,
-            currency: planPrice.currency,
-          },
-        });
-
-        await tx.paymentOrder.create({
-          data: {
-            tenantId: tenant.id,
-            subscriptionId: subscription.id,
-            amount: planPrice.price,
-            currency: planPrice.currency,
-            gateway: PaymentGatewayProvider.PAYHERE,
-            reference: orderId,
-            purpose: PaymentPurpose.SIGNUP,
-            status: PaymentOrderStatus.PENDING,
-            metadata: {
-              customerName: dto.admin.name,
-              customerEmail: adminEmail,
-              customerPhone: dto.admin.phone ?? dto.salon.phone ?? null,
-              salonName: dto.salon.name,
-              adminEmail,
-              planId: plan.id,
-            },
-          },
-        });
-
-        await tx.tenant.update({
-          where: { id: tenant.id },
-          data: { status: TenantStatus.SUSPENDED },
-        });
-
-        return { tenant, subscription };
+      // Step 2: Provision tenant schema OUTSIDE any transaction (long-running ~10-15s)
+      const provisioningResult = await this.provisioning.provisionTenantSchema({
+        tenantCode: provisionedTenant.code,
+        schemaName: provisionedTenant.schemaName,
+        mainBranchName: 'Main Branch',
+        adminUser: {
+          name: dto.admin.name,
+          email: adminEmail,
+          phone: dto.admin.phone,
+          password: dto.admin.password,
+        },
       });
+
+      if (!provisioningResult.success) {
+        throw new InternalServerErrorException(
+          `Salon provisioning failed: ${provisioningResult.error}`,
+        );
+      }
+
+      // Step 3: Create subscription, payment order, and update tenant status in a short transaction
+      const result = await this.prisma.$transaction(
+        async (tx) => {
+          const subscription = await tx.subscription.create({
+            data: {
+              tenantId: provisionedTenant!.id,
+              planId: plan.id,
+              planPriceId: planPrice.id,
+              status: SubscriptionStatus.PENDING,
+              billingCycle: planPrice.billingCycle,
+              price: planPrice.price,
+              currency: planPrice.currency,
+            },
+          });
+
+          await tx.paymentOrder.create({
+            data: {
+              tenantId: provisionedTenant!.id,
+              subscriptionId: subscription.id,
+              amount: planPrice.price,
+              currency: planPrice.currency,
+              gateway: PaymentGatewayProvider.PAYHERE,
+              reference: orderId,
+              purpose: PaymentPurpose.SIGNUP,
+              status: PaymentOrderStatus.PENDING,
+              metadata: {
+                customerName: dto.admin.name,
+                customerEmail: adminEmail,
+                customerPhone: dto.admin.phone ?? dto.salon.phone ?? null,
+                salonName: dto.salon.name,
+                adminEmail,
+                planId: plan.id,
+              },
+            },
+          });
+
+          await tx.tenant.update({
+            where: { id: provisionedTenant!.id },
+            data: { status: TenantStatus.SUSPENDED },
+          });
+
+          return { tenant: provisionedTenant!, subscription };
+        },
+        { timeout: 15000, maxWait: 5000 },
+      );
 
       const apiBase =
         this.configService.get<string>('API_PUBLIC_URL') ?? 'http://localhost:3000/api';
