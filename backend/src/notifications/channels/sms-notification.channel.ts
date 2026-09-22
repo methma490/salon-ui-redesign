@@ -1,19 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { NotificationChannel } from '@prisma/client';
+import { SmsService } from '../../sms/sms.service';
 import {
   ChannelDeliveryInput,
   ChannelDeliveryResult,
   NotificationChannelAdapter,
 } from './notification-channel.interface';
 
-/** SMS adapter stub — logs in dev until a provider (Twilio, etc.) is configured. */
 @Injectable()
 export class SmsNotificationChannel implements NotificationChannelAdapter {
   readonly channel = NotificationChannel.SMS;
   private readonly logger = new Logger(SmsNotificationChannel.name);
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(private readonly smsService: SmsService) {}
 
   async deliver(input: ChannelDeliveryInput): Promise<ChannelDeliveryResult> {
     const phone = input.recipient.phone;
@@ -22,13 +21,14 @@ export class SmsNotificationChannel implements NotificationChannelAdapter {
       throw new Error('SMS recipient phone is missing');
     }
 
-    const provider = this.configService.get<string>('SMS_PROVIDER');
+    const result = await this.smsService.sendSms(phone, input.body);
 
-    if (!provider) {
-      this.logger.warn(`[DEV] SMS to ${phone}: ${input.body}`);
-      return { channel: this.channel, recipient: phone };
+    if (!result.success) {
+      const errMsg = result.error || 'Failed to dispatch SMS';
+      this.logger.warn(`SMS delivery failed to ${phone}: ${errMsg}`);
+      throw new Error(errMsg);
     }
 
-    throw new Error(`SMS provider ${provider} is not implemented yet`);
+    return { channel: this.channel, recipient: phone };
   }
 }

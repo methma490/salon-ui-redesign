@@ -94,11 +94,17 @@ export class NotificationQueueService implements OnModuleInit {
 
   async enqueueDeliver(payload: DeliverNotificationPayload) {
     if (this.queue) {
-      await this.queue.add(NotificationJobName.DELIVER, payload, {
-        ...NOTIFICATION_JOB_OPTIONS,
-        jobId: payload.idempotencyKey,
-      });
-      return;
+      try {
+        await this.queue.add(NotificationJobName.DELIVER, payload, {
+          ...NOTIFICATION_JOB_OPTIONS,
+          jobId: payload.idempotencyKey,
+        });
+        return;
+      } catch (err) {
+        this.logger.warn(
+          `Failed to enqueue in BullMQ, falling back to direct delivery: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     }
 
     await this.dispatcher.deliver(payload);
@@ -190,18 +196,45 @@ export class NotificationQueueService implements OnModuleInit {
     });
   }
 
+  async enqueueSubscriptionReminder(input: {
+    reminderId: string;
+    payload: DeliverNotificationPayload;
+  }) {
+    if (this.queue) {
+      try {
+        await this.queue.add(NotificationJobName.DELIVER_SUBSCRIPTION_REMINDER, input, {
+          ...NOTIFICATION_JOB_OPTIONS,
+          jobId: input.payload.idempotencyKey,
+        });
+        return;
+      } catch (err) {
+        this.logger.warn(
+          `Failed to enqueue in BullMQ, falling back to direct delivery: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
+
+    // Fallback if Redis/BullMQ is disabled or unavailable
+    await this.reminderService.deliverSubscriptionReminder(input);
+  }
+
   async processDeliverJob(payload: DeliverNotificationPayload) {
     await this.dispatcher.deliver({ ...payload, jobId: payload.jobId });
   }
 
+  async processSubscriptionReminderJob(data: {
+    reminderId: string;
+    payload: DeliverNotificationPayload;
+    jobId?: string;
+  }) {
+    await this.reminderService.deliverSubscriptionReminder({
+      reminderId: data.reminderId,
+      payload: { ...data.payload, jobId: data.jobId },
+    });
+  }
+
   async processScanRemindersJob() {
-    const payloads = await this.reminderService.collectReminders();
-
-    for (const payload of payloads) {
-      await this.enqueueDeliver(payload);
-    }
-
-    return { enqueued: payloads.length };
+    return this.reminderService.scanAndQueueSubscriptionReminders();
   }
 
   async processDueSubscriptionsJob() {

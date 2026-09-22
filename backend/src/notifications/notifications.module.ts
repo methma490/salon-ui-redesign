@@ -13,6 +13,7 @@ import { NotificationQueueService } from './notification-queue.service';
 import { NotificationReminderService } from './notification-reminder.service';
 import { NotificationsController } from './notifications.controller';
 import { NotificationsService } from './notifications.service';
+import { SubscriptionReminderScheduler } from './subscription-reminder.scheduler';
 
 @Module({
   imports: [
@@ -27,11 +28,12 @@ import { NotificationsService } from './notifications.service';
     NotificationDispatcherService,
     NotificationQueueService,
     NotificationReminderService,
+    SubscriptionReminderScheduler,
     NotificationProcessor,
     EmailNotificationChannel,
     SmsNotificationChannel,
     InAppNotificationChannel,
   ],
-  exports: [NotificationQueueService, NotificationsService],
+  exports: [NotificationQueueService, NotificationsService, NotificationReminderService],
 })
 export class NotificationsModule {}

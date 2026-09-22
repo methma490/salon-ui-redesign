@@ -130,6 +130,23 @@ enum InAppNotificationStatus {
   READ
 }
 
+enum SubscriptionReminderType {
+  SEVEN_DAYS_BEFORE
+  THREE_DAYS_BEFORE
+  ONE_DAY_BEFORE
+  DUE_TODAY
+  EXPIRED
+}
+
+enum SubscriptionReminderStatus {
+  PENDING
+  PROCESSING
+  SENT
+  PARTIAL_FAILED
+  FAILED
+  SKIPPED
+}
+
 // Platform tenants table - stores salon metadata
 model Tenant {
   id         String       @id @default(uuid()) @db.Uuid
@@ -151,6 +168,7 @@ model Tenant {
   notifications         Notification[]
   notificationLogs      NotificationLog[]
   invoiceLinks          InvoiceLink[]
+  subscriptionReminders SubscriptionReminder[]
 
   @@map("tenants")
 }
@@ -309,6 +327,7 @@ model Subscription {
   history              SubscriptionHistory[]
   paymentOrders        PaymentOrder[]
   invoices             Invoice[]
+  reminders            SubscriptionReminder[]
 
   @@index([tenantId])
   @@index([status])
@@ -541,6 +560,38 @@ model NotificationLog {
   @@index([templateCode])
   @@index([status])
   @@map("notification_logs")
+}
+
+model SubscriptionReminder {
+  id             String                     @id @default(uuid()) @db.Uuid
+  subscriptionId String                     @map("subscription_id") @db.Uuid
+  tenantId       String                     @map("tenant_id") @db.Uuid
+  reminderType   SubscriptionReminderType   @map("reminder_type")
+  targetDate     DateTime                   @map("target_date") @db.Date
+  status         SubscriptionReminderStatus @default(PENDING)
+  channels       NotificationChannel[]
+  emailSent      Boolean                    @default(false) @map("email_sent")
+  smsSent        Boolean                    @default(false) @map("sms_sent")
+  inAppSent      Boolean                    @default(false) @map("in_app_sent")
+  emailError     String?                    @map("email_error")
+  smsError       String?                    @map("sms_error")
+  inAppError     String?                    @map("in_app_error")
+  retryCount     Int                        @default(0) @map("retry_count")
+  lastAttemptAt  DateTime?                  @map("last_attempt_at")
+  sentAt         DateTime?                  @map("sent_at")
+  createdAt      DateTime                   @default(now()) @map("created_at")
+  updatedAt      DateTime                   @updatedAt @map("updated_at")
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionId, reminderType, targetDate])
+  @@index([subscriptionId])
+  @@index([tenantId])
+  @@index([status])
+  @@index([targetDate])
+  @@index([createdAt])
+  @@map("subscription_reminders")
 }
 
 model PasswordResetToken {

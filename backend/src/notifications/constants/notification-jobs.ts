@@ -2,6 +2,7 @@ export const NOTIFICATION_QUEUE = 'notifications';
 
 export enum NotificationJobName {
   DELIVER = 'deliver-notification',
+  DELIVER_SUBSCRIPTION_REMINDER = 'deliver-subscription-reminder',
   SCAN_REMINDERS = 'scan-reminders',
   PROCESS_DUE_SUBSCRIPTIONS = 'process-due-subscriptions',
 }

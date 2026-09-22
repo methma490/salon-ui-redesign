@@ -1224,4 +1224,36 @@ export const tenantApi = {
     lowStock: (params?: Record<string, string>) =>
       api.get('/tenant/reports/low-stock', { params }).then((r) => r.data),
   },
+
+  notifications: {
+    list: (params?: { page?: number; limit?: number; unreadOnly?: boolean }) =>
+      api
+        .get<PaginatedResponse<InAppNotification>>('/notifications', { params })
+        .then((r) => r.data),
+    unreadCount: () =>
+      api.get<{ count: number }>('/notifications/unread-count').then((r) => r.data),
+    markRead: (id: string) =>
+      api.patch<InAppNotification>(`/notifications/${id}/read`).then((r) => r.data),
+    markAllRead: () =>
+      api.patch<{ updated: number }>('/notifications/read-all').then((r) => r.data),
+  },
 };
+
+export interface InAppNotification {
+  id: string;
+  tenantId: string;
+  type: string;
+  title: string;
+  message: string;
+  status: 'UNREAD' | 'READ';
+  metadata?: {
+    actionUrl?: string;
+    action?: string;
+    label?: string;
+    subscriptionId?: string;
+    reminderType?: string;
+    targetDate?: string;
+  } | null;
+  readAt?: string | null;
+  createdAt: string;
+}

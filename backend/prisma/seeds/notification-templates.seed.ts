@@ -146,6 +146,87 @@ const TEMPLATE_SEEDS: TemplateSeed[] = [
       'Payment of {{amount}} {{currency}} received for {{planName}}. Reference: {{paymentReference}}.',
   },
   {
+    code: 'SUBSCRIPTION_EXPIRING_7D',
+    type: NotificationType.SUBSCRIPTION_EXPIRY_REMINDER,
+    channel: NotificationChannel.EMAIL,
+    subject: 'Your Dart Smart Salon subscription expires in 7 days',
+    bodyTemplate:
+      'Hi {{customerName}},\n\nYour {{planName}} subscription for {{salonName}} will expire in 7 days on {{expiryDate}}.\n\nRenew your subscription now to maintain uninterrupted access:\n{{actionUrl}}\n\nThank you,\nDart Smart Salon',
+  },
+  {
+    code: 'SUBSCRIPTION_EXPIRING_7D',
+    type: NotificationType.SUBSCRIPTION_EXPIRY_REMINDER,
+    channel: NotificationChannel.IN_APP,
+    bodyTemplate:
+      'Your {{planName}} subscription will expire in 7 days on {{expiryDate}}. Renew now to keep all features active.',
+  },
+  {
+    code: 'SUBSCRIPTION_EXPIRING_3D',
+    type: NotificationType.SUBSCRIPTION_EXPIRY_REMINDER,
+    channel: NotificationChannel.EMAIL,
+    subject: 'Reminder: Your Dart Smart Salon subscription expires in 3 days',
+    bodyTemplate:
+      'Hi {{customerName}},\n\nYour {{planName}} subscription for {{salonName}} is set to expire on {{expiryDate}} (in 3 days).\n\nPlease renew today to avoid any service interruption:\n{{actionUrl}}\n\nThank you,\nDart Smart Salon',
+  },
+  {
+    code: 'SUBSCRIPTION_EXPIRING_3D',
+    type: NotificationType.SUBSCRIPTION_EXPIRY_REMINDER,
+    channel: NotificationChannel.IN_APP,
+    bodyTemplate:
+      'Your {{planName}} subscription expires in 3 days on {{expiryDate}}. Renew now to avoid disruption.',
+  },
+  {
+    code: 'SUBSCRIPTION_EXPIRING_1D',
+    type: NotificationType.SUBSCRIPTION_EXPIRY_REMINDER,
+    channel: NotificationChannel.SMS,
+    bodyTemplate:
+      'Dart Smart Salon: {{salonName}} plan expires tomorrow ({{expiryDate}}). Renew: {{actionUrl}}',
+  },
+  {
+    code: 'SUBSCRIPTION_EXPIRING_1D',
+    type: NotificationType.SUBSCRIPTION_EXPIRY_REMINDER,
+    channel: NotificationChannel.EMAIL,
+    subject: 'Urgent: Your Dart Smart Salon subscription expires tomorrow',
+    bodyTemplate:
+      'Hi {{customerName}},\n\nYour {{planName}} subscription for {{salonName}} expires tomorrow ({{expiryDate}}).\n\nRenew now to avoid service interruption:\n{{actionUrl}}\n\nThank you,\nDart Smart Salon',
+  },
+  {
+    code: 'SUBSCRIPTION_EXPIRING_1D',
+    type: NotificationType.SUBSCRIPTION_EXPIRY_REMINDER,
+    channel: NotificationChannel.IN_APP,
+    bodyTemplate:
+      'Your {{planName}} subscription expires tomorrow ({{expiryDate}}). Renew now to keep access.',
+  },
+  {
+    code: 'SUBSCRIPTION_DUE_TODAY',
+    type: NotificationType.SUBSCRIPTION_EXPIRY_REMINDER,
+    channel: NotificationChannel.SMS,
+    bodyTemplate:
+      'Dart Smart Salon: {{salonName}} subscription is due today. Renew now: {{actionUrl}}',
+  },
+  {
+    code: 'SUBSCRIPTION_DUE_TODAY',
+    type: NotificationType.SUBSCRIPTION_EXPIRY_REMINDER,
+    channel: NotificationChannel.IN_APP,
+    bodyTemplate:
+      'Your {{planName}} subscription is due today ({{expiryDate}}). Renew now to prevent account suspension.',
+  },
+  {
+    code: 'SUBSCRIPTION_EXPIRED',
+    type: NotificationType.SUBSCRIPTION_EXPIRY_REMINDER,
+    channel: NotificationChannel.EMAIL,
+    subject: 'Your Dart Smart Salon subscription has expired',
+    bodyTemplate:
+      'Hi {{customerName}},\n\nYour {{planName}} subscription for {{salonName}} has expired.\n\nRenew your plan now to restore full access to your salon portal:\n{{actionUrl}}\n\nThank you,\nDart Smart Salon',
+  },
+  {
+    code: 'SUBSCRIPTION_EXPIRED',
+    type: NotificationType.SUBSCRIPTION_EXPIRY_REMINDER,
+    channel: NotificationChannel.IN_APP,
+    bodyTemplate:
+      'Your {{planName}} subscription has expired. Click Renew Now to restore access to your salon features.',
+  },
+  {
     code: 'PAYMENT_FAILED',
     type: NotificationType.PAYMENT_FAILED,
     channel: NotificationChannel.EMAIL,

@@ -52,6 +52,13 @@ export class NotificationProcessor implements OnModuleInit, OnModuleDestroy {
         });
         return;
 
+      case NotificationJobName.DELIVER_SUBSCRIPTION_REMINDER:
+        await this.queueService.processSubscriptionReminderJob({
+          ...(job.data as { reminderId: string; payload: DeliverNotificationPayload }),
+          jobId: job.id,
+        });
+        return;
+
       case NotificationJobName.SCAN_REMINDERS:
         return this.queueService.processScanRemindersJob();
 

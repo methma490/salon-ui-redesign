@@ -1,6 +1,5 @@
 import {
   BarChart3,
-  Bell,
   Boxes,
   CalendarDays,
   Coins,
@@ -29,6 +28,7 @@ import { useQuery } from '@tanstack/react-query';
 import { tenantApi } from '@/api/tenant.api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NotificationBell } from '@/components/salon/NotificationBell';
 import {
   Select,
   SelectContent,
@@ -500,14 +500,6 @@ function SalonAdminHeader({
     queryFn: tenantApi.branches.list,
   });
 
-  const { data: dashboard } = useQuery({
-    queryKey: ['dashboard', branchId, 'today'],
-    queryFn: () =>
-      tenantApi.dashboard.get(branchId === 'all' ? undefined : branchId, 'today'),
-    staleTime: 120_000,
-  });
-
-  const lowStockCount = dashboard?.kpis.lowStockCount ?? 0;
   const roleLabel = primaryRoleLabel(roles);
 
   useEffect(() => {
@@ -528,20 +520,7 @@ function SalonAdminHeader({
 
   const headerActions = (
     <>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="relative h-9 w-9"
-        onClick={() => navigate('/salon/stock')}
-        title={lowStockCount > 0 ? `${lowStockCount} low stock items` : 'Notifications'}
-      >
-        <Bell className="h-4 w-4" />
-        {lowStockCount > 0 && (
-          <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
-            {lowStockCount > 9 ? '9+' : lowStockCount}
-          </span>
-        )}
-      </Button>
+      <NotificationBell />
 
       <div className="relative" ref={profileRef}>
         <Button
