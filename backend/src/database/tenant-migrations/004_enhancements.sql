@@ -23,7 +23,10 @@ ALTER TABLE sales ADD COLUMN IF NOT EXISTS cashier_id UUID;
 DO $$
 BEGIN
   IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'sales_cashier_fkey'
+    SELECT 1 FROM pg_constraint c
+    JOIN pg_namespace n ON n.oid = c.connamespace
+    WHERE c.conname = 'sales_cashier_fkey'
+      AND n.nspname = current_schema()
   ) THEN
     ALTER TABLE sales ADD CONSTRAINT sales_cashier_fkey
       FOREIGN KEY (cashier_id) REFERENCES users(id) ON DELETE SET NULL;
@@ -37,69 +40,21 @@ ALTER TABLE stock_movements ADD COLUMN IF NOT EXISTS created_by UUID;
 DO $$
 BEGIN
   IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'stock_movements_created_by_fkey'
+    SELECT 1 FROM pg_constraint c
+    JOIN pg_namespace n ON n.oid = c.connamespace
+    WHERE c.conname = 'stock_movements_created_by_fkey'
+      AND n.nspname = current_schema()
   ) THEN
     ALTER TABLE stock_movements ADD CONSTRAINT stock_movements_created_by_fkey
       FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
   END IF;
 END $$;
 
--- Extend stock movement enum values
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_enum e
-    JOIN pg_type t ON e.enumtypid = t.oid
-    JOIN pg_namespace n ON t.typnamespace = n.oid
-    WHERE t.typname = 'stock_movement_type'
-      AND e.enumlabel = 'STOCK_IN'
-      AND n.nspname = current_schema()
-  ) THEN
-    ALTER TYPE stock_movement_type ADD VALUE 'STOCK_IN';
-  END IF;
-END $$;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_enum e
-    JOIN pg_type t ON e.enumtypid = t.oid
-    JOIN pg_namespace n ON t.typnamespace = n.oid
-    WHERE t.typname = 'stock_movement_type'
-      AND e.enumlabel = 'SALE'
-      AND n.nspname = current_schema()
-  ) THEN
-    ALTER TYPE stock_movement_type ADD VALUE 'SALE';
-  END IF;
-END $$;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_enum e
-    JOIN pg_type t ON e.enumtypid = t.oid
-    JOIN pg_namespace n ON t.typnamespace = n.oid
-    WHERE t.typname = 'stock_movement_type'
-      AND e.enumlabel = 'DAMAGE'
-      AND n.nspname = current_schema()
-  ) THEN
-    ALTER TYPE stock_movement_type ADD VALUE 'DAMAGE';
-  END IF;
-END $$;
-
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_enum e
-    JOIN pg_type t ON e.enumtypid = t.oid
-    JOIN pg_namespace n ON t.typnamespace = n.oid
-    WHERE t.typname = 'stock_movement_type'
-      AND e.enumlabel = 'TRANSFER'
-      AND n.nspname = current_schema()
-  ) THEN
-    ALTER TYPE stock_movement_type ADD VALUE 'TRANSFER';
-  END IF;
-END $$;
+-- Extend stock movement enum values (PostgreSQL disallows ALTER TYPE inside DO $$ blocks)
+ALTER TYPE stock_movement_type ADD VALUE IF NOT EXISTS 'STOCK_IN';
+ALTER TYPE stock_movement_type ADD VALUE IF NOT EXISTS 'SALE';
+ALTER TYPE stock_movement_type ADD VALUE IF NOT EXISTS 'DAMAGE';
+ALTER TYPE stock_movement_type ADD VALUE IF NOT EXISTS 'TRANSFER';
 
 -- Audit logs
 CREATE TABLE IF NOT EXISTS audit_logs (
@@ -122,7 +77,11 @@ CREATE INDEX IF NOT EXISTS audit_logs_created_at_idx ON audit_logs(created_at);
 DO $$
 BEGIN
   IF NOT EXISTS (
-    SELECT 1 FROM pg_trigger WHERE tgname = 'branch_stock_updated_at'
+    SELECT 1 FROM pg_trigger t
+    JOIN pg_class c ON c.oid = t.tgrelid
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE t.tgname = 'branch_stock_updated_at'
+      AND n.nspname = current_schema()
   ) THEN
     CREATE TRIGGER branch_stock_updated_at BEFORE UPDATE ON branch_stock
       FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

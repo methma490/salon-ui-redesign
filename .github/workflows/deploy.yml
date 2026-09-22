@@ -43,9 +43,10 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Convert Owner to Lowercase (Docker requirement)
+      - name: Set Environment Variables (Image Owner & Short SHA)
         run: |
           echo "IMAGE_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          echo "SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)" >> $GITHUB_ENV
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -64,8 +65,10 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: |
+            ghcr.io/${{ env.IMAGE_OWNER }}/salon-backend:${{ env.SHORT_SHA }}
             ghcr.io/${{ env.IMAGE_OWNER }}/salon-backend:latest
-            ghcr.io/${{ env.IMAGE_OWNER }}/salon-backend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Deploy Backend Image to CapRover
         uses: caprover/deploy-from-github@v1.1.2
@@ -73,7 +76,7 @@ jobs:
           server: '${{ env.CAPROVER_SERVER }}'
           app: '${{ env.BACKEND_APP_NAME }}'
           token: '${{ env.BACKEND_APP_TOKEN }}'
-          image: 'ghcr.io/${{ env.IMAGE_OWNER }}/salon-backend:latest'
+          image: 'ghcr.io/${{ env.IMAGE_OWNER }}/salon-backend:${{ env.SHORT_SHA }}'
 
   # ----------------------------------------------------------------------------
   # 2. BUILD FRONTEND DOCKER IMAGE & DEPLOY VIA GHCR
@@ -85,9 +88,10 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Convert Owner to Lowercase (Docker requirement)
+      - name: Set Environment Variables (Image Owner & Short SHA)
         run: |
           echo "IMAGE_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          echo "SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)" >> $GITHUB_ENV
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -108,8 +112,10 @@ jobs:
           build-args: |
             VITE_API_BASE_URL=${{ secrets.VITE_API_BASE_URL }}
           tags: |
+            ghcr.io/${{ env.IMAGE_OWNER }}/salon-frontend:${{ env.SHORT_SHA }}
             ghcr.io/${{ env.IMAGE_OWNER }}/salon-frontend:latest
-            ghcr.io/${{ env.IMAGE_OWNER }}/salon-frontend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Deploy Frontend Image to CapRover
         uses: caprover/deploy-from-github@v1.1.2
@@ -117,4 +123,4 @@ jobs:
           server: '${{ env.CAPROVER_SERVER }}'
           app: '${{ env.FRONTEND_APP_NAME }}'
           token: '${{ env.FRONTEND_APP_TOKEN }}'
-          image: 'ghcr.io/${{ env.IMAGE_OWNER }}/salon-frontend:latest'
+          image: 'ghcr.io/${{ env.IMAGE_OWNER }}/salon-frontend:${{ env.SHORT_SHA }}'

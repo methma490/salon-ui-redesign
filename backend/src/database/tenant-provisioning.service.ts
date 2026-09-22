@@ -160,16 +160,40 @@ export class TenantProvisioningService {
       // Set search_path
       await this.prisma.$executeRawUnsafe(`SET search_path TO "${schemaName}", public`);
 
-      // Split SQL into statements, handling dollar-quoted strings
+      // Split SQL into statements, handling quotes, comments, and dollar-quoted blocks
       const statements = this.splitSqlStatements(sql);
 
+      let statementIndex = 0;
       for (const statement of statements) {
-        if (statement.trim().length === 0) continue;
+        statementIndex++;
+        const trimmed = statement.trim();
+        if (trimmed.length === 0) continue;
+
+        // Skip pure comment blocks that have no executable SQL
+        const executableContent = trimmed
+          .replace(/--.*$/gm, '')
+          .replace(/\/\*[\s\S]*?\*\//g, '')
+          .trim();
+        if (executableContent.length === 0) continue;
 
         try {
           await this.prisma.$executeRawUnsafe(statement);
-        } catch (error) {
-          this.logger.error(`Failed to execute statement in ${file}:`, error);
+        } catch (error: any) {
+          const prismaCode = error?.code || 'UNKNOWN_PRISMA_CODE';
+          const dbCode = error?.meta?.code || 'N/A';
+          const dbMessage = error?.meta?.message || error?.message || String(error);
+
+          this.logger.error(
+            `\n[MIGRATION FAILURE]\n` +
+            `================================================================================\n` +
+            `Migration File : ${file}\n` +
+            `Statement #    : ${statementIndex}\n` +
+            `Prisma Code    : ${prismaCode}\n` +
+            `DB Error Code  : ${dbCode}\n` +
+            `DB Message     : ${dbMessage}\n` +
+            `Failed SQL     :\n${statement}\n` +
+            `================================================================================`,
+          );
           throw error;
         }
       }
@@ -181,50 +205,114 @@ export class TenantProvisioningService {
   }
 
   /**
-   * Split SQL into statements, handling dollar-quoted strings ($$)
+   * Split SQL into executable statements, properly preserving:
+   * 1. Single-line comments (-- ...)
+   * 2. Block comments (/* ... * /)
+   * 3. Single-quoted strings ('...' and '' escapes)
+   * 4. Dollar-quoted blocks ($$ ... $$ or $<tag>$ ... $<tag>$)
    */
   private splitSqlStatements(sql: string): string[] {
     const statements: string[] = [];
     let current = '';
-    let inDollarQuote = false;
-    let dollarTag = '';
+    let i = 0;
+    const len = sql.length;
 
-    for (let i = 0; i < sql.length; i++) {
-      const char = sql[i];
-      const nextChar = sql[i + 1];
-
-      // Check for dollar-quoted string
-      if (char === '$' && nextChar === '$') {
-        if (!inDollarQuote) {
-          // Starting a dollar quote
-          inDollarQuote = true;
-          dollarTag = '$$';
-          current += char + nextChar;
-          i++; // Skip next $
-        } else if (dollarTag === '$$') {
-          // Ending a dollar quote
-          inDollarQuote = false;
-          current += char + nextChar;
-          i++; // Skip next $
-        } else {
-          current += char;
+    while (i < len) {
+      // 1. Single-line comment: -- ... \n
+      if (sql[i] === '-' && sql[i + 1] === '-') {
+        while (i < len && sql[i] !== '\n') {
+          current += sql[i];
+          i++;
         }
-      } else if (char === ';' && !inDollarQuote) {
-        // End of statement
-        current += char;
-        statements.push(current.trim());
-        current = '';
-      } else {
-        current += char;
+        if (i < len) {
+          current += sql[i]; // include \n
+          i++;
+        }
+        continue;
       }
+
+      // 2. Block comment: /* ... */
+      if (sql[i] === '/' && sql[i + 1] === '*') {
+        current += '/*';
+        i += 2;
+        while (i < len && !(sql[i] === '*' && sql[i + 1] === '/')) {
+          current += sql[i];
+          i++;
+        }
+        if (i < len) {
+          current += '*/';
+          i += 2;
+        }
+        continue;
+      }
+
+      // 3. Dollar quote: $$ ... $$ or $<tag>$ ... $<tag>$
+      if (sql[i] === '$') {
+        const match = sql.slice(i).match(/^\$([a-zA-Z0-9_]*)\$/);
+        if (match) {
+          const tag = match[0];
+          current += tag;
+          i += tag.length;
+          const endIdx = sql.indexOf(tag, i);
+          if (endIdx !== -1) {
+            current += sql.slice(i, endIdx + tag.length);
+            i = endIdx + tag.length;
+          } else {
+            current += sql.slice(i);
+            i = len;
+          }
+          continue;
+        }
+      }
+
+      // 4. Single-quoted string: '...' (handles '' and \' escapes)
+      if (sql[i] === "'") {
+        current += "'";
+        i++;
+        while (i < len) {
+          if (sql[i] === "'") {
+            current += "'";
+            i++;
+            // Check for doubled quote escape ''
+            if (sql[i] === "'") {
+              current += "'";
+              i++;
+            } else {
+              break;
+            }
+          } else if (sql[i] === '\\' && i + 1 < len) {
+            current += sql[i] + sql[i + 1];
+            i += 2;
+          } else {
+            current += sql[i];
+            i++;
+          }
+        }
+        continue;
+      }
+
+      // 5. Statement delimiter: ;
+      if (sql[i] === ';') {
+        current += ';';
+        i++;
+        const trimmed = current.trim();
+        if (trimmed.length > 0) {
+          statements.push(trimmed);
+        }
+        current = '';
+        continue;
+      }
+
+      current += sql[i];
+      i++;
     }
 
-    // Add final statement if any
-    if (current.trim().length > 0) {
-      statements.push(current.trim());
+    const trimmed = current.trim();
+    if (trimmed.length > 0) {
+      statements.push(trimmed);
     }
 
-    return statements.filter((s) => s.length > 0);
+    return statements;
   }
 
   /**
