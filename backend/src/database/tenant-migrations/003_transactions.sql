@@ -3,10 +3,25 @@
 -- Description: Create transaction tables (stock movements, sales, payments)
 
 -- Enums
-CREATE TYPE stock_movement_type AS ENUM ('IN', 'OUT', 'ADJUSTMENT');
-CREATE TYPE sale_status AS ENUM ('PENDING', 'COMPLETED', 'CANCELLED', 'REFUNDED');
-CREATE TYPE payment_method AS ENUM ('CASH', 'CARD', 'BANK_TRANSFER', 'OTHER');
-CREATE TYPE payment_status AS ENUM ('PENDING', 'COMPLETED', 'FAILED');
+DO $$ BEGIN
+  CREATE TYPE stock_movement_type AS ENUM ('IN', 'OUT', 'ADJUSTMENT');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE sale_status AS ENUM ('PENDING', 'COMPLETED', 'CANCELLED', 'REFUNDED');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE payment_method AS ENUM ('CASH', 'CARD', 'BANK_TRANSFER', 'OTHER');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE payment_status AS ENUM ('PENDING', 'COMPLETED', 'FAILED');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Stock movements table
 CREATE TABLE stock_movements (

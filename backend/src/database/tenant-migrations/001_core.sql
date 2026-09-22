@@ -3,8 +3,15 @@
 -- Description: Create core tables for tenant schema (branches, users, roles, permissions, RBAC)
 
 -- Enums
-CREATE TYPE branch_status AS ENUM ('ACTIVE', 'INACTIVE');
-CREATE TYPE user_status AS ENUM ('ACTIVE', 'INACTIVE', 'SUSPENDED');
+DO $$ BEGIN
+  CREATE TYPE branch_status AS ENUM ('ACTIVE', 'INACTIVE');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE user_status AS ENUM ('ACTIVE', 'INACTIVE', 'SUSPENDED');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Branches table
 CREATE TABLE branches (

@@ -2,7 +2,10 @@
 -- Version: 007
 -- Description: Create appointments and appointment_services tables
 
-CREATE TYPE appointment_status AS ENUM ('PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW');
+DO $$ BEGIN
+  CREATE TYPE appointment_status AS ENUM ('PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE appointments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

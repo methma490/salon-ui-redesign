@@ -3,8 +3,15 @@
 -- Description: Create business tables (employees, customers, services, products)
 
 -- Enums
-CREATE TYPE employee_status AS ENUM ('ACTIVE', 'INACTIVE', 'RESIGNED');
-CREATE TYPE customer_status AS ENUM ('ACTIVE', 'INACTIVE', 'BLOCKED');
+DO $$ BEGIN
+  CREATE TYPE employee_status AS ENUM ('ACTIVE', 'INACTIVE', 'RESIGNED');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE customer_status AS ENUM ('ACTIVE', 'INACTIVE', 'BLOCKED');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Employees table
 CREATE TABLE employees (

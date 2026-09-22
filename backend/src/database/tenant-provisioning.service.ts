@@ -1,8 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
+import { Prisma } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as bcrypt from 'bcrypt';
+
+export type DbClient = Prisma.TransactionClient | PrismaService;
 
 export interface TenantProvisioningData {
   tenantCode: string;
@@ -57,6 +60,46 @@ export class TenantProvisioningService {
   }
 
   /**
+   * Safely drops any orphan tenant enum types that were accidentally created in the public schema
+   * during previous unpinned connection executions.
+   */
+  async cleanupStrayPublicTenantTypes(client: DbClient = this.prisma): Promise<void> {
+    const cleanupSql = `
+      DO $$
+      DECLARE
+        tenant_types TEXT[] := ARRAY[
+          'branch_status', 'user_status', 'employee_status', 'customer_status',
+          'stock_movement_type', 'sale_status', 'payment_method', 'payment_status',
+          'appointment_status', 'expense_status', 'loan_status', 'payroll_run_status',
+          'sale_assignment_type', 'advance_status', 'stock_receipt_payment_status',
+          'stock_credit_payment_method', 'quotation_status', 'quotation_message_channel',
+          'quotation_message_status'
+        ];
+        t_name TEXT;
+      BEGIN
+        FOREACH t_name IN ARRAY tenant_types LOOP
+          IF EXISTS (
+            SELECT 1 FROM pg_type t
+            JOIN pg_namespace n ON n.oid = t.typnamespace
+            WHERE n.nspname = 'public' AND t.typname = t_name
+          ) THEN
+            BEGIN
+              EXECUTE 'DROP TYPE IF EXISTS public.' || quote_ident(t_name) || ' RESTRICT';
+            EXCEPTION WHEN OTHERS THEN
+              NULL;
+            END;
+          END IF;
+        END LOOP;
+      END $$;
+    `;
+    try {
+      await client.$executeRawUnsafe(cleanupSql);
+    } catch (err) {
+      this.logger.warn(`Could not run public tenant type cleanup: ${err}`);
+    }
+  }
+
+  /**
    * Provision a complete tenant schema with all tables, roles, and initial data
    */
   async provisionTenantSchema(data: TenantProvisioningData): Promise<TenantProvisioningResult> {
@@ -65,23 +108,42 @@ export class TenantProvisioningService {
     try {
       this.logger.log(`Starting provisioning for tenant ${tenantCode} (${schemaName})`);
 
-      // 1. Create the schema
+      // 0. Clean stray tenant types from public schema first
+      await this.cleanupStrayPublicTenantTypes();
+
+      // 1. Create the schema (DDL)
       await this.createSchema(schemaName);
 
-      // 2. Run all migrations
-      await this.runMigrations(schemaName);
+      // 2. Execute all provisioning steps inside a dedicated transaction to guarantee connection pinning!
+      // In Prisma, $transaction pins a single underlying physical connection for the entire callback.
+      const { mainBranchId, adminUserId } = await this.prisma.$transaction(
+        async (tx) => {
+          // Pin search_path to the new tenant schema on this dedicated connection
+          await tx.$executeRawUnsafe(`SET search_path TO "${schemaName}", public`);
 
-      // 3. Seed default roles and permissions
-      await this.seedRolesAndPermissions(schemaName, data.roles);
+          // Run all migrations on this pinned connection
+          await this.runMigrations(schemaName, tx);
 
-      // 4. Create main branch
-      const mainBranchId = await this.createMainBranch(
-        schemaName,
-        data.mainBranchName || 'Main Branch',
+          // Seed default roles and permissions on this pinned connection
+          await this.seedRolesAndPermissions(schemaName, data.roles, tx);
+
+          // Create main branch on this pinned connection
+          const branchId = await this.createMainBranch(
+            schemaName,
+            data.mainBranchName || 'Main Branch',
+            tx,
+          );
+
+          // Create admin user on this pinned connection
+          const userId = await this.createAdminUser(schemaName, adminUser, tx);
+
+          return { mainBranchId: branchId, adminUserId: userId };
+        },
+        {
+          timeout: 120000,
+          maxWait: 15000,
+        },
       );
-
-      // 5. Create admin user
-      const adminUserId = await this.createAdminUser(schemaName, adminUser);
 
       this.logger.log(`✓ Successfully provisioned tenant ${tenantCode}`);
 
@@ -135,13 +197,16 @@ export class TenantProvisioningService {
   /**
    * Run all tenant migration files in order
    */
-  private async runMigrations(schemaName: string): Promise<void> {
+  private async runMigrations(schemaName: string, client: DbClient = this.prisma): Promise<void> {
     const migrationsPath = this.getMigrationsPath();
     this.logger.log(`Running migrations for schema: ${schemaName} (from ${migrationsPath})`);
 
     if (!fs.existsSync(migrationsPath)) {
       throw new Error(`Tenant migrations directory not found at: ${migrationsPath}`);
     }
+
+    // Ensure search_path is set on this client/connection
+    await client.$executeRawUnsafe(`SET search_path TO "${schemaName}", public`);
 
     // Get all migration files sorted by name
     const files = fs
@@ -156,9 +221,6 @@ export class TenantProvisioningService {
     for (const file of files) {
       this.logger.log(`  Applying migration: ${file}`);
       const sql = fs.readFileSync(path.join(migrationsPath, file), 'utf-8');
-
-      // Set search_path
-      await this.prisma.$executeRawUnsafe(`SET search_path TO "${schemaName}", public`);
 
       // Split SQL into statements, handling quotes, comments, and dollar-quoted blocks
       const statements = this.splitSqlStatements(sql);
@@ -177,7 +239,7 @@ export class TenantProvisioningService {
         if (executableContent.length === 0) continue;
 
         try {
-          await this.prisma.$executeRawUnsafe(statement);
+          await client.$executeRawUnsafe(statement);
         } catch (error: any) {
           const prismaCode = error?.code || 'UNKNOWN_PRISMA_CODE';
           const dbCode = error?.meta?.code || 'N/A';
@@ -197,8 +259,6 @@ export class TenantProvisioningService {
           throw error;
         }
       }
-
-      await this.prisma.$executeRawUnsafe(`SET search_path TO public`);
     }
 
     this.logger.log(`✓ Migrations complete for ${schemaName}`);
@@ -321,6 +381,7 @@ export class TenantProvisioningService {
   private async seedRolesAndPermissions(
     schemaName: string,
     _customRoles?: string[],
+    client: DbClient = this.prisma,
   ): Promise<void> {
     this.logger.log(`Seeding roles and permissions for ${schemaName}`);
 
@@ -381,11 +442,11 @@ export class TenantProvisioningService {
       { code: 'QUOTATION_CANCEL', name: 'Cancel Quotations' },
     ];
 
-    await this.prisma.$executeRawUnsafe(`SET search_path TO "${schemaName}"`);
+    await client.$executeRawUnsafe(`SET search_path TO "${schemaName}", public`);
 
     // Insert roles (idempotent — safe if migration already seeded or retry mid-seed)
     for (const role of roles) {
-      await this.prisma.$executeRawUnsafe(
+      await client.$executeRawUnsafe(
         `INSERT INTO roles (code, name, description, is_system)
          VALUES ($1, $2, $3, true)
          ON CONFLICT (code) DO NOTHING`,
@@ -397,7 +458,7 @@ export class TenantProvisioningService {
 
     // Insert permissions (idempotent — never re-insert QUOTATION_* / others)
     for (const permission of permissions) {
-      await this.prisma.$executeRawUnsafe(
+      await client.$executeRawUnsafe(
         `INSERT INTO permissions (code, name)
          VALUES ($1, $2)
          ON CONFLICT (code) DO NOTHING`,
@@ -407,7 +468,7 @@ export class TenantProvisioningService {
     }
 
     // Grant all permissions to SALON_ADMIN
-    await this.prisma.$executeRawUnsafe(`
+    await client.$executeRawUnsafe(`
       INSERT INTO role_permissions (role_id, permission_id)
       SELECT r.id, p.id
       FROM roles r
@@ -417,7 +478,7 @@ export class TenantProvisioningService {
     `);
 
     // CASHIER permissions
-    await this.prisma.$executeRawUnsafe(`
+    await client.$executeRawUnsafe(`
       INSERT INTO role_permissions (role_id, permission_id)
       SELECT r.id, p.id
       FROM roles r
@@ -432,7 +493,7 @@ export class TenantProvisioningService {
     `);
 
     // STOCK_KEEPER permissions
-    await this.prisma.$executeRawUnsafe(`
+    await client.$executeRawUnsafe(`
       INSERT INTO role_permissions (role_id, permission_id)
       SELECT r.id, p.id
       FROM roles r
@@ -443,20 +504,22 @@ export class TenantProvisioningService {
       ON CONFLICT (role_id, permission_id) DO NOTHING
     `);
 
-    await this.prisma.$executeRawUnsafe(`SET search_path TO public`);
-
     this.logger.log(`✓ Roles and permissions seeded for ${schemaName}`);
   }
 
   /**
    * Create the main branch
    */
-  private async createMainBranch(schemaName: string, name: string): Promise<string> {
+  private async createMainBranch(
+    schemaName: string,
+    name: string,
+    client: DbClient = this.prisma,
+  ): Promise<string> {
     this.logger.log(`Creating main branch for ${schemaName}`);
 
-    await this.prisma.$executeRawUnsafe(`SET search_path TO "${schemaName}"`);
+    await client.$executeRawUnsafe(`SET search_path TO "${schemaName}", public`);
 
-    const result = await this.prisma.$queryRawUnsafe<{ id: string }[]>(
+    const result = await client.$queryRawUnsafe<{ id: string }[]>(
       `
       INSERT INTO branches (code, name, is_main, status)
       VALUES ('MAIN', $1, true, 'ACTIVE')
@@ -464,8 +527,6 @@ export class TenantProvisioningService {
     `,
       name,
     );
-
-    await this.prisma.$executeRawUnsafe(`SET search_path TO public`);
 
     const branchId = result[0].id;
     this.logger.log(`✓ Main branch created: ${branchId}`);
@@ -479,15 +540,16 @@ export class TenantProvisioningService {
   private async createAdminUser(
     schemaName: string,
     adminData: TenantProvisioningData['adminUser'],
+    client: DbClient = this.prisma,
   ): Promise<string> {
     this.logger.log(`Creating admin user for ${schemaName}`);
 
     const passwordHash = await bcrypt.hash(adminData.password, 12);
 
-    await this.prisma.$executeRawUnsafe(`SET search_path TO "${schemaName}"`);
+    await client.$executeRawUnsafe(`SET search_path TO "${schemaName}", public`);
 
     // Create user
-    const userResult = await this.prisma.$queryRawUnsafe<{ id: string }[]>(
+    const userResult = await client.$queryRawUnsafe<{ id: string }[]>(
       `
       INSERT INTO users (name, email, phone, password_hash, status)
       VALUES ($1, $2, $3, $4, 'ACTIVE')
@@ -502,15 +564,13 @@ export class TenantProvisioningService {
     const userId = userResult[0].id;
 
     // Assign SALON_ADMIN role
-    await this.prisma.$executeRawUnsafe(
+    await client.$executeRawUnsafe(
       `
       INSERT INTO user_roles (user_id, role_id)
       SELECT $1::uuid, id FROM roles WHERE code = 'SALON_ADMIN'
     `,
       userId,
     );
-
-    await this.prisma.$executeRawUnsafe(`SET search_path TO public`);
 
     this.logger.log(`✓ Admin user created: ${userId} (${adminData.email})`);
 
