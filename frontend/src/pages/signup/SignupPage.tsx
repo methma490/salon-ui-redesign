@@ -188,7 +188,7 @@ export default function SignupPage() {
 
             {plan && (
               <ul className="space-y-2">
-                {plan.features.slice(0, 5).map((f) => (
+                {(Array.isArray(plan.features) ? plan.features : []).slice(0, 5).map((f) => (
                   <li key={f.code} className="flex items-center gap-2 text-sm text-white/90">
                     <Check className="h-3.5 w-3.5 shrink-0 text-emerald-300" />
                     {f.name}

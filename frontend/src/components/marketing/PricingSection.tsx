@@ -20,8 +20,9 @@ interface PricingSectionProps {
 }
 
 function PricingCard({ plan }: { plan: PublicPlan }) {
-  const popular = isPopularPlan(plan.code);
-  const highlight = PLAN_HIGHLIGHTS[plan.code];
+  const popular = isPopularPlan(plan?.code || '');
+  const highlight = plan?.code ? PLAN_HIGHLIGHTS[plan.code] : undefined;
+  const features = Array.isArray(plan?.features) ? plan.features : [];
 
   return (
     <Card
@@ -41,34 +42,38 @@ function PricingCard({ plan }: { plan: PublicPlan }) {
 
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between gap-2">
-          <CardTitle className="text-xl text-foreground">{plan.name}</CardTitle>
-          <Badge variant="secondary" className="bg-accent text-primary">
-            {plan.code}
-          </Badge>
+          <CardTitle className="text-xl text-foreground">{plan?.name || 'Plan'}</CardTitle>
+          {plan?.code && (
+            <Badge variant="secondary" className="bg-accent text-primary">
+              {plan.code}
+            </Badge>
+          )}
         </div>
         {highlight && <CardDescription>{highlight}</CardDescription>}
-        {plan.description && !highlight && <CardDescription>{plan.description}</CardDescription>}
+        {plan?.description && !highlight && <CardDescription>{plan.description}</CardDescription>}
       </CardHeader>
 
       <CardContent className="flex flex-1 flex-col gap-6 pb-6">
         <div>
           <div className="flex items-baseline gap-1">
             <span className="text-4xl font-bold tracking-tight text-primary">
-              {formatPrice(plan.price, plan.currency)}
+              {formatPrice(plan?.price ?? 0, plan?.currency)}
             </span>
             <span className="text-sm text-muted-foreground">
-              / {billingCycleLabel(plan.billingCycle)}
+              / {billingCycleLabel(plan?.billingCycle)}
             </span>
           </div>
         </div>
 
         <ul className="space-y-3">
-          {plan.features.map((feature) => (
-            <li key={feature.code} className="flex items-start gap-2 text-sm">
+          {features.map((feature) => (
+            <li key={feature?.code || feature?.name} className="flex items-start gap-2 text-sm">
               <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent">
                 <Check className="h-3 w-3 text-primary" />
               </span>
-              <span className="text-foreground/90">{featureLabel(feature.code, feature.name)}</span>
+              <span className="text-foreground/90">
+                {featureLabel(feature?.code || '', feature?.name || '')}
+              </span>
             </li>
           ))}
         </ul>
@@ -77,7 +82,7 @@ function PricingCard({ plan }: { plan: PublicPlan }) {
           className={cn('mt-2 w-full shadow-sm', !popular && 'border-primary/25 hover:bg-accent')}
           variant={popular ? 'default' : 'outline'}
         >
-          <Link to={`/signup/${plan.id}`}>Choose {plan.name}</Link>
+          <Link to={`/signup/${plan?.id}`}>Choose {plan?.name || 'Plan'}</Link>
         </Button>
       </CardContent>
     </Card>
@@ -85,6 +90,8 @@ function PricingCard({ plan }: { plan: PublicPlan }) {
 }
 
 export function PricingSection({ plans, isLoading, error }: PricingSectionProps) {
+  const safePlans = Array.isArray(plans) ? plans : [];
+
   return (
     <section id="pricing" className="border-y border-border bg-muted/50 py-20">
       <div className="mx-auto max-w-6xl px-4 md:px-6">
@@ -114,10 +121,10 @@ export function PricingSection({ plans, isLoading, error }: PricingSectionProps)
           </div>
         )}
 
-        {!isLoading && !error && plans.length > 0 && (
+        {!isLoading && !error && safePlans.length > 0 && (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {plans.map((plan) => (
-              <PricingCard key={plan.id} plan={plan} />
+            {safePlans.map((plan) => (
+              <PricingCard key={plan?.id || plan?.code} plan={plan} />
             ))}
           </div>
         )}

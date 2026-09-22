@@ -110,7 +110,7 @@ export default function PublicQuotationPage() {
             </tr>
           </thead>
           <tbody>
-            {data.items.map((item, idx) => (
+            {(Array.isArray(data.items) ? data.items : []).map((item, idx) => (
               <tr key={idx}>
                 <td style={{ padding: 8, borderBottom: '1px solid #f1f5f9' }}>{item.description}</td>
                 <td style={{ padding: 8, textAlign: 'right', borderBottom: '1px solid #f1f5f9' }}>

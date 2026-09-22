@@ -14,7 +14,7 @@ import type {
 } from '@/features/salons/types/salon.types';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -73,7 +73,20 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // If backend or proxy returned HTML (e.g., SPA fallback on invalid API URL)
+    if (
+      typeof response.data === 'string' &&
+      (response.data.trim().startsWith('<!DOCTYPE') ||
+        response.data.trim().startsWith('<!doctype') ||
+        response.data.trim().startsWith('<html'))
+    ) {
+      return Promise.reject(
+        new Error('Received HTML response instead of JSON. Check backend API URL configuration.'),
+      );
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config as typeof error.config & { _retry?: boolean };
 

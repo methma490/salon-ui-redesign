@@ -58,7 +58,11 @@ function PlanPricingBlock({ plan }: { plan: AdminPlan }) {
 }
 
 function PlanFeatures({ plan }: { plan: AdminPlan }) {
-  const featureCodes = plan.planFeatures.filter((pf) => pf.enabled).map((pf) => pf.feature.code);
+  const planFeatures = Array.isArray(plan?.planFeatures) ? plan.planFeatures : [];
+  const featureCodes = planFeatures
+    .filter((pf) => pf?.enabled)
+    .map((pf) => pf?.feature?.code)
+    .filter(Boolean);
 
   return (
     <div className="plans-feature-list">

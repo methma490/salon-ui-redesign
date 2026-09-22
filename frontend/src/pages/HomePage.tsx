@@ -5,7 +5,8 @@ import { PricingSection } from '@/components/marketing/PricingSection';
 import { usePublicPlans } from '@/features/plans/hooks/usePlans';
 
 export default function HomePage() {
-  const { data: plans = [], isLoading, isError } = usePublicPlans();
+  const { data, isLoading, isError } = usePublicPlans();
+  const plans = Array.isArray(data) ? data : [];
 
   return (
     <div className="min-h-screen bg-background">

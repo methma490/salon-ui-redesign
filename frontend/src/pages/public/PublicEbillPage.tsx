@@ -55,7 +55,8 @@ interface PublicInvoiceData {
   }>;
 }
 
-function formatPaymentMethod(method: string) {
+function formatPaymentMethod(method?: string) {
+  if (!method) return '—';
   return method
     .split('_')
     .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
@@ -420,7 +421,7 @@ export default function PublicEbillPage() {
               </tr>
             </thead>
             <tbody>
-              {ebill.items.map((item, idx) => {
+              {(Array.isArray(ebill.items) ? ebill.items : []).map((item, idx) => {
                 const displayName =
                   item.name || item.serviceName || item.productName || `Item #${idx + 1}`;
                 const itemTypeBadge =
@@ -546,7 +547,7 @@ export default function PublicEbillPage() {
                   flexWrap: 'wrap',
                 }}
               >
-                {ebill.payments.map((p, idx) => (
+                {(Array.isArray(ebill.payments) ? ebill.payments : []).map((p, idx) => (
                   <span
                     key={p.id || idx}
                     style={{

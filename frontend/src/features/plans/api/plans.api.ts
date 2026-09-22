@@ -8,11 +8,13 @@ import type {
 } from '@/features/plans/types/plan.types';
 
 export const publicPlansApi = {
-  list: () => api.get<PublicPlan[]>('/plans').then((r) => r.data),
+  list: () =>
+    api.get<PublicPlan[]>('/plans').then((r) => (Array.isArray(r.data) ? r.data : [])),
 };
 
 export const adminPlansApi = {
-  list: () => api.get<AdminPlan[]>('/super-admin/plans').then((r) => r.data),
+  list: () =>
+    api.get<AdminPlan[]>('/super-admin/plans').then((r) => (Array.isArray(r.data) ? r.data : [])),
   getById: (id: string) => api.get<AdminPlan>(`/super-admin/plans/${id}`).then((r) => r.data),
   create: (payload: CreatePlanPayload) =>
     api.post<AdminPlan>('/super-admin/plans', payload).then((r) => r.data),
