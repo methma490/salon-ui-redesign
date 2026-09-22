@@ -28,14 +28,33 @@ export interface TenantProvisioningResult {
 @Injectable()
 export class TenantProvisioningService {
   private readonly logger = new Logger(TenantProvisioningService.name);
-  private readonly migrationsPath = path.join(
-    process.cwd(),
-    'src',
-    'database',
-    'tenant-migrations',
-  );
-
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Resolve the tenant migrations directory dynamically across dev, prod, and Docker environments
+   */
+  private getMigrationsPath(): string {
+    const candidates = [
+      path.join(__dirname, 'tenant-migrations'),
+      path.join(__dirname, '..', 'database', 'tenant-migrations'),
+      path.join(__dirname, '..', 'src', 'database', 'tenant-migrations'),
+      path.join(process.cwd(), 'src', 'database', 'tenant-migrations'),
+      path.join(process.cwd(), 'dist', 'src', 'database', 'tenant-migrations'),
+      path.join(process.cwd(), 'dist', 'database', 'tenant-migrations'),
+      path.join(process.cwd(), 'database', 'tenant-migrations'),
+    ];
+
+    for (const candidate of candidates) {
+      if (fs.existsSync(candidate)) {
+        return candidate;
+      }
+    }
+
+    this.logger.error(
+      `Could not locate tenant-migrations directory. Checked: ${candidates.join(', ')}`,
+    );
+    return path.join(process.cwd(), 'src', 'database', 'tenant-migrations');
+  }
 
   /**
    * Provision a complete tenant schema with all tables, roles, and initial data
@@ -117,17 +136,26 @@ export class TenantProvisioningService {
    * Run all tenant migration files in order
    */
   private async runMigrations(schemaName: string): Promise<void> {
-    this.logger.log(`Running migrations for schema: ${schemaName}`);
+    const migrationsPath = this.getMigrationsPath();
+    this.logger.log(`Running migrations for schema: ${schemaName} (from ${migrationsPath})`);
+
+    if (!fs.existsSync(migrationsPath)) {
+      throw new Error(`Tenant migrations directory not found at: ${migrationsPath}`);
+    }
 
     // Get all migration files sorted by name
     const files = fs
-      .readdirSync(this.migrationsPath)
+      .readdirSync(migrationsPath)
       .filter((file) => file.endsWith('.sql'))
       .sort();
 
+    if (files.length === 0) {
+      throw new Error(`No .sql migration files found in: ${migrationsPath}`);
+    }
+
     for (const file of files) {
       this.logger.log(`  Applying migration: ${file}`);
-      const sql = fs.readFileSync(path.join(this.migrationsPath, file), 'utf-8');
+      const sql = fs.readFileSync(path.join(migrationsPath, file), 'utf-8');
 
       // Set search_path
       await this.prisma.$executeRawUnsafe(`SET search_path TO "${schemaName}", public`);

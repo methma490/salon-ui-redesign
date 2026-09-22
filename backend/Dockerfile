@@ -30,6 +30,7 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/src/database/tenant-migrations ./src/database/tenant-migrations
 
 # Install global CLI tools required for on-startup database bootstrap (migrate deploy & seed)
 RUN npm install -g prisma ts-node typescript
