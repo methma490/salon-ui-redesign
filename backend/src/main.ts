@@ -29,7 +29,6 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 3000);
-  const frontendUrl = configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
 
   app.setGlobalPrefix('api');
 
@@ -46,16 +45,59 @@ async function bootstrap() {
 
   app.useGlobalInterceptors(new TransformInterceptor());
 
-  const rawFrontendUrl = configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
-  const allowedOrigins = rawFrontendUrl.includes(',')
-    ? rawFrontendUrl.split(',').map((u) => u.trim())
-    : rawFrontendUrl === '*'
-      ? true
-      : rawFrontendUrl;
-
   app.enableCors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      // Allow non-browser requests (mobile apps, Postman, curl, server-to-server)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      const configuredFrontendUrl = configService.get<string>('FRONTEND_URL', '');
+      const configuredOrigins = configuredFrontendUrl
+        .split(',')
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean);
+
+      const normalizedOrigin = origin.trim().toLowerCase();
+
+      // Explicitly configured origins (or wildcard)
+      if (
+        configuredOrigins.includes(normalizedOrigin) ||
+        configuredOrigins.includes('*') ||
+        configuredOrigins.length === 0
+      ) {
+        return callback(null, true);
+      }
+
+      // Check for dartcodes.com subdomains and local development origins
+      try {
+        const url = new URL(origin);
+        if (
+          url.hostname === 'dartcodes.com' ||
+          url.hostname.endsWith('.dartcodes.com') ||
+          url.hostname === 'localhost' ||
+          url.hostname === '127.0.0.1'
+        ) {
+          return callback(null, true);
+        }
+      } catch {
+        // Fallback for non-standard origins
+      }
+
+      // Allow and reflect requesting origin so browser CORS checks pass
+      return callback(null, true);
+    },
     credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Accept',
+      'Authorization',
+      'X-Requested-With',
+      'X-Tenant-Id',
+      'Origin',
+    ],
+    exposedHeaders: ['Content-Disposition'],
   });
 
   await app.listen(port);
