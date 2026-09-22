@@ -52,7 +52,17 @@ export async function bootstrapDatabase(): Promise<void> {
 
     if (planCount === 0) {
       logger.log('Empty database detected — seeding default data...');
-      runPrismaCommand('db seed', backendRoot);
+      const compiledSeedPath = join(backendRoot, 'dist/prisma/seed.js');
+      if (existsSync(compiledSeedPath)) {
+        logger.log(`Executing compiled seed: node ${compiledSeedPath}`);
+        execSync(`node "${compiledSeedPath}"`, {
+          cwd: backendRoot,
+          stdio: 'inherit',
+          env: process.env,
+        });
+      } else {
+        runPrismaCommand('db seed', backendRoot);
+      }
     } else {
       logger.log('Database schema ready');
     }

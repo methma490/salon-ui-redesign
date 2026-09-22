@@ -31,7 +31,7 @@
     "db:quotations:tenants": "ts-node scripts/apply-quotations.ts"
   },
   "prisma": {
-    "seed": "ts-node --transpile-only prisma/seed.ts"  
+    "seed": "node -e \"const fs=require('fs'); if(fs.existsSync('./dist/prisma/seed.js')){require('./dist/prisma/seed.js');}else{require('child_process').execSync('npx ts-node --transpile-only prisma/seed.ts',{stdio:'inherit',env:process.env});}\""
   },
   "dependencies": {
     "@nestjs/bullmq": "^12.0.0",

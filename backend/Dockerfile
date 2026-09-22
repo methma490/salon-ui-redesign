@@ -21,6 +21,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package*.json ./
+COPY tsconfig*.json ./
 COPY prisma ./prisma/
 
 RUN npm ci --omit=dev
