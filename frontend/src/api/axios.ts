@@ -13,8 +13,10 @@ import type {
   UpdateSalonPayload,
 } from '@/features/salons/types/salon.types';
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -138,7 +140,7 @@ api.interceptors.response.use(
 
     try {
       const { data } = await axios.post<Pick<LoginResponse, 'accessToken' | 'refreshToken'>>(
-        `${import.meta.env.VITE_API_BASE_URL}/auth/refresh`,
+        `${API_BASE_URL}/auth/refresh`,
         { refreshToken },
       );
 

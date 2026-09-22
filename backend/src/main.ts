@@ -46,8 +46,15 @@ async function bootstrap() {
 
   app.useGlobalInterceptors(new TransformInterceptor());
 
+  const rawFrontendUrl = configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
+  const allowedOrigins = rawFrontendUrl.includes(',')
+    ? rawFrontendUrl.split(',').map((u) => u.trim())
+    : rawFrontendUrl === '*'
+      ? true
+      : rawFrontendUrl;
+
   app.enableCors({
-    origin: frontendUrl,
+    origin: allowedOrigins,
     credentials: true,
   });
 
