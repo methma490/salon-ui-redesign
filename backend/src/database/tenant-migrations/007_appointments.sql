@@ -7,7 +7,7 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
-CREATE TABLE appointments (
+CREATE TABLE IF NOT EXISTS appointments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code VARCHAR(50) NOT NULL,
   customer_id UUID NOT NULL,
@@ -26,7 +26,7 @@ CREATE TABLE appointments (
   CONSTRAINT appointments_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TABLE appointment_services (
+CREATE TABLE IF NOT EXISTS appointment_services (
   appointment_id UUID NOT NULL,
   service_id UUID NOT NULL,
   service_name VARCHAR(255) NOT NULL,
@@ -37,9 +37,10 @@ CREATE TABLE appointment_services (
   CONSTRAINT appointment_services_service_fkey FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE RESTRICT
 );
 
-CREATE INDEX idx_appointments_date ON appointments(appointment_date);
-CREATE INDEX idx_appointments_branch ON appointments(branch_id);
-CREATE INDEX idx_appointments_customer ON appointments(customer_id);
-CREATE INDEX idx_appointments_status ON appointments(status);
+CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(appointment_date);
+CREATE INDEX IF NOT EXISTS idx_appointments_branch ON appointments(branch_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_customer ON appointments(customer_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_status ON appointments(status);
 
+DROP TRIGGER IF EXISTS appointments_updated_at ON appointments;
 CREATE TRIGGER appointments_updated_at BEFORE UPDATE ON appointments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

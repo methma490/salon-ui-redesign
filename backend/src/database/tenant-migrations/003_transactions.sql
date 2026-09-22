@@ -24,7 +24,7 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- Stock movements table
-CREATE TABLE stock_movements (
+CREATE TABLE IF NOT EXISTS stock_movements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   branch_id UUID NOT NULL,
   product_id UUID NOT NULL,
@@ -37,7 +37,7 @@ CREATE TABLE stock_movements (
 );
 
 -- Sales table
-CREATE TABLE sales (
+CREATE TABLE IF NOT EXISTS sales (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   branch_id UUID NOT NULL,
   customer_id UUID,
@@ -58,7 +58,7 @@ CREATE TABLE sales (
 );
 
 -- Sale items table
-CREATE TABLE sale_items (
+CREATE TABLE IF NOT EXISTS sale_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   sale_id UUID NOT NULL,
   item_type VARCHAR(20) NOT NULL, -- 'service' or 'product'
@@ -79,7 +79,7 @@ CREATE TABLE sale_items (
 );
 
 -- Sale item employees (who performed the service)
-CREATE TABLE sale_item_employees (
+CREATE TABLE IF NOT EXISTS sale_item_employees (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   sale_item_id UUID NOT NULL,
   employee_id UUID NOT NULL,
@@ -89,7 +89,7 @@ CREATE TABLE sale_item_employees (
 );
 
 -- Payments table
-CREATE TABLE payments (
+CREATE TABLE IF NOT EXISTS payments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   sale_id UUID NOT NULL,
   method payment_method NOT NULL,
@@ -102,13 +102,14 @@ CREATE TABLE payments (
 );
 
 -- Create indexes
-CREATE INDEX stock_movements_branch_id_idx ON stock_movements(branch_id);
-CREATE INDEX stock_movements_product_id_idx ON stock_movements(product_id);
-CREATE INDEX sales_branch_id_idx ON sales(branch_id);
-CREATE INDEX sales_customer_id_idx ON sales(customer_id);
-CREATE INDEX sales_created_at_idx ON sales(created_at);
-CREATE INDEX sale_items_sale_id_idx ON sale_items(sale_id);
-CREATE INDEX payments_sale_id_idx ON payments(sale_id);
+CREATE INDEX IF NOT EXISTS stock_movements_branch_id_idx ON stock_movements(branch_id);
+CREATE INDEX IF NOT EXISTS stock_movements_product_id_idx ON stock_movements(product_id);
+CREATE INDEX IF NOT EXISTS sales_branch_id_idx ON sales(branch_id);
+CREATE INDEX IF NOT EXISTS sales_customer_id_idx ON sales(customer_id);
+CREATE INDEX IF NOT EXISTS sales_created_at_idx ON sales(created_at);
+CREATE INDEX IF NOT EXISTS sale_items_sale_id_idx ON sale_items(sale_id);
+CREATE INDEX IF NOT EXISTS payments_sale_id_idx ON payments(sale_id);
 
--- Apply updated_at triggers
+-- Apply updated_at triggers idempotently
+DROP TRIGGER IF EXISTS sales_updated_at ON sales;
 CREATE TRIGGER sales_updated_at BEFORE UPDATE ON sales FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

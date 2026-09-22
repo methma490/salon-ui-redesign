@@ -67,6 +67,15 @@ export class TenantProvisioningService {
     const cleanupSql = `
       DO $$
       DECLARE
+        tenant_tables TEXT[] := ARRAY[
+          'user_roles', 'role_permissions', 'appointment_services', 'sale_items',
+          'quotation_items', 'payroll_items', 'stock_movements', 'payments',
+          'sales', 'appointments', 'stock', 'products', 'product_categories',
+          'services', 'service_categories', 'customers', 'employees',
+          'expenses', 'expense_categories', 'payroll_runs', 'employee_loans',
+          'employee_advances', 'quotations', 'permissions', 'roles', 'users', 'branches'
+        ];
+        tbl_name TEXT;
         tenant_types TEXT[] := ARRAY[
           'branch_status', 'user_status', 'employee_status', 'customer_status',
           'stock_movement_type', 'sale_status', 'payment_method', 'payment_status',
@@ -77,6 +86,21 @@ export class TenantProvisioningService {
         ];
         t_name TEXT;
       BEGIN
+        -- First drop any stray tenant tables in public from prior unpinned runs
+        FOREACH tbl_name IN ARRAY tenant_tables LOOP
+          IF EXISTS (
+            SELECT 1 FROM information_schema.tables
+            WHERE table_schema = 'public' AND table_name = tbl_name
+          ) THEN
+            BEGIN
+              EXECUTE 'DROP TABLE IF EXISTS public.' || quote_ident(tbl_name) || ' CASCADE';
+            EXCEPTION WHEN OTHERS THEN
+              NULL;
+            END;
+          END IF;
+        END LOOP;
+
+        -- Then drop stray tenant enums in public
         FOREACH t_name IN ARRAY tenant_types LOOP
           IF EXISTS (
             SELECT 1 FROM pg_type t
@@ -172,11 +196,12 @@ export class TenantProvisioningService {
   }
 
   /**
-   * Create a new PostgreSQL schema
+   * Create a fresh PostgreSQL schema (dropping any abandoned/stale schema first)
    */
   private async createSchema(schemaName: string): Promise<void> {
-    this.logger.log(`Creating schema: ${schemaName}`);
-    await this.prisma.$executeRawUnsafe(`CREATE SCHEMA IF NOT EXISTS "${schemaName}"`);
+    this.logger.log(`Creating fresh schema: ${schemaName}`);
+    await this.prisma.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schemaName}" CASCADE`);
+    await this.prisma.$executeRawUnsafe(`CREATE SCHEMA "${schemaName}"`);
   }
 
   /**
@@ -596,13 +621,40 @@ export class TenantProvisioningService {
   async generateSchemaName(): Promise<string> {
     await this.prisma.$executeRawUnsafe(`SET search_path TO public`);
 
-    const result = await this.prisma.$queryRaw<{ count: bigint }[]>`
-      SELECT COUNT(*)::int as count FROM tenants
-    `;
+    // Check both information_schema.schemata and tenants table to find the highest existing tenant number
+    const [schemaRows, tenantRows] = await Promise.all([
+      this.prisma.$queryRaw<{ schema_name: string }[]>`
+        SELECT schema_name
+        FROM information_schema.schemata
+        WHERE schema_name ~ '^tenant_[0-9]+$'
+      `,
+      this.prisma.$queryRaw<{ schema_name: string }[]>`
+        SELECT "schemaName" as schema_name
+        FROM tenants
+        WHERE "schemaName" ~ '^tenant_[0-9]+$'
+      `,
+    ]);
 
-    const count = Number(result[0].count);
-    const nextNumber = count + 1;
+    let maxNum = 0;
+    for (const row of [...schemaRows, ...tenantRows]) {
+      const match = row.schema_name?.match(/^tenant_(\d+)$/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num;
+        }
+      }
+    }
 
-    return `tenant_${String(nextNumber).padStart(6, '0')}`;
+    let candidateNum = maxNum + 1;
+    let candidateName = `tenant_${String(candidateNum).padStart(6, '0')}`;
+
+    // Guarantee that the chosen schema name does not physically exist
+    while (await this.schemaExists(candidateName)) {
+      candidateNum++;
+      candidateName = `tenant_${String(candidateNum).padStart(6, '0')}`;
+    }
+
+    return candidateName;
   }
 }

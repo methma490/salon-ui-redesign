@@ -14,7 +14,7 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- Employees table
-CREATE TABLE employees (
+CREATE TABLE IF NOT EXISTS employees (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   branch_id UUID NOT NULL,
   user_id UUID,
@@ -33,7 +33,7 @@ CREATE TABLE employees (
 );
 
 -- Customers table
-CREATE TABLE customers (
+CREATE TABLE IF NOT EXISTS customers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code VARCHAR(50) NOT NULL,
   name VARCHAR(255) NOT NULL,
@@ -47,7 +47,7 @@ CREATE TABLE customers (
 );
 
 -- Service categories
-CREATE TABLE service_categories (
+CREATE TABLE IF NOT EXISTS service_categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code VARCHAR(50) NOT NULL,
   name VARCHAR(255) NOT NULL,
@@ -58,7 +58,7 @@ CREATE TABLE service_categories (
 );
 
 -- Services table
-CREATE TABLE services (
+CREATE TABLE IF NOT EXISTS services (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   category_id UUID,
   code VARCHAR(50) NOT NULL,
@@ -74,7 +74,7 @@ CREATE TABLE services (
 );
 
 -- Product categories
-CREATE TABLE product_categories (
+CREATE TABLE IF NOT EXISTS product_categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code VARCHAR(50) NOT NULL,
   name VARCHAR(255) NOT NULL,
@@ -85,7 +85,7 @@ CREATE TABLE product_categories (
 );
 
 -- Products table
-CREATE TABLE products (
+CREATE TABLE IF NOT EXISTS products (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   category_id UUID,
   code VARCHAR(50) NOT NULL,
@@ -101,10 +101,21 @@ CREATE TABLE products (
   CONSTRAINT products_category_fkey FOREIGN KEY (category_id) REFERENCES product_categories(id) ON DELETE SET NULL
 );
 
--- Apply updated_at triggers
+-- Apply updated_at triggers idempotently
+DROP TRIGGER IF EXISTS employees_updated_at ON employees;
 CREATE TRIGGER employees_updated_at BEFORE UPDATE ON employees FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS customers_updated_at ON customers;
 CREATE TRIGGER customers_updated_at BEFORE UPDATE ON customers FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS service_categories_updated_at ON service_categories;
 CREATE TRIGGER service_categories_updated_at BEFORE UPDATE ON service_categories FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS services_updated_at ON services;
 CREATE TRIGGER services_updated_at BEFORE UPDATE ON services FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS product_categories_updated_at ON product_categories;
 CREATE TRIGGER product_categories_updated_at BEFORE UPDATE ON product_categories FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS products_updated_at ON products;
 CREATE TRIGGER products_updated_at BEFORE UPDATE ON products FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

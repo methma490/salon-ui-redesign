@@ -14,7 +14,7 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- Branches table
-CREATE TABLE branches (
+CREATE TABLE IF NOT EXISTS branches (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code VARCHAR(50) NOT NULL,
   name VARCHAR(255) NOT NULL,
@@ -29,7 +29,7 @@ CREATE TABLE branches (
 );
 
 -- Users table (salon users, NOT super admins)
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(255) NOT NULL,
   email VARCHAR(255) NOT NULL,
@@ -42,7 +42,7 @@ CREATE TABLE users (
 );
 
 -- Roles table
-CREATE TABLE roles (
+CREATE TABLE IF NOT EXISTS roles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code VARCHAR(50) NOT NULL,
   name VARCHAR(255) NOT NULL,
@@ -53,7 +53,7 @@ CREATE TABLE roles (
 );
 
 -- Permissions table
-CREATE TABLE permissions (
+CREATE TABLE IF NOT EXISTS permissions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   code VARCHAR(50) NOT NULL,
   name VARCHAR(255) NOT NULL,
@@ -64,7 +64,7 @@ CREATE TABLE permissions (
 );
 
 -- User-Role mapping
-CREATE TABLE user_roles (
+CREATE TABLE IF NOT EXISTS user_roles (
   user_id UUID NOT NULL,
   role_id UUID NOT NULL,
   PRIMARY KEY (user_id, role_id),
@@ -73,7 +73,7 @@ CREATE TABLE user_roles (
 );
 
 -- Role-Permission mapping
-CREATE TABLE role_permissions (
+CREATE TABLE IF NOT EXISTS role_permissions (
   role_id UUID NOT NULL,
   permission_id UUID NOT NULL,
   PRIMARY KEY (role_id, permission_id),
@@ -82,7 +82,7 @@ CREATE TABLE role_permissions (
 );
 
 -- Refresh tokens for tenant users
-CREATE TABLE refresh_tokens (
+CREATE TABLE IF NOT EXISTS refresh_tokens (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL,
   token_hash VARCHAR(255) NOT NULL,
@@ -93,7 +93,7 @@ CREATE TABLE refresh_tokens (
   CONSTRAINT refresh_tokens_user_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX refresh_tokens_user_id_idx ON refresh_tokens(user_id);
+CREATE INDEX IF NOT EXISTS refresh_tokens_user_id_idx ON refresh_tokens(user_id);
 
 -- Updated at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -104,8 +104,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Apply updated_at triggers
+-- Apply updated_at triggers idempotently
+DROP TRIGGER IF EXISTS branches_updated_at ON branches;
 CREATE TRIGGER branches_updated_at BEFORE UPDATE ON branches FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS users_updated_at ON users;
 CREATE TRIGGER users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS roles_updated_at ON roles;
 CREATE TRIGGER roles_updated_at BEFORE UPDATE ON roles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS permissions_updated_at ON permissions;
 CREATE TRIGGER permissions_updated_at BEFORE UPDATE ON permissions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
