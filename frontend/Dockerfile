@@ -8,8 +8,8 @@ RUN npm ci
 
 COPY . .
 
-# Pass API base URL build argument if configured in CapRover
-ARG VITE_API_BASE_URL
+# Pass API base URL build argument if configured in CapRover (defaults to production backend)
+ARG VITE_API_BASE_URL=https://saloon-server.bc.dartcodes.com/api
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 RUN npm run build
