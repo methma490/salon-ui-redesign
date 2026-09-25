@@ -9,6 +9,7 @@ import {
   type SalesAnalyticsInvoice,
   type SalesAnalyticsPreset,
 } from '@/api/tenant.api';
+import { useDebouncedSearch } from '@/hooks/useDebounce';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -135,7 +136,7 @@ export default function SalesAnalyticsPage() {
   const [customTo, setCustomTo] = useState(defaultCustomRange().to);
   const [employeeId, setEmployeeId] = useState('all');
   const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const debouncedSearch = useDebouncedSearch(search, 400, 2);
   const [page, setPage] = useState(1);
 
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
@@ -159,11 +160,6 @@ export default function SalesAnalyticsPage() {
       setTab('employees');
     }
   }, [searchParams]);
-
-  useEffect(() => {
-    const t = window.setTimeout(() => setDebouncedSearch(search.trim()), 300);
-    return () => window.clearTimeout(t);
-  }, [search]);
 
   useEffect(() => {
     setPage(1);
@@ -428,7 +424,13 @@ export default function SalesAnalyticsPage() {
                   className="settings-input"
                   type="date"
                   value={customFrom}
-                  onChange={(e) => setCustomFrom(e.target.value)}
+                  onChange={(e) => {
+                    const newFrom = e.target.value;
+                    setCustomFrom(newFrom);
+                    if (customTo && newFrom && customTo < newFrom) {
+                      setCustomTo(newFrom);
+                    }
+                  }}
                 />
               </div>
               <div className="settings-field">
@@ -437,6 +439,7 @@ export default function SalesAnalyticsPage() {
                   className="settings-input"
                   type="date"
                   value={customTo}
+                  min={customFrom}
                   onChange={(e) => setCustomTo(e.target.value)}
                 />
               </div>

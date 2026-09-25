@@ -261,13 +261,6 @@ const navGroups: NavGroup[] = [
         module: 'PAYROLL',
       },
       {
-        to: '/salon/employees',
-        label: 'Employee Registration',
-        icon: UserSquare2,
-        feature: 'PAYROLL',
-        module: 'CORE',
-      },
-      {
         to: '/salon/payroll/advances',
         label: 'Advance Payments',
         icon: Wallet,

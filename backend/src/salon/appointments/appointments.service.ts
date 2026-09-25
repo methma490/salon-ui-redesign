@@ -480,7 +480,10 @@ export class AppointmentsService {
     const customers = tenantTable(schemaName, 'customers');
     const appointmentServices = tenantTable(schemaName, 'appointment_services');
 
-    await this.findById(schemaName, id);
+    const existing = await this.findById(schemaName, id);
+    if (existing.status === 'COMPLETED') {
+      throw new BadRequestException('Cannot modify a completed appointment');
+    }
 
     await this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
       if (dto.customerId) {
@@ -544,7 +547,11 @@ export class AppointmentsService {
     userId: string,
   ): Promise<AppointmentRecord> {
     const appointments = tenantTable(schemaName, 'appointments');
-    await this.findById(schemaName, id);
+    const existing = await this.findById(schemaName, id);
+
+    if (existing.status === 'COMPLETED') {
+      throw new BadRequestException('Cannot update the status of a completed appointment');
+    }
 
     await this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
       await tx.$queryRawUnsafe(

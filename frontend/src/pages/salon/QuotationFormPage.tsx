@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { tenantApi, type Customer, type Service } from '@/api/tenant.api';
+import { useDebouncedSearch } from '@/hooks/useDebounce';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -61,7 +62,7 @@ export default function QuotationFormPage() {
 
   const [error, setError] = useState<string | null>(null);
   const [customerSearch, setCustomerSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const debouncedSearch = useDebouncedSearch(customerSearch, 400, 2);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [branchId, setBranchId] = useState(() => (ribbonBranchId !== 'all' ? ribbonBranchId : ''));
   const [quotationDate, setQuotationDate] = useState(todayIso());
@@ -78,11 +79,6 @@ export default function QuotationFormPage() {
       setBranchId(ribbonBranchId);
     }
   }, [isEdit, ribbonBranchId, branchId]);
-
-  useEffect(() => {
-    const t = window.setTimeout(() => setDebouncedSearch(customerSearch.trim()), 250);
-    return () => window.clearTimeout(t);
-  }, [customerSearch]);
 
   const { data: branches = [] } = useQuery({
     queryKey: ['branches'],
@@ -309,7 +305,13 @@ export default function QuotationFormPage() {
                 <Input
                   type="date"
                   value={quotationDate}
-                  onChange={(e) => setQuotationDate(e.target.value)}
+                  onChange={(e) => {
+                    const newDate = e.target.value;
+                    setQuotationDate(newDate);
+                    if (validUntil && newDate && validUntil < newDate) {
+                      setValidUntil(newDate);
+                    }
+                  }}
                 />
               </div>
               <div className="space-y-2">
@@ -317,6 +319,7 @@ export default function QuotationFormPage() {
                 <Input
                   type="date"
                   value={validUntil}
+                  min={quotationDate}
                   onChange={(e) => setValidUntil(e.target.value)}
                 />
               </div>

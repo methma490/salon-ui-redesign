@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { tenantApi } from '@/api/tenant.api';
 import { useSalonBranch } from '@/contexts/SalonBranchContext';
@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useDebouncedSearch } from '@/hooks/useDebounce';
 import { getErrorMessage, OpsError, OpsLoading, OpsPageHeader } from './salon-ops-ui';
 import { formatMoneyAmount, moneyHeader } from '@/lib/money';
 import { formatSriLankaDate } from '@/lib/sri-lanka-time';
@@ -28,26 +29,20 @@ function statusClass(status: string) {
 
 export default function QuotationsPage() {
   const { branchId, setBranchId, branches } = useSalonBranch();
-  const [filters, setFilters] = useState({
-    search: '',
-    branchId: branchId,
-    status: 'all',
-    page: 1,
-  });
-
-  useEffect(() => {
-    setFilters((prev) => ({ ...prev, branchId, page: 1 }));
-  }, [branchId]);
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedSearch(search, 400, 2);
+  const [status, setStatus] = useState('all');
+  const [page, setPage] = useState(1);
 
   const query = useQuery({
-    queryKey: ['quotations', filters],
+    queryKey: ['quotations', branchId, status, debouncedSearch, page],
     queryFn: () =>
       tenantApi.quotations.list({
-        page: filters.page,
+        page,
         limit: 20,
-        search: filters.search || undefined,
-        branchId: filters.branchId === 'all' ? undefined : filters.branchId,
-        status: filters.status === 'all' ? undefined : filters.status,
+        search: debouncedSearch || undefined,
+        branchId: branchId === 'all' ? undefined : branchId,
+        status: status === 'all' ? undefined : status,
       }),
   });
 
@@ -75,15 +70,18 @@ export default function QuotationsPage() {
         <div className="emp-toolbar-filters" style={{ flexWrap: 'wrap', gap: 8 }}>
           <Input
             placeholder="Search quote / customer / phone"
-            value={filters.search}
-            onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="w-full sm:w-[240px]"
           />
           <Select
-            value={filters.branchId}
+            value={branchId}
             onValueChange={(v) => {
-              setFilters({ ...filters, branchId: v, page: 1 });
               setBranchId(v);
+              setPage(1);
             }}
           >
             <SelectTrigger className="emp-select w-full sm:w-[160px]">
@@ -99,8 +97,11 @@ export default function QuotationsPage() {
             </SelectContent>
           </Select>
           <Select
-            value={filters.status}
-            onValueChange={(v) => setFilters({ ...filters, status: v, page: 1 })}
+            value={status}
+            onValueChange={(v) => {
+              setStatus(v);
+              setPage(1);
+            }}
           >
             <SelectTrigger className="emp-select w-full sm:w-[150px]">
               <SelectValue placeholder="Status" />
@@ -176,8 +177,8 @@ export default function QuotationsPage() {
               type="button"
               variant="outline"
               size="sm"
-              disabled={filters.page <= 1}
-              onClick={() => setFilters({ ...filters, page: filters.page - 1 })}
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
               Previous
             </Button>
@@ -188,8 +189,8 @@ export default function QuotationsPage() {
               type="button"
               variant="outline"
               size="sm"
-              disabled={filters.page >= meta.totalPages}
-              onClick={() => setFilters({ ...filters, page: filters.page + 1 })}
+              disabled={page >= meta.totalPages}
+              onClick={() => setPage((p) => Math.min(meta.totalPages, p + 1))}
             >
               Next
             </Button>

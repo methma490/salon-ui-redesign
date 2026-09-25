@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { buildPaginatedResponse, resolvePagination } from '../../common/dto/pagination.dto';
 import { TenantSchemaService } from '../../tenant/services/tenant-schema.service';
 import { tenantTable } from '../../tenant/utils/schema-name.util';
@@ -49,6 +49,15 @@ export class CustomersService {
     return rows[0] ?? null;
   }
 
+  private normalizePhone(phone: string): { raw: string; e164: string; local: string; core9: string } {
+    const raw = phone.trim();
+    const digits = raw.replace(/\D/g, '');
+    const core9 = digits.length >= 9 ? digits.slice(-9) : digits;
+    const e164 = `+94${core9}`;
+    const local = core9.length === 9 ? `0${core9}` : raw;
+    return { raw, e164, local, core9 };
+  }
+
   async list(schemaName: string, query: ListCustomersQueryDto) {
     const table = tenantTable(schemaName, 'customers');
     const { page, limit, offset } = resolvePagination(query.page, query.limit);
@@ -57,12 +66,22 @@ export class CustomersService {
     let idx = 1;
 
     if (query.phone) {
-      conditions.push(`phone ILIKE $${idx++}`);
-      params.push(`%${query.phone}%`);
+      const { core9 } = this.normalizePhone(query.phone);
+      conditions.push(`(phone ILIKE $${idx} OR RIGHT(REGEXP_REPLACE(phone, '\\D', '', 'g'), 9) ILIKE $${idx + 1})`);
+      params.push(`%${query.phone}%`, `%${core9}%`);
+      idx += 2;
     } else if (query.search) {
-      conditions.push(`(name ILIKE $${idx} OR phone ILIKE $${idx} OR email ILIKE $${idx})`);
-      params.push(`%${query.search}%`);
-      idx++;
+      const search = query.search.trim();
+      const digits = search.replace(/\D/g, '');
+      if (digits.length >= 4) {
+        conditions.push(`(name ILIKE $${idx} OR phone ILIKE $${idx} OR email ILIKE $${idx} OR RIGHT(REGEXP_REPLACE(phone, '\\D', '', 'g'), ${Math.min(digits.length, 9)}) ILIKE $${idx + 1})`);
+        params.push(`%${search}%`, `%${digits}%`);
+        idx += 2;
+      } else {
+        conditions.push(`(name ILIKE $${idx} OR phone ILIKE $${idx} OR email ILIKE $${idx})`);
+        params.push(`%${search}%`);
+        idx++;
+      }
     }
 
     if (query.status) {
@@ -118,14 +137,22 @@ export class CustomersService {
     userId: string,
   ): Promise<CustomerRecord> {
     const table = tenantTable(schemaName, 'customers');
+    const { raw, e164, local, core9 } = this.normalizePhone(dto.phone);
 
     return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
       const existing = await tx.$queryRawUnsafe<Array<{ id: string }>>(
-        `SELECT id FROM ${table} WHERE phone = $1 LIMIT 1`,
-        dto.phone,
+        `SELECT id FROM ${table}
+         WHERE (
+           phone = $1 OR phone = $2 OR phone = $3
+           OR RIGHT(REGEXP_REPLACE(phone, '\\D', '', 'g'), 9) = $4
+         ) LIMIT 1`,
+        raw,
+        e164,
+        local,
+        core9,
       );
       if (existing.length > 0) {
-        throw new ConflictException('Customer with this phone already exists');
+        throw new ConflictException('Customer with this mobile number already exists');
       }
 
       const code = await generateSequentialCode(tx, table, 'CUST-');
@@ -134,11 +161,11 @@ export class CustomersService {
          VALUES ($1, $2, $3, $4, $5::date, $6, 'ACTIVE')
          RETURNING id`,
         code,
-        dto.name,
-        dto.phone,
-        dto.email ?? null,
-        dto.birthday ?? null,
-        dto.notes ?? null,
+        dto.name.trim(),
+        local,
+        dto.email?.trim() || null,
+        dto.birthday?.trim() || null,
+        dto.notes?.trim() || null,
       );
 
       await logAudit(tx, schemaName, {
@@ -146,7 +173,7 @@ export class CustomersService {
         action: 'CUSTOMER_CREATE',
         entityType: 'customer',
         entityId: rows[0].id,
-        details: { name: dto.name, phone: dto.phone },
+        details: { name: dto.name, phone: local },
       });
 
       const created = await this.fetchCustomerByIdTx(tx, schemaName, rows[0].id);
@@ -167,18 +194,29 @@ export class CustomersService {
     const table = tenantTable(schemaName, 'customers');
     await this.findById(schemaName, id);
 
+    let formattedPhone: string | undefined = undefined;
     if (dto.phone) {
+      const { raw, e164, local, core9 } = this.normalizePhone(dto.phone);
+      formattedPhone = local;
+
       const duplicate = await this.tenantSchemaService.withTenantSchema(
         schemaName,
         async ({ tx }) =>
           tx.$queryRawUnsafe<Array<{ id: string }>>(
-            `SELECT id FROM ${table} WHERE phone = $1 AND id != $2::uuid LIMIT 1`,
-            dto.phone,
+            `SELECT id FROM ${table}
+             WHERE (
+               phone = $1 OR phone = $2 OR phone = $3
+               OR RIGHT(REGEXP_REPLACE(phone, '\\D', '', 'g'), 9) = $4
+             ) AND id != $5::uuid LIMIT 1`,
+            raw,
+            e164,
+            local,
+            core9,
             id,
           ),
       );
       if (duplicate.length > 0) {
-        throw new ConflictException('Customer with this phone already exists');
+        throw new ConflictException('Customer with this mobile number already exists');
       }
     }
 
@@ -193,11 +231,11 @@ export class CustomersService {
              updated_at = NOW()
          WHERE id = $1::uuid`,
         id,
-        dto.name ?? null,
-        dto.phone ?? null,
-        dto.email ?? null,
-        dto.birthday ?? null,
-        dto.notes ?? null,
+        dto.name ? dto.name.trim() : null,
+        formattedPhone ?? null,
+        dto.email ? dto.email.trim() : null,
+        dto.birthday ? dto.birthday.trim() : null,
+        dto.notes ? dto.notes.trim() : null,
       );
 
       await logAudit(tx, schemaName, {
@@ -238,5 +276,117 @@ export class CustomersService {
     });
 
     return this.findById(schemaName, id);
+  }
+
+  async deleteCustomer(
+    schemaName: string,
+    id: string,
+    userId: string,
+  ): Promise<{ id: string; success: boolean }> {
+    const table = tenantTable(schemaName, 'customers');
+    const appointmentsTable = tenantTable(schemaName, 'appointments');
+    const salesTable = tenantTable(schemaName, 'sales');
+
+    const customer = await this.findById(schemaName, id);
+
+    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      // Check appointments
+      const apptCount = await tx.$queryRawUnsafe<Array<{ count: bigint }>>(
+        `SELECT COUNT(*)::bigint AS count FROM ${appointmentsTable} WHERE customer_id = $1::uuid`,
+        id,
+      );
+      if (Number(apptCount[0]?.count ?? 0) > 0) {
+        throw new BadRequestException(
+          'Cannot delete customer with existing appointment records. You can deactivate this customer instead.',
+        );
+      }
+
+      // Check sales
+      const saleCount = await tx.$queryRawUnsafe<Array<{ count: bigint }>>(
+        `SELECT COUNT(*)::bigint AS count FROM ${salesTable} WHERE customer_id = $1::uuid`,
+        id,
+      );
+      if (Number(saleCount[0]?.count ?? 0) > 0) {
+        throw new BadRequestException(
+          'Cannot delete customer with existing sales/invoice records. You can deactivate this customer instead.',
+        );
+      }
+
+      await tx.$queryRawUnsafe(`DELETE FROM ${table} WHERE id = $1::uuid`, id);
+
+      await logAudit(tx, schemaName, {
+        userId,
+        action: 'CUSTOMER_DELETE',
+        entityType: 'customer',
+        entityId: id,
+        details: { name: customer.name, code: customer.code, phone: customer.phone },
+      });
+
+      return { id, success: true };
+    });
+  }
+
+  async getBookingHistory(schemaName: string, customerId: string) {
+    const appointments = tenantTable(schemaName, 'appointments');
+    const appointmentServices = tenantTable(schemaName, 'appointment_services');
+    const branches = tenantTable(schemaName, 'branches');
+
+    await this.findById(schemaName, customerId);
+
+    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      const rows = await tx.$queryRawUnsafe<
+        Array<{
+          id: string;
+          code: string;
+          appointmentDate: string;
+          startTime: string;
+          endTime: string;
+          status: string;
+          notes: string | null;
+          branchName: string;
+          totalPrice: number;
+          services: Array<{
+            id: string;
+            name: string;
+            price: number;
+            durationMinutes: number | null;
+          }>;
+        }>
+      >(
+        `SELECT a.id, a.code,
+                a.appointment_date::text AS "appointmentDate",
+                a.start_time::text AS "startTime",
+                a.end_time::text AS "endTime",
+                a.status::text AS status,
+                a.notes,
+                b.name AS "branchName",
+                COALESCE(
+                  (SELECT SUM(aps.price)::float FROM ${appointmentServices} aps WHERE aps.appointment_id = a.id),
+                  0
+                )::float AS "totalPrice",
+                COALESCE(
+                  (
+                    SELECT json_agg(
+                      json_build_object(
+                        'id', aps.id,
+                        'name', aps.name,
+                        'price', aps.price::float,
+                        'durationMinutes', aps.duration_minutes
+                      )
+                    )
+                    FROM ${appointmentServices} aps
+                    WHERE aps.appointment_id = a.id
+                  ),
+                  '[]'::json
+                ) AS services
+         FROM ${appointments} a
+         INNER JOIN ${branches} b ON b.id = a.branch_id
+         WHERE a.customer_id = $1::uuid
+         ORDER BY a.appointment_date DESC, a.start_time DESC`,
+        customerId,
+      );
+
+      return rows;
+    });
   }
 }

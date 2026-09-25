@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { authApi } from '@/api/axios';
 import type { AuthUser } from '@/features/salons/types/salon.types';
 import { authStorage } from '@/lib/auth-storage';
@@ -19,6 +19,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const inFlightPromiseRef = useRef<Promise<AuthUser> | null>(null);
 
   const refreshUser = useCallback(async () => {
     const token = authStorage.getAccessToken();
@@ -27,7 +28,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const me = await authApi.me();
+    if (!inFlightPromiseRef.current) {
+      inFlightPromiseRef.current = authApi.me().finally(() => {
+        inFlightPromiseRef.current = null;
+      });
+    }
+
+    const me = await inFlightPromiseRef.current;
     setUser(me);
   }, []);
 
@@ -51,14 +58,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     const response = await authApi.login(email, password);
     authStorage.setTokens(response.accessToken, response.refreshToken);
-    try {
-      const me = await authApi.me();
-      setUser(me);
-      return me;
-    } catch {
-      setUser(response.user);
-      return response.user;
-    }
+    setUser(response.user);
+    return response.user;
   }, []);
 
   const logout = useCallback(async () => {

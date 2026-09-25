@@ -516,7 +516,13 @@ export default function ReportsPage() {
                   className="settings-input"
                   type="date"
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={(e) => {
+                    const newStart = e.target.value;
+                    setStartDate(newStart);
+                    if (endDate && newStart && endDate < newStart) {
+                      setEndDate(newStart);
+                    }
+                  }}
                 />
               </div>
               <div className="settings-field">
@@ -526,6 +532,7 @@ export default function ReportsPage() {
                   className="settings-input"
                   type="date"
                   value={endDate}
+                  min={startDate}
                   onChange={(e) => setEndDate(e.target.value)}
                 />
               </div>

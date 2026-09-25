@@ -130,7 +130,13 @@ export default function SalesPage() {
               id="sales-start"
               type="date"
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              onChange={(e) => {
+                const newStart = e.target.value;
+                setStartDate(newStart);
+                if (endDate && newStart && endDate < newStart) {
+                  setEndDate(newStart);
+                }
+              }}
             />
           </div>
           <div className="sales-filter-field">
@@ -139,6 +145,7 @@ export default function SalesPage() {
               id="sales-end"
               type="date"
               value={endDate}
+              min={startDate}
               onChange={(e) => setEndDate(e.target.value)}
             />
           </div>

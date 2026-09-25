@@ -80,6 +80,24 @@ export interface Customer {
   createdAt: string;
 }
 
+export interface CustomerBookingHistoryItem {
+  id: string;
+  code: string;
+  appointmentDate: string;
+  startTime: string;
+  endTime: string;
+  status: string;
+  notes: string | null;
+  branchName: string;
+  totalPrice: number;
+  services: Array<{
+    id: string;
+    name: string;
+    price: number;
+    durationMinutes: number | null;
+  }>;
+}
+
 // --- Appointments ---
 export interface AppointmentServiceItem {
   id: string;
@@ -120,6 +138,9 @@ export interface ServiceCategory {
   description: string | null;
   status: string;
   isActive?: boolean;
+  branchIds?: string[];
+  branches?: Array<{ id: string; name: string; code?: string }>;
+  servicesCount?: number;
 }
 
 export interface Service {
@@ -131,6 +152,7 @@ export interface Service {
   durationMinutes: number | null;
   categoryId: string | null;
   categoryName: string | null;
+  categoryIsActive?: boolean;
   status: string;
 }
 
@@ -793,6 +815,8 @@ export const tenantApi = {
       api.patch<Employee>(`/tenant/employees/${id}`, data).then((r) => r.data),
     updateStatus: (id: string, status: string) =>
       api.patch<Employee>(`/tenant/employees/${id}/status`, { status }).then((r) => r.data),
+    delete: (id: string) =>
+      api.delete<{ id: string; success: boolean }>(`/tenant/employees/${id}`).then((r) => r.data),
   },
 
   appointments: {
@@ -832,27 +856,46 @@ export const tenantApi = {
       api.patch<Customer>(`/tenant/customers/${id}`, data).then((r) => r.data),
     updateStatus: (id: string, status: string) =>
       api.patch<Customer>(`/tenant/customers/${id}/status`, { status }).then((r) => r.data),
+    delete: (id: string) =>
+      api.delete<{ id: string; success: boolean }>(`/tenant/customers/${id}`).then((r) => r.data),
+    bookingHistory: (id: string) =>
+      api
+        .get<CustomerBookingHistoryItem[]>(`/tenant/customers/${id}/booking-history`)
+        .then((r) => r.data),
   },
 
   serviceCategories: {
-    list: () => api.get<ServiceCategory[]>('/tenant/service-categories').then((r) => r.data),
+    list: (params?: Record<string, string | number | boolean | undefined>) =>
+      api
+        .get<PaginatedResponse<ServiceCategory> | ServiceCategory[]>('/tenant/service-categories', {
+          params,
+        })
+        .then((r) => unwrapPaginatedList(r.data)),
     create: (data: Record<string, unknown>) =>
       api.post('/tenant/service-categories', data).then((r) => r.data),
     update: (id: string, data: Record<string, unknown>) =>
       api.patch(`/tenant/service-categories/${id}`, data).then((r) => r.data),
     updateStatus: (id: string, status: string) =>
       api.patch(`/tenant/service-categories/${id}/status`, { status }).then((r) => r.data),
+    delete: (id: string) =>
+      api.delete(`/tenant/service-categories/${id}`).then((r) => r.data),
   },
 
   services: {
-    list: (categoryId?: string) =>
-      api.get<Service[]>('/tenant/services', { params: { categoryId } }).then((r) => r.data),
+    list: (params?: Record<string, string | number | boolean | undefined> | string) => {
+      const queryParams = typeof params === 'string' ? { categoryId: params } : params;
+      return api
+        .get<PaginatedResponse<Service> | Service[]>('/tenant/services', { params: queryParams })
+        .then((r) => unwrapPaginatedList(r.data));
+    },
     create: (data: Record<string, unknown>) =>
       api.post('/tenant/services', data).then((r) => r.data),
     update: (id: string, data: Record<string, unknown>) =>
       api.patch(`/tenant/services/${id}`, data).then((r) => r.data),
     updateStatus: (id: string, status: string) =>
       api.patch(`/tenant/services/${id}/status`, { status }).then((r) => r.data),
+    delete: (id: string) =>
+      api.delete(`/tenant/services/${id}`).then((r) => r.data),
   },
 
   productCategories: {

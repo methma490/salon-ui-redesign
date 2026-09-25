@@ -128,27 +128,25 @@ export class SalesAnalyticsService {
           employeesWithSales: bigint;
         }>
       >(
-        `SELECT
-           COUNT(DISTINCT s.id)::bigint AS "invoiceCount",
-           COALESCE(SUM(s.total), 0)::float AS "grossSales",
-           COALESCE(SUM(COALESCE(s.refunded_amount, 0)), 0)::float AS "refundAmount",
-           COALESCE(SUM(${netSaleAmountSql('s')}), 0)::float AS "netSales",
-           (
+        `WITH filtered_sales AS (
+           SELECT DISTINCT s.id, s.total, s.refunded_amount
+           FROM ${sales} s
+           LEFT JOIN ${customers} c ON c.id = s.customer_id
+           LEFT JOIN ${saleEmployees} se ON se.sale_id = s.id
+           LEFT JOIN ${employees} e ON e.id = se.employee_id
+           WHERE ${where} ${employeeFilter}
+         )
+         SELECT
+           COUNT(fs.id)::bigint AS "invoiceCount",
+           COALESCE(SUM(fs.total), 0)::float AS "grossSales",
+           COALESCE(SUM(COALESCE(fs.refunded_amount, 0)), 0)::float AS "refundAmount",
+           COALESCE(SUM(COALESCE(fs.total, 0) - COALESCE(fs.refunded_amount, 0)), 0)::float AS "netSales",
+           COALESCE((
              SELECT COUNT(DISTINCT se.employee_id)::bigint
              FROM ${saleEmployees} se
-             INNER JOIN ${sales} s2 ON s2.id = se.sale_id
-             LEFT JOIN ${customers} c2 ON c2.id = s2.customer_id
-             WHERE ${eligibleSaleStatusSql('s2')}
-               AND s2.created_at >= $1::date
-               AND s2.created_at < ($2::date + INTERVAL '1 day')
-               ${query.branchId ? 'AND s2.branch_id = $3::uuid' : ''}
-               ${query.employeeId ? `AND se.employee_id = $${query.branchId ? 4 : 3}::uuid` : ''}
-           ) AS "employeesWithSales"
-         FROM ${sales} s
-         LEFT JOIN ${customers} c ON c.id = s.customer_id
-         LEFT JOIN ${saleEmployees} se ON se.sale_id = s.id
-         LEFT JOIN ${employees} e ON e.id = se.employee_id
-         WHERE ${where} ${employeeFilter}`,
+             INNER JOIN filtered_sales fs2 ON fs2.id = se.sale_id
+           ), 0)::bigint AS "employeesWithSales"
+         FROM filtered_sales fs`,
         ...allParams,
       );
 
@@ -161,8 +159,13 @@ export class SalesAnalyticsService {
       const todayParams: unknown[] = [today, today];
       let todayBranch = '';
       if (query.branchId) {
-        todayBranch = 'AND branch_id = $3::uuid';
+        todayBranch = `AND s.branch_id = $${todayParams.length + 1}::uuid`;
         todayParams.push(query.branchId);
+      }
+      let todayEmployee = '';
+      if (query.employeeId) {
+        todayEmployee = `AND EXISTS (SELECT 1 FROM ${saleEmployees} se_t WHERE se_t.sale_id = s.id AND se_t.employee_id = $${todayParams.length + 1}::uuid)`;
+        todayParams.push(query.employeeId);
       }
       const todayRows = await tx.$queryRawUnsafe<Array<{ net: number }>>(
         `SELECT COALESCE(SUM(${netSaleAmountSql('s')}), 0)::float AS net
@@ -170,15 +173,21 @@ export class SalesAnalyticsService {
          WHERE ${eligibleSaleStatusSql('s')}
            AND s.created_at >= $1::date
            AND s.created_at < ($2::date + INTERVAL '1 day')
-           ${todayBranch}`,
+           ${todayBranch}
+           ${todayEmployee}`,
         ...todayParams,
       );
 
       const monthParams: unknown[] = [monthStart, today];
       let monthBranch = '';
       if (query.branchId) {
-        monthBranch = 'AND branch_id = $3::uuid';
+        monthBranch = `AND s.branch_id = $${monthParams.length + 1}::uuid`;
         monthParams.push(query.branchId);
+      }
+      let monthEmployee = '';
+      if (query.employeeId) {
+        monthEmployee = `AND EXISTS (SELECT 1 FROM ${saleEmployees} se_m WHERE se_m.sale_id = s.id AND se_m.employee_id = $${monthParams.length + 1}::uuid)`;
+        monthParams.push(query.employeeId);
       }
       const monthRows = await tx.$queryRawUnsafe<Array<{ net: number }>>(
         `SELECT COALESCE(SUM(${netSaleAmountSql('s')}), 0)::float AS net
@@ -186,7 +195,8 @@ export class SalesAnalyticsService {
          WHERE ${eligibleSaleStatusSql('s')}
            AND s.created_at >= $1::date
            AND s.created_at < ($2::date + INTERVAL '1 day')
-           ${monthBranch}`,
+           ${monthBranch}
+           ${monthEmployee}`,
         ...monthParams,
       );
 
@@ -232,16 +242,15 @@ export class SalesAnalyticsService {
       }
 
       const where = `${conditions.join(' AND ')} ${employeeFilter}`;
-      const fromClause = `
-        FROM ${sales} s
-        INNER JOIN ${branches} b ON b.id = s.branch_id
-        LEFT JOIN ${customers} c ON c.id = s.customer_id
-        LEFT JOIN ${saleEmployees} se ON se.sale_id = s.id
-        LEFT JOIN ${employees} e ON e.id = se.employee_id
-        WHERE ${where}`;
 
       const countRows = await tx.$queryRawUnsafe<Array<{ count: bigint }>>(
-        `SELECT COUNT(DISTINCT s.id)::bigint AS count ${fromClause}`,
+        `SELECT COUNT(DISTINCT s.id)::bigint AS count
+         FROM ${sales} s
+         INNER JOIN ${branches} b ON b.id = s.branch_id
+         LEFT JOIN ${customers} c ON c.id = s.customer_id
+         LEFT JOIN ${saleEmployees} se ON se.sale_id = s.id
+         LEFT JOIN ${employees} e ON e.id = se.employee_id
+         WHERE ${where}`,
         ...params,
       );
       const total = Number(countRows[0]?.count ?? 0);
@@ -250,8 +259,16 @@ export class SalesAnalyticsService {
       const sortOrder = query.sortOrder === 'asc' ? 'ASC' : 'DESC';
 
       const data = await tx.$queryRawUnsafe(
-        `SELECT DISTINCT ON (s.id)
-                s.id,
+        `WITH distinct_matching_sales AS (
+           SELECT DISTINCT s.id
+           FROM ${sales} s
+           INNER JOIN ${branches} b ON b.id = s.branch_id
+           LEFT JOIN ${customers} c ON c.id = s.customer_id
+           LEFT JOIN ${saleEmployees} se ON se.sale_id = s.id
+           LEFT JOIN ${employees} e ON e.id = se.employee_id
+           WHERE ${where}
+         )
+         SELECT s.id,
                 s.sale_number AS "saleNumber",
                 s.created_at AS "createdAt",
                 s.branch_id AS "branchId",
@@ -278,27 +295,18 @@ export class SalesAnalyticsService {
                   INNER JOIN ${employees} e2 ON e2.id = se2.employee_id
                   WHERE se2.sale_id = s.id
                 ) AS employees
-         ${fromClause}
-         ORDER BY s.id, ${sortBy} ${sortOrder}
+         FROM distinct_matching_sales dms
+         INNER JOIN ${sales} s ON s.id = dms.id
+         INNER JOIN ${branches} b ON b.id = s.branch_id
+         LEFT JOIN ${customers} c ON c.id = s.customer_id
+         ORDER BY ${sortBy} ${sortOrder}
          LIMIT $${idx} OFFSET $${idx + 1}`,
         ...params,
         limit,
         offset,
       );
 
-      // Re-sort after DISTINCT ON
-      const rows = (data as Array<{ createdAt: Date; invoiceTotal: number }>).sort((a, b) => {
-        if (sortBy === 's.total') {
-          return sortOrder === 'ASC'
-            ? a.invoiceTotal - b.invoiceTotal
-            : b.invoiceTotal - a.invoiceTotal;
-        }
-        const ta = new Date(a.createdAt).getTime();
-        const tb = new Date(b.createdAt).getTime();
-        return sortOrder === 'ASC' ? ta - tb : tb - ta;
-      });
-
-      return buildPaginatedResponse(rows, total, page, limit);
+      return buildPaginatedResponse(data as unknown[], total, page, limit);
     });
   }
 
@@ -411,6 +419,7 @@ export class SalesAnalyticsService {
     const sales = tenantTable(schemaName, 'sales');
     const saleItems = tenantTable(schemaName, 'sale_items');
     const saleItemEmployees = tenantTable(schemaName, 'sale_item_employees');
+    const services = tenantTable(schemaName, 'services');
     const branches = tenantTable(schemaName, 'branches');
     const customers = tenantTable(schemaName, 'customers');
     const employees = tenantTable(schemaName, 'employees');
@@ -488,7 +497,7 @@ export class SalesAnalyticsService {
       const invoices = await tx.$queryRawUnsafe(
         `SELECT s.id, s.sale_number AS "saleNumber", s.created_at AS "createdAt",
                 b.name AS "branchName", c.name AS "customerName",
-                si.name AS "serviceName",
+                COALESCE(svc.name, 'Service') AS "serviceName",
                 s.total::float AS "invoiceTotal",
                 (${lineValue})::float AS "employeeSales",
                 100::float AS "allocationPercentage",
@@ -497,8 +506,9 @@ export class SalesAnalyticsService {
          ${lineFrom}
          INNER JOIN ${branches} b ON b.id = s.branch_id
          LEFT JOIN ${customers} c ON c.id = s.customer_id
+         LEFT JOIN ${services} svc ON svc.id = si.service_id
          WHERE ${where}
-         ORDER BY s.created_at DESC, si.name ASC
+         ORDER BY s.created_at DESC, svc.name ASC NULLS LAST
          LIMIT $${idx} OFFSET $${idx + 1}`,
         ...params,
         limit,

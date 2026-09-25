@@ -457,6 +457,16 @@ export class EmployeesService {
     const employees = tenantTable(schemaName, 'employees');
     const employee = await this.findById(schemaName, id);
 
+    const isOwner =
+      employee.systemRoles?.includes('SALON_ADMIN') ||
+      employee.designation?.toLowerCase() === 'owner' ||
+      employee.code === 'EMP-0001';
+    if (isOwner) {
+      throw new BadRequestException(
+        'The Salon Admin profile details cannot be updated from the employees page. Please update owner details in Settings.',
+      );
+    }
+
     if (dto.roleCode) {
       const subscriptionContext =
         await this.subscriptionsService.getTenantSubscriptionContext(tenantId);
@@ -562,7 +572,16 @@ export class EmployeesService {
     userId: string,
   ): Promise<EmployeeRecord> {
     const employees = tenantTable(schemaName, 'employees');
-    await this.findById(schemaName, id);
+    const emp = await this.findById(schemaName, id);
+
+    if (dto.status !== 'ACTIVE') {
+      const isOwner =
+        emp.systemRoles?.includes('SALON_ADMIN') ||
+        emp.designation?.toLowerCase() === 'owner';
+      if (isOwner) {
+        throw new BadRequestException('The salon owner account cannot be deactivated.');
+      }
+    }
 
     await this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
       await tx.$queryRawUnsafe(
@@ -581,6 +600,88 @@ export class EmployeesService {
     });
 
     return this.findById(schemaName, id);
+  }
+
+  async deleteEmployee(
+    schemaName: string,
+    id: string,
+    userId: string,
+  ): Promise<{ id: string; success: boolean }> {
+    const employees = tenantTable(schemaName, 'employees');
+    const saleEmployees = tenantTable(schemaName, 'sale_employees');
+    const saleItemEmployees = tenantTable(schemaName, 'sale_item_employees');
+    const appointments = tenantTable(schemaName, 'appointments');
+    const payrollItems = tenantTable(schemaName, 'payroll_items');
+    const payrollAdvances = tenantTable(schemaName, 'payroll_advances');
+    const userRoles = tenantTable(schemaName, 'user_roles');
+    const users = tenantTable(schemaName, 'users');
+
+    const emp = await this.findById(schemaName, id);
+    const isOwner =
+      emp.systemRoles?.includes('SALON_ADMIN') ||
+      emp.designation?.toLowerCase() === 'owner';
+    if (isOwner) {
+      throw new BadRequestException('The salon owner account cannot be deleted.');
+    }
+
+    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      // Check sales
+      const saleCountRows = await tx.$queryRawUnsafe<Array<{ count: bigint }>>(
+        `SELECT (
+          (SELECT COUNT(*)::bigint FROM ${saleEmployees} WHERE employee_id = $1::uuid) +
+          (SELECT COUNT(*)::bigint FROM ${saleItemEmployees} WHERE employee_id = $1::uuid)
+        ) AS count`,
+        id,
+      );
+      if (Number(saleCountRows[0]?.count ?? 0) > 0) {
+        throw new BadRequestException(
+          'Cannot delete this employee because they have recorded sales transactions. You can deactivate them instead.',
+        );
+      }
+
+      // Check appointments
+      const appointmentRows = await tx.$queryRawUnsafe<Array<{ count: bigint }>>(
+        `SELECT COUNT(*)::bigint AS count FROM ${appointments} WHERE employee_id = $1::uuid`,
+        id,
+      );
+      if (Number(appointmentRows[0]?.count ?? 0) > 0) {
+        throw new BadRequestException(
+          'Cannot delete this employee because they are assigned to appointments. You can deactivate them instead.',
+        );
+      }
+
+      // Check payroll
+      const payrollRows = await tx.$queryRawUnsafe<Array<{ count: bigint }>>(
+        `SELECT (
+          (SELECT COUNT(*)::bigint FROM ${payrollItems} WHERE employee_id = $1::uuid) +
+          (SELECT COUNT(*)::bigint FROM ${payrollAdvances} WHERE employee_id = $1::uuid)
+        ) AS count`,
+        id,
+      );
+      if (Number(payrollRows[0]?.count ?? 0) > 0) {
+        throw new BadRequestException(
+          'Cannot delete this employee because they have recorded payroll or advance records. You can deactivate them instead.',
+        );
+      }
+
+      // If employee has a dedicated login user account, remove user role and user
+      if (emp.userId) {
+        await tx.$queryRawUnsafe(`DELETE FROM ${userRoles} WHERE user_id = $1::uuid`, emp.userId);
+        await tx.$queryRawUnsafe(`DELETE FROM ${users} WHERE id = $1::uuid`, emp.userId);
+      }
+
+      await tx.$queryRawUnsafe(`DELETE FROM ${employees} WHERE id = $1::uuid`, id);
+
+      await logAudit(tx, schemaName, {
+        userId,
+        action: 'EMPLOYEE_DELETE',
+        entityType: 'employee',
+        entityId: id,
+        details: { name: emp.name, code: emp.code },
+      });
+
+      return { id, success: true };
+    });
   }
 
   /**

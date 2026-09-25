@@ -21,8 +21,7 @@ import { NotificationReminderService } from './notification-reminder.service';
 import { NotificationsService } from './notifications.service';
 
 @Controller('notifications')
-@UseGuards(JwtAuthGuard, TenantContextGuard, RolesGuard)
-@Roles('SALON_ADMIN')
+@UseGuards(JwtAuthGuard, TenantContextGuard)
 export class NotificationsController {
   constructor(
     private readonly notificationsService: NotificationsService,
@@ -53,6 +52,8 @@ export class NotificationsController {
    * Manually triggers the subscription reminder scan (with optional asOfDate for testing).
    */
   @Post('reminders/scan')
+  @UseGuards(RolesGuard)
+  @Roles('SALON_ADMIN')
   scanReminders(@Query('asOfDate') asOfDate?: string) {
     const targetDate = asOfDate ? new Date(asOfDate) : new Date();
     return this.reminderService.scanAndQueueSubscriptionReminders(targetDate);
@@ -62,6 +63,8 @@ export class NotificationsController {
    * Manually test a specific reminder type on the tenant's current subscription.
    */
   @Post('reminders/test')
+  @UseGuards(RolesGuard)
+  @Roles('SALON_ADMIN')
   async testReminder(
     @CurrentTenant() tenant: TenantContext,
     @Body() body: { reminderType: SubscriptionReminderType; subscriptionId?: string },
@@ -86,6 +89,8 @@ export class NotificationsController {
    * Returns reminder logs and delivery history for this salon.
    */
   @Get('reminders/history')
+  @UseGuards(RolesGuard)
+  @Roles('SALON_ADMIN')
   getReminderHistory(@CurrentTenant() tenant: TenantContext) {
     return this.reminderService.listReminderHistory({ tenantId: tenant.tenantId });
   }

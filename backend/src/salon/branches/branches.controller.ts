@@ -28,8 +28,6 @@ export class BranchesController {
   }
 
   @Get()
-  @UseGuards(PermissionGuard)
-  @RequirePermission('BRANCH_VIEW')
   list(@CurrentTenant() tenant: TenantContext) {
     return this.branchesService.list(tenant.schemaName);
   }

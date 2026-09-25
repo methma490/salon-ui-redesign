@@ -15,7 +15,10 @@ export function NotificationBell() {
   const { data: countData } = useQuery({
     queryKey: ['notifications-unread-count'],
     queryFn: tenantApi.notifications.unreadCount,
-    refetchInterval: 30_000,
+    staleTime: 60_000,
+    refetchInterval: open ? 15_000 : 120_000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   });
 
   const { data: notificationsData, isLoading } = useQuery({

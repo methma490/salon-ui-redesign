@@ -3,6 +3,7 @@ import { ArrowLeft, Check, Printer, ShoppingCart, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tenantApi, type Customer, type Product, type Service } from '@/api/tenant.api';
+import { useDebouncedSearch } from '@/hooks/useDebounce';
 import {
   Dialog,
   DialogContent,
@@ -144,6 +145,7 @@ export default function PosPage() {
   const [customerName, setCustomerName] = useState<string | null>(null);
   const [customerPhone, setCustomerPhone] = useState<string | null>(null);
   const [phoneSearch, setPhoneSearch] = useState('');
+  const debouncedPhoneSearch = useDebouncedSearch(phoneSearch, 400, 3);
   const [createCustomerOpen, setCreateCustomerOpen] = useState(false);
   const [newCustomerForm, setNewCustomerForm] = useState({ name: '', phone: '', email: '' });
 
@@ -273,9 +275,9 @@ export default function PosPage() {
   }, [activeProducts, catalogSearch, categoryFilter]);
 
   const { data: searchResults = [] } = useQuery({
-    queryKey: ['customer-search', phoneSearch],
-    queryFn: () => tenantApi.customers.search({ phone: phoneSearch }),
-    enabled: customerMode === 'registered' && phoneSearch.length >= 3 && !customerId,
+    queryKey: ['customer-search', debouncedPhoneSearch],
+    queryFn: () => tenantApi.customers.search({ phone: debouncedPhoneSearch }),
+    enabled: customerMode === 'registered' && debouncedPhoneSearch.length >= 3 && !customerId,
   });
 
   const createCustomerMutation = useMutation({

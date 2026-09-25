@@ -5,6 +5,7 @@ import {
   type StockCreditDetail,
   type StockReceiptPaymentStatus,
 } from '@/api/tenant.api';
+import { useDebouncedSearch } from '@/hooks/useDebounce';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -81,8 +82,9 @@ export default function StockPage() {
   const [tab, setTab] = useState<Tab>('levels');
   const [formError, setFormError] = useState<string | null>(null);
 
+  const [creditSearch, setCreditSearch] = useState('');
+  const debouncedCreditSearch = useDebouncedSearch(creditSearch, 400, 2);
   const [creditFilters, setCreditFilters] = useState({
-    search: '',
     branchId: branchId,
     paymentStatus: 'all',
     fromDate: '',
@@ -135,12 +137,12 @@ export default function StockPage() {
   });
 
   const creditsQuery = useQuery({
-    queryKey: ['stock-credits', creditFilters],
+    queryKey: ['stock-credits', creditFilters, debouncedCreditSearch],
     queryFn: () =>
       tenantApi.stock.credits({
         page: creditFilters.page,
         limit: 20,
-        search: creditFilters.search || undefined,
+        search: debouncedCreditSearch || undefined,
         branchId: creditFilters.branchId === 'all' ? undefined : creditFilters.branchId,
         paymentStatus:
           creditFilters.paymentStatus === 'all' ? undefined : creditFilters.paymentStatus,
@@ -675,10 +677,11 @@ export default function StockPage() {
             <div className="emp-toolbar-filters" style={{ flexWrap: 'wrap', gap: 8 }}>
               <Input
                 placeholder="Search reference…"
-                value={creditFilters.search}
-                onChange={(e) =>
-                  setCreditFilters({ ...creditFilters, search: e.target.value, page: 1 })
-                }
+                value={creditSearch}
+                onChange={(e) => {
+                  setCreditSearch(e.target.value);
+                  setCreditFilters((prev) => ({ ...prev, page: 1 }));
+                }}
                 className="w-full sm:w-[180px]"
               />
               <Select
@@ -718,16 +721,23 @@ export default function StockPage() {
               <Input
                 type="date"
                 value={creditFilters.fromDate}
-                onChange={(e) =>
-                  setCreditFilters({ ...creditFilters, fromDate: e.target.value, page: 1 })
-                }
+                onChange={(e) => {
+                  const newFrom = e.target.value;
+                  setCreditFilters((prev) => ({
+                    ...prev,
+                    fromDate: newFrom,
+                    toDate: prev.toDate && newFrom && prev.toDate < newFrom ? newFrom : prev.toDate,
+                    page: 1,
+                  }));
+                }}
                 className="w-full sm:w-[150px]"
               />
               <Input
                 type="date"
                 value={creditFilters.toDate}
+                min={creditFilters.fromDate || undefined}
                 onChange={(e) =>
-                  setCreditFilters({ ...creditFilters, toDate: e.target.value, page: 1 })
+                  setCreditFilters((prev) => ({ ...prev, toDate: e.target.value, page: 1 }))
                 }
                 className="w-full sm:w-[150px]"
               />

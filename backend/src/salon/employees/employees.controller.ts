@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../auth/interfaces/auth.interface';
@@ -73,4 +73,15 @@ export class EmployeesController {
   ) {
     return this.employeesService.updateStatus(tenant.schemaName, id, dto, user.id);
   }
+
+  @Delete(':id')
+  @RequirePermission('EMPLOYEE_UPDATE')
+  delete(
+    @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    return this.employeesService.deleteEmployee(tenant.schemaName, id, user.id);
+  }
 }
+

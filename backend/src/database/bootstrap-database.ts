@@ -101,6 +101,22 @@ async function syncAllTenantSchemas(prisma: PrismaClient): Promise<void> {
         await prisma.$executeRawUnsafe(
           `ALTER TABLE "${schema}".service_categories ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true`,
         );
+        await prisma.$executeRawUnsafe(
+          `CREATE TABLE IF NOT EXISTS "${schema}".service_category_branches (
+            category_id UUID NOT NULL,
+            branch_id UUID NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            PRIMARY KEY (category_id, branch_id),
+            CONSTRAINT scb_category_fkey FOREIGN KEY (category_id) REFERENCES "${schema}".service_categories(id) ON DELETE CASCADE,
+            CONSTRAINT scb_branch_fkey FOREIGN KEY (branch_id) REFERENCES "${schema}".branches(id) ON DELETE CASCADE
+          )`,
+        );
+        await prisma.$executeRawUnsafe(
+          `CREATE INDEX IF NOT EXISTS idx_scb_category_id ON "${schema}".service_category_branches(category_id)`,
+        );
+        await prisma.$executeRawUnsafe(
+          `CREATE INDEX IF NOT EXISTS idx_scb_branch_id ON "${schema}".service_category_branches(branch_id)`,
+        );
       } catch (err) {
         logger.warn(`Could not sync schema ${schema}: ${err}`);
       }
