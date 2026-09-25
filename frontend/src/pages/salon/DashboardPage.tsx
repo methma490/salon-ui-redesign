@@ -6,7 +6,7 @@ import {
   Users,
   Wallet,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { tenantApi } from '@/api/tenant.api';
 import {
@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useSalonBranch } from '@/contexts/SalonBranchContext';
 import { OpsError, OpsLoading } from './salon-ops-ui';
 import '@/components/dashboard/dashboard-page.css';
 import './employees-page.css';
@@ -35,12 +36,7 @@ function formatMoney(value: number) {
 }
 
 export default function DashboardPage() {
-  const [branchId, setBranchId] = useState<string>('all');
-
-  const { data: branches = [] } = useQuery({
-    queryKey: ['branches'],
-    queryFn: tenantApi.branches.list,
-  });
+  const { branchId, setBranchId, branches } = useSalonBranch();
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['dashboard', branchId],

@@ -1,5 +1,6 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { queryClient } from '@/lib/queryClient';
@@ -12,6 +13,19 @@ function App() {
         <BrowserRouter>
           <AuthProvider>
             <AppRoutes />
+            <Toaster
+              position="top-right"
+              richColors
+              closeButton
+              theme="light"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  fontSize: '0.875rem',
+                  borderRadius: '12px',
+                },
+              }}
+            />
           </AuthProvider>
         </BrowserRouter>
       </QueryClientProvider>

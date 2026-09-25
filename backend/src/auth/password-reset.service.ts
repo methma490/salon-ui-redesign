@@ -129,6 +129,21 @@ export class PasswordResetService {
       data: { usedAt: new Date() },
     });
 
+    const isSuperAdmin = record.accountType === PasswordResetAccountType.SUPER_ADMIN;
+    const portalLabel = isSuperAdmin ? 'Super Admin' : 'Salon Admin';
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:5173');
+    const loginUrl = `${frontendUrl}${isSuperAdmin ? '/super-admin/login' : '/salon/login'}`;
+
+    try {
+      await this.mailService.sendPasswordResetSuccessEmail({
+        to: record.email,
+        portalLabel,
+        loginUrl,
+      });
+    } catch {
+      // We don't fail the password reset response if email delivery encounters a non-critical error
+    }
+
     return { message: 'Password updated successfully. You can sign in now.' };
   }
 

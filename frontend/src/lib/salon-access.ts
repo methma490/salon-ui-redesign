@@ -132,7 +132,7 @@ export const SALON_ROUTE_ACCESS: Array<{
     feature: 'PAYROLL',
     module: 'PAYROLL',
   },
-  { match: (p) => p.startsWith('/salon/employees'), feature: 'EMPLOYEES', module: 'CORE' },
+  { match: (p) => p.startsWith('/salon/employees'), module: 'CORE' },
   { match: (p) => p.startsWith('/salon/reports'), feature: 'REPORTS', module: 'POS' },
   { match: (p) => p.startsWith('/salon/branches'), module: 'MULTI_BRANCH' },
   { match: (p) => p.startsWith('/salon/subscription'), adminOnly: true },

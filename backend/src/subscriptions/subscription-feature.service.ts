@@ -40,7 +40,11 @@ export class SubscriptionFeatureService {
   async getTenantFeatureCodes(tenantId: string): Promise<string[]> {
     const subscription = await this.getEntitlementSubscriptionRecord(tenantId);
 
-    if (subscription && this.isSubscriptionValid(subscription)) {
+    if (subscription) {
+      if (!this.isSubscriptionValid(subscription)) {
+        return [];
+      }
+
       const codes = subscription.subscriptionFeatures
         .filter((sf) => sf.enabled && sf.feature.status === FeatureStatus.ACTIVE)
         .map((sf) => sf.feature.code);
@@ -58,7 +62,6 @@ export class SubscriptionFeatureService {
     return this.prisma.subscription.findFirst({
       where: {
         tenantId,
-        status: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL] },
       },
       orderBy: { createdAt: 'desc' },
       include: {

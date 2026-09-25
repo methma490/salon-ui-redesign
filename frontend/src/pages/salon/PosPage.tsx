@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSalonBranch } from '@/contexts/SalonBranchContext';
 import {
   FormSubmit,
   getErrorMessage,
@@ -127,6 +128,7 @@ export default function PosPage() {
   const qc = useQueryClient();
   const { user } = useAuth();
   const clock = useClock();
+  const { branchId: ribbonBranchId, setBranchId: setRibbonBranchId, activeBranches } = useSalonBranch();
 
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [mobileCheckoutStep, setMobileCheckoutStep] = useState<'cart' | 'payment'>('cart');
@@ -134,7 +136,9 @@ export default function PosPage() {
   const [catalogSearch, setCatalogSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
 
-  const [branchId, setBranchId] = useState('');
+  const [branchId, setBranchId] = useState<string>(() =>
+    ribbonBranchId !== 'all' ? ribbonBranchId : activeBranches[0]?.id || '',
+  );
   const [customerMode, setCustomerMode] = useState<CustomerMode>('walkin');
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState<string | null>(null);
@@ -157,21 +161,19 @@ export default function PosPage() {
 
   const [pendingServiceId, setPendingServiceId] = useState('');
 
-  const { data: branches = [] } = useQuery({
-    queryKey: ['branches'],
-    queryFn: tenantApi.branches.list,
-  });
-
-  const activeBranches = useMemo(
-    () => branches.filter((b) => b.status === 'ACTIVE'),
-    [branches],
-  );
-
+  // Synchronize when ribbon branch changes
   useEffect(() => {
-    if (!branchId && activeBranches.length >= 1) {
+    if (ribbonBranchId && ribbonBranchId !== 'all') {
+      setBranchId(ribbonBranchId);
+    } else if (!branchId && activeBranches.length >= 1) {
       setBranchId(activeBranches[0].id);
     }
-  }, [activeBranches, branchId]);
+  }, [ribbonBranchId, activeBranches, branchId]);
+
+  const handleBranchChange = (newBranchId: string) => {
+    setBranchId(newBranchId);
+    setRibbonBranchId(newBranchId);
+  };
 
   const { data: performerData } = useQuery({
     queryKey: ['pos-performers', branchId],
@@ -888,7 +890,7 @@ export default function PosPage() {
           </div>
 
           <div className="pos-branch-select">
-            <Select value={branchId} onValueChange={setBranchId}>
+            <Select value={branchId} onValueChange={handleBranchChange}>
               <SelectTrigger aria-label="Select branch">
                 <SelectValue placeholder="Branch" />
               </SelectTrigger>

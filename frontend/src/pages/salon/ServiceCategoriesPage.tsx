@@ -1,6 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { AlertTriangle } from 'lucide-react';
 import { tenantApi, type ServiceCategory } from '@/api/tenant.api';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -12,6 +22,8 @@ import {
   OpsError,
   OpsLoading,
   OpsPageHeader,
+  OpsStatusBadge,
+  OpsToggleStatusButton,
   SimpleForm,
   SimpleFormDialog,
 } from './salon-ops-ui';
@@ -70,6 +82,7 @@ export default function ServiceCategoriesPage() {
   const qc = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [editCategory, setEditCategory] = useState<ServiceCategory | null>(null);
+  const [deactivateCategory, setDeactivateCategory] = useState<ServiceCategory | null>(null);
   const [form, setForm] = useState<CategoryForm>(emptyForm);
   const [editForm, setEditForm] = useState<CategoryForm>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
@@ -84,6 +97,15 @@ export default function ServiceCategoriesPage() {
     queryKey: ['service-categories'],
     queryFn: tenantApi.serviceCategories.list,
   });
+
+  const stats = useMemo(
+    () => ({
+      total: categories.length,
+      active: categories.filter((c) => c.status === 'ACTIVE').length,
+      inactive: categories.filter((c) => c.status !== 'ACTIVE').length,
+    }),
+    [categories],
+  );
 
   const createMutation = useMutation({
     mutationFn: tenantApi.serviceCategories.create,
@@ -107,6 +129,18 @@ export default function ServiceCategoriesPage() {
     onError: (err) => setFormError(getErrorMessage(err)),
   });
 
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      tenantApi.serviceCategories.updateStatus(id, status),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['service-categories'] });
+      qc.invalidateQueries({ queryKey: ['services'] });
+      setDeactivateCategory(null);
+      setFormError(null);
+    },
+    onError: (err) => setFormError(getErrorMessage(err)),
+  });
+
   const openEdit = (cat: ServiceCategory) => {
     setFormError(null);
     setEditCategory(cat);
@@ -114,6 +148,15 @@ export default function ServiceCategoriesPage() {
       name: cat.name,
       description: cat.description || '',
     });
+  };
+
+  const handleToggleStatus = (cat: ServiceCategory) => {
+    setFormError(null);
+    if (cat.status === 'ACTIVE') {
+      setDeactivateCategory(cat);
+    } else {
+      statusMutation.mutate({ id: cat.id, status: 'ACTIVE' });
+    }
   };
 
   if (isLoading) return <OpsLoading />;
@@ -141,8 +184,16 @@ export default function ServiceCategoriesPage() {
 
       <div className="emp-stats">
         <div className="emp-stat">
-          <div className="emp-stat-value">{categories.length}</div>
-          <div className="emp-stat-label">Categories</div>
+          <div className="emp-stat-value">{stats.total}</div>
+          <div className="emp-stat-label">Total</div>
+        </div>
+        <div className="emp-stat">
+          <div className="emp-stat-value">{stats.active}</div>
+          <div className="emp-stat-label">Active</div>
+        </div>
+        <div className="emp-stat">
+          <div className="emp-stat-value">{stats.inactive}</div>
+          <div className="emp-stat-label">Inactive</div>
         </div>
       </div>
 
@@ -156,6 +207,12 @@ export default function ServiceCategoriesPage() {
           </div>
         </div>
 
+        {formError && (
+          <div style={{ padding: '0 1.5rem 1rem' }}>
+            <FormError message={formError} />
+          </div>
+        )}
+
         {categories.length === 0 ? (
           <div className="emp-empty">No categories yet. Create one before adding services.</div>
         ) : (
@@ -168,12 +225,18 @@ export default function ServiceCategoriesPage() {
                       <div className="emp-name-cell">{cat.name}</div>
                       <div className="emp-code">{cat.code}</div>
                     </div>
+                    <OpsStatusBadge status={cat.status || 'ACTIVE'} />
                   </div>
                   <div className="emp-card-meta">
                     <span>{cat.description || 'No description'}</span>
                   </div>
                   <div className="emp-card-actions">
                     <OpsEditButton onClick={() => openEdit(cat)} />
+                    <OpsToggleStatusButton
+                      isActive={cat.status === 'ACTIVE'}
+                      disabled={statusMutation.isPending}
+                      onClick={() => handleToggleStatus(cat)}
+                    />
                   </div>
                 </article>
               ))}
@@ -186,6 +249,7 @@ export default function ServiceCategoriesPage() {
                     <th>Code</th>
                     <th>Name</th>
                     <th>Description</th>
+                    <th>Status</th>
                     <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
@@ -196,8 +260,16 @@ export default function ServiceCategoriesPage() {
                       <td className="emp-name-cell">{cat.name}</td>
                       <td>{cat.description || '—'}</td>
                       <td>
+                        <OpsStatusBadge status={cat.status || 'ACTIVE'} />
+                      </td>
+                      <td>
                         <div className="emp-actions">
                           <OpsEditButton onClick={() => openEdit(cat)} />
+                          <OpsToggleStatusButton
+                            isActive={cat.status === 'ACTIVE'}
+                            disabled={statusMutation.isPending}
+                            onClick={() => handleToggleStatus(cat)}
+                          />
                         </div>
                       </td>
                     </tr>
@@ -209,6 +281,7 @@ export default function ServiceCategoriesPage() {
         )}
       </div>
 
+      {/* Create Dialog */}
       <SimpleFormDialog
         open={createOpen}
         onOpenChange={(open) => {
@@ -230,6 +303,7 @@ export default function ServiceCategoriesPage() {
         </SimpleForm>
       </SimpleFormDialog>
 
+      {/* Edit Dialog */}
       <SimpleFormDialog
         open={editCategory !== null}
         onOpenChange={(open) => {
@@ -253,6 +327,64 @@ export default function ServiceCategoriesPage() {
           <FormSubmit pending={updateMutation.isPending}>Save Changes</FormSubmit>
         </SimpleForm>
       </SimpleFormDialog>
+
+      {/* Deactivation Confirmation Warning Dialog */}
+      <Dialog
+        open={deactivateCategory !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeactivateCategory(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div>
+                <DialogTitle>Deactivate Category</DialogTitle>
+                <DialogDescription className="mt-1">
+                  Category: <span className="font-semibold text-foreground">{deactivateCategory?.name}</span> ({deactivateCategory?.code})
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="my-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+              <div className="text-sm font-medium">
+                if deactivated all the services assigned to the this category will be deactivated
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeactivateCategory(null)}
+              disabled={statusMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={statusMutation.isPending}
+              onClick={() => {
+                if (deactivateCategory) {
+                  statusMutation.mutate({ id: deactivateCategory.id, status: 'INACTIVE' });
+                }
+              }}
+            >
+              {statusMutation.isPending ? 'Deactivating...' : 'Deactivate Category'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

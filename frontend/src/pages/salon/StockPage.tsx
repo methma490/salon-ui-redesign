@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   tenantApi,
   type StockCreditDetail,
@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useSalonBranch } from '@/contexts/SalonBranchContext';
 import {
   FormError,
   FormSubmit,
@@ -76,13 +77,13 @@ function paymentStatusClass(status: string) {
 
 export default function StockPage() {
   const qc = useQueryClient();
+  const { branchId, setBranchId, branches } = useSalonBranch();
   const [tab, setTab] = useState<Tab>('levels');
-  const [branchId, setBranchId] = useState<string>('all');
   const [formError, setFormError] = useState<string | null>(null);
 
   const [creditFilters, setCreditFilters] = useState({
     search: '',
-    branchId: 'all',
+    branchId: branchId,
     paymentStatus: 'all',
     fromDate: '',
     toDate: '',
@@ -102,11 +103,6 @@ export default function StockPage() {
     paymentDate: todayIso(),
     paymentReference: '',
     notes: '',
-  });
-
-  const { data: branches = [] } = useQuery({
-    queryKey: ['branches'],
-    queryFn: tenantApi.branches.list,
   });
 
   const { data: products = [] } = useQuery({
@@ -163,7 +159,7 @@ export default function StockPage() {
   });
 
   const [stockInForm, setStockInForm] = useState({
-    branchId: '',
+    branchId: branchId !== 'all' ? branchId : '',
     productId: '',
     quantity: '',
     unitCost: '',
@@ -175,11 +171,20 @@ export default function StockPage() {
   });
 
   const [adjustForm, setAdjustForm] = useState({
-    branchId: '',
+    branchId: branchId !== 'all' ? branchId : '',
     productId: '',
     quantity: '',
     notes: '',
   });
+
+  // Sync with ribbon branch selection
+  useEffect(() => {
+    setCreditFilters((prev) => ({ ...prev, branchId, page: 1 }));
+    if (branchId !== 'all') {
+      setStockInForm((prev) => ({ ...prev, branchId }));
+      setAdjustForm((prev) => ({ ...prev, branchId }));
+    }
+  }, [branchId]);
 
   const stockInTotals = useMemo(() => {
     const qty = Number(stockInForm.quantity) || 0;

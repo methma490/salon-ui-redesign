@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { tenantApi } from '@/api/tenant.api';
+import { useSalonBranch } from '@/contexts/SalonBranchContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -26,17 +27,17 @@ function statusClass(status: string) {
 }
 
 export default function QuotationsPage() {
+  const { branchId, setBranchId, branches } = useSalonBranch();
   const [filters, setFilters] = useState({
     search: '',
-    branchId: 'all',
+    branchId: branchId,
     status: 'all',
     page: 1,
   });
 
-  const { data: branches = [] } = useQuery({
-    queryKey: ['branches'],
-    queryFn: tenantApi.branches.list,
-  });
+  useEffect(() => {
+    setFilters((prev) => ({ ...prev, branchId, page: 1 }));
+  }, [branchId]);
 
   const query = useQuery({
     queryKey: ['quotations', filters],
@@ -80,7 +81,10 @@ export default function QuotationsPage() {
           />
           <Select
             value={filters.branchId}
-            onValueChange={(v) => setFilters({ ...filters, branchId: v, page: 1 })}
+            onValueChange={(v) => {
+              setFilters({ ...filters, branchId: v, page: 1 });
+              setBranchId(v);
+            }}
           >
             <SelectTrigger className="emp-select w-full sm:w-[160px]">
               <SelectValue placeholder="Branch" />

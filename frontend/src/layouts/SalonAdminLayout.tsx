@@ -12,7 +12,6 @@ import {
   Package,
   Receipt,
   Scissors,
-  Search,
   Settings,
   ShoppingCart,
   Sparkles,
@@ -27,7 +26,6 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { tenantApi } from '@/api/tenant.api';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { NotificationBell } from '@/components/salon/NotificationBell';
 import {
   Select,
@@ -489,16 +487,10 @@ function SalonAdminHeader({
 }) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { branchId, setBranchId } = useSalonBranch();
-  const [search, setSearch] = useState('');
+  const { branchId, setBranchId, branches, selectedBranch } = useSalonBranch();
   const [profileOpen, setProfileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
-
-  const { data: branches = [] } = useQuery({
-    queryKey: ['branches'],
-    queryFn: tenantApi.branches.list,
-  });
 
   const roleLabel = primaryRoleLabel(roles);
 
@@ -511,12 +503,6 @@ function SalonAdminHeader({
     document.addEventListener('mousedown', onClick);
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const q = search.trim();
-    if (q) navigate(`/salon/customers?search=${encodeURIComponent(q)}`);
-  };
 
   const headerActions = (
     <>
@@ -595,6 +581,25 @@ function SalonAdminHeader({
               <div className="salon-mobile-sheet-header">
                 <SalonBrand salonName={salonName} logoUrl={salonLogoUrl} />
               </div>
+              <div className="border-b border-border px-4 py-3">
+                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <GitBranch className="h-3.5 w-3.5" />
+                  <span>Active Branch</span>
+                </label>
+                <Select value={branchId} onValueChange={setBranchId}>
+                  <SelectTrigger className="h-9 w-full">
+                    <SelectValue placeholder="All branches" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Branches</SelectItem>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="salon-mobile-sheet-nav">
                 <NavItems
                   enabledFeatures={enabledFeatures}
@@ -627,36 +632,42 @@ function SalonAdminHeader({
             </SheetContent>
           </Sheet>
           <SalonLogo logoUrl={salonLogoUrl} size="sm" />
-          <p className="salon-mobile-header-title">{salonName}</p>
+          <div className="min-w-0 flex-1">
+            <p className="salon-mobile-header-title">{salonName}</p>
+            {selectedBranch && (
+              <p className="truncate text-[10px] text-muted-foreground">{selectedBranch.name}</p>
+            )}
+          </div>
         </div>
 
-        {/* Desktop: branch + search */}
+        {/* Desktop: branch selector */}
         <div className="hidden min-w-0 flex-1 items-center gap-3 md:flex">
-          <Select value={branchId} onValueChange={setBranchId}>
-            <SelectTrigger className="h-9 w-[160px] shrink-0">
-              <SelectValue placeholder="All branches" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All branches</SelectItem>
-              {branches.map((b) => (
-                <SelectItem key={b.id} value={b.id}>
-                  {b.name}
+          <div className="flex items-center gap-1.5">
+            <Select value={branchId} onValueChange={setBranchId}>
+              <SelectTrigger
+                aria-label="Filter entire admin panel by branch"
+                className={cn(
+                  "h-9 w-[180px] shrink-0 font-medium transition-all",
+                  branchId !== 'all' ? 'border-primary/50 bg-primary/5 text-primary' : ''
+                )}
+              >
+                <div className="flex items-center gap-2 truncate">
+                  <GitBranch className={cn("h-4 w-4 shrink-0", branchId !== 'all' ? 'text-primary' : 'text-muted-foreground')} />
+                  <SelectValue placeholder="All branches" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  <span className="font-medium">All Branches</span>
                 </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <form onSubmit={handleSearch} className="min-w-0 flex-1 max-w-sm">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search customers..."
-                className="h-9 pl-9"
-              />
-            </div>
-          </form>
+                {branches.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    {b.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 

@@ -1,103 +1,156 @@
 import {
   ArrowLeft,
+  ArrowRight,
   Building2,
   Check,
   CreditCard,
+  Eye,
+  EyeOff,
   Loader2,
   Lock,
+  Mail,
+  Phone,
   Scissors,
+  ShieldCheck,
   Sparkles,
-  UserCircle2,
+  User,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { CitySelect } from '@/components/common/CitySelect';
+import { AddressAutocompleteInput } from '@/components/common/AddressAutocompleteInput';
 import { signupApi } from '@/features/signup/api/signup.api';
 import { getErrorMessage, redirectToPayHereCheckout } from '@/features/signup/lib/payhere';
 import {
   billingCycleLabel,
   formatPrice,
-  isPopularPlan,
 } from '@/features/plans/lib/plan-utils';
 import { usePublicPlans } from '@/features/plans/hooks/usePlans';
-
-function SectionHeader({
-  step,
-  icon: Icon,
-  title,
-  subtitle,
-}: {
-  step: number;
-  icon: typeof Building2;
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <div className="flex items-start gap-3 border-b border-border/60 pb-3">
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
-        {step}
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <Icon className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-semibold">{title}</h2>
-        </div>
-        <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
-      </div>
-    </div>
-  );
-}
 
 export default function SignupPage() {
   const { planId } = useParams<{ planId: string }>();
   const { data: plans = [], isLoading } = usePublicPlans();
   const plan = useMemo(() => plans.find((p) => p.id === planId), [plans, planId]);
 
+  // Stepper: 1: Salon details, 2: Admin account, 3: Payment
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+
+  // Form State
   const [salonName, setSalonName] = useState('');
   const [salonEmail, setSalonEmail] = useState('');
   const [salonPhone, setSalonPhone] = useState('');
   const [salonAddress, setSalonAddress] = useState('');
   const [salonCity, setSalonCity] = useState('Colombo');
+
   const [adminName, setAdminName] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPhone, setAdminPhone] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
 
   if (!planId) {
     return <Navigate to="/#pricing" replace />;
   }
 
-  if (!isLoading && !plan) {
+  if (isLoading) {
     return (
-      <div className="flex h-dvh flex-col items-center justify-center gap-4 bg-background px-4">
-        <p className="text-lg font-medium">Plan not found</p>
-        <Button asChild>
+      <div className="flex h-screen items-center justify-center bg-slate-50">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+      </div>
+    );
+  }
+
+  if (!plan) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center gap-4 bg-slate-50 px-4">
+        <p className="text-lg font-medium text-slate-900">Plan not found</p>
+        <Button asChild className="bg-[#064e3b] text-white">
           <Link to="/#pricing">Back to pricing</Link>
         </Button>
       </div>
     );
   }
 
-  const popular = plan ? isPopularPlan(plan.code) : false;
+  const defaultFeatures = [
+    'Analytics & reports',
+    'Appointments management',
+    'Customer management',
+    'Expense tracking',
+  ];
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const planFeatures = useMemo(() => {
+    if (plan.features && Array.isArray(plan.features) && plan.features.length > 0) {
+      return plan.features.map((f) => f.name);
+    }
+    return defaultFeatures;
+  }, [plan]);
+
+  const validateStep1 = () => {
+    if (!salonName.trim()) {
+      toast.error('Please enter your salon name.');
+      return false;
+    }
+    return true;
+  };
+
+  const validateStep2 = () => {
+    if (!adminName.trim()) {
+      toast.error('Please enter your full name.');
+      return false;
+    }
+    if (!adminEmail.trim()) {
+      toast.error('Please enter your login email.');
+      return false;
+    }
+    if (!adminPassword) {
+      toast.error('Please enter a password.');
+      return false;
+    }
+    if (adminPassword.length < 8) {
+      toast.error('Password must be at least 8 characters long.');
+      return false;
+    }
+    if (adminPassword !== confirmPassword) {
+      toast.error('Passwords do not match.');
+      return false;
+    }
+    return true;
+  };
+
+  const handleNextFromStep1 = (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    if (validateStep1()) {
+      setStep(2);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
+  const handleNextFromStep2 = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validateStep2()) {
+      setStep(3);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleFinalSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!plan) return;
 
-    if (adminPassword !== confirmPassword) {
-      setError('Passwords do not match');
+    if (!validateStep1()) {
+      setStep(1);
       return;
     }
-
-    if (adminPassword.length < 8) {
-      setError('Password must be at least 8 characters');
+    if (!validateStep2()) {
+      setStep(2);
       return;
     }
 
@@ -107,309 +160,625 @@ export default function SignupPage() {
       const result = await signupApi.checkout({
         planId: plan.id,
         salon: {
-          name: salonName,
-          email: salonEmail || undefined,
-          phone: salonPhone || undefined,
-          address: salonAddress || undefined,
-          city: salonCity || undefined,
+          name: salonName.trim(),
+          email: salonEmail.trim() || undefined,
+          phone: salonPhone.trim() || undefined,
+          address: salonAddress.trim() || undefined,
+          city: salonCity.trim() || undefined,
         },
         admin: {
-          name: adminName,
-          email: adminEmail,
-          phone: adminPhone || undefined,
+          name: adminName.trim(),
+          email: adminEmail.trim(),
+          phone: adminPhone.trim() || undefined,
           password: adminPassword,
         },
       });
 
       redirectToPayHereCheckout(result.checkout);
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Signup failed'));
+      toast.error(getErrorMessage(err, 'Signup failed. Please try again.'));
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-background">
-      <header className="flex h-12 shrink-0 items-center justify-between border-b border-border/50 bg-card px-4 md:px-5">
-        <div className="flex items-center gap-3">
-          <Button asChild variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-muted-foreground">
+    <div className="min-h-screen bg-slate-50/60 text-slate-900 antialiased">
+      {/* ── Top Ribbon Navigation ── */}
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-slate-200/80 bg-white/95 px-4 backdrop-blur-md md:px-8">
+        <div className="flex items-center gap-4">
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="h-8 gap-1.5 rounded-lg px-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+          >
             <Link to="/#pricing">
               <ArrowLeft className="h-4 w-4" />
-              Plans
+              <span>Plans</span>
             </Link>
           </Button>
-          <Link to="/" className="flex items-center gap-2 text-sm font-semibold">
-            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <Scissors className="h-3 w-3" />
+
+          <Link to="/" className="flex items-center gap-2.5">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#064e3b] text-white shadow-sm">
+              <Scissors className="h-4 w-4" />
             </span>
-            Dart Smart Salon
+            <span className="text-sm font-bold tracking-tight text-slate-900">
+              Dart Smart Salon
+            </span>
           </Link>
         </div>
 
         {plan && (
-          <div className="flex items-center gap-1.5 rounded-full border border-border bg-muted/50 px-2.5 py-1 text-xs font-medium">
-            {popular && <Sparkles className="h-3 w-3 text-primary" />}
+          <div className="flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/80 px-3 py-1 text-xs font-semibold text-emerald-900 shadow-sm">
+            <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
             <span>{plan.name}</span>
-            <span className="text-muted-foreground">·</span>
-            <span className="text-primary">{formatPrice(plan.price, plan.currency)}</span>
+            <span className="text-emerald-400">·</span>
+            <span className="font-bold text-emerald-700">
+              {formatPrice(plan.price, plan.currency)}
+            </span>
           </div>
         )}
       </header>
 
-      <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(280px,36%)_1fr]">
-        {/* Salon image panel */}
-        <aside className="relative hidden min-h-0 lg:block">
-          <img
-            src="/signup-salon.jpg"
-            alt="Modern salon interior"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/10" />
+      {/* ── Main 2-Column Content ── */}
+      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[340px_1fr] xl:grid-cols-[380px_1fr]">
+          {/* ──── LEFT COLUMN: Plan Preview & Security ──── */}
+          <aside className="flex flex-col gap-4">
+            {/* Plan Card */}
+            <div className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm">
+              {/* Image & Selected Plan Info */}
+              <div className="relative h-80 w-full overflow-hidden sm:h-96">
+                <img
+                  src="/signup-salon.jpg"
+                  alt="Modern salon interior"
+                  className="h-full w-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/20" />
 
-          <div className="relative flex h-full flex-col justify-between p-6 text-white">
-            <div>
-              <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-white/70">
-                Selected plan
-              </p>
-              {plan ? (
-                <>
-                  <h2 className="mt-1 text-2xl font-bold">{plan.name}</h2>
-                  <p className="mt-1 text-lg font-semibold text-white/95">
-                    {formatPrice(plan.price, plan.currency)}
-                    <span className="ml-1 text-sm font-normal text-white/70">
-                      / {billingCycleLabel(plan.billingCycle)}
-                    </span>
+                <div className="absolute inset-0 flex flex-col justify-start p-6 text-white">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/80">
+                    SELECTED PLAN
                   </p>
-                </>
-              ) : (
-                <div className="mt-2 h-8 w-32 animate-pulse rounded bg-white/20" />
-              )}
-            </div>
-
-            {plan && (
-              <ul className="space-y-2">
-                {(Array.isArray(plan.features) ? plan.features : []).slice(0, 5).map((f) => (
-                  <li key={f.code} className="flex items-center gap-2 text-sm text-white/90">
-                    <Check className="h-3.5 w-3.5 shrink-0 text-emerald-300" />
-                    {f.name}
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            <p className="flex items-center gap-1.5 text-[11px] text-white/60">
-              <Lock className="h-3 w-3" />
-              Secure PayHere · Admin activates salon after payment
-            </p>
-          </div>
-        </aside>
-
-        {/* Single-page form */}
-        <main className="flex min-h-0 flex-col overflow-y-auto lg:overflow-hidden">
-          <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-4 md:px-6 md:py-5">
-            <div className="mb-4 shrink-0">
-              <h1 className="text-lg font-bold tracking-tight md:text-xl">
-                Create your salon account
-              </h1>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Fill in salon and admin details, then pay to activate your portal.
-              </p>
-            </div>
-
-            {plan && (
-              <div className="mb-4 flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2 lg:hidden">
-                <span className="text-xs font-medium">{plan.name}</span>
-                <span className="text-xs font-semibold text-primary">
-                  {formatPrice(plan.price, plan.currency)} / {billingCycleLabel(plan.billingCycle)}
-                </span>
-              </div>
-            )}
-
-            <form onSubmit={(e) => void handleSubmit(e)} className="flex min-h-0 flex-1 flex-col gap-4">
-              {/* Step 1 — top */}
-              <section className="shrink-0 space-y-3 rounded-xl border border-border/70 bg-card p-4 marketing-card-shadow">
-                <SectionHeader
-                  step={1}
-                  icon={Building2}
-                  title="Salon details"
-                  subtitle="Your business information"
-                />
-                <div className="grid gap-2.5 sm:grid-cols-3">
-                  <div className="space-y-1 sm:col-span-3">
-                    <Label htmlFor="salon-name" className="text-[11px]">
-                      Salon name *
-                    </Label>
-                    <Input
-                      id="salon-name"
-                      value={salonName}
-                      onChange={(e) => setSalonName(e.target.value)}
-                      placeholder="Glamour Studio"
-                      className="h-8 text-sm"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="salon-email" className="text-[11px]">
-                      Email
-                    </Label>
-                    <Input
-                      id="salon-email"
-                      type="email"
-                      value={salonEmail}
-                      onChange={(e) => setSalonEmail(e.target.value)}
-                      placeholder="hello@salon.lk"
-                      className="h-8 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="salon-phone" className="text-[11px]">
-                      Phone
-                    </Label>
-                    <Input
-                      id="salon-phone"
-                      value={salonPhone}
-                      onChange={(e) => setSalonPhone(e.target.value)}
-                      placeholder="077 123 4567"
-                      className="h-8 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="salon-city" className="text-[11px]">
-                      City
-                    </Label>
-                    <Input
-                      id="salon-city"
-                      value={salonCity}
-                      onChange={(e) => setSalonCity(e.target.value)}
-                      className="h-8 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-1 sm:col-span-3">
-                    <Label htmlFor="salon-address" className="text-[11px]">
-                      Address
-                    </Label>
-                    <Input
-                      id="salon-address"
-                      value={salonAddress}
-                      onChange={(e) => setSalonAddress(e.target.value)}
-                      placeholder="Street address (optional)"
-                      className="h-8 text-sm"
-                    />
-                  </div>
-                </div>
-              </section>
-
-              {/* Step 2 — below */}
-              <section className="shrink-0 space-y-3 rounded-xl border border-border/70 bg-card p-4 marketing-card-shadow">
-                <SectionHeader
-                  step={2}
-                  icon={UserCircle2}
-                  title="Admin login"
-                  subtitle="Portal access after payment"
-                />
-                <div className="grid gap-2.5 sm:grid-cols-3">
-                  <div className="space-y-1 sm:col-span-3">
-                    <Label htmlFor="admin-name" className="text-[11px]">
-                      Full name *
-                    </Label>
-                    <Input
-                      id="admin-name"
-                      value={adminName}
-                      onChange={(e) => setAdminName(e.target.value)}
-                      placeholder="Your name"
-                      className="h-8 text-sm"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="admin-email" className="text-[11px]">
-                      Login email *
-                    </Label>
-                    <Input
-                      id="admin-email"
-                      type="email"
-                      value={adminEmail}
-                      onChange={(e) => setAdminEmail(e.target.value)}
-                      placeholder="you@email.com"
-                      className="h-8 text-sm"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="admin-phone" className="text-[11px]">
-                      Phone
-                    </Label>
-                    <Input
-                      id="admin-phone"
-                      value={adminPhone}
-                      onChange={(e) => setAdminPhone(e.target.value)}
-                      className="h-8 text-sm"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="admin-password" className="text-[11px]">
-                      Password *
-                    </Label>
-                    <Input
-                      id="admin-password"
-                      type="password"
-                      value={adminPassword}
-                      onChange={(e) => setAdminPassword(e.target.value)}
-                      className="h-8 text-sm"
-                      required
-                      minLength={8}
-                    />
-                  </div>
-                  <div className="space-y-1 sm:col-span-2">
-                    <Label htmlFor="confirm-password" className="text-[11px]">
-                      Confirm password *
-                    </Label>
-                    <Input
-                      id="confirm-password"
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="h-8 text-sm"
-                      required
-                      minLength={8}
-                    />
-                  </div>
-                </div>
-              </section>
-
-              {error && (
-                <p className="shrink-0 rounded-lg border border-destructive/25 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-                  {error}
-                </p>
-              )}
-
-              <div className="mt-auto shrink-0 space-y-2 pt-1">
-                <Button
-                  type="submit"
-                  className="h-10 w-full gap-2"
-                  disabled={submitting || !plan}
-                >
-                  {submitting ? (
+                  {plan ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Preparing payment...
+                      <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-white">
+                        {plan.name}
+                      </h2>
+                      <p className="mt-1 text-base font-semibold text-white/95">
+                        {formatPrice(plan.price, plan.currency)}{' '}
+                        <span className="text-sm font-normal text-white/75">
+                          / {billingCycleLabel(plan.billingCycle)}
+                        </span>
+                      </p>
                     </>
                   ) : (
-                    <>
-                      <CreditCard className="h-4 w-4" />
-                      Pay with PayHere & activate salon
-                    </>
+                    <div className="mt-2 h-8 w-32 animate-pulse rounded bg-white/20" />
                   )}
-                </Button>
-                <p className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
-                  <Lock className="h-3 w-3" />
-                  Sandbox payment · Login enabled after super admin activation
-                </p>
+                </div>
               </div>
-            </form>
-          </div>
-        </main>
-      </div>
+
+              {/* Features List */}
+              <div className="p-6">
+                <h3 className="text-sm font-bold text-slate-900">
+                  Everything you need to run your salon
+                </h3>
+                <ul className="mt-4 space-y-3">
+                  {planFeatures.slice(0, 6).map((featureName, idx) => (
+                    <li key={idx} className="flex items-center gap-3">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                        <Check className="h-3 w-3 stroke-[3]" />
+                      </span>
+                      <span className="text-sm font-medium text-slate-700">{featureName}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Security Notice */}
+            <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                <Lock className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Secure PayHere Payment</p>
+                <p className="text-xs text-slate-500">Your payment and data are always secure.</p>
+              </div>
+            </div>
+          </aside>
+
+          {/* ──── RIGHT COLUMN: Heading, Stepper & Form ──── */}
+          <section className="flex flex-col">
+            {/* Heading */}
+            <div>
+              <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl lg:text-4xl">
+                Create your <span className="text-[#064e3b]">salon account</span>
+              </h1>
+              <p className="mt-1.5 text-sm text-slate-500">
+                Fill in your salon and admin details, then pay to activate your portal.
+              </p>
+            </div>
+
+            {/* Stepper Wizard */}
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/70 bg-white px-5 py-4 shadow-sm sm:flex-nowrap">
+              {/* Step 1 Item */}
+              <div className="flex items-center gap-3">
+                <div
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-colors ${
+                    step > 1
+                      ? 'bg-emerald-600 text-white'
+                      : step === 1
+                        ? 'bg-[#064e3b] text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-500'
+                  }`}
+                >
+                  {step > 1 ? <Check className="h-4 w-4 stroke-[3]" /> : '1'}
+                </div>
+                <div>
+                  <p className="text-xs font-bold leading-tight text-slate-900 sm:text-sm">
+                    1. Salon details
+                  </p>
+                  <p className="text-[11px] text-slate-500">Your business information</p>
+                </div>
+              </div>
+
+              {/* Line 1 */}
+              <div className="hidden h-px flex-1 bg-slate-200 sm:block" />
+
+              {/* Step 2 Item */}
+              <div className="flex items-center gap-3">
+                <div
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-colors ${
+                    step > 2
+                      ? 'bg-emerald-600 text-white'
+                      : step === 2
+                        ? 'bg-[#064e3b] text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-500'
+                  }`}
+                >
+                  {step > 2 ? <Check className="h-4 w-4 stroke-[3]" /> : '2'}
+                </div>
+                <div>
+                  <p className="text-xs font-bold leading-tight text-slate-900 sm:text-sm">
+                    Admin account
+                  </p>
+                  <p className="text-[11px] text-slate-500">Portal access details</p>
+                </div>
+              </div>
+
+              {/* Line 2 */}
+              <div className="hidden h-px flex-1 bg-slate-200 sm:block" />
+
+              {/* Step 3 Item */}
+              <div className="flex items-center gap-3">
+                <div
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-colors ${
+                    step === 3
+                      ? 'bg-[#064e3b] text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-500'
+                  }`}
+                >
+                  3
+                </div>
+                <div>
+                  <p className="text-xs font-bold leading-tight text-slate-900 sm:text-sm">Payment</p>
+                  <p className="text-[11px] text-slate-500">Complete and activate</p>
+                </div>
+              </div>
+            </div>
+
+            {/* ──── FORM CARD ──── */}
+            <div className="mt-6 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm sm:p-8">
+              {/* Step 1: Salon Details Form */}
+              {step === 1 && (
+                <form onSubmit={handleNextFromStep1} className="space-y-6">
+                  <div className="flex items-center gap-3.5">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                      <Building2 className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-slate-900">Salon details</h2>
+                      <p className="text-xs text-slate-500">
+                        Enter your salon business information to configure your portal.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 pt-2">
+                    {/* Salon Name */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="salon-name" className="text-xs font-semibold text-slate-700">
+                        Salon name *
+                      </Label>
+                      <div className="relative">
+                        <Building2 className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <input
+                          id="salon-name"
+                          type="text"
+                          value={salonName}
+                          onChange={(e) => setSalonName(e.target.value)}
+                          placeholder="e.g. Hair Avenue or Glamour Studio"
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/10"
+                          required
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+
+                    {/* Email & Phone */}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label
+                          htmlFor="salon-email"
+                          className="text-xs font-semibold text-slate-700"
+                        >
+                          Business email (optional)
+                        </Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                          <input
+                            id="salon-email"
+                            type="email"
+                            value={salonEmail}
+                            onChange={(e) => setSalonEmail(e.target.value)}
+                            placeholder="salon@example.com"
+                            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/10"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label
+                          htmlFor="salon-phone"
+                          className="text-xs font-semibold text-slate-700"
+                        >
+                          Business phone (optional)
+                        </Label>
+                        <div className="relative">
+                          <Phone className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                          <input
+                            id="salon-phone"
+                            type="tel"
+                            value={salonPhone}
+                            onChange={(e) => setSalonPhone(e.target.value)}
+                            placeholder="077 123 4567"
+                            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/10"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* City & Address */}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label
+                          htmlFor="salon-city"
+                          className="text-xs font-semibold text-slate-700"
+                        >
+                          City
+                        </Label>
+                        <CitySelect
+                          id="salon-city"
+                          value={salonCity}
+                          onChange={setSalonCity}
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label
+                          htmlFor="salon-address"
+                          className="text-xs font-semibold text-slate-700"
+                        >
+                          Street address (optional)
+                        </Label>
+                        <AddressAutocompleteInput
+                          id="salon-address"
+                          value={salonAddress}
+                          onChange={setSalonAddress}
+                          onCitySelect={(detectedCity) => {
+                            if (detectedCity) setSalonCity(detectedCity);
+                          }}
+                          placeholder="Street address (optional)"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-col-reverse items-center justify-between gap-3 pt-4 sm:flex-row">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      asChild
+                      className="h-11 w-full rounded-xl border-slate-200 bg-slate-50 px-5 text-slate-700 hover:bg-slate-100 sm:w-auto"
+                    >
+                      <Link to="/#pricing">
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back to plans
+                      </Link>
+                    </Button>
+
+                    <Button
+                      type="submit"
+                      className="h-11 w-full rounded-xl bg-[#064e3b] px-6 font-semibold text-white shadow-sm hover:bg-[#047857] sm:w-auto"
+                    >
+                      Continue to admin account
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </form>
+              )}
+
+              {/* Step 2: Admin Account Form (Matches Screenshot Exactly) */}
+              {step === 2 && (
+                <form onSubmit={handleNextFromStep2} className="space-y-6">
+                  {/* Header */}
+                  <div className="flex items-center gap-3.5">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                      <User className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-slate-900">Admin account</h2>
+                      <p className="text-xs text-slate-500">
+                        Create an admin account to access your salon portal after payment.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 pt-2">
+                    {/* Full name */}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="admin-name" className="text-xs font-semibold text-slate-700">
+                        Full name *
+                      </Label>
+                      <div className="relative">
+                        <User className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <input
+                          id="admin-name"
+                          type="text"
+                          value={adminName}
+                          onChange={(e) => setAdminName(e.target.value)}
+                          placeholder="Your name"
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/10"
+                          required
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+
+                    {/* Email & Phone */}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label
+                          htmlFor="admin-email"
+                          className="text-xs font-semibold text-slate-700"
+                        >
+                          Login email *
+                        </Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                          <input
+                            id="admin-email"
+                            type="email"
+                            value={adminEmail}
+                            onChange={(e) => setAdminEmail(e.target.value)}
+                            placeholder="you@email.com"
+                            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/10"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label
+                          htmlFor="admin-phone"
+                          className="text-xs font-semibold text-slate-700"
+                        >
+                          Phone (optional)
+                        </Label>
+                        <div className="relative">
+                          <Phone className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                          <input
+                            id="admin-phone"
+                            type="tel"
+                            value={adminPhone}
+                            onChange={(e) => setAdminPhone(e.target.value)}
+                            placeholder="077 123 4567"
+                            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/10"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Passwords */}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label
+                          htmlFor="admin-password"
+                          className="text-xs font-semibold text-slate-700"
+                        >
+                          Password *
+                        </Label>
+                        <div className="relative">
+                          <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                          <input
+                            id="admin-password"
+                            type={showPassword ? 'text' : 'password'}
+                            value={adminPassword}
+                            onChange={(e) => setAdminPassword(e.target.value)}
+                            placeholder="Create a password"
+                            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-10 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/10"
+                            required
+                            minLength={8}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                            aria-label="Toggle password visibility"
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label
+                          htmlFor="confirm-password"
+                          className="text-xs font-semibold text-slate-700"
+                        >
+                          Confirm password *
+                        </Label>
+                        <div className="relative">
+                          <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                          <input
+                            id="confirm-password"
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="Re-enter your password"
+                            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-10 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/10"
+                            required
+                            minLength={8}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                            aria-label="Toggle confirm password visibility"
+                          >
+                            {showConfirmPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions (Exact match to screenshot) */}
+                  <div className="flex flex-col-reverse items-center justify-between gap-3 pt-4 sm:flex-row">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setStep(1)}
+                      className="h-11 w-full rounded-xl border-slate-200 bg-slate-50/50 px-5 text-slate-700 hover:bg-slate-100 sm:w-auto"
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Back to salon details
+                    </Button>
+
+                    <Button
+                      type="submit"
+                      className="h-11 w-full rounded-xl bg-[#064e3b] px-6 font-semibold text-white shadow-sm hover:bg-[#047857] sm:w-auto"
+                    >
+                      Continue to payment
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </form>
+              )}
+
+              {/* Step 3: Payment & Summary Confirmation */}
+              {step === 3 && (
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3.5">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                      <CreditCard className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-slate-900">Payment & Activation</h2>
+                      <p className="text-xs text-slate-500">
+                        Review your order details and proceed to PayHere secure checkout.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Summary Box */}
+                  <div className="space-y-4 rounded-2xl border border-slate-200/80 bg-slate-50/60 p-5">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500">Salon Name</p>
+                        <p className="font-bold text-slate-900">{salonName}</p>
+                        {salonCity && <p className="text-xs text-slate-600">{salonCity}</p>}
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-slate-500">Admin Account</p>
+                        <p className="font-bold text-slate-900">{adminName}</p>
+                        <p className="text-xs text-slate-600">{adminEmail}</p>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-slate-200/80 pt-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-slate-700">Selected Plan</span>
+                        <span className="text-sm font-bold text-slate-900">{plan.name}</span>
+                      </div>
+                      <div className="mt-1 flex items-center justify-between">
+                        <span className="text-sm font-semibold text-slate-700">Total Payable</span>
+                        <span className="text-lg font-extrabold text-[#064e3b]">
+                          {formatPrice(plan.price, plan.currency)}{' '}
+                          <span className="text-xs font-normal text-slate-500">
+                            / {billingCycleLabel(plan.billingCycle)}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Security Notice */}
+                  <div className="flex items-center gap-2.5 rounded-xl border border-emerald-200/60 bg-emerald-50/50 p-3 text-xs text-emerald-900">
+                    <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />
+                    <span>
+                      You will be redirected to the secure PayHere payment gateway to complete the transaction.
+                    </span>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-col-reverse items-center justify-between gap-3 pt-4 sm:flex-row">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setStep(2)}
+                      disabled={submitting}
+                      className="h-11 w-full rounded-xl border-slate-200 bg-slate-50 px-5 text-slate-700 hover:bg-slate-100 sm:w-auto"
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Back to admin account
+                    </Button>
+
+                    <Button
+                      type="button"
+                      onClick={() => handleFinalSubmit()}
+                      disabled={submitting}
+                      className="h-11 w-full rounded-xl bg-[#064e3b] px-7 font-semibold text-white shadow-sm hover:bg-[#047857] sm:w-auto"
+                    >
+                      {submitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Redirecting to PayHere...
+                        </>
+                      ) : (
+                        <>
+                          Pay {formatPrice(plan.price, plan.currency)} with PayHere
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      </main>
     </div>
   );
 }

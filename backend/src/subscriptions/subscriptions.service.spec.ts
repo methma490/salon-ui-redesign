@@ -266,8 +266,9 @@ describe('SubscriptionsService', () => {
 
       prisma.$transaction.mockImplementation(async (callback) =>
         callback({
-          paymentOrder: { create: jest.fn().mockResolvedValue({ id: 'order-1' }) },
-          payment: { create: jest.fn().mockResolvedValue({ id: 'payment-1' }) },
+          paymentOrder: { create: jest.fn().mockResolvedValue({ id: 'order-1', reference: 'REF-1' }) },
+          payment: { create: jest.fn().mockResolvedValue({ id: 'payment-1', transactionId: 'TX-1', paidAt: new Date() }) },
+          tenantFeature: { upsert: jest.fn(), updateMany: jest.fn() },
           subscription: {
             update: jest.fn().mockImplementation(({ data }) => ({
               ...subscription,

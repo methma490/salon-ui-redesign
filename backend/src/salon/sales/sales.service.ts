@@ -81,12 +81,13 @@ export class SalesService {
       );
       const total = Number(countRows[0]?.count ?? 0);
 
-      const data = await tx.$queryRawUnsafe(
+      const data = await tx.$queryRawUnsafe<Array<Record<string, unknown>>>(
         `SELECT DISTINCT s.id, s.sale_number AS "saleNumber",
                 s.subtotal, s.discount, s.total, s.status::text AS status,
                 s.branch_id AS "branchId", b.name AS "branchName",
                 s.customer_id AS "customerId", c.name AS "customerName",
                 s.cashier_id AS "cashierId", u.name AS "cashierName",
+                s.created_at,
                 (s.created_at AT TIME ZONE 'Asia/Colombo') AS "createdAt"
          ${fromClause}
          ORDER BY s.created_at DESC
@@ -96,7 +97,8 @@ export class SalesService {
         offset,
       );
 
-      return buildPaginatedResponse(data as unknown[], total, page, limit);
+      const items = data.map(({ created_at: _, ...rest }) => rest);
+      return buildPaginatedResponse(items, total, page, limit);
     });
   }
 

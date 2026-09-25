@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS branches (
   email VARCHAR(255),
   phone VARCHAR(50),
   address TEXT,
+  latitude DOUBLE PRECISION,
+  longitude DOUBLE PRECISION,
   is_main BOOLEAN NOT NULL DEFAULT false,
   status branch_status NOT NULL DEFAULT 'ACTIVE',
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),

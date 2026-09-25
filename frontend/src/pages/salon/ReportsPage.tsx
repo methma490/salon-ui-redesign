@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useSalonBranch } from '@/contexts/SalonBranchContext';
 import {
   getErrorMessage,
   OpsError,
@@ -43,15 +44,11 @@ const REPORTS: { id: ReportSection; label: string; icon: string }[] = [
   { id: 'low-stock', label: 'Low Stock', icon: '⚠️' },
 ];
 export default function ReportsPage() {
+  const { branchId, setBranchId, branches } = useSalonBranch();
   const [startDate, setStartDate] = useState(monthStartStr());
   const [endDate, setEndDate] = useState(todayStr());
-  const [branchId, setBranchId] = useState<string>('all');
   const [activeReport, setActiveReport] = useState<ReportSection>('daily-sales');
   const [lowStockThreshold, setLowStockThreshold] = useState('5');
-  const { data: branches = [] } = useQuery({
-    queryKey: ['branches'],
-    queryFn: tenantApi.branches.list,
-  });
   const dateParams = {
     startDate,
     endDate,

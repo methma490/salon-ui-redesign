@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { tenantApi, type Service } from '@/api/tenant.api';
+import { tenantApi, type Service, type ServiceCategory } from '@/api/tenant.api';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -64,7 +64,7 @@ function ServiceFormFields({
 }: {
   form: ServiceForm;
   setForm: (f: ServiceForm) => void;
-  categories: Array<{ id: string; name: string }>;
+  categories: ServiceCategory[];
 }) {
   return (
     <>
@@ -76,8 +76,8 @@ function ServiceFormFields({
           </SelectTrigger>
           <SelectContent>
             {categories.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.name}
+              <SelectItem key={c.id} value={c.id} disabled={c.status === 'INACTIVE'}>
+                {c.name} {c.status === 'INACTIVE' ? '(Inactive)' : ''}
               </SelectItem>
             ))}
           </SelectContent>
@@ -167,7 +167,8 @@ export default function ServicesPage() {
     [services],
   );
 
-  const defaultCategoryId = categories[0]?.id ?? '';
+  const defaultCategoryId =
+    categories.find((c) => c.status === 'ACTIVE')?.id ?? categories[0]?.id ?? '';
 
   const createMutation = useMutation({
     mutationFn: tenantApi.services.create,

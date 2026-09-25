@@ -66,7 +66,47 @@ export async function bootstrapDatabase(): Promise<void> {
     } else {
       logger.log('Database schema ready');
     }
+
+    // Sync all existing tenant schemas with latest columns/migrations
+    await syncAllTenantSchemas(prisma);
   } finally {
     await prisma.$disconnect();
   }
 }
+
+async function syncAllTenantSchemas(prisma: PrismaClient): Promise<void> {
+  try {
+    const schemaRows = await prisma.$queryRaw<Array<{ schema_name: string }>>`
+      SELECT schema_name FROM information_schema.schemata WHERE schema_name ~ '^tenant_'
+    `;
+    const tenantRows = await prisma.$queryRaw<Array<{ schemaName: string }>>`
+      SELECT "schemaName" FROM tenants WHERE "schemaName" IS NOT NULL
+    `;
+    const schemas = Array.from(
+      new Set([
+        ...schemaRows.map((r) => r.schema_name),
+        ...tenantRows.map((r) => r.schemaName),
+      ]),
+    );
+
+    for (const schema of schemas) {
+      if (!schema) continue;
+      try {
+        await prisma.$executeRawUnsafe(
+          `ALTER TABLE "${schema}".branches ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION`,
+        );
+        await prisma.$executeRawUnsafe(
+          `ALTER TABLE "${schema}".branches ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION`,
+        );
+        await prisma.$executeRawUnsafe(
+          `ALTER TABLE "${schema}".service_categories ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true`,
+        );
+      } catch (err) {
+        logger.warn(`Could not sync schema ${schema}: ${err}`);
+      }
+    }
+  } catch (err) {
+    logger.warn(`Could not query tenant schemas for sync: ${err}`);
+  }
+}
+

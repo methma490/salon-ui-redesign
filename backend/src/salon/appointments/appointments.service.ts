@@ -258,6 +258,24 @@ export class AppointmentsService {
     }
   }
 
+  private async assertBranchActive(
+    tx: TenantTx,
+    schemaName: string,
+    branchId: string,
+  ): Promise<void> {
+    const branches = tenantTable(schemaName, 'branches');
+    const rows = await tx.$queryRawUnsafe<Array<{ id: string; status: string }>>(
+      `SELECT id, status FROM ${branches} WHERE id = $1::uuid LIMIT 1`,
+      branchId,
+    );
+    if (rows.length === 0) {
+      throw new NotFoundException('Branch not found');
+    }
+    if (rows[0].status !== 'ACTIVE') {
+      throw new BadRequestException('Branch is currently deactivated and cannot accept appointments');
+    }
+  }
+
   private appointmentFromClause(schemaName: string): string {
     const appointments = tenantTable(schemaName, 'appointments');
     const customers = tenantTable(schemaName, 'customers');
@@ -398,7 +416,6 @@ export class AppointmentsService {
   ): Promise<AppointmentRecord> {
     const appointments = tenantTable(schemaName, 'appointments');
     const customers = tenantTable(schemaName, 'customers');
-    const branches = tenantTable(schemaName, 'branches');
     const startTime = this.normalizeTime(dto.startTime);
     const endTime = this.normalizeTime(dto.endTime);
 
@@ -410,7 +427,7 @@ export class AppointmentsService {
       schemaName,
       async ({ tx }) => {
         await this.assertEntityExists(tx, schemaName, customers, dto.customerId, 'Customer');
-        await this.assertEntityExists(tx, schemaName, branches, dto.branchId, 'Branch');
+        await this.assertBranchActive(tx, schemaName, dto.branchId);
 
         const snapshots = await this.fetchServiceSnapshots(tx, schemaName, dto.serviceIds);
         const code = await generateSequentialCode(tx, appointments, 'APT-');
@@ -461,7 +478,6 @@ export class AppointmentsService {
   ): Promise<AppointmentRecord> {
     const appointments = tenantTable(schemaName, 'appointments');
     const customers = tenantTable(schemaName, 'customers');
-    const branches = tenantTable(schemaName, 'branches');
     const appointmentServices = tenantTable(schemaName, 'appointment_services');
 
     await this.findById(schemaName, id);
@@ -471,7 +487,7 @@ export class AppointmentsService {
         await this.assertEntityExists(tx, schemaName, customers, dto.customerId, 'Customer');
       }
       if (dto.branchId) {
-        await this.assertEntityExists(tx, schemaName, branches, dto.branchId, 'Branch');
+        await this.assertBranchActive(tx, schemaName, dto.branchId);
       }
 
       const startTime = dto.startTime ? this.normalizeTime(dto.startTime) : null;

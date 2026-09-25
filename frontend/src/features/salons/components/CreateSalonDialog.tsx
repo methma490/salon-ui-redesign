@@ -3,6 +3,8 @@ import {
   Building2,
   CalendarDays,
   Coins,
+  Eye,
+  EyeOff,
   Layers3,
   Package,
   Scissors,
@@ -62,11 +64,13 @@ export function CreateSalonDialog({ open, onOpenChange }: CreateSalonDialogProps
 
   const [form, setForm] = useState(initialForm);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
   const reset = () => {
     setForm(initialForm);
     setSelectedFeatures([]);
+    setShowPassword(false);
     setError('');
   };
 
@@ -311,15 +315,31 @@ export function CreateSalonDialog({ open, onOpenChange }: CreateSalonDialogProps
                     <label className="emp-label" htmlFor="csd-admin-password">
                       Temporary password <span className="emp-required">*</span>
                     </label>
-                    <input
-                      id="csd-admin-password"
-                      type="password"
-                      className="emp-input"
-                      minLength={8}
-                      placeholder="Min. 8 characters"
-                      value={form.adminPassword}
-                      onChange={(event) => setForm({ ...form, adminPassword: event.target.value })}
-                    />
+                    <div className="relative flex items-center">
+                      <input
+                        id="csd-admin-password"
+                        type={showPassword ? 'text' : 'password'}
+                        className="emp-input w-full pr-9"
+                        minLength={8}
+                        placeholder="Min. 8 characters"
+                        value={form.adminPassword}
+                        onChange={(event) => setForm({ ...form, adminPassword: event.target.value })}
+                      />
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        className="absolute right-2.5 flex h-6 w-6 items-center justify-center rounded text-muted-foreground/70 hover:text-foreground transition-colors"
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        title={showPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
                     <p className="emp-field-hint">Share securely — owner can change after first login.</p>
                   </div>
                 </div>

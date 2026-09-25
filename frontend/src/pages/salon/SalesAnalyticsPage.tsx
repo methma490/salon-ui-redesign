@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useSalonBranch } from '@/contexts/SalonBranchContext';
 import { getErrorMessage, OpsError, OpsLoading } from './salon-ops-ui';
 import { formatMoneyAmount, formatMoneyLkr } from '@/lib/money';
 import {
@@ -127,11 +128,11 @@ function employeeNames(invoice: SalesAnalyticsInvoice) {
 
 export default function SalesAnalyticsPage() {
   const [searchParams] = useSearchParams();
+  const { branchId, setBranchId, branches } = useSalonBranch();
   const [tab, setTab] = useState<TabKey>('overview');
   const [preset, setPreset] = useState<SalesAnalyticsPreset>('this_month');
   const [customFrom, setCustomFrom] = useState(defaultCustomRange().from);
   const [customTo, setCustomTo] = useState(defaultCustomRange().to);
-  const [branchId, setBranchId] = useState('all');
   const [employeeId, setEmployeeId] = useState('all');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -190,11 +191,6 @@ export default function SalesAnalyticsPage() {
     }),
     [filterParams, page],
   );
-
-  const { data: branches = [] } = useQuery({
-    queryKey: ['branches'],
-    queryFn: tenantApi.branches.list,
-  });
 
   const { data: employees = [] } = useQuery({
     queryKey: ['employees', 'sales-analytics-filter'],

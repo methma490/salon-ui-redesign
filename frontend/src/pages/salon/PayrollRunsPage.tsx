@@ -19,6 +19,7 @@ import {
   OpsError,
   OpsLoading,
 } from './salon-ops-ui';
+import { toast } from 'sonner';
 import './employees-page.css';
 import './settings-page.css';
 import './payroll-page.css';
@@ -102,7 +103,6 @@ export default function PayrollRunsPage() {
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [itemDrafts, setItemDrafts] = useState<Record<string, ItemDraft>>({});
-  const [actionError, setActionError] = useState<string | null>(null);
 
   const {
     data: runsPayload,
@@ -146,9 +146,9 @@ export default function PayrollRunsPage() {
     onSuccess: (run) => {
       qc.invalidateQueries({ queryKey: ['payroll-runs'] });
       setSelectedRunId(run.id);
-      setActionError(null);
+      toast.success('Payroll run created successfully.');
     },
-    onError: (err) => setActionError(getErrorMessage(err)),
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 
   const updateItemMutation = useMutation({
@@ -164,9 +164,9 @@ export default function PayrollRunsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['payroll-run', selectedRunId] });
       qc.invalidateQueries({ queryKey: ['payroll-runs'] });
-      setActionError(null);
+      toast.success('Payroll item updated.');
     },
-    onError: (err) => setActionError(getErrorMessage(err)),
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 
   const finalizeMutation = useMutation({
@@ -174,9 +174,9 @@ export default function PayrollRunsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['payroll-runs'] });
       qc.invalidateQueries({ queryKey: ['payroll-run', selectedRunId] });
-      setActionError(null);
+      toast.success('Payroll finalized successfully.');
     },
-    onError: (err) => setActionError(getErrorMessage(err)),
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 
   const markPaidMutation = useMutation({
@@ -184,9 +184,9 @@ export default function PayrollRunsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['payroll-runs'] });
       qc.invalidateQueries({ queryKey: ['payroll-run', selectedRunId] });
-      setActionError(null);
+      toast.success('Payroll marked as paid.');
     },
-    onError: (err) => setActionError(getErrorMessage(err)),
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 
   const saveItem = (itemId: string) => {
@@ -260,10 +260,6 @@ export default function PayrollRunsPage() {
           )}
         </div>
       </header>
-
-      {actionError && (
-        <div className="settings-alert settings-alert-error">{actionError}</div>
-      )}
 
       <section className="pr-card">
         <div className="pr-card-head">

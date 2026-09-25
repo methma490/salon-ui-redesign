@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useSalonBranch } from '@/contexts/SalonBranchContext';
 import {
   FormError,
   FormSubmit,
@@ -56,12 +57,13 @@ export default function QuotationFormPage() {
   const isEdit = Boolean(editId);
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { branchId: ribbonBranchId } = useSalonBranch();
 
   const [error, setError] = useState<string | null>(null);
   const [customerSearch, setCustomerSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [branchId, setBranchId] = useState('');
+  const [branchId, setBranchId] = useState(() => (ribbonBranchId !== 'all' ? ribbonBranchId : ''));
   const [quotationDate, setQuotationDate] = useState(todayIso());
   const [validUntil, setValidUntil] = useState('');
   const [discountAmount, setDiscountAmount] = useState('0');
@@ -70,6 +72,12 @@ export default function QuotationFormPage() {
   const [lines, setLines] = useState<Line[]>([]);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [servicePick, setServicePick] = useState('');
+
+  useEffect(() => {
+    if (!isEdit && ribbonBranchId && ribbonBranchId !== 'all' && !branchId) {
+      setBranchId(ribbonBranchId);
+    }
+  }, [isEdit, ribbonBranchId, branchId]);
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebouncedSearch(customerSearch.trim()), 250);

@@ -23,6 +23,7 @@ import {
   OpsLoading,
   OpsPageHeader,
 } from './salon-ops-ui';
+import { useSalonBranch } from '@/contexts/SalonBranchContext';
 import './appointments-page.css';
 import './employees-page.css';
 
@@ -391,16 +392,30 @@ function toUpdatePayload(form: AppointmentForm) {
 
 export default function AppointmentsPage() {
   const qc = useQueryClient();
+  const { branchId: ribbonBranchId, branches } = useSalonBranch();
   const [activeTab, setActiveTab] = useState<Tab>('list');
   const [startDate, setStartDate] = useState(todayIso());
   const [endDate, setEndDate] = useState(addDaysIso(todayIso(), 30));
-  const [branchFilter, setBranchFilter] = useState('');
+  const [branchFilter, setBranchFilter] = useState<string>(() =>
+    ribbonBranchId !== 'all' ? ribbonBranchId : '',
+  );
   const [statusFilter, setStatusFilter] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [editAppointment, setEditAppointment] = useState<Appointment | null>(null);
-  const [form, setForm] = useState<AppointmentForm>(emptyForm);
+  const [form, setForm] = useState<AppointmentForm>(() => ({
+    ...emptyForm,
+    branchId: ribbonBranchId !== 'all' ? ribbonBranchId : '',
+  }));
   const [editForm, setEditForm] = useState<AppointmentForm>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setBranchFilter(ribbonBranchId !== 'all' ? ribbonBranchId : '');
+    setForm((prev) => ({
+      ...prev,
+      branchId: ribbonBranchId !== 'all' ? ribbonBranchId : prev.branchId,
+    }));
+  }, [ribbonBranchId]);
 
   const listParams = useMemo(() => {
     const params: Record<string, string> = {
@@ -441,10 +456,6 @@ export default function AppointmentsPage() {
     queryFn: () => tenantApi.services.list(),
   });
 
-  const { data: branches = [] } = useQuery({
-    queryKey: ['branches'],
-    queryFn: tenantApi.branches.list,
-  });
 
   const activeServices = useMemo(
     () => services.filter((service) => service.status === 'ACTIVE'),

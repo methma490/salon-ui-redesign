@@ -23,6 +23,8 @@ export class ServicesCatalogService {
     return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) =>
       tx.$queryRawUnsafe(
         `SELECT id, code, name, description,
+                COALESCE(is_active, true) AS "isActive",
+                CASE WHEN COALESCE(is_active, true) THEN 'ACTIVE' ELSE 'INACTIVE' END AS status,
                 created_at AS "createdAt", updated_at AS "updatedAt"
          FROM ${table} ORDER BY name ASC`,
       ),
@@ -46,8 +48,8 @@ export class ServicesCatalogService {
       }
 
       const rows = await tx.$queryRawUnsafe<Array<{ id: string }>>(
-        `INSERT INTO ${table} (code, name, description)
-         VALUES ($1, $2, $3) RETURNING id`,
+        `INSERT INTO ${table} (code, name, description, is_active)
+         VALUES ($1, $2, $3, true) RETURNING id`,
         code,
         dto.name,
         dto.description ?? null,
@@ -98,12 +100,39 @@ export class ServicesCatalogService {
   async updateCategoryStatus(
     schemaName: string,
     id: string,
-    _dto: UpdateCategoryStatusDto,
-    _userId: string,
+    dto: UpdateCategoryStatusDto,
+    userId: string,
   ) {
-    // Categories don't have status column - no-op for API compatibility
+    const table = tenantTable(schemaName, 'service_categories');
+    const services = tenantTable(schemaName, 'services');
     await this.ensureCategoryExists(schemaName, id);
-    return { id, message: 'Category status unchanged (categories have no status field)' };
+    const isActive = dto.status === 'ACTIVE';
+
+    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      await tx.$queryRawUnsafe(
+        `UPDATE ${table} SET is_active = $2, updated_at = NOW() WHERE id = $1::uuid`,
+        id,
+        isActive,
+      );
+
+      // If category is deactivated, also deactivate all services assigned to this category
+      if (!isActive) {
+        await tx.$queryRawUnsafe(
+          `UPDATE ${services} SET is_active = false, updated_at = NOW() WHERE category_id = $1::uuid`,
+          id,
+        );
+      }
+
+      await logAudit(tx, schemaName, {
+        userId,
+        action: 'SERVICE_CATEGORY_STATUS_UPDATE',
+        entityType: 'service_category',
+        entityId: id,
+        details: { status: dto.status, cascadedDeactivation: !isActive },
+      });
+
+      return { id, status: dto.status };
+    });
   }
 
   // --- Services ---

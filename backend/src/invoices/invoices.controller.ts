@@ -10,8 +10,7 @@ import { InvoiceQueryDto } from './dto/invoice-query.dto';
 import { InvoicesService } from './invoices.service';
 
 @Controller('invoices')
-@UseGuards(JwtAuthGuard, TenantContextGuard, RolesGuard)
-@Roles('SALON_ADMIN')
+@UseGuards(JwtAuthGuard, TenantContextGuard)
 export class InvoicesController {
   constructor(private readonly invoicesService: InvoicesService) {}
 

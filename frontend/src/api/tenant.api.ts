@@ -32,8 +32,12 @@ export interface Branch {
   phone: string | null;
   email: string | null;
   address: string | null;
+  latitude: number | null;
+  longitude: number | null;
   isMain: boolean;
   status: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // --- Employees ---
@@ -114,6 +118,8 @@ export interface ServiceCategory {
   code: string;
   name: string;
   description: string | null;
+  status: string;
+  isActive?: boolean;
 }
 
 export interface Service {
@@ -761,6 +767,8 @@ export const tenantApi = {
 
   branches: {
     list: () => api.get<Branch[]>('/tenant/branches').then((r) => r.data),
+    suggestCode: (name?: string) =>
+      api.get<{ code: string }>('/tenant/branches/suggest-code', { params: { name } }).then((r) => r.data),
     create: (data: Record<string, unknown>) =>
       api.post<Branch>('/tenant/branches', data).then((r) => r.data),
     update: (id: string, data: Record<string, unknown>) =>
@@ -832,6 +840,8 @@ export const tenantApi = {
       api.post('/tenant/service-categories', data).then((r) => r.data),
     update: (id: string, data: Record<string, unknown>) =>
       api.patch(`/tenant/service-categories/${id}`, data).then((r) => r.data),
+    updateStatus: (id: string, status: string) =>
+      api.patch(`/tenant/service-categories/${id}/status`, { status }).then((r) => r.data),
   },
 
   services: {

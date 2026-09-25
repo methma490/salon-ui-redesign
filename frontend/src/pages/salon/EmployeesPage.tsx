@@ -1,10 +1,11 @@
 import { Lock } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { tenantApi, type AssignableEmployeeRole, type Employee } from '@/api/tenant.api';
 import { formatMoneyAmount } from '@/lib/money';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -23,6 +24,7 @@ import {
   SimpleForm,
   SimpleFormDialog,
 } from './salon-ops-ui';
+import { useSalonBranch } from '@/contexts/SalonBranchContext';
 import './employees-page.css';
 
 type EmployeeForm = {
@@ -321,9 +323,8 @@ function EmployeeFormFields({
               {requirePassword && (
                 <div className="space-y-2">
                   <Label htmlFor="emp-password">Password</Label>
-                  <Input
+                  <PasswordInput
                     id="emp-password"
-                    type="password"
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     placeholder="Minimum 8 characters"
@@ -359,20 +360,31 @@ function EmployeeFormFields({
 
 export default function EmployeesPage() {
   const qc = useQueryClient();
-  const [branchFilter, setBranchFilter] = useState('all');
+  const { branchId: ribbonBranchId, setBranchId: setRibbonBranchId, branches, isLoading: branchesLoading } = useSalonBranch();
+  const [branchFilter, setBranchFilterState] = useState(ribbonBranchId);
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [editEmployee, setEditEmployee] = useState<Employee | null>(null);
   const [advanceEmployee, setAdvanceEmployee] = useState<Employee | null>(null);
-  const [form, setForm] = useState<EmployeeForm>(emptyForm);
+  const [form, setForm] = useState<EmployeeForm>(() => ({
+    ...emptyForm,
+    branchId: ribbonBranchId !== 'all' ? ribbonBranchId : '',
+  }));
   const [editForm, setEditForm] = useState<EmployeeForm>(emptyForm);
   const [advanceForm, setAdvanceForm] = useState<AdvanceForm>(emptyAdvanceForm());
   const [formError, setFormError] = useState<string | null>(null);
 
-  const { data: branches = [], isLoading: branchesLoading } = useQuery({
-    queryKey: ['branches'],
-    queryFn: tenantApi.branches.list,
-  });
+  useEffect(() => {
+    setBranchFilterState(ribbonBranchId);
+    if (ribbonBranchId !== 'all') {
+      setForm((prev) => ({ ...prev, branchId: ribbonBranchId }));
+    }
+  }, [ribbonBranchId]);
+
+  const setBranchFilter = (newBranchId: string) => {
+    setBranchFilterState(newBranchId);
+    setRibbonBranchId(newBranchId);
+  };
 
   const { data: tenantFeatures = [] } = useQuery({
     queryKey: ['tenant-features'],

@@ -13,6 +13,7 @@ import sharp from 'sharp';
 import { syncTenantFeatures } from '../../database/sync-tenant-features.util';
 import { PrismaService } from '../../database/prisma.service';
 import { SubscriptionsService } from '../../subscriptions/subscriptions.service';
+import { MailService } from '../../mail/mail.service';
 import { tenantTable } from '../../tenant/utils/schema-name.util';
 import { TenantSchemaService } from '../../tenant/services/tenant-schema.service';
 import {
@@ -50,6 +51,7 @@ export class SettingsService {
     private readonly prisma: PrismaService,
     private readonly subscriptionsService: SubscriptionsService,
     private readonly tenantSchemaService: TenantSchemaService,
+    private readonly mailService: MailService,
   ) {}
 
   async getSettings(tenantId: string, schemaName: string, userId: string) {
@@ -247,16 +249,19 @@ export class SettingsService {
 
   async changePassword(schemaName: string, userId: string, dto: ChangePasswordDto) {
     const usersTable = tenantTable(schemaName, 'users');
+    let userEmail: string | undefined;
 
     await this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
-      const users = await tx.$queryRawUnsafe<Array<{ password_hash: string | null }>>(
-        `SELECT password_hash FROM ${usersTable} WHERE id = $1::uuid LIMIT 1`,
+      const users = await tx.$queryRawUnsafe<Array<{ email: string; password_hash: string | null }>>(
+        `SELECT email, password_hash FROM ${usersTable} WHERE id = $1::uuid LIMIT 1`,
         userId,
       );
 
       if (users.length === 0 || !users[0].password_hash) {
         throw new NotFoundException('User not found');
       }
+
+      userEmail = users[0].email;
 
       const valid = await bcrypt.compare(dto.currentPassword, users[0].password_hash);
       if (!valid) {
@@ -271,6 +276,17 @@ export class SettingsService {
       );
     });
 
+    if (userEmail) {
+      try {
+        await this.mailService.sendPasswordResetSuccessEmail({
+          to: userEmail,
+          portalLabel: 'Salon Admin',
+        });
+      } catch {
+        // Non-fatal notification delivery
+      }
+    }
+
     return { message: 'Password updated successfully' };
   }
 
@@ -279,12 +295,17 @@ export class SettingsService {
       throw new ForbiddenException('Only salon admins can update the salon logo');
     }
 
-    if (!file) {
+    if (!file || !file.buffer) {
       throw new BadRequestException('Logo file is required');
     }
 
-    if (!ALLOWED_LOGO_MIME.has(file.mimetype)) {
-      throw new BadRequestException('Logo must be a JPEG, PNG, WebP, or GIF image');
+    const mime = (file.mimetype || '').toLowerCase();
+    const ext = (file.originalname || '').split('.').pop()?.toLowerCase();
+    const isAllowedMime = ALLOWED_LOGO_MIME.has(mime) || mime === 'image/x-webp';
+    const isAllowedExt = ext ? ['webp', 'png', 'jpg', 'jpeg', 'gif'].includes(ext) : false;
+
+    if (!isAllowedMime && !isAllowedExt) {
+      throw new BadRequestException('Logo must be a WebP, JPEG, PNG, or GIF image');
     }
 
     if (file.size > MAX_LOGO_BYTES) {
@@ -296,22 +317,47 @@ export class SettingsService {
       mkdirSync(uploadsDir, { recursive: true });
     }
 
-    const filename = `${tenantId}.webp`;
-    const thumbFilename = `${tenantId}_thumb.webp`;
+    const timestamp = Date.now();
+    const filename = `${tenantId}_${timestamp}.webp`;
+    const thumbFilename = `${tenantId}_${timestamp}_thumb.webp`;
     const absolutePath = join(uploadsDir, filename);
     const thumbPath = join(uploadsDir, thumbFilename);
 
-    await sharp(file.buffer)
-      .rotate()
-      .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
-      .webp({ quality: 85 })
-      .toFile(absolutePath);
+    try {
+      await sharp(file.buffer)
+        .rotate()
+        .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 85 })
+        .toFile(absolutePath);
 
-    await sharp(file.buffer)
-      .rotate()
-      .resize(200, 200, { fit: 'cover' })
-      .webp({ quality: 85 })
-      .toFile(thumbPath);
+      await sharp(file.buffer)
+        .rotate()
+        .resize(200, 200, { fit: 'cover' })
+        .webp({ quality: 85 })
+        .toFile(thumbPath);
+    } catch {
+      throw new BadRequestException('Failed to process image file. Please provide a valid WebP, PNG, or JPEG image.');
+    }
+
+    // Clean up old logo file if exists
+    try {
+      const current = await this.prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { logoUrl: true },
+      });
+      if (current?.logoUrl) {
+        const oldPath = join(process.cwd(), current.logoUrl.replace(/^\//, ''));
+        if (existsSync(oldPath)) {
+          unlinkSync(oldPath);
+        }
+        const oldThumbPath = oldPath.replace('.webp', '_thumb.webp');
+        if (existsSync(oldThumbPath)) {
+          unlinkSync(oldThumbPath);
+        }
+      }
+    } catch {
+      // Non-fatal cleanup
+    }
 
     const logoUrl = `/uploads/tenants/${filename}`;
     const tenant = await this.prisma.tenant.update({
@@ -348,13 +394,16 @@ export class SettingsService {
     if (tenant?.logoUrl) {
       const absolutePath = join(process.cwd(), tenant.logoUrl.replace(/^\//, ''));
       if (existsSync(absolutePath)) {
-        unlinkSync(absolutePath);
+        try {
+          unlinkSync(absolutePath);
+        } catch {}
       }
-    }
-
-    const thumbPath = join(process.cwd(), 'uploads', 'tenants', `${tenantId}_thumb.webp`);
-    if (existsSync(thumbPath)) {
-      unlinkSync(thumbPath);
+      const thumbPath = absolutePath.replace('.webp', '_thumb.webp');
+      if (existsSync(thumbPath)) {
+        try {
+          unlinkSync(thumbPath);
+        } catch {}
+      }
     }
 
     return this.prisma.tenant.update({

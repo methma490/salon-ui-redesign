@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS service_categories (
   code VARCHAR(50) NOT NULL,
   name VARCHAR(255) NOT NULL,
   description TEXT,
+  is_active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
   CONSTRAINT service_categories_code_unique UNIQUE (code)
