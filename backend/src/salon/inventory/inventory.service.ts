@@ -4,6 +4,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { existsSync, mkdirSync } from 'fs';
+import { join } from 'path';
+import sharp from 'sharp';
+import { StorageService } from '../../common/storage/storage.service';
 import { buildPaginatedResponse, resolvePagination } from '../../common/dto/pagination.dto';
 import { TenantSchemaService } from '../../tenant/services/tenant-schema.service';
 import { tenantTable } from '../../tenant/utils/schema-name.util';
@@ -13,11 +17,14 @@ import {
   CreateProductCategoryDto,
   CreateProductDto,
   CreateStockCreditPaymentDto,
+  ListProductCategoriesQueryDto,
+  ListProductsQueryDto,
   ListStockCreditsQueryDto,
   ListStockMovementsQueryDto,
   StockAdjustmentDto,
   StockInDto,
   UpdateProductCategoryDto,
+  UpdateProductCategoryStatusDto,
   UpdateProductDto,
   UpdateProductStatusDto,
 } from './dto/inventory.dto';
@@ -28,7 +35,47 @@ import {
 
 @Injectable()
 export class InventoryService {
-  constructor(private readonly tenantSchemaService: TenantSchemaService) {}
+  constructor(
+    private readonly tenantSchemaService: TenantSchemaService,
+    private readonly storageService: StorageService,
+  ) {}
+
+  // --- Product Image Upload ---
+
+  async saveProductImage(file: Express.Multer.File | undefined): Promise<{ imageUrl: string }> {
+    if (!file) {
+      throw new BadRequestException('Image file is required');
+    }
+
+    const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+    if (file.size > MAX_IMAGE_BYTES) {
+      throw new BadRequestException('Product image must be 5MB or smaller');
+    }
+
+    const filename = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.webp`;
+
+    let buffer: Buffer;
+    try {
+      buffer = await sharp(file.buffer)
+        .rotate()
+        .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 85 })
+        .toBuffer();
+    } catch {
+      throw new BadRequestException(
+        'Failed to process product image. Please provide a valid image file (PNG, JPG, WebP).',
+      );
+    }
+
+    const imageUrl = await this.storageService.uploadFile(
+      buffer,
+      'products',
+      filename,
+      'image/webp',
+    );
+
+    return { imageUrl };
+  }
 
   /** Tenant enums live in each schema; unqualified casts resolve to public and fail. */
   private stockMovementTypeCast(schemaName: string, paramIndex: number): string {
@@ -48,22 +95,90 @@ export class InventoryService {
 
   // --- Product Categories ---
 
-  async listProductCategories(schemaName: string) {
+  async listProductCategories(schemaName: string, query?: ListProductCategoriesQueryDto) {
     const table = tenantTable(schemaName, 'product_categories');
-    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) =>
-      tx.$queryRawUnsafe(
-        `SELECT id, code, name, description,
-                created_at AS "createdAt", updated_at AS "updatedAt"
-         FROM ${table} ORDER BY name ASC`,
-      ),
-    );
+    const products = tenantTable(schemaName, 'products');
+
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+    let idx = 1;
+
+    if (query?.status && query.status !== 'all') {
+      const isActive = query.status === 'ACTIVE';
+      conditions.push(`pc.is_active = $${idx++}`);
+      params.push(isActive);
+    }
+
+    if (query?.search?.trim()) {
+      const term = `%${query.search.trim().toLowerCase()}%`;
+      conditions.push(
+        `(LOWER(pc.name) LIKE $${idx} OR LOWER(pc.code) LIKE $${idx} OR LOWER(COALESCE(pc.description, '')) LIKE $${idx})`,
+      );
+      params.push(term);
+      idx++;
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      await this.ensureProductCategoriesTableSynced(tx, schemaName);
+      const isPaginated = query?.page !== undefined || query?.limit !== undefined;
+
+      if (!isPaginated && (query?.all === true || query?.all === 'true' || !query)) {
+        const rows = await tx.$queryRawUnsafe<Array<any>>(
+          `SELECT pc.id, pc.code, pc.name, pc.description,
+                  COALESCE(pc.is_active, true) AS "isActive",
+                  CASE WHEN COALESCE(pc.is_active, true) THEN 'ACTIVE' ELSE 'INACTIVE' END AS status,
+                  pc.created_at AS "createdAt", pc.updated_at AS "updatedAt",
+                  (SELECT COUNT(*)::int FROM ${products} p WHERE p.category_id = pc.id) AS "productsCount"
+           FROM ${table} pc
+           ${whereClause}
+           ORDER BY pc.name ASC`,
+          ...params,
+        );
+        return rows;
+      }
+
+      // Count query for pagination
+      const countResult = await tx.$queryRawUnsafe<Array<{ count: bigint }>>(
+        `SELECT COUNT(*)::bigint AS count
+         FROM ${table} pc
+         ${whereClause}`,
+        ...params,
+      );
+      const total = Number(countResult[0]?.count ?? 0);
+
+      const page = query?.page ? Number(query.page) : 1;
+      const limit = query?.limit ? Number(query.limit) : 10;
+      const { offset, page: safePage, limit: safeLimit } = resolvePagination(page, limit);
+
+      const rows = await tx.$queryRawUnsafe<Array<any>>(
+        `SELECT pc.id, pc.code, pc.name, pc.description,
+                COALESCE(pc.is_active, true) AS "isActive",
+                CASE WHEN COALESCE(pc.is_active, true) THEN 'ACTIVE' ELSE 'INACTIVE' END AS status,
+                pc.created_at AS "createdAt", pc.updated_at AS "updatedAt",
+                (SELECT COUNT(*)::int FROM ${products} p WHERE p.category_id = pc.id) AS "productsCount"
+         FROM ${table} pc
+         ${whereClause}
+         ORDER BY pc.name ASC
+         LIMIT $${idx++} OFFSET $${idx++}`,
+        ...params,
+        safeLimit,
+        offset,
+      );
+
+      return buildPaginatedResponse(rows, total, safePage, safeLimit);
+    });
   }
 
   async createProductCategory(schemaName: string, dto: CreateProductCategoryDto, userId: string) {
     const table = tenantTable(schemaName, 'product_categories');
-    const code = dto.code.toUpperCase();
 
     return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      const code = dto.code
+        ? dto.code.toUpperCase()
+        : await generateSequentialCode(tx, table, 'PCAT-');
+
       const existing = await tx.$queryRawUnsafe<Array<{ id: string }>>(
         `SELECT id FROM ${table} WHERE UPPER(code) = $1 LIMIT 1`,
         code,
@@ -73,7 +188,7 @@ export class InventoryService {
       }
 
       const rows = await tx.$queryRawUnsafe<Array<{ id: string }>>(
-        `INSERT INTO ${table} (code, name, description) VALUES ($1, $2, $3) RETURNING id`,
+        `INSERT INTO ${table} (code, name, description, is_active) VALUES ($1, $2, $3, true) RETURNING id`,
         code,
         dto.name,
         dto.description ?? null,
@@ -120,86 +235,296 @@ export class InventoryService {
     });
   }
 
+  async updateProductCategoryStatus(
+    schemaName: string,
+    id: string,
+    dto: UpdateProductCategoryStatusDto,
+    userId: string,
+  ) {
+    const table = tenantTable(schemaName, 'product_categories');
+    const products = tenantTable(schemaName, 'products');
+    await this.ensureProductCategoryExists(schemaName, id);
+    const isActive = dto.status === 'ACTIVE';
+
+    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      await tx.$queryRawUnsafe(
+        `UPDATE ${table} SET is_active = $2, updated_at = NOW() WHERE id = $1::uuid`,
+        id,
+        isActive,
+      );
+
+      // Cascading status update:
+      // When product category is activated/deactivated, cascade to all products in this category
+      await tx.$queryRawUnsafe(
+        `UPDATE ${products} SET is_active = $2, updated_at = NOW() WHERE category_id = $1::uuid`,
+        id,
+        isActive,
+      );
+
+      await logAudit(tx, schemaName, {
+        userId,
+        action: 'PRODUCT_CATEGORY_STATUS_UPDATE',
+        entityType: 'product_category',
+        entityId: id,
+        details: { status: dto.status, cascadedProductsStatus: isActive },
+      });
+
+      return { id, status: dto.status };
+    });
+  }
+
+  async deleteProductCategory(schemaName: string, id: string, userId: string) {
+    const table = tenantTable(schemaName, 'product_categories');
+    const products = tenantTable(schemaName, 'products');
+    await this.ensureProductCategoryExists(schemaName, id);
+
+    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      const assignedProducts = await tx.$queryRawUnsafe<Array<{ count: bigint }>>(
+        `SELECT COUNT(*)::bigint AS count FROM ${products} WHERE category_id = $1::uuid`,
+        id,
+      );
+
+      const count = Number(assignedProducts[0]?.count ?? 0);
+      if (count > 0) {
+        throw new BadRequestException(
+          `Cannot delete product category because ${count} product${count === 1 ? ' is' : 's are'} assigned to it. Please reassign or delete those products first, or deactivate the category.`,
+        );
+      }
+
+      await tx.$queryRawUnsafe(`DELETE FROM ${table} WHERE id = $1::uuid`, id);
+
+      await logAudit(tx, schemaName, {
+        userId,
+        action: 'PRODUCT_CATEGORY_DELETE',
+        entityType: 'product_category',
+        entityId: id,
+      });
+
+      return { id, success: true };
+    });
+  }
+
   // --- Products ---
 
-  async listProducts(schemaName: string, categoryId?: string) {
+  async listProducts(schemaName: string, query?: ListProductsQueryDto | string) {
     const products = tenantTable(schemaName, 'products');
     const categories = tenantTable(schemaName, 'product_categories');
-    const conditions = categoryId ? 'WHERE p.category_id = $1::uuid' : '';
-    const params = categoryId ? [categoryId] : [];
+    const branchStock = tenantTable(schemaName, 'branch_stock');
+    const productBranches = tenantTable(schemaName, 'product_branches');
 
-    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) =>
-      tx.$queryRawUnsafe(
-        `SELECT p.id, p.code, p.name, p.description, p.unit,
-                p.selling_price AS "sellingPrice", p.cost_price AS "costPrice",
-                p.category_id AS "categoryId", c.name AS "categoryName",
-                CASE WHEN p.is_active THEN 'ACTIVE' ELSE 'INACTIVE' END AS status,
-                p.created_at AS "createdAt", p.updated_at AS "updatedAt"
+    const normalizedQuery: ListProductsQueryDto =
+      typeof query === 'string'
+        ? { categoryId: query }
+        : query || {};
+
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+    let idx = 1;
+
+    if (normalizedQuery.categoryId && normalizedQuery.categoryId !== 'all') {
+      conditions.push(`p.category_id = $${idx++}::uuid`);
+      params.push(normalizedQuery.categoryId);
+    }
+
+    if (normalizedQuery.branchId && normalizedQuery.branchId !== 'all') {
+      conditions.push(
+        `(EXISTS (SELECT 1 FROM ${productBranches} pb WHERE pb.product_id = p.id AND pb.branch_id = $${idx}::uuid) OR NOT EXISTS (SELECT 1 FROM ${productBranches} pb2 WHERE pb2.product_id = p.id))`,
+      );
+      params.push(normalizedQuery.branchId);
+      idx++;
+    }
+
+    if (normalizedQuery.status && normalizedQuery.status !== 'all') {
+      const isActive = normalizedQuery.status === 'ACTIVE';
+      conditions.push(`p.is_active = $${idx++}`);
+      params.push(isActive);
+    }
+
+    if (normalizedQuery.search?.trim()) {
+      const term = `%${normalizedQuery.search.trim().toLowerCase()}%`;
+      conditions.push(
+        `(LOWER(p.name) LIKE $${idx} OR LOWER(p.code) LIKE $${idx} OR LOWER(COALESCE(p.description, '')) LIKE $${idx})`,
+      );
+      params.push(term);
+      idx++;
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      await this.ensureProductCategoriesTableSynced(tx, schemaName);
+      await this.ensureProductsTableSynced(tx, schemaName);
+      const isPaginated = normalizedQuery.page !== undefined || normalizedQuery.limit !== undefined;
+
+      const branchStockSubquery =
+        normalizedQuery.branchId && normalizedQuery.branchId !== 'all'
+          ? `COALESCE((SELECT SUM(bs.quantity) FROM ${branchStock} bs WHERE bs.product_id = p.id AND bs.branch_id = '${normalizedQuery.branchId}'::uuid), 0)::float8 AS "stockQuantity"`
+          : `COALESCE((SELECT SUM(bs.quantity) FROM ${branchStock} bs WHERE bs.product_id = p.id), 0)::float8 AS "stockQuantity"`;
+
+      const selectFields = `p.id, p.code, p.name, p.description, p.unit, p.image_url AS "imageUrl",
+                  p.selling_price AS "sellingPrice", p.cost_price AS "costPrice",
+                  p.category_id AS "categoryId", c.name AS "categoryName",
+                  COALESCE(c.is_active, true) AS "categoryIsActive",
+                  ${branchStockSubquery},
+                  COALESCE((SELECT ARRAY_AGG(pb.branch_id::text) FROM ${productBranches} pb WHERE pb.product_id = p.id), ARRAY[]::text[]) AS "branchIds",
+                  CASE WHEN p.is_active THEN 'ACTIVE' ELSE 'INACTIVE' END AS status,
+                  p.created_at AS "createdAt", p.updated_at AS "updatedAt"`;
+
+      if (!isPaginated && (normalizedQuery.all === true || normalizedQuery.all === 'true' || typeof query === 'string' || !query)) {
+        const rows = await tx.$queryRawUnsafe<Array<any>>(
+          `SELECT ${selectFields}
+           FROM ${products} p
+           LEFT JOIN ${categories} c ON p.category_id = c.id
+           ${whereClause}
+           ORDER BY c.name ASC NULLS LAST, p.name ASC`,
+          ...params,
+        );
+        return rows;
+      }
+
+      // Count query for pagination
+      const countResult = await tx.$queryRawUnsafe<Array<{ count: bigint }>>(
+        `SELECT COUNT(DISTINCT p.id)::bigint AS count
          FROM ${products} p
          LEFT JOIN ${categories} c ON p.category_id = c.id
-         ${conditions}
-         ORDER BY p.name ASC`,
+         ${whereClause}`,
         ...params,
-      ),
-    );
+      );
+      const total = Number(countResult[0]?.count ?? 0);
+
+      const page = normalizedQuery.page ? Number(normalizedQuery.page) : 1;
+      const limit = normalizedQuery.limit ? Number(normalizedQuery.limit) : 10;
+      const { offset, page: safePage, limit: safeLimit } = resolvePagination(page, limit);
+
+      const rows = await tx.$queryRawUnsafe<Array<any>>(
+        `SELECT ${selectFields}
+         FROM ${products} p
+         LEFT JOIN ${categories} c ON p.category_id = c.id
+         ${whereClause}
+         ORDER BY c.name ASC NULLS LAST, p.name ASC
+         LIMIT $${idx++} OFFSET $${idx++}`,
+        ...params,
+        safeLimit,
+        offset,
+      );
+
+      return buildPaginatedResponse(rows, total, safePage, safeLimit);
+    });
   }
 
   async createProduct(schemaName: string, dto: CreateProductDto, userId: string) {
     const products = tenantTable(schemaName, 'products');
+    const categories = tenantTable(schemaName, 'product_categories');
+    const productBranches = tenantTable(schemaName, 'product_branches');
 
     if (dto.categoryId) {
       await this.ensureProductCategoryExists(schemaName, dto.categoryId);
     }
 
     return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      await this.ensureProductsTableSynced(tx, schemaName);
+
+      if (dto.categoryId) {
+        const catRows = await tx.$queryRawUnsafe<Array<{ is_active: boolean }>>(
+          `SELECT COALESCE(is_active, true) AS is_active FROM ${categories} WHERE id = $1::uuid LIMIT 1`,
+          dto.categoryId,
+        );
+        if (catRows.length > 0 && !catRows[0].is_active) {
+          throw new BadRequestException(
+            'Cannot create an active product under a deactivated category. Please activate the category first.',
+          );
+        }
+      }
+
       const code = await generateSequentialCode(tx, products, 'PRD-');
       const rows = await tx.$queryRawUnsafe<Array<{ id: string }>>(
-        `INSERT INTO ${products} (category_id, code, name, description, unit, selling_price, cost_price, is_active)
-         VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, true)
+        `INSERT INTO ${products} (category_id, code, name, description, unit, selling_price, cost_price, image_url, is_active)
+         VALUES ($1::uuid, $2, $3, $4, $5, $6, $7, $8, true)
          RETURNING id`,
-        dto.categoryId ?? null,
+        dto.categoryId || null,
         code,
         dto.name,
         dto.description ?? null,
-        dto.unit ?? null,
+        dto.unit,
         dto.sellingPrice,
-        dto.costPrice ?? 0,
+        dto.costPrice,
+        dto.imageUrl ?? null,
       );
+
+      const productId = rows[0].id;
+
+      // Assign to branches if selected
+      if (dto.branchIds && dto.branchIds.length > 0) {
+        for (const bId of dto.branchIds) {
+          await tx.$queryRawUnsafe(
+            `INSERT INTO ${productBranches} (product_id, branch_id) VALUES ($1::uuid, $2::uuid) ON CONFLICT DO NOTHING`,
+            productId,
+            bId,
+          );
+        }
+      }
 
       await logAudit(tx, schemaName, {
         userId,
         action: 'PRODUCT_CREATE',
         entityType: 'product',
-        entityId: rows[0].id,
+        entityId: productId,
+        details: { branchIds: dto.branchIds },
       });
 
-      return rows[0];
+      return { id: productId };
     });
   }
 
   async updateProduct(schemaName: string, id: string, dto: UpdateProductDto, userId: string) {
     const products = tenantTable(schemaName, 'products');
+    const productBranches = tenantTable(schemaName, 'product_branches');
     await this.ensureProductExists(schemaName, id);
 
+    if (dto.categoryId) {
+      await this.ensureProductCategoryExists(schemaName, dto.categoryId);
+    }
+
     return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      await this.ensureProductsTableSynced(tx, schemaName);
+
       await tx.$queryRawUnsafe(
         `UPDATE ${products}
-         SET category_id = COALESCE($2::uuid, category_id),
-             name = COALESCE($3, name),
-             description = COALESCE($4, description),
-             unit = COALESCE($5, unit),
-             selling_price = COALESCE($6, selling_price),
-             cost_price = COALESCE($7, cost_price),
+         SET category_id = CASE WHEN $2::boolean THEN $3::uuid ELSE category_id END,
+             name = COALESCE($4, name),
+             description = CASE WHEN $5::boolean THEN $6 ELSE description END,
+             unit = COALESCE($7, unit),
+             selling_price = COALESCE($8, selling_price),
+             cost_price = COALESCE($9, cost_price),
+             image_url = CASE WHEN $10::boolean THEN $11 ELSE image_url END,
              updated_at = NOW()
          WHERE id = $1::uuid`,
         id,
-        dto.categoryId ?? null,
+        dto.categoryId !== undefined,
+        dto.categoryId || null,
         dto.name ?? null,
+        dto.description !== undefined,
         dto.description ?? null,
         dto.unit ?? null,
         dto.sellingPrice ?? null,
         dto.costPrice ?? null,
+        dto.imageUrl !== undefined,
+        dto.imageUrl ?? null,
       );
+
+      // If branchIds provided, sync branch relations
+      if (dto.branchIds !== undefined) {
+        await tx.$queryRawUnsafe(`DELETE FROM ${productBranches} WHERE product_id = $1::uuid`, id);
+        if (dto.branchIds.length > 0) {
+          for (const bId of dto.branchIds) {
+            await tx.$queryRawUnsafe(
+              `INSERT INTO ${productBranches} (product_id, branch_id) VALUES ($1::uuid, $2::uuid) ON CONFLICT DO NOTHING`,
+              id,
+              bId,
+            );
+          }
+        }
+      }
 
       await logAudit(tx, schemaName, {
         userId,
@@ -219,10 +544,26 @@ export class InventoryService {
     userId: string,
   ) {
     const products = tenantTable(schemaName, 'products');
+    const categories = tenantTable(schemaName, 'product_categories');
     await this.ensureProductExists(schemaName, id);
     const isActive = dto.status === 'ACTIVE';
 
     return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      if (isActive) {
+        const catRows = await tx.$queryRawUnsafe<Array<{ is_active: boolean }>>(
+          `SELECT COALESCE(c.is_active, true) AS is_active
+           FROM ${categories} c
+           INNER JOIN ${products} p ON p.category_id = c.id
+           WHERE p.id = $1::uuid LIMIT 1`,
+          id,
+        );
+        if (catRows.length > 0 && !catRows[0].is_active) {
+          throw new BadRequestException(
+            'Cannot activate product because its category is deactivated. Please activate the category first.',
+          );
+        }
+      }
+
       await tx.$queryRawUnsafe(
         `UPDATE ${products} SET is_active = $2, updated_at = NOW() WHERE id = $1::uuid`,
         id,
@@ -238,6 +579,64 @@ export class InventoryService {
       });
 
       return { id, status: dto.status };
+    });
+  }
+
+  async deleteProduct(schemaName: string, id: string, userId: string) {
+    const products = tenantTable(schemaName, 'products');
+    const saleItems = tenantTable(schemaName, 'sale_items');
+    const stockReceiptItems = tenantTable(schemaName, 'stock_receipt_items');
+    const stockMovements = tenantTable(schemaName, 'stock_movements');
+    const stock = tenantTable(schemaName, 'branch_stock');
+
+    await this.ensureProductExists(schemaName, id);
+
+    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      // Check if product is referenced in sales, stock receipts, or stock movements
+      const [salesUsage, receiptUsage, movementUsage, stockUsage] = await Promise.all([
+        tx.$queryRawUnsafe<Array<{ count: bigint }>>(
+          `SELECT COUNT(*)::bigint AS count FROM ${saleItems} WHERE product_id = $1::uuid`,
+          id,
+        ),
+        tx.$queryRawUnsafe<Array<{ count: bigint }>>(
+          `SELECT COUNT(*)::bigint AS count FROM ${stockReceiptItems} WHERE product_id = $1::uuid`,
+          id,
+        ),
+        tx.$queryRawUnsafe<Array<{ count: bigint }>>(
+          `SELECT COUNT(*)::bigint AS count FROM ${stockMovements} WHERE product_id = $1::uuid`,
+          id,
+        ),
+        tx.$queryRawUnsafe<Array<{ totalQty: string }>>(
+          `SELECT COALESCE(SUM(quantity), 0)::text AS "totalQty" FROM ${stock} WHERE product_id = $1::uuid`,
+          id,
+        ),
+      ]);
+
+      const hasSales = Number(salesUsage[0]?.count ?? 0) > 0;
+      const hasReceipts = Number(receiptUsage[0]?.count ?? 0) > 0;
+      const hasMovements = Number(movementUsage[0]?.count ?? 0) > 0;
+      const totalStock = Number(stockUsage[0]?.totalQty ?? 0);
+
+      if (hasSales || hasReceipts || hasMovements || totalStock > 0) {
+        throw new BadRequestException(
+          'Cannot delete this product because it is linked to existing stock receipts, stock movements, or sales transactions. Please deactivate it instead.',
+        );
+      }
+
+      // Delete any zero-quantity branch stock records
+      await tx.$queryRawUnsafe(`DELETE FROM ${stock} WHERE product_id = $1::uuid`, id);
+
+      // Delete product
+      await tx.$queryRawUnsafe(`DELETE FROM ${products} WHERE id = $1::uuid`, id);
+
+      await logAudit(tx, schemaName, {
+        userId,
+        action: 'PRODUCT_DELETE',
+        entityType: 'product',
+        entityId: id,
+      });
+
+      return { id, success: true };
     });
   }
 
@@ -279,12 +678,6 @@ export class InventoryService {
     }
 
     const purchaseDate = dto.purchaseDate?.slice(0, 10) ?? new Date().toISOString().slice(0, 10);
-    const referenceNo = dto.referenceNo?.trim() || null;
-    const movementNotes =
-      [referenceNo ? `Ref ${referenceNo}` : null, dto.notes?.trim() || null]
-        .filter(Boolean)
-        .join(' — ') || null;
-
     const receipts = tenantTable(schemaName, 'stock_receipts');
     const items = tenantTable(schemaName, 'stock_receipt_items');
     const payments = tenantTable(schemaName, 'stock_credit_payments');
@@ -292,6 +685,13 @@ export class InventoryService {
     const methodCast = `$2::text::"${schemaName}".stock_credit_payment_method`;
 
     return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      const referenceNo =
+        dto.referenceNo?.trim() || (await generateSequentialCode(tx, receipts, 'SIN-'));
+      const movementNotes =
+        [referenceNo ? `Ref ${referenceNo}` : null, dto.notes?.trim() || null]
+          .filter(Boolean)
+          .join(' — ') || null;
+
       const receiptRows = await tx.$queryRawUnsafe<Array<{ id: string }>>(
         `INSERT INTO ${receipts}
            (branch_id, reference_no, purchase_date, total_amount, paid_amount,
@@ -880,6 +1280,52 @@ export class InventoryService {
     );
     if (rows.length === 0) {
       throw new NotFoundException('Product not found');
+    }
+  }
+
+  private async ensureProductCategoriesTableSynced(
+    tx: { $executeRawUnsafe: (query: string, ...values: unknown[]) => Promise<unknown> },
+    schemaName: string,
+  ) {
+    const table = tenantTable(schemaName, 'product_categories');
+    try {
+      await tx.$executeRawUnsafe(
+        `ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true`,
+      );
+    } catch {
+      // Ignore if concurrent or already present
+    }
+  }
+
+  private async ensureProductsTableSynced(
+    tx: { $executeRawUnsafe: (query: string, ...values: unknown[]) => Promise<unknown> },
+    schemaName: string,
+  ) {
+    const products = tenantTable(schemaName, 'products');
+    const productBranches = tenantTable(schemaName, 'product_branches');
+    const branches = tenantTable(schemaName, 'branches');
+    try {
+      await tx.$executeRawUnsafe(
+        `ALTER TABLE ${products} ADD COLUMN IF NOT EXISTS image_url TEXT`,
+      );
+      await tx.$executeRawUnsafe(
+        `CREATE TABLE IF NOT EXISTS ${productBranches} (
+          product_id UUID NOT NULL,
+          branch_id UUID NOT NULL,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+          PRIMARY KEY (product_id, branch_id),
+          CONSTRAINT pb_product_fkey FOREIGN KEY (product_id) REFERENCES ${products}(id) ON DELETE CASCADE,
+          CONSTRAINT pb_branch_fkey FOREIGN KEY (branch_id) REFERENCES ${branches}(id) ON DELETE CASCADE
+        )`,
+      );
+      await tx.$executeRawUnsafe(
+        `CREATE INDEX IF NOT EXISTS idx_pb_product_id ON ${productBranches}(product_id)`,
+      );
+      await tx.$executeRawUnsafe(
+        `CREATE INDEX IF NOT EXISTS idx_pb_branch_id ON ${productBranches}(branch_id)`,
+      );
+    } catch {
+      // Ignore if concurrent or already present
     }
   }
 }

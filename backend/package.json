@@ -34,6 +34,7 @@
     "seed": "node -e \"const fs=require('fs'); if(fs.existsSync('./dist/prisma/seed.js')){require('./dist/prisma/seed.js');}else{require('child_process').execSync('npx ts-node --transpile-only prisma/seed.ts',{stdio:'inherit',env:process.env});}\""
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1141.0",
     "@nestjs/bullmq": "^12.0.0",
     "@nestjs/cache-manager": "^12.0.0",
     "@nestjs/common": "^11.0.12",
@@ -50,6 +51,7 @@
     "cache-manager": "^7.2.9",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
+    "cookie-parser": "^1.4.7",
     "ioredis": "^6.0.0",
     "nodemailer": "^10.0.1",
     "passport": "^0.7.0",
@@ -64,6 +66,7 @@
     "@nestjs/schematics": "^11.0.5",
     "@nestjs/testing": "^11.0.12",
     "@types/bcrypt": "^6.0.0",
+    "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.1",
     "@types/jest": "^29.5.14",
     "@types/multer": "^2.2.0",

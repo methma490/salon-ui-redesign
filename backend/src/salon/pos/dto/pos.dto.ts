@@ -96,10 +96,15 @@ export class CreateSaleDto {
   @Type(() => SaleEmployeeDto)
   employees?: SaleEmployeeDto[];
 
+  @IsOptional()
+  @IsEnum(['COMPLETED', 'PENDING'])
+  status?: 'COMPLETED' | 'PENDING';
+
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => PosPaymentDto)
-  payments!: PosPaymentDto[];
+  payments?: PosPaymentDto[];
 }
 
 export class ListSalesQueryDto extends PaginationQueryDto {

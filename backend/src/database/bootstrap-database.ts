@@ -102,6 +102,9 @@ async function syncAllTenantSchemas(prisma: PrismaClient): Promise<void> {
           `ALTER TABLE "${schema}".service_categories ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true`,
         );
         await prisma.$executeRawUnsafe(
+          `ALTER TABLE "${schema}".product_categories ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true`,
+        );
+        await prisma.$executeRawUnsafe(
           `CREATE TABLE IF NOT EXISTS "${schema}".service_category_branches (
             category_id UUID NOT NULL,
             branch_id UUID NOT NULL,
@@ -116,6 +119,25 @@ async function syncAllTenantSchemas(prisma: PrismaClient): Promise<void> {
         );
         await prisma.$executeRawUnsafe(
           `CREATE INDEX IF NOT EXISTS idx_scb_branch_id ON "${schema}".service_category_branches(branch_id)`,
+        );
+        await prisma.$executeRawUnsafe(
+          `ALTER TABLE "${schema}".products ADD COLUMN IF NOT EXISTS image_url TEXT`,
+        );
+        await prisma.$executeRawUnsafe(
+          `CREATE TABLE IF NOT EXISTS "${schema}".product_branches (
+            product_id UUID NOT NULL,
+            branch_id UUID NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+            PRIMARY KEY (product_id, branch_id),
+            CONSTRAINT pb_product_fkey FOREIGN KEY (product_id) REFERENCES "${schema}".products(id) ON DELETE CASCADE,
+            CONSTRAINT pb_branch_fkey FOREIGN KEY (branch_id) REFERENCES "${schema}".branches(id) ON DELETE CASCADE
+          )`,
+        );
+        await prisma.$executeRawUnsafe(
+          `CREATE INDEX IF NOT EXISTS idx_pb_product_id ON "${schema}".product_branches(product_id)`,
+        );
+        await prisma.$executeRawUnsafe(
+          `CREATE INDEX IF NOT EXISTS idx_pb_branch_id ON "${schema}".product_branches(branch_id)`,
         );
       } catch (err) {
         logger.warn(`Could not sync schema ${schema}: ${err}`);

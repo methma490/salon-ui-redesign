@@ -672,7 +672,7 @@ function SalonAdminHeader({
 }
 
 function SalonAdminLayoutInner() {
-  const { user, logout, refreshUser } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const mainRef = useRef<HTMLElement>(null);
@@ -702,20 +702,6 @@ function SalonAdminLayoutInner() {
   useEffect(() => {
     mainRef.current?.scrollTo({ top: 0, left: 0 });
   }, [location.pathname]);
-
-  useEffect(() => {
-    if (!user?.tenantId) return;
-
-    const validateSession = () => {
-      void refreshUser().catch(async () => {
-        await logout();
-        navigate('/salon/login');
-      });
-    };
-
-    const timer = window.setInterval(validateSession, 30_000);
-    return () => window.clearInterval(timer);
-  }, [user?.tenantId, refreshUser, logout, navigate]);
 
   return (
     <div className="flex h-dvh overflow-hidden bg-background">

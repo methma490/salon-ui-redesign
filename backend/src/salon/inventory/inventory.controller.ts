@@ -1,4 +1,18 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../auth/interfaces/auth.interface';
@@ -13,11 +27,14 @@ import {
   CreateProductCategoryDto,
   CreateProductDto,
   CreateStockCreditPaymentDto,
+  ListProductCategoriesQueryDto,
+  ListProductsQueryDto,
   ListStockCreditsQueryDto,
   ListStockMovementsQueryDto,
   StockAdjustmentDto,
   StockInDto,
   UpdateProductCategoryDto,
+  UpdateProductCategoryStatusDto,
   UpdateProductDto,
   UpdateProductStatusDto,
 } from './dto/inventory.dto';
@@ -31,8 +48,11 @@ export class InventoryController {
 
   @Get('product-categories')
   @RequirePermission('PRODUCT_VIEW')
-  listProductCategories(@CurrentTenant() tenant: TenantContext) {
-    return this.inventoryService.listProductCategories(tenant.schemaName);
+  listProductCategories(
+    @CurrentTenant() tenant: TenantContext,
+    @Query() query?: ListProductCategoriesQueryDto,
+  ) {
+    return this.inventoryService.listProductCategories(tenant.schemaName, query);
   }
 
   @Post('product-categories')
@@ -56,10 +76,46 @@ export class InventoryController {
     return this.inventoryService.updateProductCategory(tenant.schemaName, id, dto, user.id);
   }
 
+  @Patch('product-categories/:id/status')
+  @RequirePermission('PRODUCT_UPDATE')
+  updateProductCategoryStatus(
+    @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateProductCategoryStatusDto,
+  ) {
+    return this.inventoryService.updateProductCategoryStatus(tenant.schemaName, id, dto, user.id);
+  }
+
+  @Delete('product-categories/:id')
+  @RequirePermission('PRODUCT_UPDATE')
+  deleteProductCategory(
+    @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    return this.inventoryService.deleteProductCategory(tenant.schemaName, id, user.id);
+  }
+
   @Get('products')
   @RequirePermission('PRODUCT_VIEW')
-  listProducts(@CurrentTenant() tenant: TenantContext, @Query('categoryId') categoryId?: string) {
-    return this.inventoryService.listProducts(tenant.schemaName, categoryId);
+  listProducts(
+    @CurrentTenant() tenant: TenantContext,
+    @Query() query?: ListProductsQueryDto,
+  ) {
+    return this.inventoryService.listProducts(tenant.schemaName, query);
+  }
+
+  @Post('products/upload-image')
+  @RequirePermission('PRODUCT_CREATE')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  uploadProductImage(@UploadedFile() file: Express.Multer.File | undefined) {
+    return this.inventoryService.saveProductImage(file);
   }
 
   @Post('products')
@@ -92,6 +148,16 @@ export class InventoryController {
     @Body() dto: UpdateProductStatusDto,
   ) {
     return this.inventoryService.updateProductStatus(tenant.schemaName, id, dto, user.id);
+  }
+
+  @Delete('products/:id')
+  @RequirePermission('PRODUCT_UPDATE')
+  deleteProduct(
+    @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    return this.inventoryService.deleteProduct(tenant.schemaName, id, user.id);
   }
 
   @Get('stock')

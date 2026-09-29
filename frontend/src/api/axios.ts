@@ -29,6 +29,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 });
 
 let isRefreshing = false;
@@ -83,6 +84,7 @@ api.interceptors.request.use((config) => {
   if (config.data instanceof FormData) {
     delete config.headers['Content-Type'];
   }
+  config.withCredentials = true;
   return config;
 });
 
@@ -122,15 +124,9 @@ api.interceptors.response.use(
 
     if (
       originalRequest.url?.includes('/auth/login') ||
-      originalRequest.url?.includes('/auth/refresh')
+      originalRequest.url?.includes('/auth/refresh') ||
+      originalRequest.url?.includes('/auth/logout')
     ) {
-      return Promise.reject(error);
-    }
-
-    const refreshToken = authStorage.getRefreshToken();
-
-    if (!refreshToken) {
-      forceLogout(getErrorMessage(error));
       return Promise.reject(error);
     }
 
@@ -151,12 +147,13 @@ api.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      const { data } = await axios.post<Pick<LoginResponse, 'accessToken' | 'refreshToken'>>(
+      const { data } = await axios.post<{ accessToken: string }>(
         `${API_BASE_URL}/auth/refresh`,
-        { refreshToken },
+        {},
+        { withCredentials: true },
       );
 
-      authStorage.setTokens(data.accessToken, data.refreshToken);
+      authStorage.setAccessToken(data.accessToken);
       processQueue(data.accessToken);
       originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
       return api(originalRequest);
@@ -173,8 +170,12 @@ api.interceptors.response.use(
 export const authApi = {
   login: (email: string, password: string) =>
     api.post<LoginResponse>('/auth/login', { email, password }).then((r) => r.data),
-  logout: (refreshToken: string) => api.post('/auth/logout', { refreshToken }).then((r) => r.data),
-  me: () => api.get<AuthUser>('/auth/me').then((r) => r.data),
+  refresh: () =>
+    api.post<{ accessToken: string }>('/auth/refresh').then((r) => r.data),
+  logout: () =>
+    api.post('/auth/logout').then((r) => r.data),
+  me: () =>
+    api.get<AuthUser>('/auth/me').then((r) => r.data),
   forgotPassword: (email: string, portal: 'salon' | 'super-admin') =>
     api.post<{ message: string }>('/auth/forgot-password', { email, portal }).then((r) => r.data),
   resetPassword: (token: string, password: string) =>

@@ -162,6 +162,11 @@ export interface ProductCategory {
   code: string;
   name: string;
   description: string | null;
+  status: string;
+  isActive?: boolean;
+  productsCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export type ModuleAccessLevel = 'none' | 'view' | 'manage';
@@ -398,11 +403,17 @@ export interface Product {
   name: string;
   description: string | null;
   unit: string | null;
+  imageUrl?: string | null;
+  branchIds?: string[];
   sellingPrice: number;
   costPrice: number;
   categoryId: string | null;
   categoryName: string | null;
+  categoryIsActive?: boolean;
+  stockQuantity?: number;
   status: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface StockLevel {
@@ -899,22 +910,46 @@ export const tenantApi = {
   },
 
   productCategories: {
-    list: () => api.get<ProductCategory[]>('/tenant/product-categories').then((r) => r.data),
+    list: (params?: Record<string, string | number | boolean | undefined>) =>
+      api
+        .get<PaginatedResponse<ProductCategory> | ProductCategory[]>('/tenant/product-categories', {
+          params,
+        })
+        .then((r) => unwrapPaginatedList(r.data)),
     create: (data: Record<string, unknown>) =>
       api.post('/tenant/product-categories', data).then((r) => r.data),
     update: (id: string, data: Record<string, unknown>) =>
       api.patch(`/tenant/product-categories/${id}`, data).then((r) => r.data),
+    updateStatus: (id: string, status: string) =>
+      api.patch(`/tenant/product-categories/${id}/status`, { status }).then((r) => r.data),
+    delete: (id: string) =>
+      api.delete(`/tenant/product-categories/${id}`).then((r) => r.data),
   },
 
   products: {
-    list: (categoryId?: string) =>
-      api.get<Product[]>('/tenant/products', { params: { categoryId } }).then((r) => r.data),
+    list: (params?: Record<string, string | number | boolean | undefined> | string) => {
+      const queryParams = typeof params === 'string' ? { categoryId: params } : params;
+      return api
+        .get<PaginatedResponse<Product> | Product[]>('/tenant/products', { params: queryParams })
+        .then((r) => unwrapPaginatedList(r.data));
+    },
+    uploadImage: (file: File) => {
+      const formData = new FormData();
+      formData.append('image', file);
+      return api
+        .post<{ imageUrl: string }>('/tenant/products/upload-image', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        .then((r) => r.data);
+    },
     create: (data: Record<string, unknown>) =>
       api.post('/tenant/products', data).then((r) => r.data),
     update: (id: string, data: Record<string, unknown>) =>
       api.patch(`/tenant/products/${id}`, data).then((r) => r.data),
     updateStatus: (id: string, status: string) =>
       api.patch(`/tenant/products/${id}/status`, { status }).then((r) => r.data),
+    delete: (id: string) =>
+      api.delete(`/tenant/products/${id}`).then((r) => r.data),
   },
 
   stock: {

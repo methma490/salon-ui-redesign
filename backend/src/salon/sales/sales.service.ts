@@ -87,8 +87,7 @@ export class SalesService {
                 s.branch_id AS "branchId", b.name AS "branchName",
                 s.customer_id AS "customerId", c.name AS "customerName",
                 s.cashier_id AS "cashierId", u.name AS "cashierName",
-                s.created_at,
-                (s.created_at AT TIME ZONE 'Asia/Colombo') AS "createdAt"
+                s.created_at AS "createdAt"
          ${fromClause}
          ORDER BY s.created_at DESC
          LIMIT $${idx} OFFSET $${idx + 1}`,
@@ -108,6 +107,8 @@ export class SalesService {
     const customers = tenantTable(schemaName, 'customers');
     const users = tenantTable(schemaName, 'users');
     const saleItems = tenantTable(schemaName, 'sale_items');
+    const userRoles = tenantTable(schemaName, 'user_roles');
+    const roles = tenantTable(schemaName, 'roles');
     const saleItemEmployees = tenantTable(schemaName, 'sale_item_employees');
     const saleEmployees = tenantTable(schemaName, 'sale_employees');
     const services = tenantTable(schemaName, 'services');
@@ -133,6 +134,7 @@ export class SalesService {
           customerPhone: string | null;
           cashierId: string | null;
           cashierName: string | null;
+          cashierRole: string | null;
           createdAt: Date;
         }>
       >(
@@ -144,7 +146,22 @@ export class SalesService {
                 s.customer_id AS "customerId", c.name AS "customerName",
                 c.email AS "customerEmail", c.phone AS "customerPhone",
                 s.cashier_id AS "cashierId", u.name AS "cashierName",
-                (s.created_at AT TIME ZONE 'Asia/Colombo') AS "createdAt"
+                (
+                  SELECT string_agg(
+                    CASE 
+                      WHEN r.code = 'SALON_ADMIN' THEN 'Salon Admin'
+                      WHEN r.code = 'SUPER_ADMIN' THEN 'System Admin'
+                      WHEN r.code = 'CASHIER' THEN 'Cashier'
+                      WHEN r.code = 'MANAGER' THEN 'Manager'
+                      ELSE COALESCE(r.name, r.code)
+                    END,
+                    ', '
+                  )
+                  FROM ${userRoles} ur
+                  JOIN ${roles} r ON ur.role_id = r.id
+                  WHERE ur.user_id = s.cashier_id
+                ) AS "cashierRole",
+                s.created_at AS "createdAt"
          FROM ${sales} s
          INNER JOIN ${branches} b ON s.branch_id = b.id
          LEFT JOIN ${customers} c ON s.customer_id = c.id
@@ -196,7 +213,7 @@ export class SalesService {
 
       const paymentRows = await tx.$queryRawUnsafe(
         `SELECT id, method::text AS method, amount, status::text AS status,
-                reference_number AS "referenceNumber", (created_at AT TIME ZONE 'Asia/Colombo') AS "createdAt"
+                reference_number AS "referenceNumber", created_at AS "createdAt"
          FROM ${payments} WHERE sale_id = $1::uuid ORDER BY created_at ASC`,
         id,
       );
@@ -328,10 +345,13 @@ export class SalesService {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
+      timeZone: 'UTC',
     });
     const formattedTime = new Date(sale.createdAt).toLocaleTimeString('en-LK', {
       hour: 'numeric',
       minute: '2-digit',
+      hour12: true,
+      timeZone: 'UTC',
     });
 
     const itemsListHtml = ((sale.items as any[]) || [])

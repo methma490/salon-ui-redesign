@@ -13,7 +13,11 @@ export function useAuthMe(enabled = true) {
     queryKey: authKeys.me,
     queryFn: authApi.me,
     enabled,
+    staleTime: 5 * 60 * 1000,
     retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
   });
 }
 

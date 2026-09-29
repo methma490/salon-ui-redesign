@@ -7,9 +7,8 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { FeatureStatus, SubscriptionStatus } from '@prisma/client';
-import { existsSync, mkdirSync, unlinkSync } from 'fs';
-import { join } from 'path';
 import sharp from 'sharp';
+import { StorageService } from '../../common/storage/storage.service';
 import { syncTenantFeatures } from '../../database/sync-tenant-features.util';
 import { PrismaService } from '../../database/prisma.service';
 import { SubscriptionsService } from '../../subscriptions/subscriptions.service';
@@ -52,6 +51,7 @@ export class SettingsService {
     private readonly subscriptionsService: SubscriptionsService,
     private readonly tenantSchemaService: TenantSchemaService,
     private readonly mailService: MailService,
+    private readonly storageService: StorageService,
   ) {}
 
   async getSettings(tenantId: string, schemaName: string, userId: string) {
@@ -118,7 +118,9 @@ export class SettingsService {
 
     const featureMap = new Map(featureRecords.map((f) => [f.code, f]));
 
-    const logoThumbnailUrl = tenant.logoUrl ? `/uploads/tenants/${tenantId}_thumb.webp` : null;
+    const logoThumbnailUrl = tenant.logoUrl
+      ? tenant.logoUrl.replace(/\.webp$/, '_thumb.webp')
+      : null;
 
     return {
       salon: {
@@ -312,29 +314,25 @@ export class SettingsService {
       throw new BadRequestException('Logo must be 2MB or smaller');
     }
 
-    const uploadsDir = join(process.cwd(), 'uploads', 'tenants');
-    if (!existsSync(uploadsDir)) {
-      mkdirSync(uploadsDir, { recursive: true });
-    }
-
     const timestamp = Date.now();
     const filename = `${tenantId}_${timestamp}.webp`;
     const thumbFilename = `${tenantId}_${timestamp}_thumb.webp`;
-    const absolutePath = join(uploadsDir, filename);
-    const thumbPath = join(uploadsDir, thumbFilename);
+
+    let mainBuffer: Buffer;
+    let thumbBuffer: Buffer;
 
     try {
-      await sharp(file.buffer)
+      mainBuffer = await sharp(file.buffer)
         .rotate()
         .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
         .webp({ quality: 85 })
-        .toFile(absolutePath);
+        .toBuffer();
 
-      await sharp(file.buffer)
+      thumbBuffer = await sharp(file.buffer)
         .rotate()
         .resize(200, 200, { fit: 'cover' })
         .webp({ quality: 85 })
-        .toFile(thumbPath);
+        .toBuffer();
     } catch {
       throw new BadRequestException('Failed to process image file. Please provide a valid WebP, PNG, or JPEG image.');
     }
@@ -346,20 +344,19 @@ export class SettingsService {
         select: { logoUrl: true },
       });
       if (current?.logoUrl) {
-        const oldPath = join(process.cwd(), current.logoUrl.replace(/^\//, ''));
-        if (existsSync(oldPath)) {
-          unlinkSync(oldPath);
-        }
-        const oldThumbPath = oldPath.replace('.webp', '_thumb.webp');
-        if (existsSync(oldThumbPath)) {
-          unlinkSync(oldThumbPath);
-        }
+        await this.storageService.deleteFile(current.logoUrl);
+        const oldThumb = current.logoUrl.replace(/\.webp$/, '_thumb.webp');
+        await this.storageService.deleteFile(oldThumb);
       }
     } catch {
       // Non-fatal cleanup
     }
 
-    const logoUrl = `/uploads/tenants/${filename}`;
+    const [logoUrl, logoThumbnailUrl] = await Promise.all([
+      this.storageService.uploadFile(mainBuffer, 'tenants', filename, 'image/webp'),
+      this.storageService.uploadFile(thumbBuffer, 'tenants', thumbFilename, 'image/webp'),
+    ]);
+
     const tenant = await this.prisma.tenant.update({
       where: { id: tenantId },
       data: { logoUrl },
@@ -377,7 +374,7 @@ export class SettingsService {
 
     return {
       ...tenant,
-      logoThumbnailUrl: `/uploads/tenants/${thumbFilename}`,
+      logoThumbnailUrl,
     };
   }
 
@@ -392,18 +389,9 @@ export class SettingsService {
     });
 
     if (tenant?.logoUrl) {
-      const absolutePath = join(process.cwd(), tenant.logoUrl.replace(/^\//, ''));
-      if (existsSync(absolutePath)) {
-        try {
-          unlinkSync(absolutePath);
-        } catch {}
-      }
-      const thumbPath = absolutePath.replace('.webp', '_thumb.webp');
-      if (existsSync(thumbPath)) {
-        try {
-          unlinkSync(thumbPath);
-        } catch {}
-      }
+      await this.storageService.deleteFile(tenant.logoUrl);
+      const thumb = tenant.logoUrl.replace(/\.webp$/, '_thumb.webp');
+      await this.storageService.deleteFile(thumb);
     }
 
     return this.prisma.tenant.update({

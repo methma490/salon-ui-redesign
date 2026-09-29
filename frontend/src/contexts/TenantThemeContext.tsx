@@ -58,12 +58,20 @@ export function TenantThemeProvider({ children }: { children: ReactNode }) {
 
   useLayoutEffect(() => {
     applyBrandCssVars(rootRef.current, effectiveColor);
+    if (typeof document !== 'undefined') {
+      applyBrandCssVars(document.documentElement, effectiveColor);
+      applyBrandCssVars(document.body, effectiveColor);
+    }
   }, [effectiveColor]);
 
   const setRootNode = useCallback(
     (node: HTMLDivElement | null) => {
       rootRef.current = node;
       if (node) applyBrandCssVars(node, effectiveColor);
+      if (typeof document !== 'undefined') {
+        applyBrandCssVars(document.documentElement, effectiveColor);
+        applyBrandCssVars(document.body, effectiveColor);
+      }
     },
     [effectiveColor],
   );

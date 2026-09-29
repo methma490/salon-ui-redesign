@@ -1,5 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Check, Printer, ShoppingCart, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  Check,
+  CheckCircle2,
+  Eye,
+  FileText,
+  Plus,
+  Printer,
+  Scissors,
+  Send,
+  ShoppingCart,
+  Trash2,
+} from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tenantApi, type Customer, type Product, type Service } from '@/api/tenant.api';
@@ -22,13 +34,62 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useSalonBranch } from '@/contexts/SalonBranchContext';
 import {
+  FormError,
   FormSubmit,
   getErrorMessage,
   SimpleForm,
   SimpleFormDialog,
 } from './salon-ops-ui';
 import { formatMoneyAmount, formatMoneyLkr } from '@/lib/money';
+import { printReceipt } from '@/lib/print-receipt';
+import { resolveUploadUrl } from '@/lib/upload-url';
+import SendEbillModal from './SendEbillModal';
 import './pos-page.css';
+
+function PosInvoiceLogo({ logoUrl }: { logoUrl?: string | null }) {
+  const [imgError, setImgError] = useState(false);
+  const resolved = resolveUploadUrl(logoUrl);
+
+  if (!resolved || imgError) {
+    return (
+      <span className="pos-inv-logo-fallback" aria-hidden>
+        <Scissors size={22} />
+      </span>
+    );
+  }
+
+  return (
+    <img
+      src={resolved}
+      alt=""
+      className="pos-inv-logo"
+      onError={() => setImgError(true)}
+    />
+  );
+}
+
+function getUserDisplayRole(user?: { roles?: string[] } | null): string {
+  if (!user?.roles || user.roles.length === 0) return 'Cashier';
+  if (user.roles.includes('SUPER_ADMIN')) return 'System Admin';
+  if (user.roles.includes('SALON_ADMIN')) return 'Salon Admin';
+  if (user.roles.includes('MANAGER')) return 'Manager';
+  if (user.roles.includes('CASHIER')) return 'Cashier';
+  if (user.roles.includes('RECEPTIONIST')) return 'Receptionist';
+  if (user.roles.includes('STYLIST')) return 'Stylist';
+
+  return user.roles[0]
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function formatPaymentMethod(method?: string): string {
+  if (!method) return '—';
+  return method
+    .split('_')
+    .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
+    .join(' ');
+}
 
 type CatalogTab = 'services' | 'products';
 type CustomerMode = 'walkin' | 'registered';
@@ -100,26 +161,31 @@ function userInitials(name: string) {
 function useClock() {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), 30_000);
+    const id = window.setInterval(() => setNow(new Date()), 10_000);
     return () => window.clearInterval(id);
   }, []);
   return {
-    full: now.toLocaleString(undefined, {
+    full: now.toLocaleString('en-LK', {
       weekday: 'short',
       day: 'numeric',
       month: 'short',
       year: 'numeric',
-      hour: '2-digit',
+      hour: 'numeric',
       minute: '2-digit',
+      hour12: true,
+      timeZone: 'Asia/Colombo',
     }),
-    date: now.toLocaleDateString(undefined, {
+    date: now.toLocaleDateString('en-LK', {
       weekday: 'short',
       month: 'short',
       day: 'numeric',
+      timeZone: 'Asia/Colombo',
     }),
-    time: now.toLocaleTimeString(undefined, {
-      hour: '2-digit',
+    time: now.toLocaleTimeString('en-LK', {
+      hour: 'numeric',
       minute: '2-digit',
+      hour12: true,
+      timeZone: 'Asia/Colombo',
     }),
   };
 }
@@ -144,10 +210,25 @@ export default function PosPage() {
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState<string | null>(null);
   const [customerPhone, setCustomerPhone] = useState<string | null>(null);
-  const [phoneSearch, setPhoneSearch] = useState('');
-  const debouncedPhoneSearch = useDebouncedSearch(phoneSearch, 400, 3);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const debouncedCustomerSearch = useDebouncedSearch(customerSearch, 300, 1);
   const [createCustomerOpen, setCreateCustomerOpen] = useState(false);
   const [newCustomerForm, setNewCustomerForm] = useState({ name: '', phone: '', email: '' });
+  const [newCustomerError, setNewCustomerError] = useState<string | null>(null);
+
+  const handleOpenCreateCustomer = () => {
+    setNewCustomerForm({ name: '', phone: '', email: '' });
+    setNewCustomerError(null);
+    setCreateCustomerOpen(true);
+  };
+
+  const handleCloseCreateCustomer = (open: boolean) => {
+    setCreateCustomerOpen(open);
+    if (!open) {
+      setNewCustomerForm({ name: '', phone: '', email: '' });
+      setNewCustomerError(null);
+    }
+  };
 
   const [cartServices, setCartServices] = useState<CartService[]>([]);
   const [cartProducts, setCartProducts] = useState<CartProduct[]>([]);
@@ -160,8 +241,48 @@ export default function PosPage() {
   const [paymentReference, setPaymentReference] = useState('');
   const [cashReceived, setCashReceived] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
-
   const [pendingServiceId, setPendingServiceId] = useState('');
+
+  const { data: settings } = useQuery({
+    queryKey: ['tenant-settings'],
+    queryFn: tenantApi.settings.get,
+  });
+  const salon = settings?.salon;
+
+  const [invoicePreviewOpen, setInvoicePreviewOpen] = useState(false);
+  const [completedModalOpen, setCompletedModalOpen] = useState(false);
+  const [sendEbillOpen, setSendEbillOpen] = useState(false);
+  const [completedSale, setCompletedSale] = useState<{
+    id: string;
+    saleNumber: string;
+    subtotal: number;
+    discount: number;
+    total: number;
+    customerName: string;
+    customerPhone?: string | null;
+    branchName: string;
+    cashierName: string;
+    cashierRole: string;
+    items: Array<{
+      id: string;
+      name: string;
+      itemType: 'service' | 'product';
+      stylistName?: string | null;
+      quantity: number;
+      unitPrice: number;
+      total: number;
+    }>;
+    payments: Array<{
+      method: string;
+      amount: number;
+      referenceNumber?: string | null;
+    }>;
+    cashReceived?: string;
+    changeDue?: number;
+    date: string;
+    time: string;
+    status?: string;
+  } | null>(null);
 
   // Synchronize when ribbon branch changes
   useEffect(() => {
@@ -220,8 +341,8 @@ export default function PosPage() {
   });
 
   const { data: products = [] } = useQuery({
-    queryKey: ['products'],
-    queryFn: () => tenantApi.products.list(),
+    queryKey: ['products', branchId],
+    queryFn: () => tenantApi.products.list(branchId ? { branchId, all: true } : { all: true }),
   });
 
   const activeServices = useMemo(
@@ -274,10 +395,10 @@ export default function PosPage() {
     });
   }, [activeProducts, catalogSearch, categoryFilter]);
 
-  const { data: searchResults = [] } = useQuery({
-    queryKey: ['customer-search', debouncedPhoneSearch],
-    queryFn: () => tenantApi.customers.search({ phone: debouncedPhoneSearch }),
-    enabled: customerMode === 'registered' && debouncedPhoneSearch.length >= 3 && !customerId,
+  const { data: searchResults = [], isFetching: isCustomerSearching } = useQuery({
+    queryKey: ['customer-search', debouncedCustomerSearch],
+    queryFn: () => tenantApi.customers.search({ search: debouncedCustomerSearch }),
+    enabled: customerMode === 'registered' && debouncedCustomerSearch.length >= 1 && !customerId,
   });
 
   const createCustomerMutation = useMutation({
@@ -287,21 +408,92 @@ export default function PosPage() {
       setCustomerId(customer.id);
       setCustomerName(customer.name);
       setCustomerPhone(customer.phone || null);
-      setPhoneSearch(customer.phone || '');
+      setCustomerSearch(customer.name || customer.phone || '');
       setCreateCustomerOpen(false);
       setNewCustomerForm({ name: '', phone: '', email: '' });
+      setNewCustomerError(null);
       qc.invalidateQueries({ queryKey: ['customers'] });
+      qc.invalidateQueries({ queryKey: ['customer-search'] });
+    },
+    onError: (err: unknown) => {
+      setNewCustomerError(getErrorMessage(err));
     },
   });
 
   const createSaleMutation = useMutation({
     mutationFn: tenantApi.pos.createSale,
-    onSuccess: (sale: { id: string }) => {
+    onSuccess: (
+      sale: { id: string; saleNumber?: string; status?: string },
+      variables: Record<string, unknown>,
+    ) => {
       qc.invalidateQueries({ queryKey: ['sales'] });
       qc.invalidateQueries({ queryKey: ['sales-analytics'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
       qc.invalidateQueries({ queryKey: ['reports'] });
-      navigate(`/salon/sales/${sale.id}`);
+
+      const currentBranch = activeBranches.find((b) => b.id === branchId)?.name || 'Main Branch';
+      const itemsList = [
+        ...cartServices.map((s) => ({
+          id: s.key,
+          name: s.serviceName,
+          itemType: 'service' as const,
+          stylistName: s.employeeName,
+          quantity: 1,
+          unitPrice: s.price,
+          total: s.price - (s.discount || 0),
+        })),
+        ...cartProducts.map((p) => ({
+          id: p.key,
+          name: p.productName,
+          itemType: 'product' as const,
+          quantity: p.quantity,
+          unitPrice: p.price,
+          total: p.price * p.quantity - (p.discount || 0),
+        })),
+      ];
+
+      const paymentsList =
+        paymentMode === 'MIX'
+          ? paymentLines
+              .filter((l) => Number(l.amount) > 0)
+              .map((l) => ({
+                method: l.method,
+                amount: Number(l.amount) || 0,
+                referenceNumber: l.referenceNumber.trim() || null,
+              }))
+          : [
+              {
+                method: paymentMode,
+                amount: total,
+                referenceNumber: paymentReference.trim() || null,
+              },
+            ];
+
+      setCompletedSale({
+        id: sale.id,
+        saleNumber: sale.saleNumber || 'SALE-RECORDED',
+        subtotal,
+        discount,
+        total,
+        customerName: customerName || 'Walk-in customer',
+        customerPhone: customerPhone || null,
+        branchName: currentBranch,
+        cashierName: user?.name || 'Staff',
+        cashierRole: getUserDisplayRole(user),
+        items: itemsList,
+        payments: paymentsList,
+        cashReceived:
+          (paymentMode === 'CASH' || paymentLines.some((p) => p.method === 'CASH')) && cashReceived
+            ? cashReceived
+            : undefined,
+        changeDue: changeDue > 0 ? changeDue : undefined,
+        date: clock.date,
+        time: clock.time,
+        status: sale.status || (typeof variables?.status === 'string' ? variables.status : 'COMPLETED'),
+      });
+
+      setCompletedModalOpen(true);
+      clearCart();
     },
     onError: (err) => setFormError(getErrorMessage(err)),
   });
@@ -323,16 +515,6 @@ export default function PosPage() {
   const total = Math.max(0, subtotal - discount);
   const cartCount = cartServices.length + cartProducts.reduce((sum, p) => sum + p.quantity, 0);
 
-  const paymentTotal = useMemo(() => {
-    if (paymentMode !== 'MIX') return total;
-    return paymentLines.reduce((sum, line) => sum + (Number(line.amount) || 0), 0);
-  }, [paymentLines, paymentMode, total]);
-
-  const paymentRemaining = Math.max(0, total - paymentTotal);
-  const paymentBalanced =
-    total > 0 &&
-    (paymentMode !== 'MIX' ? true : Math.abs(paymentTotal - total) < 0.01);
-
   const cashLineTotal =
     paymentMode === 'CASH'
       ? total
@@ -340,7 +522,36 @@ export default function PosPage() {
           .filter((line) => line.method === 'CASH')
           .reduce((sum, line) => sum + (Number(line.amount) || 0), 0);
 
-  const changeDue = Math.max(0, (Number(cashReceived) || 0) - cashLineTotal);
+  const cashReceivedNum = Number(cashReceived) || 0;
+  const changeDue = Math.max(0, cashReceivedNum - cashLineTotal);
+
+  const paymentTotal = useMemo(() => {
+    if (paymentMode === 'MIX') {
+      return paymentLines.reduce((sum, line) => sum + (Number(line.amount) || 0), 0);
+    }
+    if (paymentMode === 'CASH') {
+      return cashReceivedNum > 0 ? Math.min(total, cashReceivedNum) : 0;
+    }
+    return total;
+  }, [paymentLines, paymentMode, total, cashReceivedNum]);
+
+  const paymentRemaining = Math.max(0, total - paymentTotal);
+
+  const paymentBalanced = useMemo(() => {
+    if (total <= 0 || cartCount === 0) return false;
+    if (paymentMode === 'MIX') {
+      const mixSum = paymentLines.reduce((sum, line) => sum + (Number(line.amount) || 0), 0);
+      const cashInMix = paymentLines
+        .filter((l) => l.method === 'CASH')
+        .reduce((sum, l) => sum + (Number(l.amount) || 0), 0);
+      const cashOk = cashInMix <= 0 || cashReceivedNum >= cashInMix;
+      return Math.abs(mixSum - total) < 0.01 && cashOk;
+    }
+    if (paymentMode === 'CASH') {
+      return cashReceived.trim() !== '' && cashReceivedNum >= total;
+    }
+    return true;
+  }, [total, cartCount, paymentMode, paymentLines, cashReceived, cashReceivedNum]);
 
   const selectPaymentMode = (mode: PaymentMode) => {
     setPaymentMode(mode);
@@ -408,11 +619,12 @@ export default function PosPage() {
 
   const handleProductAdd = (productId: string) => {
     const prod = activeProducts.find((p) => p.id === productId);
-    if (!prod) return;
+    if (!prod || (prod.stockQuantity ?? 0) <= 0) return;
 
     setCartProducts((prev) => {
       const existing = prev.find((p) => p.productId === productId);
       if (existing) {
+        if (existing.quantity >= (prod.stockQuantity ?? 99999)) return prev;
         return prev.map((p) =>
           p.productId === productId ? { ...p, quantity: p.quantity + 1 } : p,
         );
@@ -435,10 +647,17 @@ export default function PosPage() {
   const clearCart = () => {
     setCartServices([]);
     setCartProducts([]);
+    setDiscountInput('');
+    setCashReceived('');
+    setPaymentReference('');
+    setPaymentLines([
+      { key: crypto.randomUUID(), method: 'CASH', amount: '', referenceNumber: '' },
+    ]);
     setFormError(null);
   };
 
   const addPaymentLine = (method: PayMethod = 'CASH') => {
+    if (paymentRemaining <= 0 || paymentTotal >= total) return;
     setPaymentLines((prev) => [
       ...prev,
       {
@@ -459,6 +678,64 @@ export default function PosPage() {
     setPaymentLines((prev) =>
       prev.length <= minLines ? prev : prev.filter((line) => line.key !== key),
     );
+  };
+
+  const saveDraftSale = () => {
+    setFormError(null);
+    if (!branchId) {
+      setFormError('Please select a branch.');
+      return;
+    }
+    if (cartCount === 0) {
+      setFormError('Cart is empty.');
+      return;
+    }
+    if (cartServices.length > 0 && hasNoEmployees) {
+      setFormError('Select a branch so your stylist profile can be loaded.');
+      return;
+    }
+    if (cartServices.some((s) => !s.employeeId)) {
+      setFormError('Assign an employee to every service in the cart.');
+      return;
+    }
+
+    const payments =
+      paymentMode === 'MIX'
+        ? paymentLines
+            .filter((line) => Number(line.amount) > 0)
+            .map((line) => ({
+              method: line.method,
+              amount: Number(line.amount) || 0,
+              referenceNumber: line.referenceNumber.trim() || undefined,
+            }))
+        : paymentBalanced
+          ? [
+              {
+                method: paymentMode,
+                amount: total,
+                referenceNumber: paymentReference.trim() || undefined,
+              },
+            ]
+          : [];
+
+    createSaleMutation.mutate({
+      branchId,
+      customerId: customerId || undefined,
+      status: 'PENDING',
+      services: cartServices.map((s) => ({
+        serviceId: s.serviceId,
+        employeeId: s.employeeId,
+        discount: s.discount || undefined,
+      })),
+      products: cartProducts.map((p) => ({
+        productId: p.productId,
+        quantity: p.quantity,
+        discount: p.discount || undefined,
+      })),
+      employees: derivedSaleEmployees,
+      discount: discount || undefined,
+      payments,
+    });
   };
 
   const completeSale = () => {
@@ -504,6 +781,7 @@ export default function PosPage() {
     createSaleMutation.mutate({
       branchId,
       customerId: customerId || undefined,
+      status: 'COMPLETED',
       services: cartServices.map((s) => ({
         serviceId: s.serviceId,
         employeeId: s.employeeId,
@@ -527,6 +805,13 @@ export default function PosPage() {
       setMobileCheckoutStep('cart');
     }
   }, [mobileSheetOpen]);
+
+  const draftDisabled =
+    createSaleMutation.isPending ||
+    !branchId ||
+    cartCount === 0 ||
+    (cartServices.length > 0 && hasNoEmployees) ||
+    cartServices.some((s) => !s.employeeId);
 
   const completeDisabled =
     createSaleMutation.isPending ||
@@ -573,6 +858,9 @@ export default function PosPage() {
             setCartProducts((prev) => prev.filter((x) => x.key !== p.key));
             return;
           }
+          const currentProd = activeProducts.find((item) => item.id === p.productId);
+          const maxStock = currentProd?.stockQuantity ?? 99999;
+          if (next > maxStock) return;
           setCartProducts((prev) =>
             prev.map((x) => (x.key === p.key ? { ...x, quantity: next } : x)),
           );
@@ -791,7 +1079,12 @@ export default function PosPage() {
                 </div>
               ))}
             </div>
-            <button type="button" className="pos-add-split-btn" onClick={() => addPaymentLine()}>
+            <button
+              type="button"
+              className="pos-add-split-btn"
+              disabled={paymentRemaining <= 0 || paymentTotal >= total}
+              onClick={() => addPaymentLine()}
+            >
               + Add payment line
             </button>
             <div
@@ -859,10 +1152,19 @@ export default function PosPage() {
               type="button"
               className="pos-btn-outline"
               disabled={cartCount === 0}
-              onClick={() => window.print()}
+              onClick={() => setInvoicePreviewOpen(true)}
             >
               <Printer size={15} />
-              Print
+              Print Preview
+            </button>
+            <button
+              type="button"
+              className="pos-btn-outline"
+              disabled={draftDisabled}
+              onClick={saveDraftSale}
+            >
+              <FileText size={15} />
+              Save Draft
             </button>
             <button
               type="button"
@@ -878,6 +1180,182 @@ export default function PosPage() {
       </div>
     </div>
   );
+
+  const renderInvoiceDocument = (saleData: {
+    saleNumber: string;
+    date: string;
+    time: string;
+    branchName: string;
+    customerName: string;
+    customerPhone?: string | null;
+    cashierName: string;
+    cashierRole: string;
+    items: Array<{
+      id: string;
+      name: string;
+      itemType: 'service' | 'product';
+      stylistName?: string | null;
+      quantity: number;
+      unitPrice: number;
+      total: number;
+    }>;
+    subtotal: number;
+    discount: number;
+    total: number;
+    payments: Array<{
+      method: string;
+      amount: number;
+      referenceNumber?: string | null;
+    }>;
+    cashReceived?: string;
+    changeDue?: number;
+    isDraft?: boolean;
+  }) => {
+    return (
+      <div className="pos-inv-document" id="pos-printable-invoice">
+        <header className="pos-inv-header">
+          <div className="pos-inv-brand">
+            <PosInvoiceLogo logoUrl={salon?.logoUrl} />
+            <div>
+              <h2 className="pos-inv-brand-name">{salon?.name || 'Glamour Studio'}</h2>
+              <p className="pos-inv-brand-tagline">HAIR · BEAUTY · SELF CARE</p>
+            </div>
+          </div>
+          <div className="pos-inv-meta">
+            <span className="pos-inv-type-label">TAX INVOICE</span>
+            <p className="pos-inv-number">{saleData.saleNumber}</p>
+            <p className="pos-inv-meta-row">
+              Date: <strong>{saleData.date}</strong>
+            </p>
+            <p className="pos-inv-meta-row">
+              Time: <strong>{saleData.time}</strong>
+            </p>
+            <span
+              className={`pos-inv-status-pill ${saleData.isDraft ? 'is-draft' : 'is-paid'}`}
+            >
+              {saleData.isDraft ? 'DRAFT' : 'PAID'}
+            </span>
+          </div>
+        </header>
+
+        <div className="pos-inv-inner-body">
+          <div className="pos-inv-info-grid">
+            <div className="pos-inv-info-box">
+              <h4>BILL TO</h4>
+              <p className="pos-inv-customer-name">{saleData.customerName || 'Walk-in customer'}</p>
+              <p className="pos-inv-customer-role">Customer</p>
+              <p className="pos-inv-customer-phone">
+                {saleData.customerPhone ? saleData.customerPhone : '—'}
+              </p>
+            </div>
+            <div className="pos-inv-info-box">
+              <h4>SALE DETAILS</h4>
+              <p className="pos-inv-branch-name">{saleData.branchName}</p>
+              <p className="pos-inv-branch-location">Branch location</p>
+              <p className="pos-inv-cashier">
+                Cashier: <strong>{saleData.cashierName}</strong>
+              </p>
+            </div>
+          </div>
+
+          <div className="pos-inv-table-wrapper">
+            <table className="pos-inv-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '2.5rem' }}>#</th>
+                  <th>DESCRIPTION</th>
+                  <th>TYPE</th>
+                  <th>STYLIST</th>
+                  <th className="num">QTY</th>
+                  <th className="num">UNIT PRICE (LKR)</th>
+                  <th className="num">AMOUNT (LKR)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {saleData.items.map((item, index) => (
+                  <tr key={item.id}>
+                    <td className="pos-inv-cell-muted">{index + 1}</td>
+                    <td className="pos-inv-cell-desc">
+                      <strong>{item.name}</strong>
+                    </td>
+                    <td>
+                      <span className={`pos-inv-badge pos-inv-badge-${item.itemType}`}>
+                        {item.itemType === 'service' ? 'SERVICE' : 'PRODUCT'}
+                      </span>
+                    </td>
+                    <td className="pos-inv-cell-muted">{item.stylistName || '—'}</td>
+                    <td className="num">{item.quantity}</td>
+                    <td className="num">{formatMoneyAmount(item.unitPrice)}</td>
+                    <td className="num pos-inv-cell-total">{formatMoneyAmount(item.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="pos-inv-summary-section">
+            <div className="pos-inv-totals-box">
+              <div className="pos-inv-totals-row">
+                <span>Subtotal</span>
+                <span>LKR {formatMoneyAmount(saleData.subtotal)}</span>
+              </div>
+              <div className="pos-inv-totals-row">
+                <span>Discount</span>
+                <span>- LKR {formatMoneyAmount(saleData.discount || 0)}</span>
+              </div>
+              <div className="pos-inv-grand-total-callout">
+                <span>Total paid</span>
+                <span>LKR {formatMoneyAmount(saleData.total)}</span>
+              </div>
+            </div>
+          </div>
+
+          {saleData.payments && saleData.payments.length > 0 && (
+            <div className="pos-inv-payment-card">
+              <h4 className="pos-inv-payment-card-title">PAYMENT BREAKDOWN</h4>
+              <table className="pos-inv-payment-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '2.5rem' }}>#</th>
+                    <th>PAYMENT METHOD</th>
+                    <th className="num">AMOUNT (LKR)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {saleData.payments.map((p, idx) => (
+                    <tr key={idx}>
+                      <td>{idx + 1}</td>
+                      <td>{formatPaymentMethod(p.method)}</td>
+                      <td className="num">{formatMoneyAmount(p.amount)}</td>
+                    </tr>
+                  ))}
+                  <tr className="pos-inv-payment-total-row">
+                    <td colSpan={2}>
+                      <strong>Total Payments</strong>
+                    </td>
+                    <td className="num">
+                      <strong>LKR {formatMoneyAmount(saleData.total)}</strong>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <footer className="pos-inv-footer">
+            <div>
+              <p className="pos-inv-footer-thanks">Thank You!</p>
+              <p className="pos-inv-footer-sub">We appreciate your visit!</p>
+            </div>
+            <div>
+              <p className="pos-inv-footer-brand">{salon?.name || 'Glamour Studio'}</p>
+              <p className="pos-inv-footer-tagline">LOOK GOOD · FEEL GOOD · ALWAYS YOU</p>
+            </div>
+          </footer>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="pos-page">
@@ -916,7 +1394,7 @@ export default function PosPage() {
               <span className="pos-user-avatar">{userInitials(user.name)}</span>
               <span className="pos-user-meta">
                 <span className="pos-user-name">{user.name}</span>
-                <span className="pos-user-role">Cashier</span>
+                <span className="pos-user-role">{getUserDisplayRole(user)}</span>
               </span>
             </div>
           )}
@@ -933,7 +1411,7 @@ export default function PosPage() {
                 setCustomerId(null);
                 setCustomerName(null);
                 setCustomerPhone(null);
-                setPhoneSearch('');
+                setCustomerSearch('');
               }}
             >
               Walk-in
@@ -952,10 +1430,10 @@ export default function PosPage() {
               <input
                 className="pos-customer-search"
                 type="search"
-                placeholder="Search customer…"
-                value={phoneSearch}
+                placeholder="Search customer by name, phone…"
+                value={customerSearch}
                 onChange={(e) => {
-                  setPhoneSearch(e.target.value);
+                  setCustomerSearch(e.target.value);
                   if (customerId) {
                     setCustomerId(null);
                     setCustomerName(null);
@@ -966,7 +1444,7 @@ export default function PosPage() {
               <button
                 type="button"
                 className="pos-customer-add-btn"
-                onClick={() => setCreateCustomerOpen(true)}
+                onClick={handleOpenCreateCustomer}
               >
                 + New
               </button>
@@ -984,7 +1462,7 @@ export default function PosPage() {
                   setCustomerId(null);
                   setCustomerName(null);
                   setCustomerPhone(null);
-                  setPhoneSearch('');
+                  setCustomerSearch('');
                 }}
               >
                 ×
@@ -993,7 +1471,7 @@ export default function PosPage() {
           )}
         </div>
 
-        {customerMode === 'registered' && phoneSearch.length >= 3 && !customerId && searchResults.length > 0 && (
+        {customerMode === 'registered' && customerSearch.trim().length >= 1 && !customerId && searchResults.length > 0 && (
           <div className="pos-customer-results">
             {searchResults.map((c) => (
               <button
@@ -1004,16 +1482,17 @@ export default function PosPage() {
                   setCustomerId(c.id);
                   setCustomerName(c.name);
                   setCustomerPhone(c.phone || null);
-                  setPhoneSearch(c.phone || c.name);
+                  setCustomerSearch(c.name);
                 }}
               >
-                {c.name} — {c.phone}
+                <strong>{c.name}</strong>
+                {c.phone ? <span style={{ marginLeft: 6, color: '#64748b' }}>· {c.phone}</span> : null}
               </button>
             ))}
           </div>
         )}
 
-        {customerMode === 'registered' && phoneSearch.length >= 3 && !customerId && searchResults.length === 0 && (
+        {customerMode === 'registered' && customerSearch.trim().length >= 1 && !customerId && !isCustomerSearching && searchResults.length === 0 && (
           <p className="pos-customer-hint">No customer found — tap + New to create one.</p>
         )}
       </header>
@@ -1091,11 +1570,17 @@ export default function PosPage() {
                     disabled={hasNoEmployees}
                     onClick={() => handleServiceAdd(s.id)}
                   >
+                    <span className="pos-card-add-icon">
+                      <Plus size={14} />
+                    </span>
                     <div className="pos-item-thumb">✂️</div>
                     <div className="pos-item-info">
                       <div className="pos-item-name">{s.name}</div>
-                      {s.categoryName && <div className="pos-item-meta">{s.categoryName}</div>}
-                      <div className="pos-item-price">{formatMoneyAmount(s.price)}</div>
+                      <div className="pos-item-meta">{s.categoryName || 'Service'}</div>
+                      <div className="pos-item-price-row">
+                        <span className="pos-item-price">LKR {formatMoneyAmount(s.price)}</span>
+                        <span className="pos-item-stock-tag pos-in-stock">Available</span>
+                      </div>
                     </div>
                   </button>
                 ))
@@ -1106,21 +1591,45 @@ export default function PosPage() {
               {filteredProducts.length === 0 ? (
                 <div className="pos-empty-catalog">No products found</div>
               ) : (
-                filteredProducts.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    className="pos-item-card"
-                    onClick={() => handleProductAdd(p.id)}
-                  >
-                    <div className="pos-item-thumb">📦</div>
-                    <div className="pos-item-info">
-                      <div className="pos-item-name">{p.name}</div>
-                      {p.categoryName && <div className="pos-item-meta">{p.categoryName}</div>}
-                      <div className="pos-item-price">{formatMoneyAmount(p.sellingPrice)}</div>
-                    </div>
-                  </button>
-                ))
+                filteredProducts.map((p) => {
+                  const stockQty = p.stockQuantity ?? 0;
+                  const isOutOfStock = stockQty <= 0;
+                  const isLowStock = stockQty > 0 && stockQty <= 3;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className={`pos-item-card ${isOutOfStock ? 'pos-item-card-disabled pos-item-card-out-of-stock' : ''}`}
+                      disabled={isOutOfStock}
+                      onClick={() => !isOutOfStock && handleProductAdd(p.id)}
+                    >
+                      <span className="pos-card-add-icon">
+                        <Plus size={14} />
+                      </span>
+                      <div className="pos-item-thumb">
+                        {p.imageUrl ? (
+                          <img src={p.imageUrl} alt="" className="pos-item-thumb-img" />
+                        ) : (
+                          '🧴'
+                        )}
+                      </div>
+                      <div className="pos-item-info">
+                        <div className="pos-item-name">{p.name}</div>
+                        <div className="pos-item-meta">{p.categoryName || 'Product'}</div>
+                        <div className="pos-item-price-row">
+                          <span className="pos-item-price">LKR {formatMoneyAmount(p.sellingPrice)}</span>
+                          {isOutOfStock ? (
+                            <span className="pos-item-stock-tag pos-out-of-stock">Out of Stock</span>
+                          ) : isLowStock ? (
+                            <span className="pos-item-stock-tag pos-low-stock">Low Stock</span>
+                          ) : (
+                            <span className="pos-item-stock-tag pos-in-stock">In Stock</span>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })
               )}
             </div>
           )}
@@ -1185,14 +1694,24 @@ export default function PosPage() {
               <div className="pos-sheet-body">
                 {renderPaymentPanel({ hideActions: true, className: 'pos-panel-mobile-pay' })}
               </div>
-              <div className="pos-sheet-footer">
+              <div className="pos-sheet-footer" style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  className="pos-btn-outline"
+                  style={{ flex: 1, padding: '0.65rem', justifyContent: 'center' }}
+                  onClick={saveDraftSale}
+                  disabled={draftDisabled}
+                >
+                  Save Draft
+                </button>
                 <button
                   type="button"
                   className="pos-sheet-primary-btn"
+                  style={{ flex: 2, justifyContent: 'center' }}
                   onClick={completeSale}
                   disabled={completeDisabled}
                 >
-                  {createSaleMutation.isPending ? 'Processing…' : `Complete sale · ${formatMoneyLkr(total)}`}
+                  {createSaleMutation.isPending ? 'Processing…' : `Complete · ${formatMoneyLkr(total)}`}
                 </button>
               </div>
             </>
@@ -1253,12 +1772,13 @@ export default function PosPage() {
 
       <SimpleFormDialog
         open={createCustomerOpen}
-        onOpenChange={setCreateCustomerOpen}
+        onOpenChange={handleCloseCreateCustomer}
         title="New Customer"
       >
         <SimpleForm
           onSubmit={(e) => {
             e.preventDefault();
+            setNewCustomerError(null);
             createCustomerMutation.mutate({
               name: newCustomerForm.name.trim(),
               phone: newCustomerForm.phone.trim(),
@@ -1266,12 +1786,17 @@ export default function PosPage() {
             });
           }}
         >
+          <FormError message={newCustomerError} />
           <div className="pos-field">
             <Label htmlFor="pos-cust-name">Full name</Label>
             <Input
               id="pos-cust-name"
+              placeholder="e.g. Namal Fernando"
               value={newCustomerForm.name}
-              onChange={(e) => setNewCustomerForm({ ...newCustomerForm, name: e.target.value })}
+              onChange={(e) => {
+                setNewCustomerError(null);
+                setNewCustomerForm({ ...newCustomerForm, name: e.target.value });
+              }}
               required
             />
           </div>
@@ -1279,14 +1804,203 @@ export default function PosPage() {
             <Label htmlFor="pos-cust-phone">Phone</Label>
             <Input
               id="pos-cust-phone"
+              placeholder="e.g. 0771234567"
               value={newCustomerForm.phone}
-              onChange={(e) => setNewCustomerForm({ ...newCustomerForm, phone: e.target.value })}
+              onChange={(e) => {
+                setNewCustomerError(null);
+                setNewCustomerForm({ ...newCustomerForm, phone: e.target.value });
+              }}
               required
+            />
+          </div>
+          <div className="pos-field">
+            <Label htmlFor="pos-cust-email">Email (optional)</Label>
+            <Input
+              id="pos-cust-email"
+              type="email"
+              placeholder="e.g. customer@example.com"
+              value={newCustomerForm.email}
+              onChange={(e) => {
+                setNewCustomerError(null);
+                setNewCustomerForm({ ...newCustomerForm, email: e.target.value });
+              }}
             />
           </div>
           <FormSubmit pending={createCustomerMutation.isPending}>Add Customer</FormSubmit>
         </SimpleForm>
       </SimpleFormDialog>
+
+      {/* Draft Invoice Preview Modal */}
+      <Dialog open={invoicePreviewOpen} onOpenChange={setInvoicePreviewOpen}>
+        <DialogContent className="pos-inv-dialog-content sm:max-w-3xl">
+          <div className="pos-inv-preview-header">
+            <div className="pos-inv-preview-title">
+              <FileText size={20} className="text-primary" />
+              <span>Invoice Preview</span>
+            </div>
+            <div className="pos-inv-preview-actions">
+              <button
+                type="button"
+                className="pos-inv-btn-primary"
+                onClick={() => printReceipt('pos-printable-invoice')}
+              >
+                <Printer size={15} />
+                <span>Print Invoice</span>
+              </button>
+            </div>
+          </div>
+          <div className="pos-inv-preview-body">
+            {renderInvoiceDocument({
+              saleNumber: 'PREVIEW-' + clock.time.replace(':', ''),
+              date: clock.date,
+              time: clock.time,
+              branchName: activeBranches.find((b) => b.id === branchId)?.name || 'Main Branch',
+              customerName: customerName || 'Walk-in customer',
+              customerPhone: customerPhone || null,
+              cashierName: user?.name || 'Staff',
+              cashierRole: getUserDisplayRole(user),
+              items: [
+                ...cartServices.map((s) => ({
+                  id: s.key,
+                  name: s.serviceName,
+                  itemType: 'service' as const,
+                  stylistName: s.employeeName,
+                  quantity: 1,
+                  unitPrice: s.price,
+                  total: s.price - (s.discount || 0),
+                })),
+                ...cartProducts.map((p) => ({
+                  id: p.key,
+                  name: p.productName,
+                  itemType: 'product' as const,
+                  quantity: p.quantity,
+                  unitPrice: p.price,
+                  total: p.price * p.quantity - (p.discount || 0),
+                })),
+              ],
+              subtotal,
+              discount,
+              total,
+              payments:
+                paymentMode === 'MIX'
+                  ? paymentLines
+                      .filter((l) => Number(l.amount) > 0)
+                      .map((l) => ({
+                        method: l.method,
+                        amount: Number(l.amount) || 0,
+                        referenceNumber: l.referenceNumber.trim() || null,
+                      }))
+                  : [
+                      {
+                        method: paymentMode,
+                        amount: total,
+                        referenceNumber: paymentReference.trim() || null,
+                      },
+                    ],
+              cashReceived:
+                (paymentMode === 'CASH' || paymentLines.some((p) => p.method === 'CASH')) && cashReceived
+                  ? cashReceived
+                  : undefined,
+              changeDue: changeDue > 0 ? changeDue : undefined,
+              isDraft: true,
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Completed Sale Receipt & Print Modal */}
+      <Dialog
+        open={completedModalOpen}
+        onOpenChange={(open) => {
+          if (!open) setCompletedModalOpen(false);
+        }}
+      >
+        <DialogContent className="pos-inv-dialog-content sm:max-w-3xl">
+          <div className="pos-inv-preview-header">
+            <div className="pos-inv-preview-title">
+              <CheckCircle2
+                size={20}
+                className={completedSale?.status === 'PENDING' ? 'text-amber-500' : 'text-emerald-600'}
+              />
+              <span>
+                {completedSale?.status === 'PENDING' ? 'Draft Transaction Saved' : 'Sale Completed'}
+              </span>
+            </div>
+            <div className="pos-inv-preview-actions">
+              <button
+                type="button"
+                className="pos-inv-btn-primary"
+                onClick={() => printReceipt('pos-printable-invoice')}
+              >
+                <Printer size={15} />
+                <span>Print Invoice</span>
+              </button>
+              {completedSale && (
+                <button
+                  type="button"
+                  className="pos-inv-btn-secondary"
+                  onClick={() => setSendEbillOpen(true)}
+                >
+                  <Send size={14} />
+                  <span>Send E-Bill</span>
+                </button>
+              )}
+              {completedSale && (
+                <button
+                  type="button"
+                  className="pos-inv-btn-outline"
+                  onClick={() => navigate(`/salon/sales/${completedSale.id}`)}
+                >
+                  <Eye size={14} />
+                  <span>View Details</span>
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="pos-inv-preview-body">
+            <div
+              className="pos-inv-success-banner"
+              style={
+                completedSale?.status === 'PENDING'
+                  ? { background: '#fffbeb', borderColor: '#fde68a', color: '#92400e' }
+                  : undefined
+              }
+            >
+              <CheckCircle2
+                size={22}
+                className={completedSale?.status === 'PENDING' ? 'text-amber-500' : 'text-emerald-600'}
+              />
+              <div>
+                <div>
+                  {completedSale?.status === 'PENDING'
+                    ? 'Draft Transaction Recorded'
+                    : 'Transaction Completed Successfully'}
+                </div>
+                <div style={{ fontSize: '0.8125rem', fontWeight: 400, opacity: 0.9 }}>
+                  {completedSale?.status === 'PENDING'
+                    ? `Sale #${completedSale?.saleNumber} has been saved as a draft ticket. You can view and complete it in Sales history.`
+                    : `Sale #${completedSale?.saleNumber} has been recorded. You can print the receipt below.`}
+                </div>
+              </div>
+            </div>
+            {completedSale &&
+              renderInvoiceDocument({
+                ...completedSale,
+                isDraft: completedSale.status === 'PENDING',
+              })}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {completedSale && (
+        <SendEbillModal
+          open={sendEbillOpen}
+          onOpenChange={setSendEbillOpen}
+          saleId={completedSale.id}
+          customerName={completedSale.customerName}
+          defaultPhone={completedSale.customerPhone || undefined}
+        />
+      )}
     </div>
   );
 }

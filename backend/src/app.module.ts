@@ -24,6 +24,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { InvoicesModule } from './invoices/invoices.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { SmsModule } from './sms/sms.module';
+import { StorageModule } from './common/storage/storage.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { SmsModule } from './sms/sms.module';
       max: 100,
     }),
     DatabaseModule,
+    StorageModule,
     AuthModule,
     FeaturesModule,
     SuperAdminModule,

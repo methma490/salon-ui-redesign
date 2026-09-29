@@ -127,6 +127,7 @@ export default function QuotationDetailPage() {
     const token = authStorage.getAccessToken();
     const url = tenantApi.quotations.printUrl(id);
     void fetch(url, {
+      credentials: 'include',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
       .then((r) => r.text())
