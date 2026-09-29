@@ -1,3 +1,160 @@
+/* Modern Appointments & Timeline Calendar Styles */
+
+.apt-timeline-container {
+  min-width: 980px;
+  position: relative;
+}
+
+.apt-timeline-header-row {
+  display: flex;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.apt-timeline-emp-head {
+  width: 200px;
+  min-width: 200px;
+  padding: 10px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  border-right: 1px solid #e2e8f0;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+}
+
+.apt-timeline-time-head {
+  flex: 1;
+  display: flex;
+  position: relative;
+}
+
+.apt-timeline-time-col {
+  flex: 1;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  padding: 10px 0;
+  border-right: 1px solid #f1f5f9;
+}
+
+.apt-timeline-row {
+  display: flex;
+  border-bottom: 1px solid #f1f5f9;
+  min-height: 76px;
+  position: relative;
+  transition: background 0.15s ease;
+}
+
+.apt-timeline-row:hover {
+  background: #fafcfb;
+}
+
+.apt-timeline-emp-cell {
+  width: 200px;
+  min-width: 200px;
+  padding: 12px 16px;
+  border-right: 1px solid #e2e8f0;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 2;
+}
+
+.apt-timeline-track {
+  flex: 1;
+  position: relative;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent calc(11.111% - 1px),
+    #f1f5f9 calc(11.111% - 1px),
+    #f1f5f9 11.111%
+  );
+}
+
+.apt-appointment-chip {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  padding: 6px 10px;
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  z-index: 5;
+}
+
+.apt-appointment-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
+  z-index: 8;
+}
+
+.apt-chip-blue {
+  border-left: 4px solid #3b82f6 !important;
+}
+
+.apt-chip-pink {
+  border-left: 4px solid #ec4899 !important;
+}
+
+.apt-chip-green {
+  border-left: 4px solid #10b981 !important;
+}
+
+.apt-chip-purple {
+  border-left: 4px solid #8b5cf6 !important;
+}
+
+.apt-chip-amber {
+  border-left: 4px solid #f59e0b !important;
+}
+
+.apt-chip-rose {
+  border-left: 4px solid #f43f5e !important;
+}
+
+.apt-chip-emerald {
+  border-left: 4px solid #059669 !important;
+}
+
+.apt-live-time-indicator {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #f43f5e;
+  z-index: 12;
+  pointer-events: none;
+}
+
+.apt-live-time-badge {
+  position: absolute;
+  top: -24px;
+  transform: translateX(-50%);
+  background: #f43f5e;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 9999px;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(244, 63, 94, 0.3);
+}
+
 .apt-dialog-content {
   max-height: 90vh;
   overflow-y: auto;

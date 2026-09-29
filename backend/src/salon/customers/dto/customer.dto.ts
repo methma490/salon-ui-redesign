@@ -6,6 +6,7 @@ import {
   IsEnum,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -13,6 +14,9 @@ import { PaginationQueryDto } from '../../../common/dto/pagination.dto';
 
 const emptyToUndefined = ({ value }: { value: unknown }) =>
   value === '' || value === null ? undefined : value;
+
+export const PHONE_REGEX = /^(?:\+?\d{1,3}[-.\s]?)?\(?\d{2,4}\)?[-.\s]?\d{3,4}[-.\s]?\d{3,9}$/;
+export const PHONE_MESSAGE = 'Please provide a valid mobile or phone number (e.g. 0771234567, +94771234567)';
 
 export class CreateCustomerDto {
   @IsString()
@@ -22,6 +26,7 @@ export class CreateCustomerDto {
 
   @IsString()
   @MaxLength(50)
+  @Matches(PHONE_REGEX, { message: PHONE_MESSAGE })
   phone!: string;
 
   @IsOptional()
@@ -51,6 +56,7 @@ export class UpdateCustomerDto {
   @IsOptional()
   @IsString()
   @MaxLength(50)
+  @Matches(PHONE_REGEX, { message: PHONE_MESSAGE })
   phone?: string;
 
   @IsOptional()

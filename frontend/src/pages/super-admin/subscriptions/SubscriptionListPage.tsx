@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAdminSubscriptions } from '@/features/billing/hooks/useBilling';
+import { useDebouncedSearch } from '@/hooks/useDebounce';
 import {
   formatAmount,
   formatDate,
@@ -111,6 +112,7 @@ function SubscriptionTableRow({
 
 export default function SubscriptionListPage() {
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedSearch(search, 400, 2);
   const [status, setStatus] = useState<StatusFilter>('ALL');
   const [page, setPage] = useState(1);
 
@@ -118,10 +120,10 @@ export default function SubscriptionListPage() {
     () => ({
       page,
       limit: 10,
-      search: search || undefined,
+      search: debouncedSearch || undefined,
       status: status === 'ALL' ? undefined : status,
     }),
-    [page, search, status],
+    [page, debouncedSearch, status],
   );
 
   const navigate = useNavigate();

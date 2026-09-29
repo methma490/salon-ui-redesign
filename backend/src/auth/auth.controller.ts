@@ -1,5 +1,17 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+  Res,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import type { Request, Response, CookieOptions } from 'express';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -10,6 +22,16 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AuthenticatedUser } from './interfaces/auth.interface';
 import { PasswordResetService } from './password-reset.service';
 
+const REFRESH_COOKIE_NAME = 'refreshToken';
+
+const getRefreshCookieOptions = (): CookieOptions => ({
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax',
+  path: '/',
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+});
+
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -19,20 +41,58 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.login(dto);
+    res.cookie(REFRESH_COOKIE_NAME, result.refreshToken, getRefreshCookieOptions());
+
+    return {
+      accessToken: result.accessToken,
+      user: result.user,
+    };
   }
 
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  refresh(@Body() dto: RefreshTokenDto) {
-    return this.authService.refresh(dto.refreshToken);
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @Body() dto?: RefreshTokenDto,
+  ) {
+    const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME] || dto?.refreshToken;
+    if (!refreshToken) {
+      throw new UnauthorizedException('No refresh token provided');
+    }
+
+    const result = await this.authService.refresh(refreshToken);
+    res.cookie(REFRESH_COOKIE_NAME, result.refreshToken, getRefreshCookieOptions());
+
+    return {
+      accessToken: result.accessToken,
+    };
   }
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  logout(@Body() dto: LogoutDto) {
-    return this.authService.logout(dto.refreshToken);
+  async logout(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @Body() dto?: LogoutDto,
+  ) {
+    const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME] || dto?.refreshToken;
+    if (refreshToken) {
+      await this.authService.logout(refreshToken);
+    }
+    res.clearCookie(REFRESH_COOKIE_NAME, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+    });
+
+    return { message: 'Logged out successfully' };
   }
 
   @Get('me')

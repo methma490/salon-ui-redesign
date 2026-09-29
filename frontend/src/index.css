@@ -84,3 +84,234 @@
       0 4px 16px oklch(0.42 0.11 155 / 0.06);
   }
 }
+
+/* Google Places Autocomplete UI Styling */
+.pac-container {
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-popover);
+  color: var(--color-popover-foreground);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  font-family: inherit;
+  margin-top: 4px;
+  padding: 4px;
+  z-index: 9999;
+}
+
+.pac-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  border-radius: 0.25rem;
+  color: var(--color-foreground);
+}
+
+.pac-item:first-child {
+  border-top: none;
+}
+
+.pac-item:hover,
+.pac-item-selected {
+  background-color: var(--color-accent);
+}
+
+.pac-item-query {
+  font-size: 0.8125rem;
+  color: var(--color-foreground);
+  font-weight: 500;
+  padding-right: 4px;
+}
+
+.pac-matched {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.pac-icon {
+  margin-right: 8px;
+}
+
+/* Global Print Styles for Invoices, E-Bills, and Receipts */
+@media print {
+  @page {
+    margin: 8mm 10mm;
+    size: auto;
+  }
+
+  html,
+  body {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    position: static !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #root,
+  .salon-admin-layout,
+  main,
+  .sale-detail-page {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    position: static !important;
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  .no-print,
+  .salon-sidebar-aside,
+  .salon-app-header,
+  .salon-brand-ribbon,
+  .pos-toolbar,
+  .pos-catalog-panel,
+  .pos-checkout-panel,
+  .pos-fab,
+  .pos-fab-cart,
+  .pos-inv-preview-header,
+  .pos-inv-preview-actions,
+  .pos-inv-success-banner,
+  .pos-modal-actions,
+  .sale-inv-toolbar,
+  .sale-back-link,
+  .sale-print-btn,
+  nav,
+  aside,
+  button,
+  [data-radix-dialog-overlay],
+  div[data-state][class*="bg-black"],
+  div[class*="bg-black/80"] {
+    display: none !important;
+  }
+
+  [data-radix-portal] {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  [role="dialog"],
+  .pos-inv-dialog-content {
+    position: static !important;
+    inset: auto !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    translate: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  .pos-inv-preview-body {
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  .pos-inv-document,
+  .sale-inv-document,
+  .ebill-receipt-card {
+    display: block !important;
+    visibility: visible !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .sale-inv-table-wrap {
+    display: block !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .sale-inv-table {
+    display: table !important;
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  .sale-inv-table th,
+  .sale-inv-table td {
+    border-bottom: 1px solid #cbd5e1 !important;
+    padding: 0.6rem 0.4rem !important;
+    color: #0f172a !important;
+  }
+
+  .sale-inv-table th {
+    border-bottom: 2px solid #94a3b8 !important;
+    color: #475569 !important;
+  }
+
+  .sale-inv-mobile-lines {
+    display: none !important;
+  }
+
+  .pos-inv-header,
+  .sale-inv-brand-row,
+  .ebill-header {
+    display: flex !important;
+    visibility: visible !important;
+  }
+
+  .sale-inv-brand-row,
+  .sale-inv-parties,
+  .sale-inv-summary-grid,
+  .sale-inv-totals-wrap,
+  .sale-inv-payments-block,
+  .sale-inv-footer,
+  .pos-inv-header,
+  .pos-inv-info-grid,
+  .pos-inv-summary-section,
+  .pos-inv-footer {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .sale-inv-parties {
+    display: flex !important;
+    gap: 2rem !important;
+  }
+
+  .sale-inv-totals-wrap {
+    display: flex !important;
+    justify-content: flex-end !important;
+    padding: 1rem 0 0 !important;
+  }
+}
+

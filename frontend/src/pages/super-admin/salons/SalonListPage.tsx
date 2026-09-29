@@ -15,6 +15,7 @@ import { ManageFeaturesDialog } from '@/features/salons/components/ManageFeature
 import { StatusBadge } from '@/features/salons/components/StatusBadge';
 import { StatusChangeDialog } from '@/features/salons/components/StatusChangeDialog';
 import { useSalons } from '@/features/salons/hooks/useSalons';
+import { useDebouncedSearch } from '@/hooks/useDebounce';
 import type { SalonFilters, SalonListItem, SalonStatus } from '@/features/salons/types/salon.types';
 import { ManageSubscriptionDialog } from '@/features/subscriptions/components/ManageSubscriptionDialog';
 import {
@@ -42,6 +43,7 @@ function subscriptionBadgeClass(status: string): string {
 export default function SalonListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedSearch(search, 400, 2);
   const [status, setStatus] = useState<SalonFilters['status']>('ALL');
   const [page, setPage] = useState(1);
   const [activeSalon, setActiveSalon] = useState<SalonListItem | null>(null);
@@ -58,8 +60,8 @@ export default function SalonListPage() {
   }, [searchParams, setSearchParams]);
 
   const filters = useMemo(
-    () => ({ page, limit: 10, search: search || undefined, status }),
-    [page, search, status],
+    () => ({ page, limit: 10, search: debouncedSearch || undefined, status }),
+    [page, debouncedSearch, status],
   );
 
   const { data, isLoading, isError, refetch } = useSalons(filters);

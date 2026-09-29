@@ -38,14 +38,14 @@ export class PosService {
     tenantId?: string,
   ) {
     const cashierUserId = user.id;
+    const isDraft = dto.status === 'PENDING';
+    const saleStatus = isDraft ? 'PENDING' : 'COMPLETED';
 
-    if (dto.services.length === 0 && dto.products.length === 0) {
-      throw new BadRequestException('Sale must include at least one service or product');
-    }
+    const paymentsList = dto.payments ?? [];
+    const paymentTotal = paymentsList.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
 
-    const paymentTotal = dto.payments.reduce((sum, p) => sum + p.amount, 0);
-    if (paymentTotal <= 0) {
-      throw new BadRequestException('At least one payment is required');
+    if (!isDraft && paymentTotal <= 0) {
+      throw new BadRequestException('At least one payment is required to complete the sale');
     }
 
     const sales = tenantTable(schemaName, 'sales');
@@ -190,10 +190,11 @@ export class PosService {
 
       const saleNumber = await this.generateSaleNumber(tx, sales);
 
+      const statusCast = this.tenantEnumCast(schemaName, 'sale_status', 7);
       const saleRows = await tx.$queryRawUnsafe<Array<{ id: string }>>(
         `INSERT INTO ${sales}
            (branch_id, customer_id, sale_number, subtotal, discount, tax, total, status, created_by, cashier_id, refunded_amount)
-         VALUES ($1::uuid, $2::uuid, $3, $4, $5, 0, $6, 'COMPLETED', $7::uuid, $8::uuid, 0)
+         VALUES ($1::uuid, $2::uuid, $3, $4, $5, 0, $6, ${statusCast}, $8::uuid, $9::uuid, 0)
          RETURNING id`,
         dto.branchId,
         dto.customerId ?? null,
@@ -201,6 +202,7 @@ export class PosService {
         subtotal,
         saleDiscount,
         total,
+        saleStatus,
         cashierUserId,
         cashierUserId,
       );
@@ -253,7 +255,7 @@ export class PosService {
           }
         }
 
-        if (line.itemType === 'product' && line.productId) {
+        if (!isDraft && line.itemType === 'product' && line.productId) {
           await this.inventoryService.reduceStockForSale(tx, schemaName, {
             branchId: dto.branchId,
             productId: line.productId,
@@ -264,7 +266,8 @@ export class PosService {
         }
       }
 
-      for (const payment of dto.payments) {
+      for (const payment of paymentsList) {
+        if (!payment.amount || Number(payment.amount) <= 0) continue;
         const methodCast = this.tenantEnumCast(schemaName, 'payment_method', 2);
         const statusCast = this.tenantEnumCast(schemaName, 'payment_status', 4);
         await tx.$queryRawUnsafe(
@@ -273,7 +276,7 @@ export class PosService {
           saleId,
           payment.method,
           payment.amount,
-          'COMPLETED',
+          isDraft ? 'PENDING' : 'COMPLETED',
           payment.referenceNumber ?? null,
         );
       }

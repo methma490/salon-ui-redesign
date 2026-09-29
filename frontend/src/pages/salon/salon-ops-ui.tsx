@@ -5,7 +5,7 @@ import {
   type ReactNode,
   type TextareaHTMLAttributes,
 } from 'react';
-import { Pencil, Power, PowerOff } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pencil, Power, PowerOff, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -160,6 +160,10 @@ export function OpsEditButton(props: Omit<OpsIconButtonProps, 'label' | 'icon'>)
   return <OpsIconButton label="Edit" icon={<Pencil size={16} strokeWidth={2} />} {...props} />;
 }
 
+export function OpsDeleteButton(props: Omit<OpsIconButtonProps, 'label' | 'icon' | 'variant'>) {
+  return <OpsIconButton label="Delete" variant="danger" icon={<Trash2 size={16} strokeWidth={2} />} {...props} />;
+}
+
 export function OpsToggleStatusButton({
   isActive,
   ...props
@@ -202,3 +206,115 @@ export function OpsPageHeader({
     </header>
   );
 }
+
+export function OpsPagination({
+  page,
+  limit,
+  total,
+  totalPages,
+  onPageChange,
+  onLimitChange,
+  itemLabel = 'items',
+  limitOptions = [10, 20, 50],
+}: {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  onPageChange: (newPage: number) => void;
+  onLimitChange?: (newLimit: number) => void;
+  itemLabel?: string;
+  limitOptions?: number[];
+}) {
+  if (total === 0) return null;
+
+  const startItem = Math.min((page - 1) * limit + 1, total);
+  const endItem = Math.min(page * limit, total);
+
+  const getPageNumbers = () => {
+    const pages: Array<number | string> = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (page <= 4) {
+        pages.push(1, 2, 3, 4, 5, '...', totalPages);
+      } else if (page >= totalPages - 3) {
+        pages.push(1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, '...', page - 1, page, page + 1, '...', totalPages);
+      }
+    }
+    return pages;
+  };
+
+  return (
+    <div className="ops-pagination">
+      <div className="ops-pagination-info">
+        Showing {startItem} to {endItem} of {total} {itemLabel}
+      </div>
+
+      <div className="ops-pagination-controls">
+        {onLimitChange && (
+          <div className="ops-pagination-limit">
+            <select
+              value={limit}
+              onChange={(e) => {
+                onLimitChange(Number(e.target.value));
+                onPageChange(1);
+              }}
+              className="ops-pagination-select"
+            >
+              {limitOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt} per page
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div className="ops-pagination-nav">
+          <button
+            type="button"
+            className="ops-pagination-btn"
+            disabled={page <= 1}
+            onClick={() => onPageChange(page - 1)}
+            aria-label="Previous page"
+          >
+            <ChevronLeft size={15} />
+          </button>
+
+          <div className="ops-pagination-pages">
+            {getPageNumbers().map((p, idx) =>
+              typeof p === 'number' ? (
+                <button
+                  key={idx}
+                  type="button"
+                  className={`ops-pagination-page ${page === p ? 'active' : ''}`}
+                  onClick={() => onPageChange(p)}
+                >
+                  {p}
+                </button>
+              ) : (
+                <span key={idx} className="ops-pagination-ellipsis">
+                  …
+                </span>
+              ),
+            )}
+          </div>
+
+          <button
+            type="button"
+            className="ops-pagination-btn"
+            disabled={page >= totalPages}
+            onClick={() => onPageChange(page + 1)}
+            aria-label="Next page"
+          >
+            <ChevronRight size={15} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+

@@ -1,15 +1,35 @@
-const ACCESS_TOKEN_KEY = 'salon_saas_access_token';
-const REFRESH_TOKEN_KEY = 'salon_saas_refresh_token';
+// In-memory token storage (XSS protected: not persisted in localStorage)
+let inMemoryAccessToken: string | null = null;
+
+// Safely purge legacy tokens from localStorage if they exist from previous versions
+if (typeof window !== 'undefined') {
+  try {
+    localStorage.removeItem('salon_saas_access_token');
+    localStorage.removeItem('salon_saas_refresh_token');
+  } catch {
+    // ignore storage access errors
+  }
+}
 
 export const authStorage = {
-  getAccessToken: () => localStorage.getItem(ACCESS_TOKEN_KEY),
-  getRefreshToken: () => localStorage.getItem(REFRESH_TOKEN_KEY),
-  setTokens: (accessToken: string, refreshToken: string) => {
-    localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+  getAccessToken: (): string | null => inMemoryAccessToken,
+  setAccessToken: (token: string | null): void => {
+    inMemoryAccessToken = token;
   },
-  clearTokens: () => {
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
+  // Legacy alias for compatibility if needed
+  setTokens: (accessToken: string, _refreshToken?: string): void => {
+    inMemoryAccessToken = accessToken;
+  },
+  getRefreshToken: (): string | null => null,
+  clearTokens: (): void => {
+    inMemoryAccessToken = null;
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('salon_saas_access_token');
+        localStorage.removeItem('salon_saas_refresh_token');
+      } catch {
+        // ignore storage access errors
+      }
+    }
   },
 };

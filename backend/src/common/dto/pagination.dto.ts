@@ -12,7 +12,7 @@ export class PaginationQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
+  @Max(500)
   limit?: number = 50;
 }
 
@@ -37,7 +37,7 @@ export function resolvePagination(
   offset: number;
 } {
   const safePage = Math.max(1, page);
-  const safeLimit = Math.min(Math.max(1, limit), 100);
+  const safeLimit = Math.min(Math.max(1, limit), 500);
   return {
     page: safePage,
     limit: safeLimit,

@@ -63,6 +63,7 @@ export class DashboardService {
 
       const periodParams = branchId ? [start, end, branchId] : [start, end];
       const periodBranchCond = branchId ? 'AND s.branch_id = $3::uuid' : '';
+      const apptPeriodBranchCond = branchId ? 'AND a.branch_id = $3::uuid' : '';
 
       const [
         periodSales,
@@ -168,8 +169,8 @@ export class DashboardService {
         tx.$queryRawUnsafe<Array<{ count: bigint }>>(
           `SELECT COUNT(*)::bigint AS count FROM ${appointments} a
            WHERE a.appointment_date >= $1::date AND a.appointment_date <= $2::date
-             ${apptBranchCond}`,
-          ...(branchId ? [start, end, branchId] : [start, end]),
+             ${apptPeriodBranchCond}`,
+          ...periodParams,
         ),
         tx.$queryRawUnsafe(
           `SELECT sv.id, sv.name, COUNT(*)::bigint AS "saleCount", SUM(si.total)::text AS revenue
@@ -240,7 +241,7 @@ export class DashboardService {
                       COUNT(*) FILTER (WHERE a.status IN ('PENDING', 'CONFIRMED'))::bigint AS pending,
                       COUNT(*) FILTER (WHERE a.status IN ('CANCELLED', 'NO_SHOW'))::bigint AS cancelled
                FROM ${appointments} a
-               WHERE a.appointment_date >= $1::date AND a.appointment_date <= $2::date ${apptBranchCond}
+               WHERE a.appointment_date >= $1::date AND a.appointment_date <= $2::date ${apptPeriodBranchCond}
                GROUP BY DATE_TRUNC('month', a.appointment_date)
                ORDER BY DATE_TRUNC('month', a.appointment_date)`
             : `SELECT TO_CHAR(a.appointment_date, 'Mon DD') AS label,
@@ -248,9 +249,9 @@ export class DashboardService {
                       COUNT(*) FILTER (WHERE a.status IN ('PENDING', 'CONFIRMED'))::bigint AS pending,
                       COUNT(*) FILTER (WHERE a.status IN ('CANCELLED', 'NO_SHOW'))::bigint AS cancelled
                FROM ${appointments} a
-               WHERE a.appointment_date >= $1::date AND a.appointment_date <= $2::date ${apptBranchCond}
+               WHERE a.appointment_date >= $1::date AND a.appointment_date <= $2::date ${apptPeriodBranchCond}
                GROUP BY a.appointment_date ORDER BY a.appointment_date`,
-          ...(branchId ? [start, end, branchId] : [start, end]),
+          ...periodParams,
         ),
         tx.$queryRawUnsafe(
           `SELECT s.id, s.sale_number AS "invoiceNo", c.name AS "customerName",

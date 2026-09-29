@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../auth/interfaces/auth.interface';
@@ -41,6 +41,12 @@ export class CustomersController {
     return this.customersService.findById(tenant.schemaName, id);
   }
 
+  @Get(':id/booking-history')
+  @RequirePermission('CUSTOMER_VIEW')
+  getBookingHistory(@CurrentTenant() tenant: TenantContext, @Param('id') id: string) {
+    return this.customersService.getBookingHistory(tenant.schemaName, id);
+  }
+
   @Post()
   @RequirePermission('CUSTOMER_CREATE')
   create(
@@ -71,5 +77,15 @@ export class CustomersController {
     @Body() dto: UpdateCustomerStatusDto,
   ) {
     return this.customersService.updateStatus(tenant.schemaName, id, dto, user.id);
+  }
+
+  @Delete(':id')
+  @RequirePermission('CUSTOMER_UPDATE')
+  delete(
+    @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    return this.customersService.deleteCustomer(tenant.schemaName, id, user.id);
   }
 }

@@ -17,9 +17,17 @@ import { CreateBranchDto, UpdateBranchDto, UpdateBranchStatusDto } from './dto/b
 export class BranchesController {
   constructor(private readonly branchesService: BranchesService) {}
 
-  @Get()
+  @Get('suggest-code')
   @UseGuards(PermissionGuard)
   @RequirePermission('BRANCH_VIEW')
+  suggestCode(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('name') name?: string,
+  ) {
+    return this.branchesService.suggestCode(tenant.schemaName, name);
+  }
+
+  @Get()
   list(@CurrentTenant() tenant: TenantContext) {
     return this.branchesService.list(tenant.schemaName);
   }

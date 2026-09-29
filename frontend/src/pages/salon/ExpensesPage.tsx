@@ -375,11 +375,26 @@ export default function ExpensesPage() {
           </div>
           <div className="emp-filter-field">
             <Label>From</Label>
-            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => {
+                const newFrom = e.target.value;
+                setDateFrom(newFrom);
+                if (dateTo && newFrom && dateTo < newFrom) {
+                  setDateTo(newFrom);
+                }
+              }}
+            />
           </div>
           <div className="emp-filter-field">
             <Label>To</Label>
-            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+            <Input
+              type="date"
+              value={dateTo}
+              min={dateFrom}
+              onChange={(e) => setDateTo(e.target.value)}
+            />
           </div>
         </div>
       </div>

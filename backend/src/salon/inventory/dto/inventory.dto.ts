@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsDateString,
   IsEnum,
   IsNumber,
@@ -13,11 +14,26 @@ import {
 } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination.dto';
 
+export class ListProductCategoriesQueryDto extends PaginationQueryDto {
+  @IsOptional()
+  @IsEnum(['all', 'ACTIVE', 'INACTIVE'])
+  status?: 'all' | 'ACTIVE' | 'INACTIVE';
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  search?: string;
+
+  @IsOptional()
+  all?: boolean | string;
+}
+
 export class CreateProductCategoryDto {
+  @IsOptional()
   @IsString()
   @MinLength(2)
   @MaxLength(50)
-  code!: string;
+  code?: string;
 
   @IsString()
   @MinLength(2)
@@ -41,13 +57,40 @@ export class UpdateProductCategoryDto {
   description?: string;
 }
 
+export class UpdateProductCategoryStatusDto {
+  @IsEnum(['ACTIVE', 'INACTIVE'])
+  status!: 'ACTIVE' | 'INACTIVE';
+}
+
+export class ListProductsQueryDto extends PaginationQueryDto {
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @IsOptional()
+  @IsString()
+  branchId?: string;
+
+  @IsOptional()
+  @IsEnum(['all', 'ACTIVE', 'INACTIVE'])
+  status?: 'all' | 'ACTIVE' | 'INACTIVE';
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  search?: string;
+
+  @IsOptional()
+  all?: boolean | string;
+}
+
 export class CreateProductDto {
   @IsOptional()
   @IsUUID()
   categoryId?: string;
 
   @IsString()
-  @MinLength(2)
+  @MinLength(1)
   @MaxLength(255)
   name!: string;
 
@@ -55,31 +98,39 @@ export class CreateProductDto {
   @IsString()
   description?: string;
 
-  @IsOptional()
   @IsString()
+  @MinLength(1)
   @MaxLength(50)
-  unit?: string;
+  unit!: string;
 
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   sellingPrice!: number;
 
-  @IsOptional()
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  costPrice?: number;
+  costPrice!: number;
+
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  branchIds?: string[];
 }
 
 export class UpdateProductDto {
   @IsOptional()
   @IsUUID()
-  categoryId?: string;
+  categoryId?: string | null;
 
   @IsOptional()
   @IsString()
-  @MinLength(2)
+  @MinLength(1)
   @MaxLength(255)
   name?: string;
 
@@ -89,6 +140,8 @@ export class UpdateProductDto {
 
   @IsOptional()
   @IsString()
+  @MinLength(1)
+  @MaxLength(50)
   unit?: string;
 
   @IsOptional()
@@ -102,6 +155,15 @@ export class UpdateProductDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   costPrice?: number;
+
+  @IsOptional()
+  @IsString()
+  imageUrl?: string | null;
+
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  branchIds?: string[];
 }
 
 export class UpdateProductStatusDto {

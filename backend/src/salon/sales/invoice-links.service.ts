@@ -418,7 +418,7 @@ export class InvoiceLinksService {
                 b.name AS "branchName",
                 c.name AS "customerName",
                 c.phone AS "customerPhone",
-                (s.created_at AT TIME ZONE 'Asia/Colombo') AS "createdAt"
+                s.created_at AS "createdAt"
          FROM ${sales} s
          INNER JOIN ${branches} b ON s.branch_id = b.id
          LEFT JOIN ${customers} c ON s.customer_id = c.id
@@ -451,11 +451,11 @@ export class InvoiceLinksService {
                 si.unit_price::text AS "unitPrice",
                 si.discount::text AS "discount",
                 si.total::text AS "total"
-         FROM ${saleItems} si
-         LEFT JOIN ${services} sv ON si.service_id = sv.id
-         LEFT JOIN ${products} p ON si.product_id = p.id
-         WHERE si.sale_id = $1::uuid
-         ORDER BY si.created_at ASC`,
+          FROM ${saleItems} si
+          LEFT JOIN ${services} sv ON si.service_id = sv.id
+          LEFT JOIN ${products} p ON si.product_id = p.id
+          WHERE si.sale_id = $1::uuid
+          ORDER BY si.created_at ASC`,
         saleId,
       );
 
@@ -471,10 +471,10 @@ export class InvoiceLinksService {
         `SELECT method::text AS method,
                 amount::text AS amount,
                 status::text AS status,
-                (created_at AT TIME ZONE 'Asia/Colombo') AS "createdAt"
-         FROM ${payments}
-         WHERE sale_id = $1::uuid
-         ORDER BY created_at ASC`,
+                created_at AS "createdAt"
+          FROM ${payments}
+          WHERE sale_id = $1::uuid
+          ORDER BY created_at ASC`,
         saleId,
       );
 

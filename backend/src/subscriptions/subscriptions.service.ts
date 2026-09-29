@@ -1,9 +1,12 @@
 import {
   BadRequestException,
   ConflictException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
+  forwardRef,
 } from '@nestjs/common';
 import {
   BillingCycle,
@@ -38,6 +41,7 @@ import {
 } from './dto/subscription.dto';
 import { SubscriptionListQueryDto } from './dto/subscription-list-query.dto';
 import { SubscriptionFeatureService } from './subscription-feature.service';
+import { InvoicesService } from '../invoices/invoices.service';
 import {
   addTrialDays,
   comparePlanTier,
@@ -55,6 +59,9 @@ export class SubscriptionsService {
     private readonly prisma: PrismaService,
     private readonly plansService: PlansService,
     private readonly subscriptionFeatureService: SubscriptionFeatureService,
+    @Inject(forwardRef(() => InvoicesService))
+    @Optional()
+    private readonly invoicesService?: InvoicesService,
   ) {}
 
   async createSubscription(tenantId: string, planId: string) {
@@ -178,9 +185,14 @@ export class SubscriptionsService {
         ? subscription.startDate
         : paidAt;
 
-    const updated = await this.prisma.$transaction(async (tx) => {
+    const { subscription: updated, recordedPayment } = await this.prisma.$transaction(async (tx) => {
+      let paymentInfo: {
+        order: { id: string; reference: string };
+        payment: { id: string; transactionId: string | null; paidAt: Date | null };
+      } | null = null;
+
       if (!options?.fromPaymentProcessor) {
-        await this.recordSubscriptionPayment(tx, {
+        paymentInfo = await this.recordSubscriptionPayment(tx, {
           tenantId,
           subscriptionId,
           amount: subscription.price,
@@ -223,8 +235,21 @@ export class SubscriptionsService {
         metadata: { startDate, endDate },
       });
 
-      return result;
+      return { subscription: result, recordedPayment: paymentInfo };
     });
+
+    if (recordedPayment && this.invoicesService) {
+      await this.invoicesService
+        .generateFromPayment({
+          paymentOrderId: recordedPayment.order.id,
+          paymentId: recordedPayment.payment.id,
+          transactionId: recordedPayment.payment.transactionId ?? recordedPayment.order.reference,
+          paidAt: recordedPayment.payment.paidAt ?? new Date(),
+        })
+        .catch((err) => {
+          this.logger.warn(`Invoice generation on activation warning: ${err instanceof Error ? err.message : String(err)}`);
+        });
+    }
 
     await this.syncTenantFeaturesFromSubscription(subscriptionId, tenantId);
     this.logger.log(
@@ -267,9 +292,14 @@ export class SubscriptionsService {
     const anchorEnd = isPastDate(previousEnd) ? paidAt : previousEnd;
     const newEndDate = extendBillingPeriod(anchorEnd, subscription.billingCycle);
 
-    const updated = await this.prisma.$transaction(async (tx) => {
+    const { subscription: updated, recordedPayment } = await this.prisma.$transaction(async (tx) => {
+      let paymentInfo: {
+        order: { id: string; reference: string };
+        payment: { id: string; transactionId: string | null; paidAt: Date | null };
+      } | null = null;
+
       if (!options?.fromPaymentProcessor) {
-        await this.recordSubscriptionPayment(tx, {
+        paymentInfo = await this.recordSubscriptionPayment(tx, {
           tenantId,
           subscriptionId,
           amount: subscription.price,
@@ -303,9 +333,23 @@ export class SubscriptionsService {
         },
       });
 
-      return result;
+      return { subscription: result, recordedPayment: paymentInfo };
     });
 
+    if (recordedPayment && this.invoicesService) {
+      await this.invoicesService
+        .generateFromPayment({
+          paymentOrderId: recordedPayment.order.id,
+          paymentId: recordedPayment.payment.id,
+          transactionId: recordedPayment.payment.transactionId ?? recordedPayment.order.reference,
+          paidAt: recordedPayment.payment.paidAt ?? new Date(),
+        })
+        .catch((err) => {
+          this.logger.warn(`Invoice generation on renewal warning: ${err instanceof Error ? err.message : String(err)}`);
+        });
+    }
+
+    await this.syncTenantFeaturesFromSubscription(subscriptionId, tenantId);
     return updated;
   }
 
@@ -331,9 +375,14 @@ export class SubscriptionsService {
     const fromPlanPriceId = subscription.planPriceId;
     const toPlanId = subscription.pendingPlanId!;
 
-    const updated = await this.prisma.$transaction(async (tx) => {
+    const { subscription: updated, recordedPayment } = await this.prisma.$transaction(async (tx) => {
+      let paymentInfo: {
+        order: { id: string; reference: string };
+        payment: { id: string; transactionId: string | null; paidAt: Date | null };
+      } | null = null;
+
       if (!options?.fromPaymentProcessor) {
-        await this.recordSubscriptionPayment(tx, {
+        paymentInfo = await this.recordSubscriptionPayment(tx, {
           tenantId,
           subscriptionId: subscription.id,
           amount: pendingPrice.price,
@@ -379,8 +428,21 @@ export class SubscriptionsService {
         metadata: { previousEndDate: previousEnd, newEndDate, planChangedOnRenew: true },
       });
 
-      return result;
+      return { subscription: result, recordedPayment: paymentInfo };
     });
+
+    if (recordedPayment && this.invoicesService) {
+      await this.invoicesService
+        .generateFromPayment({
+          paymentOrderId: recordedPayment.order.id,
+          paymentId: recordedPayment.payment.id,
+          transactionId: recordedPayment.payment.transactionId ?? recordedPayment.order.reference,
+          paidAt: recordedPayment.payment.paidAt ?? new Date(),
+        })
+        .catch((err) => {
+          this.logger.warn(`Invoice generation on plan change renew warning: ${err instanceof Error ? err.message : String(err)}`);
+        });
+    }
 
     await this.syncTenantFeaturesFromSubscription(subscription.id, tenantId);
     return updated;
@@ -1196,7 +1258,7 @@ export class SubscriptionsService {
       return;
     }
 
-    const featureIds = subscription.subscriptionFeatures.map((sf) => sf.featureId);
+    const featureIds = (subscription.subscriptionFeatures ?? []).map((sf) => sf.featureId);
     await this.prisma.$transaction(async (tx) => {
       await syncTenantFeatures(tx, tenantId, featureIds);
     });
@@ -1328,7 +1390,7 @@ export class SubscriptionsService {
       },
     });
 
-    await tx.payment.create({
+    const payment = await tx.payment.create({
       data: {
         paymentOrderId: order.id,
         transactionId: reference,
@@ -1337,7 +1399,7 @@ export class SubscriptionsService {
       },
     });
 
-    return order;
+    return { order, payment };
   }
 
   private subscriptionInclude(): Prisma.SubscriptionInclude {

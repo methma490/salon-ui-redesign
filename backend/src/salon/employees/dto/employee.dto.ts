@@ -46,11 +46,10 @@ export class CreateEmployeeDto {
   @IsUUID()
   userId?: string;
 
-  @IsOptional()
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  basicSalary?: number;
+  basicSalary!: number;
 
   @IsOptional()
   @Type(() => Number)

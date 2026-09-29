@@ -5,7 +5,22 @@ import { tenantApi } from '@/api/tenant.api';
 import { Button } from '@/components/ui/button';
 import { formatMoneyAmount, formatMoneyLkr, moneyHeader } from '@/lib/money';
 import { formatSriLankaDate } from '@/lib/sri-lanka-time';
+import { resolveUploadUrl } from '@/lib/upload-url';
 import { getErrorMessage } from '@/pages/salon/salon-ops-ui';
+
+function QuotationLogo({ logoUrl }: { logoUrl?: string | null }) {
+  const [imgError, setImgError] = useState(false);
+  const resolved = resolveUploadUrl(logoUrl);
+  if (!resolved || imgError) return null;
+  return (
+    <img
+      src={resolved}
+      alt=""
+      onError={() => setImgError(true)}
+      style={{ height: 48, objectFit: 'contain', marginBottom: 12 }}
+    />
+  );
+}
 
 export default function PublicQuotationPage() {
   const { token = '' } = useParams();
@@ -72,13 +87,7 @@ export default function PublicQuotationPage() {
           boxShadow: '0 8px 30px rgba(15,23,42,0.06)',
         }}
       >
-        {data.salon.logoUrl && (
-          <img
-            src={data.salon.logoUrl}
-            alt=""
-            style={{ height: 48, objectFit: 'contain', marginBottom: 12 }}
-          />
-        )}
+        <QuotationLogo logoUrl={data.salon.logoUrl} />
         <h1 style={{ margin: 0, color: brand, fontSize: 28 }}>{data.salon.name}</h1>
         <p style={{ margin: '4px 0 16px', color: '#64748b' }}>
           QUOTATION {data.quotationNo} · {data.status}

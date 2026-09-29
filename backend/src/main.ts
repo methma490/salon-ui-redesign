@@ -6,6 +6,7 @@ import { config } from 'dotenv';
 import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { bootstrapDatabase } from './database/bootstrap-database';
 
@@ -15,6 +16,8 @@ async function bootstrap() {
   await bootstrapDatabase();
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  app.use(cookieParser());
 
   const uploadsRoot = join(process.cwd(), 'uploads');
   if (!existsSync(uploadsRoot)) {

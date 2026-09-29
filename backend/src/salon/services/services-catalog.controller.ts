@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../auth/interfaces/auth.interface';
@@ -12,6 +12,8 @@ import { TenantContext } from '../../tenant/interfaces/tenant-context.interface'
 import {
   CreateServiceCategoryDto,
   CreateServiceDto,
+  ListServiceCategoriesQueryDto,
+  ListServicesQueryDto,
   UpdateCategoryStatusDto,
   UpdateServiceCategoryDto,
   UpdateServiceDto,
@@ -27,8 +29,11 @@ export class ServicesCatalogController {
 
   @Get('service-categories')
   @RequirePermission('SERVICE_VIEW')
-  listCategories(@CurrentTenant() tenant: TenantContext) {
-    return this.servicesCatalogService.listCategories(tenant.schemaName);
+  listCategories(
+    @CurrentTenant() tenant: TenantContext,
+    @Query() query?: ListServiceCategoriesQueryDto,
+  ) {
+    return this.servicesCatalogService.listCategories(tenant.schemaName, query);
   }
 
   @Post('service-categories')
@@ -63,10 +68,23 @@ export class ServicesCatalogController {
     return this.servicesCatalogService.updateCategoryStatus(tenant.schemaName, id, dto, user.id);
   }
 
+  @Delete('service-categories/:id')
+  @RequirePermission('SERVICE_UPDATE')
+  deleteCategory(
+    @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    return this.servicesCatalogService.deleteCategory(tenant.schemaName, id, user.id);
+  }
+
   @Get('services')
   @RequirePermission('SERVICE_VIEW')
-  listServices(@CurrentTenant() tenant: TenantContext, @Query('categoryId') categoryId?: string) {
-    return this.servicesCatalogService.listServices(tenant.schemaName, categoryId);
+  listServices(
+    @CurrentTenant() tenant: TenantContext,
+    @Query() query?: ListServicesQueryDto,
+  ) {
+    return this.servicesCatalogService.listServices(tenant.schemaName, query);
   }
 
   @Post('services')
@@ -99,5 +117,15 @@ export class ServicesCatalogController {
     @Body() dto: UpdateServiceStatusDto,
   ) {
     return this.servicesCatalogService.updateServiceStatus(tenant.schemaName, id, dto, user.id);
+  }
+
+  @Delete('services/:id')
+  @RequirePermission('SERVICE_UPDATE')
+  deleteService(
+    @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    return this.servicesCatalogService.deleteService(tenant.schemaName, id, user.id);
   }
 }

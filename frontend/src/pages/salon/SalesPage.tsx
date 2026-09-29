@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useSalonBranch } from '@/contexts/SalonBranchContext';
 import {
   getErrorMessage,
   OpsError,
@@ -45,18 +46,13 @@ function SaleStatusBadge({ status }: { status: string }) {
 }
 
 export default function SalesPage() {
+  const { branchId, setBranchId, branches } = useSalonBranch();
   const [startDate, setStartDate] = useState(monthStartStr());
   const [endDate, setEndDate] = useState(todayStr());
-  const [branchId, setBranchId] = useState<string>('all');
   const [ebillModalSale, setEbillModalSale] = useState<{
     id: string;
     customerName?: string | null;
   } | null>(null);
-
-  const { data: branches = [] } = useQuery({
-    queryKey: ['branches'],
-    queryFn: tenantApi.branches.list,
-  });
 
   const {
     data: sales = [],
@@ -134,7 +130,13 @@ export default function SalesPage() {
               id="sales-start"
               type="date"
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              onChange={(e) => {
+                const newStart = e.target.value;
+                setStartDate(newStart);
+                if (endDate && newStart && endDate < newStart) {
+                  setEndDate(newStart);
+                }
+              }}
             />
           </div>
           <div className="sales-filter-field">
@@ -143,6 +145,7 @@ export default function SalesPage() {
               id="sales-end"
               type="date"
               value={endDate}
+              min={startDate}
               onChange={(e) => setEndDate(e.target.value)}
             />
           </div>

@@ -1,10 +1,35 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from 'recharts';
+import {
+  AlertTriangle,
+  ArrowDownLeft,
+  ArrowLeft,
+  Boxes,
+  CreditCard,
+  History,
+  Layers,
+  Package,
+  Receipt,
+  Search,
+  SlidersHorizontal,
+  TrendingDown,
+  X,
+} from 'lucide-react';
 import {
   tenantApi,
   type StockCreditDetail,
   type StockReceiptPaymentStatus,
 } from '@/api/tenant.api';
+import { useDebouncedSearch } from '@/hooks/useDebounce';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -21,6 +46,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useSalonBranch } from '@/contexts/SalonBranchContext';
 import {
   FormError,
   FormSubmit,
@@ -35,17 +61,12 @@ import { formatMoneyAmount, formatMoneyLkr } from '@/lib/money';
 import { formatSriLankaDateTime, sriLankaTodayIso } from '@/lib/sri-lanka-time';
 import './employees-page.css';
 
-type Tab = 'levels' | 'stock-in' | 'credits' | 'adjustment' | 'movements';
-type PaymentType = 'PAID' | 'PARTIAL' | 'CREDIT';
+type Tab = 'movements' | 'levels' | 'credits';
 
 const LOW_STOCK_THRESHOLD = 5;
 
 function todayIso() {
   return sriLankaTodayIso();
-}
-
-function roundMoney(value: number) {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
 function qtyBadgeClass(qty: number) {
@@ -74,15 +95,46 @@ function paymentStatusClass(status: string) {
   return 'emp-qty-badge emp-qty-badge-out';
 }
 
+export const ADJUSTMENT_INCREASE_REASONS = [
+  { value: 'RESTOCK', label: 'New Shipment / Restock' },
+  { value: 'FOUND_STOCK', label: 'Found Stock / Unrecorded Inventory' },
+  { value: 'CUSTOMER_RETURN', label: 'Customer Return' },
+  { value: 'INITIAL_COUNT', label: 'Initial Inventory Count' },
+  { value: 'AUDIT_CORRECTION_IN', label: 'Inventory Audit Correction (+)' },
+  { value: 'OTHER_INCREASE', label: 'Other Increase' },
+];
+
+export const ADJUSTMENT_DECREASE_REASONS = [
+  { value: 'DAMAGED', label: 'Damaged / Broken Item' },
+  { value: 'EXPIRED', label: 'Expired / Spoiled Item' },
+  { value: 'THEFT_LOSS', label: 'Lost / Theft / Shrinkage' },
+  { value: 'SALON_USE', label: 'Internal Salon Service Use' },
+  { value: 'AUDIT_CORRECTION_OUT', label: 'Inventory Audit Correction (−)' },
+  { value: 'SUPPLIER_RETURN', label: 'Returned to Supplier' },
+  { value: 'OTHER_DECREASE', label: 'Other Decrease' },
+];
+
 export default function StockPage() {
   const qc = useQueryClient();
-  const [tab, setTab] = useState<Tab>('levels');
-  const [branchId, setBranchId] = useState<string>('all');
+  const { branchId, setBranchId, branches } = useSalonBranch();
+  const [tab, setTab] = useState<Tab>('movements');
   const [formError, setFormError] = useState<string | null>(null);
 
+  // Search & Filters for Movements
+  const [movementSearch, setMovementSearch] = useState('');
+  const debouncedMovementSearch = useDebouncedSearch(movementSearch, 300, 2);
+  const [movementTypeFilter, setMovementTypeFilter] = useState('all');
+  const [selectedProductId, setSelectedProductId] = useState('all');
+
+  // Search & Filters for Stock Levels
+  const [levelSearch, setLevelSearch] = useState('');
+  const [lowStockOnly, setLowStockOnly] = useState(false);
+
+  // Search & Filters for Credits
+  const [creditSearch, setCreditSearch] = useState('');
+  const debouncedCreditSearch = useDebouncedSearch(creditSearch, 400, 2);
   const [creditFilters, setCreditFilters] = useState({
-    search: '',
-    branchId: 'all',
+    branchId: branchId,
     paymentStatus: 'all',
     fromDate: '',
     toDate: '',
@@ -102,11 +154,6 @@ export default function StockPage() {
     paymentDate: todayIso(),
     paymentReference: '',
     notes: '',
-  });
-
-  const { data: branches = [] } = useQuery({
-    queryKey: ['branches'],
-    queryFn: tenantApi.branches.list,
   });
 
   const { data: products = [] } = useQuery({
@@ -139,12 +186,12 @@ export default function StockPage() {
   });
 
   const creditsQuery = useQuery({
-    queryKey: ['stock-credits', creditFilters],
+    queryKey: ['stock-credits', creditFilters, debouncedCreditSearch],
     queryFn: () =>
       tenantApi.stock.credits({
         page: creditFilters.page,
         limit: 20,
-        search: creditFilters.search || undefined,
+        search: debouncedCreditSearch || undefined,
         branchId: creditFilters.branchId === 'all' ? undefined : creditFilters.branchId,
         paymentStatus:
           creditFilters.paymentStatus === 'all' ? undefined : creditFilters.paymentStatus,
@@ -162,73 +209,10 @@ export default function StockPage() {
     enabled: !!detailId,
   });
 
-  const [stockInForm, setStockInForm] = useState({
-    branchId: '',
-    productId: '',
-    quantity: '',
-    unitCost: '',
-    paymentType: 'PAID' as PaymentType,
-    paidAmount: '',
-    referenceNo: '',
-    purchaseDate: todayIso(),
-    notes: '',
-  });
-
-  const [adjustForm, setAdjustForm] = useState({
-    branchId: '',
-    productId: '',
-    quantity: '',
-    notes: '',
-  });
-
-  const stockInTotals = useMemo(() => {
-    const qty = Number(stockInForm.quantity) || 0;
-    const unit = Number(stockInForm.unitCost) || 0;
-    const total = roundMoney(qty * unit);
-    let paid = 0;
-    if (stockInForm.paymentType === 'PAID') paid = total;
-    else if (stockInForm.paymentType === 'CREDIT') paid = 0;
-    else paid = Number(stockInForm.paidAmount) || 0;
-    const outstanding = roundMoney(Math.max(0, total - paid));
-    return { total, paid: roundMoney(paid), outstanding };
-  }, [stockInForm]);
-
-  const stockInMutation = useMutation({
-    mutationFn: tenantApi.stock.stockIn,
-    onSuccess: (_data, variables) => {
-      qc.invalidateQueries({ queryKey: ['stock-levels'] });
-      qc.invalidateQueries({ queryKey: ['stock-movements'] });
-      qc.invalidateQueries({ queryKey: ['stock-credits'] });
-      setStockInForm({
-        branchId: '',
-        productId: '',
-        quantity: '',
-        unitCost: '',
-        paymentType: 'PAID',
-        paidAmount: '',
-        referenceNo: '',
-        purchaseDate: todayIso(),
-        notes: '',
-      });
-      setFormError(null);
-      setTab(
-        (variables as { paymentType?: string }).paymentType === 'PAID' ? 'levels' : 'credits',
-      );
-    },
-    onError: (err) => setFormError(getErrorMessage(err)),
-  });
-
-  const adjustMutation = useMutation({
-    mutationFn: tenantApi.stock.adjustment,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['stock-levels'] });
-      qc.invalidateQueries({ queryKey: ['stock-movements'] });
-      setAdjustForm({ branchId: '', productId: '', quantity: '', notes: '' });
-      setFormError(null);
-      setTab('levels');
-    },
-    onError: (err) => setFormError(getErrorMessage(err)),
-  });
+  // Sync with ribbon branch selection
+  useEffect(() => {
+    setCreditFilters((prev) => ({ ...prev, branchId, page: 1 }));
+  }, [branchId]);
 
   const payMutation = useMutation({
     mutationFn: (payload: { id: string; data: Record<string, unknown> }) =>
@@ -258,7 +242,7 @@ export default function StockPage() {
   }) => {
     setPayTarget(row);
     setPayForm({
-      amount: '',
+      amount: String(row.outstandingAmount > 0 ? row.outstandingAmount : ''),
       paymentMethod: 'CASH',
       paymentDate: todayIso(),
       paymentReference: '',
@@ -267,18 +251,104 @@ export default function StockPage() {
     setFormError(null);
   };
 
+  // Stock Level Stats & Filtered Data
+  const filteredLevels = useMemo(() => {
+    let list = [...stockLevels];
+    if (lowStockOnly) {
+      list = list.filter((s) => s.quantity <= LOW_STOCK_THRESHOLD);
+    }
+    if (levelSearch.trim()) {
+      const term = levelSearch.toLowerCase();
+      list = list.filter(
+        (s) =>
+          s.productName.toLowerCase().includes(term) ||
+          s.productCode.toLowerCase().includes(term) ||
+          s.branchName.toLowerCase().includes(term),
+      );
+    }
+    return list;
+  }, [stockLevels, lowStockOnly, levelSearch]);
+
   const stats = useMemo(() => {
     const low = stockLevels.filter((s) => s.quantity <= LOW_STOCK_THRESHOLD).length;
+    const outOfStock = stockLevels.filter((s) => s.quantity <= 0).length;
     const totalQty = stockLevels.reduce((sum, s) => sum + s.quantity, 0);
-    return { skus: stockLevels.length, totalQty, low };
+    return { skus: stockLevels.length, totalQty, low, outOfStock };
   }, [stockLevels]);
 
-  const tabs: { id: Tab; label: string; icon: string }[] = [
-    { id: 'levels', label: 'Stock Levels', icon: '📊' },
-    { id: 'stock-in', label: 'Stock In', icon: '📥' },
-    { id: 'credits', label: 'Credits', icon: '💳' },
-    { id: 'adjustment', label: 'Adjustment', icon: '⚖️' },
-    { id: 'movements', label: 'Movements', icon: '📋' },
+  // Movement Stats, Charts & Filtered Data
+  const filteredMovements = useMemo(() => {
+    let list = [...movements];
+    if (selectedProductId !== 'all') {
+      list = list.filter((m) => m.productId === selectedProductId);
+    }
+    if (movementTypeFilter !== 'all') {
+      list = list.filter((m) => {
+        const t = m.type.toUpperCase();
+        if (movementTypeFilter === 'IN') return t.includes('IN') || t === 'STOCK_IN';
+        if (movementTypeFilter === 'SALE') return t.includes('SALE');
+        if (movementTypeFilter === 'ADJUSTMENT') return t.includes('ADJUST');
+        return true;
+      });
+    }
+    if (debouncedMovementSearch.trim()) {
+      const term = debouncedMovementSearch.toLowerCase();
+      list = list.filter(
+        (m) =>
+          m.productName.toLowerCase().includes(term) ||
+          m.branchName.toLowerCase().includes(term) ||
+          (m.notes && m.notes.toLowerCase().includes(term)),
+      );
+    }
+    return list;
+  }, [movements, selectedProductId, movementTypeFilter, debouncedMovementSearch]);
+
+  const movementMetrics = useMemo(() => {
+    let totalIn = 0;
+    let totalSales = 0;
+    let totalAdjustments = 0;
+
+    filteredMovements.forEach((m) => {
+      const t = m.type.toUpperCase();
+      const qty = Math.abs(Number(m.quantity) || 0);
+      if (t.includes('IN') || t === 'STOCK_IN') {
+        totalIn += qty;
+      } else if (t.includes('SALE')) {
+        totalSales += qty;
+      } else if (t.includes('ADJUST')) {
+        totalAdjustments += qty;
+      }
+    });
+
+    return { totalIn, totalSales, totalAdjustments, totalEvents: filteredMovements.length };
+  }, [filteredMovements]);
+
+  // Movement Breakdown for Chart (by product or recent 10 entries)
+  const movementChartData = useMemo(() => {
+    const map = new Map<string, { name: string; stockIn: number; sales: number; adjustment: number }>();
+    const recent = filteredMovements.slice(0, 10).reverse();
+
+    recent.forEach((m) => {
+      const label = m.productName.length > 14 ? m.productName.slice(0, 12) + '…' : m.productName;
+      const key = `${label}-${m.id.slice(0, 4)}`;
+      const current = map.get(key) || { name: label, stockIn: 0, sales: 0, adjustment: 0 };
+      const t = m.type.toUpperCase();
+      const qty = Math.abs(Number(m.quantity) || 0);
+
+      if (t.includes('IN') || t === 'STOCK_IN') current.stockIn += qty;
+      else if (t.includes('SALE')) current.sales += qty;
+      else current.adjustment += qty;
+
+      map.set(key, current);
+    });
+
+    return Array.from(map.values());
+  }, [filteredMovements]);
+
+  const tabsList: { id: Tab; label: string; icon: any }[] = [
+    { id: 'movements', label: 'Movement Chart & History', icon: History },
+    { id: 'levels', label: 'Stock Reports & Levels', icon: Boxes },
+    { id: 'credits', label: 'Supplier Credits', icon: CreditCard },
   ];
 
   const listLoading =
@@ -336,353 +406,399 @@ export default function StockPage() {
   return (
     <div className="emp-page">
       <OpsPageHeader
-        title="Inventory"
-        subtitle="Track stock levels, receive stock, manage purchase credits, and review movements"
+        title="Stock Management & Analytics"
+        subtitle="View live stock movements, inventory reports, level metrics, and supplier credits"
       />
 
-      {tab === 'levels' && (
-        <div className="emp-stats">
-          <div className="emp-stat">
-            <div className="emp-stat-value">{stats.skus}</div>
-            <div className="emp-stat-label">SKUs in stock</div>
-          </div>
-          <div className="emp-stat">
-            <div className="emp-stat-value">{stats.totalQty}</div>
-            <div className="emp-stat-label">Total units</div>
-          </div>
-          <div className="emp-stat">
-            <div className="emp-stat-value">{stats.low}</div>
-            <div className="emp-stat-label">Low stock</div>
-          </div>
-        </div>
-      )}
-
-      {tab === 'credits' && (
-        <div className="emp-stats">
-          <div className="emp-stat">
-            <div className="emp-stat-value">{formatMoneyLkr(creditSummary.totalPurchases)}</div>
-            <div className="emp-stat-label">Total purchases</div>
-          </div>
-          <div className="emp-stat">
-            <div className="emp-stat-value">{formatMoneyLkr(creditSummary.totalPaid)}</div>
-            <div className="emp-stat-label">Total paid</div>
-          </div>
-          <div className="emp-stat">
-            <div className="emp-stat-value">{formatMoneyLkr(creditSummary.totalOutstanding)}</div>
-            <div className="emp-stat-label">Outstanding credit</div>
-          </div>
-        </div>
-      )}
-
+      {/* Tabs Navigation */}
       <div className="emp-tabs" role="tablist" aria-label="Inventory sections">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            role="tab"
-            aria-selected={tab === t.id}
-            className={`emp-tab ${tab === t.id ? 'emp-tab-active' : ''}`}
-            onClick={() => {
-              setFormError(null);
-              setDetailId(null);
-              setTab(t.id);
-            }}
-          >
-            {t.icon} {t.label}
-          </button>
-        ))}
-      </div>
-
-      {(tab === 'levels' || tab === 'movements') && (
-        <div className="emp-toolbar">
-          <div className="emp-toolbar-filters">
-            <Select value={branchId} onValueChange={setBranchId}>
-              <SelectTrigger className="emp-select w-full sm:w-[200px]">
-                <SelectValue placeholder="All branches" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Branches</SelectItem>
-                {branches.map((b) => (
-                  <SelectItem key={b.id} value={b.id}>
-                    {b.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <span style={{ fontSize: '0.8125rem', color: 'var(--emp-muted)' }}>
-            {tab === 'levels'
-              ? `${stockLevels.length} record${stockLevels.length === 1 ? '' : 's'}`
-              : `${movements.length} movement${movements.length === 1 ? '' : 's'}`}
-          </span>
-        </div>
-      )}
-
-      {tab === 'levels' && (
-        <div className="emp-panel">
-          <div className="emp-panel-header">
-            <div>
-              <h2 className="emp-panel-title">Current Stock Levels</h2>
-              <p className="emp-panel-desc">
-                Products with quantity at or below {LOW_STOCK_THRESHOLD} are flagged
-              </p>
-            </div>
-          </div>
-          {stockLevels.length === 0 ? (
-            <div className="emp-empty">No stock records yet. Use Stock In to add inventory.</div>
-          ) : (
-            <div className="emp-table-wrap">
-              <table className="emp-table">
-                <thead>
-                  <tr>
-                    <th>Branch</th>
-                    <th>Product</th>
-                    <th>Code</th>
-                    <th>Quantity</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stockLevels.map((item) => (
-                    <tr key={item.id}>
-                      <td>{item.branchName}</td>
-                      <td className="emp-name-cell">{item.productName}</td>
-                      <td className="emp-code">{item.productCode}</td>
-                      <td>
-                        <span className={qtyBadgeClass(item.quantity)}>{item.quantity}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {tab === 'stock-in' && (
-        <div className="emp-panel">
-          <div className="emp-form-panel">
-            <h2 className="emp-form-panel-title">Stock In</h2>
-            <p className="emp-form-panel-desc">
-              Receive stock immediately. Payment can be paid, partial, or on credit.
-            </p>
-            <SimpleForm
-              onSubmit={(e) => {
-                e.preventDefault();
+        {tabsList.map((t) => {
+          const IconComp = t.icon;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={tab === t.id}
+              className={`emp-tab ${tab === t.id ? 'emp-tab-active' : ''}`}
+              onClick={() => {
                 setFormError(null);
-                const qty = Number(stockInForm.quantity);
-                const unitCost = Number(stockInForm.unitCost);
-                if (!(qty > 0)) {
-                  setFormError('Quantity must be greater than 0');
-                  return;
-                }
-                if (unitCost < 0) {
-                  setFormError('Unit cost cannot be negative');
-                  return;
-                }
-                if (stockInForm.paymentType === 'PARTIAL') {
-                  const paid = Number(stockInForm.paidAmount);
-                  if (!(paid > 0) || paid >= stockInTotals.total) {
-                    setFormError('Partial paid amount must be greater than 0 and less than total');
-                    return;
-                  }
-                }
-                stockInMutation.mutate({
-                  branchId: stockInForm.branchId,
-                  productId: stockInForm.productId,
-                  quantity: qty,
-                  unitCost,
-                  paymentType: stockInForm.paymentType,
-                  paidAmount:
-                    stockInForm.paymentType === 'PARTIAL'
-                      ? Number(stockInForm.paidAmount)
-                      : undefined,
-                  referenceNo: stockInForm.referenceNo || undefined,
-                  purchaseDate: stockInForm.purchaseDate || undefined,
-                  notes: stockInForm.notes || undefined,
-                });
+                setDetailId(null);
+                setTab(t.id);
               }}
             >
-              <FormError message={formError} />
-              <div className="emp-form-grid">
-                <div className="space-y-2">
-                  <Label>Branch</Label>
-                  <Select
-                    value={stockInForm.branchId}
-                    onValueChange={(v) => setStockInForm({ ...stockInForm, branchId: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select branch" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {branches.map((b) => (
-                        <SelectItem key={b.id} value={b.id}>
-                          {b.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <IconComp className="h-4 w-4" /> {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 1. Movements & Chart View */}
+      {tab === 'movements' && (
+        <div className="space-y-4">
+          {/* Movement Summary Stats */}
+          <div className="emp-stats">
+            <div className="emp-stat">
+              <div className="emp-stat-value text-emerald-700 flex items-center gap-1.5">
+                <ArrowDownLeft className="h-5 w-5" /> +{movementMetrics.totalIn}
+              </div>
+              <div className="emp-stat-label">Stock Inflow (Units)</div>
+            </div>
+            <div className="emp-stat">
+              <div className="emp-stat-value text-blue-700 flex items-center gap-1.5">
+                <TrendingDown className="h-5 w-5" /> −{movementMetrics.totalSales}
+              </div>
+              <div className="emp-stat-label">Sales / Dispensed (Units)</div>
+            </div>
+            <div className="emp-stat">
+              <div className="emp-stat-value text-amber-700 flex items-center gap-1.5">
+                <SlidersHorizontal className="h-5 w-5" /> {movementMetrics.totalAdjustments}
+              </div>
+              <div className="emp-stat-label">Adjustments (Units)</div>
+            </div>
+          </div>
+
+          {/* Movement Visual Chart */}
+          {movementChartData.length > 0 && (
+            <div className="emp-panel p-4 sm:p-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <div>
+                  <h2 className="emp-panel-title text-base sm:text-lg">Recent Movement Volume Chart</h2>
+                  <p className="emp-panel-desc text-xs sm:text-sm">Visual comparison of incoming vs sales vs adjustment activity</p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="stock-in-ref">Reference No</Label>
-                  <Input
-                    id="stock-in-ref"
-                    value={stockInForm.referenceNo}
-                    onChange={(e) =>
-                      setStockInForm({ ...stockInForm, referenceNo: e.target.value })
-                    }
-                    placeholder="INV-001 (optional)"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Product</Label>
-                  <Select
-                    value={stockInForm.productId}
-                    onValueChange={(v) => setStockInForm({ ...stockInForm, productId: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select product" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {products.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="stock-in-date">Purchase Date</Label>
-                  <Input
-                    id="stock-in-date"
-                    type="date"
-                    value={stockInForm.purchaseDate}
-                    onChange={(e) =>
-                      setStockInForm({ ...stockInForm, purchaseDate: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="stock-in-qty">Quantity</Label>
-                  <Input
-                    id="stock-in-qty"
-                    type="number"
-                    min="0.01"
-                    step="0.01"
-                    value={stockInForm.quantity}
-                    onChange={(e) => setStockInForm({ ...stockInForm, quantity: e.target.value })}
-                    placeholder="0"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="stock-in-unit">Unit Cost (LKR)</Label>
-                  <Input
-                    id="stock-in-unit"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={stockInForm.unitCost}
-                    onChange={(e) => setStockInForm({ ...stockInForm, unitCost: e.target.value })}
-                    placeholder="0"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Total Amount</Label>
-                  <Input value={formatMoneyLkr(stockInTotals.total)} readOnly disabled />
-                </div>
-                <div className="space-y-2">
-                  <Label>Payment Type</Label>
-                  <Select
-                    value={stockInForm.paymentType}
-                    onValueChange={(v) =>
-                      setStockInForm({
-                        ...stockInForm,
-                        paymentType: v as PaymentType,
-                        paidAmount: '',
-                      })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="PAID">Paid</SelectItem>
-                      <SelectItem value="PARTIAL">Partial</SelectItem>
-                      <SelectItem value="CREDIT">Credit</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {stockInForm.paymentType === 'PARTIAL' ? (
-                  <div className="space-y-2">
-                    <Label htmlFor="stock-in-paid">Paid Amount (LKR)</Label>
-                    <Input
-                      id="stock-in-paid"
-                      type="number"
-                      min="0.01"
-                      step="0.01"
-                      value={stockInForm.paidAmount}
-                      onChange={(e) =>
-                        setStockInForm({ ...stockInForm, paidAmount: e.target.value })
-                      }
-                      placeholder="0"
-                      required
-                    />
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Label>Paid Amount</Label>
-                    <Input value={formatMoneyLkr(stockInTotals.paid)} readOnly disabled />
-                  </div>
-                )}
-                <div className="space-y-2">
-                  <Label>Outstanding Amount</Label>
-                  <Input value={formatMoneyLkr(stockInTotals.outstanding)} readOnly disabled />
-                </div>
-                <div className="space-y-2" style={{ gridColumn: '1 / -1' }}>
-                  <Label htmlFor="stock-in-notes">Notes</Label>
-                  <FormTextarea
-                    id="stock-in-notes"
-                    value={stockInForm.notes}
-                    onChange={(e) => setStockInForm({ ...stockInForm, notes: e.target.value })}
-                    placeholder="Optional"
-                    rows={2}
-                  />
+                <div className="flex flex-wrap items-center gap-3 text-xs font-semibold">
+                  <span className="flex items-center gap-1.5 text-emerald-700">
+                    <span className="w-2.5 h-2.5 rounded bg-emerald-600 inline-block" /> Stock In
+                  </span>
+                  <span className="flex items-center gap-1.5 text-blue-700">
+                    <span className="w-2.5 h-2.5 rounded bg-blue-600 inline-block" /> Sales Out
+                  </span>
+                  <span className="flex items-center gap-1.5 text-amber-700">
+                    <span className="w-2.5 h-2.5 rounded bg-amber-500 inline-block" /> Adjustments
+                  </span>
                 </div>
               </div>
-              <FormSubmit
-                pending={stockInMutation.isPending}
-                disabled={!stockInForm.branchId || !stockInForm.productId}
+              <div className="h-56 sm:h-64 md:h-72 w-full pt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={movementChartData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} interval={0} angle={-15} textAnchor="end" />
+                    <YAxis tick={{ fontSize: 11, fill: '#64748b' }} allowDecimals={false} />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: 10,
+                        border: '1px solid #e2e8f0',
+                        fontSize: 12,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+                      }}
+                    />
+                    <Bar dataKey="stockIn" fill="#10b981" radius={[4, 4, 0, 0]} name="Stock In" />
+                    <Bar dataKey="sales" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Sales" />
+                    <Bar dataKey="adjustment" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Adjustments" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
+          {/* Movement Filter Card */}
+          <div className="catalog-filter-card">
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 flex-1">
+              <div className="catalog-search-wrap w-full sm:w-auto">
+                <Search className="search-icon h-4 w-4" />
+                <input
+                  type="text"
+                  placeholder="Search product, branch, or notes..."
+                  value={movementSearch}
+                  onChange={(e) => setMovementSearch(e.target.value)}
+                  className="catalog-search-input"
+                />
+                {movementSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setMovementSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Movement Type Filter */}
+              <select
+                value={movementTypeFilter}
+                onChange={(e) => setMovementTypeFilter(e.target.value)}
+                className="catalog-filter-select w-full sm:w-auto"
               >
-                Record Stock In
-              </FormSubmit>
-            </SimpleForm>
+                <option value="all">All Movement Types</option>
+                <option value="IN">Stock In (Receipts)</option>
+                <option value="SALE">POS Sales</option>
+                <option value="ADJUSTMENT">Adjustments</option>
+              </select>
+
+              {/* Product Filter */}
+              <select
+                value={selectedProductId}
+                onChange={(e) => setSelectedProductId(e.target.value)}
+                className="catalog-filter-select w-full sm:w-auto"
+              >
+                <option value="all">All Products</option>
+                {products.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+
+              {/* Branch Filter */}
+              <Select value={branchId} onValueChange={setBranchId}>
+                <SelectTrigger className="emp-select w-full sm:w-[170px] h-[38px]">
+                  <SelectValue placeholder="All branches" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Branches</SelectItem>
+                  {branches.map((b) => (
+                    <SelectItem key={b.id} value={b.id}>
+                      {b.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <span className="text-xs font-semibold text-slate-500 whitespace-nowrap self-end sm:self-center">
+              {filteredMovements.length} movement{filteredMovements.length === 1 ? '' : 's'}
+            </span>
+          </div>
+
+          {/* Movements Table */}
+          <div className="emp-panel">
+            {filteredMovements.length === 0 ? (
+              <div className="emp-empty">No movement records match the selected filters.</div>
+            ) : (
+              <div className="emp-table-wrap">
+                <table className="emp-table">
+                  <thead>
+                    <tr>
+                      <th>Date & Time</th>
+                      <th>Branch</th>
+                      <th>Product</th>
+                      <th>Type</th>
+                      <th>Quantity</th>
+                      <th>Notes / Reason</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredMovements.map((m) => (
+                      <tr key={m.id}>
+                        <td className="whitespace-nowrap">{formatSriLankaDateTime(m.createdAt)}</td>
+                        <td>{m.branchName}</td>
+                        <td className="emp-name-cell">{m.productName}</td>
+                        <td>
+                          <span className={movementTypeClass(m.type)}>{m.type}</span>
+                        </td>
+                        <td className="font-semibold text-slate-800">
+                          {m.type.toUpperCase().includes('IN')
+                            ? `+${m.quantity}`
+                            : m.type.toUpperCase().includes('SALE')
+                            ? `−${m.quantity}`
+                            : m.quantity}
+                        </td>
+                        <td className="text-slate-600">{m.notes || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
 
+      {/* 2. Stock Reports & Levels View */}
+      {tab === 'levels' && (
+        <div className="space-y-4">
+          <div className="emp-stats">
+            <div className="emp-stat">
+              <div className="emp-stat-value text-slate-900 flex items-center justify-between">
+                <span>{stats.skus}</span>
+                <Boxes className="h-6 w-6 text-slate-400 stroke-1" />
+              </div>
+              <div className="emp-stat-label">SKUs Monitored</div>
+            </div>
+            <div className="emp-stat">
+              <div className="emp-stat-value text-slate-900 flex items-center justify-between">
+                <span>{stats.totalQty}</span>
+                <Package className="h-6 w-6 text-emerald-500 stroke-1" />
+              </div>
+              <div className="emp-stat-label">Total Units in Stock</div>
+            </div>
+            <div className="emp-stat">
+              <div className="emp-stat-value text-amber-600 flex items-center justify-between">
+                <span>{stats.low}</span>
+                <AlertTriangle className="h-6 w-6 text-amber-500 stroke-1" />
+              </div>
+              <div className="emp-stat-label">Low Stock Items (≤ 5)</div>
+            </div>
+          </div>
+
+          <div className="catalog-filter-card">
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 flex-1">
+              <div className="catalog-search-wrap w-full sm:w-auto">
+                <Search className="search-icon h-4 w-4" />
+                <input
+                  type="text"
+                  placeholder="Search stock by product or branch..."
+                  value={levelSearch}
+                  onChange={(e) => setLevelSearch(e.target.value)}
+                  className="catalog-search-input"
+                />
+                {levelSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setLevelSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <Select value={branchId} onValueChange={setBranchId}>
+                <SelectTrigger className="emp-select w-full sm:w-[180px] h-[38px]">
+                  <SelectValue placeholder="All branches" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Branches</SelectItem>
+                  {branches.map((b) => (
+                    <SelectItem key={b.id} value={b.id}>
+                      {b.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <button
+                type="button"
+                onClick={() => setLowStockOnly((prev) => !prev)}
+                className={`px-3 py-2 text-xs font-semibold rounded-lg border transition-all flex items-center gap-1.5 ${
+                  lowStockOnly
+                    ? 'bg-amber-50 text-amber-800 border-amber-300 shadow-sm'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                <span>⚠️ Low Stock Only</span>
+                <span className="bg-amber-200/80 text-amber-900 px-1.5 py-0.2 rounded-full text-[10px] font-bold">
+                  {stats.low}
+                </span>
+              </button>
+            </div>
+            <span className="text-xs font-semibold text-slate-500 whitespace-nowrap self-end sm:self-center">
+              {filteredLevels.length} record{filteredLevels.length === 1 ? '' : 's'}
+            </span>
+          </div>
+
+          <div className="emp-panel">
+            <div className="emp-panel-header">
+              <div>
+                <h2 className="emp-panel-title">Current Stock Reports</h2>
+                <p className="emp-panel-desc">
+                  Products with quantity at or below {LOW_STOCK_THRESHOLD} are flagged with warning badges
+                </p>
+              </div>
+            </div>
+
+            {filteredLevels.length === 0 ? (
+              <div className="emp-empty">No stock records found for this selection.</div>
+            ) : (
+              <div className="emp-table-wrap">
+                <table className="emp-table">
+                  <thead>
+                    <tr>
+                      <th>Branch</th>
+                      <th>Product Name</th>
+                      <th>Product Code</th>
+                      <th>Current Quantity</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredLevels.map((item) => {
+                      const isLow = item.quantity <= LOW_STOCK_THRESHOLD;
+                      const isOut = item.quantity <= 0;
+                      return (
+                        <tr key={item.id}>
+                          <td className="whitespace-nowrap">{item.branchName}</td>
+                          <td className="emp-name-cell">{item.productName}</td>
+                          <td className="emp-code">{item.productCode}</td>
+                          <td>
+                            <span className={qtyBadgeClass(item.quantity)}>{item.quantity}</span>
+                          </td>
+                          <td>
+                            {isOut ? (
+                              <span className="inline-flex items-center gap-1 text-xs font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                                Out of Stock
+                              </span>
+                            ) : isLow ? (
+                              <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                                Low Stock Alert
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                In Stock
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 3. Credits Tab - List View */}
       {tab === 'credits' && !detailId && (
-        <div className="emp-panel">
-          <div className="emp-toolbar">
-            <div className="emp-toolbar-filters" style={{ flexWrap: 'wrap', gap: 8 }}>
-              <Input
-                placeholder="Search reference…"
-                value={creditFilters.search}
-                onChange={(e) =>
-                  setCreditFilters({ ...creditFilters, search: e.target.value, page: 1 })
-                }
-                className="w-full sm:w-[180px]"
-              />
+        <div className="space-y-4">
+          <div className="emp-stats">
+            <div className="emp-stat">
+              <div className="emp-stat-value text-slate-900">{formatMoneyLkr(creditSummary.totalPurchases)}</div>
+              <div className="emp-stat-label">Total Purchases</div>
+            </div>
+            <div className="emp-stat">
+              <div className="emp-stat-value text-emerald-700">{formatMoneyLkr(creditSummary.totalPaid)}</div>
+              <div className="emp-stat-label">Total Paid</div>
+            </div>
+            <div className="emp-stat">
+              <div className="emp-stat-value text-rose-600">{formatMoneyLkr(creditSummary.totalOutstanding)}</div>
+              <div className="emp-stat-label">Outstanding Balance</div>
+            </div>
+          </div>
+
+          <div className="catalog-filter-card">
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 flex-1">
+              <div className="catalog-search-wrap w-full sm:w-auto">
+                <Search className="search-icon h-4 w-4" />
+                <input
+                  placeholder="Search reference no..."
+                  value={creditSearch}
+                  onChange={(e) => {
+                    setCreditSearch(e.target.value);
+                    setCreditFilters((prev) => ({ ...prev, page: 1 }));
+                  }}
+                  className="catalog-search-input"
+                />
+              </div>
+
               <Select
                 value={creditFilters.branchId}
                 onValueChange={(v) =>
                   setCreditFilters({ ...creditFilters, branchId: v, page: 1 })
                 }
               >
-                <SelectTrigger className="emp-select w-full sm:w-[160px]">
+                <SelectTrigger className="emp-select w-full sm:w-[160px] h-[38px]">
                   <SelectValue placeholder="Branch" />
                 </SelectTrigger>
                 <SelectContent>
@@ -694,13 +810,14 @@ export default function StockPage() {
                   ))}
                 </SelectContent>
               </Select>
+
               <Select
                 value={creditFilters.paymentStatus}
                 onValueChange={(v) =>
                   setCreditFilters({ ...creditFilters, paymentStatus: v, page: 1 })
                 }
               >
-                <SelectTrigger className="emp-select w-full sm:w-[140px]">
+                <SelectTrigger className="emp-select w-full sm:w-[140px] h-[38px]">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -710,387 +827,393 @@ export default function StockPage() {
                   <SelectItem value="PAID">Paid</SelectItem>
                 </SelectContent>
               </Select>
-              <Input
-                type="date"
-                value={creditFilters.fromDate}
-                onChange={(e) =>
-                  setCreditFilters({ ...creditFilters, fromDate: e.target.value, page: 1 })
-                }
-                className="w-full sm:w-[150px]"
-              />
-              <Input
-                type="date"
-                value={creditFilters.toDate}
-                onChange={(e) =>
-                  setCreditFilters({ ...creditFilters, toDate: e.target.value, page: 1 })
-                }
-                className="w-full sm:w-[150px]"
-              />
-            </div>
-          </div>
 
-          {credits.length === 0 ? (
-            <div className="emp-empty">No stock purchase credits found.</div>
-          ) : (
-            <div className="emp-table-wrap">
-              <table className="emp-table">
-                <thead>
-                  <tr>
-                    <th>Reference</th>
-                    <th>Date</th>
-                    <th>Branch</th>
-                    <th>Total (LKR)</th>
-                    <th>Paid (LKR)</th>
-                    <th>Balance (LKR)</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {credits.map((row) => (
-                    <tr key={row.id}>
-                      <td className="emp-name-cell">{row.referenceNo || '—'}</td>
-                      <td>{row.purchaseDate}</td>
-                      <td>{row.branchName}</td>
-                      <td>{formatMoneyAmount(row.totalAmount)}</td>
-                      <td>{formatMoneyAmount(row.paidAmount)}</td>
-                      <td>{formatMoneyAmount(row.outstandingAmount)}</td>
-                      <td>
-                        <span className={paymentStatusClass(row.paymentStatus)}>
-                          {paymentStatusLabel(row.paymentStatus)}
-                        </span>
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', gap: 8 }}>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setDetailId(row.id)}
-                          >
-                            View
-                          </Button>
-                          {row.paymentStatus !== 'PAID' && (
-                            <Button type="button" size="sm" onClick={() => openPay(row)}>
-                              Pay
-                            </Button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {creditMeta && creditMeta.totalPages > 1 && (
-            <div className="emp-toolbar" style={{ marginTop: 12 }}>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={creditFilters.page <= 1}
-                onClick={() =>
-                  setCreditFilters({ ...creditFilters, page: Math.max(1, creditFilters.page - 1) })
-                }
-              >
-                Previous
-              </Button>
-              <span style={{ fontSize: '0.8125rem', color: 'var(--emp-muted)' }}>
-                Page {creditMeta.page} of {creditMeta.totalPages}
-              </span>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={creditFilters.page >= creditMeta.totalPages}
-                onClick={() =>
-                  setCreditFilters({ ...creditFilters, page: creditFilters.page + 1 })
-                }
-              >
-                Next
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {tab === 'credits' && detailId && (
-        <div className="emp-panel">
-          <div className="emp-panel-header">
-            <div>
-              <h2 className="emp-panel-title">
-                Credit detail {detail?.referenceNo ? `· ${detail.referenceNo}` : ''}
-              </h2>
-              <p className="emp-panel-desc">Payment history does not change stock quantities</p>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <Button type="button" variant="outline" onClick={() => setDetailId(null)}>
-                Back
-              </Button>
-              {detail && detail.paymentStatus !== 'PAID' && (
-                <Button type="button" onClick={() => openPay(detail)}>
-                  Pay
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {detailQuery.isLoading ? (
-            <OpsLoading />
-          ) : detailQuery.isError || !detail ? (
-            <OpsError
-              message={getErrorMessage(detailQuery.error)}
-              onRetry={() => void detailQuery.refetch()}
-            />
-          ) : (
-            <>
-              <div className="emp-stats">
-                <div className="emp-stat">
-                  <div className="emp-stat-value">{formatMoneyLkr(detail.totalAmount)}</div>
-                  <div className="emp-stat-label">Total</div>
-                </div>
-                <div className="emp-stat">
-                  <div className="emp-stat-value">{formatMoneyLkr(detail.paidAmount)}</div>
-                  <div className="emp-stat-label">Paid</div>
-                </div>
-                <div className="emp-stat">
-                  <div className="emp-stat-value">{formatMoneyLkr(detail.outstandingAmount)}</div>
-                  <div className="emp-stat-label">Balance</div>
-                </div>
-                <div className="emp-stat">
-                  <div className="emp-stat-value">
-                    <span className={paymentStatusClass(detail.paymentStatus)}>
-                      {paymentStatusLabel(detail.paymentStatus as StockReceiptPaymentStatus)}
-                    </span>
-                  </div>
-                  <div className="emp-stat-label">Status · {detail.branchName}</div>
-                </div>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <Input
+                  type="date"
+                  value={creditFilters.fromDate}
+                  onChange={(e) => {
+                    const newFrom = e.target.value;
+                    setCreditFilters((prev) => ({
+                      ...prev,
+                      fromDate: newFrom,
+                      toDate: prev.toDate && newFrom && prev.toDate < newFrom ? newFrom : prev.toDate,
+                      page: 1,
+                    }));
+                  }}
+                  className="w-full sm:w-[140px] h-[38px] text-xs"
+                />
+                <span className="text-slate-400 text-xs">to</span>
+                <Input
+                  type="date"
+                  value={creditFilters.toDate}
+                  min={creditFilters.fromDate || undefined}
+                  onChange={(e) =>
+                    setCreditFilters((prev) => ({ ...prev, toDate: e.target.value, page: 1 }))
+                  }
+                  className="w-full sm:w-[140px] h-[38px] text-xs"
+                />
               </div>
+            </div>
+          </div>
 
-              <h3 className="emp-panel-title" style={{ marginTop: 8 }}>
-                Items
-              </h3>
+          <div className="emp-panel">
+            {credits.length === 0 ? (
+              <div className="emp-empty">No supplier purchase credits found.</div>
+            ) : (
               <div className="emp-table-wrap">
                 <table className="emp-table">
                   <thead>
                     <tr>
-                      <th>Product</th>
-                      <th>Qty</th>
-                      <th>Unit Cost (LKR)</th>
-                      <th>Line Total (LKR)</th>
+                      <th>Reference</th>
+                      <th>Date</th>
+                      <th>Branch</th>
+                      <th>Total (LKR)</th>
+                      <th>Paid (LKR)</th>
+                      <th>Balance (LKR)</th>
+                      <th>Status</th>
+                      <th>Action</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {detail.items.map((item) => (
-                      <tr key={item.id}>
-                        <td className="emp-name-cell">{item.productName}</td>
-                        <td>{item.quantity}</td>
-                        <td>{formatMoneyAmount(item.unitCost)}</td>
-                        <td>{formatMoneyAmount(item.lineTotal)}</td>
-                      </tr>
-                    ))}
+                    {credits.map((row) => {
+                      const refCode = row.referenceNo || `REC-${row.id.slice(0, 8).toUpperCase()}`;
+                      return (
+                        <tr key={row.id}>
+                          <td>
+                            <span className="font-mono font-bold text-xs text-slate-800 bg-slate-100 px-2 py-1 rounded border border-slate-200 inline-flex items-center gap-1">
+                              {refCode}
+                            </span>
+                          </td>
+                          <td className="whitespace-nowrap">{row.purchaseDate}</td>
+                          <td>{row.branchName}</td>
+                          <td>{formatMoneyAmount(row.totalAmount)}</td>
+                          <td className="text-emerald-700 font-semibold">{formatMoneyAmount(row.paidAmount)}</td>
+                          <td className="font-bold text-slate-900">{formatMoneyAmount(row.outstandingAmount)}</td>
+                          <td>
+                            <span className={paymentStatusClass(row.paymentStatus)}>
+                              {paymentStatusLabel(row.paymentStatus)}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="flex items-center gap-1.5">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-8 text-xs px-2.5"
+                                onClick={() => setDetailId(row.id)}
+                              >
+                                View
+                              </Button>
+                              {row.paymentStatus !== 'PAID' && (
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  className="catalog-primary-btn h-8 text-xs px-3"
+                                  onClick={() => openPay(row)}
+                                >
+                                  Pay
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
+            )}
 
-              <h3 className="emp-panel-title" style={{ marginTop: 16 }}>
-                Payment History
-              </h3>
-              {detail.payments.length === 0 ? (
-                <div className="emp-empty">No payments recorded yet.</div>
-              ) : (
-                <div className="emp-table-wrap">
-                  <table className="emp-table">
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Amount (LKR)</th>
-                        <th>Method</th>
-                        <th>Reference</th>
-                        <th>Notes</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {detail.payments.map((p) => (
-                        <tr key={p.id}>
-                          <td>{p.paymentDate}</td>
-                          <td>{formatMoneyAmount(p.amount)}</td>
-                          <td>{p.paymentMethod.replace('_', ' ')}</td>
-                          <td>{p.paymentReference || '—'}</td>
-                          <td>{p.notes || '—'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </>
-          )}
+            {creditMeta && creditMeta.totalPages > 1 && (
+              <div className="emp-toolbar p-4 border-t border-slate-100 mt-3 flex-row justify-between items-center">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={creditFilters.page <= 1}
+                  onClick={() =>
+                    setCreditFilters({ ...creditFilters, page: Math.max(1, creditFilters.page - 1) })
+                  }
+                >
+                  Previous
+                </Button>
+                <span className="text-xs font-semibold text-slate-500">
+                  Page {creditMeta.page} of {creditMeta.totalPages}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={creditFilters.page >= creditMeta.totalPages}
+                  onClick={() =>
+                    setCreditFilters({ ...creditFilters, page: creditFilters.page + 1 })
+                  }
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      {tab === 'adjustment' && (
-        <div className="emp-panel">
-          <div className="emp-form-panel">
-            <h2 className="emp-form-panel-title">Stock Adjustment</h2>
-            <p className="emp-form-panel-desc">
-              Use positive values to increase stock, negative values to decrease (e.g. damage or
-              correction).
-            </p>
-            <SimpleForm
-              onSubmit={(e) => {
-                e.preventDefault();
-                setFormError(null);
-                adjustMutation.mutate({
-                  branchId: adjustForm.branchId,
-                  productId: adjustForm.productId,
-                  quantity: Number(adjustForm.quantity),
-                  notes: adjustForm.notes || undefined,
-                });
-              }}
-            >
-              <FormError message={formError} />
-              <div className="emp-form-grid">
-                <div className="space-y-2">
-                  <Label>Branch</Label>
-                  <Select
-                    value={adjustForm.branchId}
-                    onValueChange={(v) => setAdjustForm({ ...adjustForm, branchId: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select branch" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {branches.map((b) => (
-                        <SelectItem key={b.id} value={b.id}>
-                          {b.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Product</Label>
-                  <Select
-                    value={adjustForm.productId}
-                    onValueChange={(v) => setAdjustForm({ ...adjustForm, productId: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select product" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {products.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="adjust-qty">Adjustment quantity</Label>
-                  <Input
-                    id="adjust-qty"
-                    type="number"
-                    step="0.01"
-                    value={adjustForm.quantity}
-                    onChange={(e) => setAdjustForm({ ...adjustForm, quantity: e.target.value })}
-                    placeholder="+ or −"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="adjust-notes">Notes</Label>
-                  <FormTextarea
-                    id="adjust-notes"
-                    value={adjustForm.notes}
-                    onChange={(e) => setAdjustForm({ ...adjustForm, notes: e.target.value })}
-                    placeholder="Reason for adjustment"
-                    rows={2}
-                  />
+      {/* 4. Supplier Credit Detail View */}
+      {tab === 'credits' && detailId && (
+        <div className="space-y-4">
+          <div className="emp-panel p-4 sm:p-6">
+            {/* Header with Back button and Actions */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 mb-5">
+              <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-9 w-9 p-0 rounded-lg flex items-center justify-center shrink-0"
+                  onClick={() => setDetailId(null)}
+                >
+                  <ArrowLeft className="h-4 w-4 text-slate-700" />
+                </Button>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-lg font-bold text-slate-900">Credit Receipt Detail</h2>
+                    <span className="font-mono text-xs font-bold bg-slate-100 text-slate-800 px-2.5 py-1 rounded border border-slate-200">
+                      {detail?.referenceNo || `REC-${(detail?.id?.slice(0, 8) ?? '').toUpperCase()}`}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    View line items, cost breakdown, and recorded payments ledger
+                  </p>
                 </div>
               </div>
-              <FormSubmit
-                pending={adjustMutation.isPending}
-                disabled={!adjustForm.branchId || !adjustForm.productId}
-              >
-                Apply Adjustment
-              </FormSubmit>
-            </SimpleForm>
+
+              {detail && detail.paymentStatus !== 'PAID' && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    className="catalog-primary-btn"
+                    onClick={() => openPay(detail)}
+                  >
+                    <CreditCard className="h-4 w-4" /> Pay Balance ({formatMoneyLkr(detail.outstandingAmount)})
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {detailQuery.isLoading ? (
+              <OpsLoading />
+            ) : detailQuery.isError || !detail ? (
+              <OpsError
+                message={getErrorMessage(detailQuery.error)}
+                onRetry={() => void detailQuery.refetch()}
+              />
+            ) : (
+              <div className="space-y-6">
+                {/* Meta details banner */}
+                <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                  <div>
+                    <span className="text-slate-500 font-medium block uppercase tracking-wider text-[10px]">
+                      Reference Number
+                    </span>
+                    <span className="font-mono font-bold text-slate-900 text-sm mt-0.5 block">
+                      {detail.referenceNo || `REC-${detail.id.slice(0, 8).toUpperCase()}`}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-medium block uppercase tracking-wider text-[10px]">
+                      Purchase Date
+                    </span>
+                    <span className="font-semibold text-slate-800 text-sm mt-0.5 block">
+                      {detail.purchaseDate}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-medium block uppercase tracking-wider text-[10px]">
+                      Receiving Branch
+                    </span>
+                    <span className="font-semibold text-slate-800 text-sm mt-0.5 block">
+                      {detail.branchName}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 font-medium block uppercase tracking-wider text-[10px]">
+                      Payment Status
+                    </span>
+                    <div className="mt-1">
+                      <span className={paymentStatusClass(detail.paymentStatus)}>
+                        {paymentStatusLabel(detail.paymentStatus as StockReceiptPaymentStatus)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3 KPI cards for financial summary */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                  <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                    <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">
+                      Total Purchase
+                    </div>
+                    <div className="text-2xl font-bold text-slate-900">
+                      {formatMoneyLkr(detail.totalAmount)}
+                    </div>
+                    <div className="text-[11px] text-slate-400 mt-1">Invoice amount from stock in</div>
+                  </div>
+
+                  <div className="bg-emerald-50/40 border border-emerald-200/80 rounded-xl p-4 shadow-sm">
+                    <div className="text-xs font-semibold uppercase tracking-wider text-emerald-800 mb-1">
+                      Amount Paid
+                    </div>
+                    <div className="text-2xl font-bold text-emerald-700">
+                      {formatMoneyLkr(detail.paidAmount)}
+                    </div>
+                    <div className="text-[11px] text-emerald-600/80 mt-1">Recorded payments to date</div>
+                  </div>
+
+                  <div
+                    className={`border rounded-xl p-4 shadow-sm ${
+                      detail.outstandingAmount > 0
+                        ? 'bg-rose-50/40 border-rose-200/80'
+                        : 'bg-slate-50/60 border-slate-200'
+                    }`}
+                  >
+                    <div
+                      className={`text-xs font-semibold uppercase tracking-wider mb-1 ${
+                        detail.outstandingAmount > 0 ? 'text-rose-800' : 'text-slate-500'
+                      }`}
+                    >
+                      Outstanding Balance
+                    </div>
+                    <div
+                      className={`text-2xl font-bold ${
+                        detail.outstandingAmount > 0 ? 'text-rose-600' : 'text-emerald-700'
+                      }`}
+                    >
+                      {formatMoneyLkr(detail.outstandingAmount)}
+                    </div>
+                    <div className="text-[11px] text-slate-400 mt-1">
+                      {detail.outstandingAmount > 0 ? 'Payable supplier balance' : 'Fully settled'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Items Section */}
+                <div>
+                  <div className="flex items-center justify-between mb-2.5">
+                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
+                      <Layers className="h-4 w-4 text-slate-500" /> Purchased Items ({detail.items.length})
+                    </h3>
+                  </div>
+                  <div className="emp-table-wrap">
+                    <table className="emp-table">
+                      <thead>
+                        <tr>
+                          <th>Product</th>
+                          <th>Qty</th>
+                          <th>Unit Cost (LKR)</th>
+                          <th>Line Total (LKR)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {detail.items.map((item) => (
+                          <tr key={item.id}>
+                            <td className="emp-name-cell">{item.productName}</td>
+                            <td className="font-semibold text-slate-800">{item.quantity}</td>
+                            <td>{formatMoneyAmount(item.unitCost)}</td>
+                            <td className="font-bold text-slate-900">{formatMoneyAmount(item.lineTotal)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-slate-50/70 font-semibold text-slate-800">
+                          <td>Total</td>
+                          <td>{detail.items.reduce((sum, it) => sum + it.quantity, 0)}</td>
+                          <td>—</td>
+                          <td className="text-slate-900 font-bold">{formatMoneyLkr(detail.totalAmount)}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Payment History Section */}
+                <div>
+                  <div className="flex items-center justify-between mb-2.5">
+                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide flex items-center gap-1.5">
+                      <Receipt className="h-4 w-4 text-slate-500" /> Payment History ({detail.payments.length})
+                    </h3>
+                  </div>
+                  {detail.payments.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-xs text-slate-500 bg-slate-50/50">
+                      No payments recorded yet for this purchase credit.
+                    </div>
+                  ) : (
+                    <div className="emp-table-wrap">
+                      <table className="emp-table">
+                        <thead>
+                          <tr>
+                            <th>Date</th>
+                            <th>Amount (LKR)</th>
+                            <th>Method</th>
+                            <th>Reference</th>
+                            <th>Notes</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {detail.payments.map((p) => (
+                            <tr key={p.id}>
+                              <td className="whitespace-nowrap font-medium text-slate-800">{p.paymentDate}</td>
+                              <td className="font-bold text-emerald-700">{formatMoneyAmount(p.amount)}</td>
+                              <td>
+                                <span className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                                  {p.paymentMethod.replace('_', ' ')}
+                                </span>
+                              </td>
+                              <td className="font-mono text-xs text-slate-600">{p.paymentReference || '—'}</td>
+                              <td className="text-slate-600 text-xs">{p.notes || '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {tab === 'movements' && (
-        <div className="emp-panel">
-          <div className="emp-panel-header">
-            <div>
-              <h2 className="emp-panel-title">Movement History</h2>
-              <p className="emp-panel-desc">
-                Stock in, adjustments, and POS sales. Credit payments do not appear here.
-              </p>
-            </div>
-          </div>
-          {movements.length === 0 ? (
-            <div className="emp-empty">No movements recorded for this filter.</div>
-          ) : (
-            <div className="emp-table-wrap">
-              <table className="emp-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Branch</th>
-                    <th>Product</th>
-                    <th>Type</th>
-                    <th>Quantity</th>
-                    <th>Notes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {movements.map((m) => (
-                    <tr key={m.id}>
-                      <td>{formatSriLankaDateTime(m.createdAt)}</td>
-                      <td>{m.branchName}</td>
-                      <td className="emp-name-cell">{m.productName}</td>
-                      <td>
-                        <span className={movementTypeClass(m.type)}>{m.type}</span>
-                      </td>
-                      <td>{m.quantity}</td>
-                      <td>{m.notes || '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
+      {/* Pay Credit Modal */}
       <Dialog
         open={!!payTarget}
         onOpenChange={(open) => {
           if (!open) setPayTarget(null);
         }}
       >
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Credit Payment</DialogTitle>
           </DialogHeader>
           {payTarget && (
-            <div style={{ marginBottom: 12, fontSize: 13, color: 'var(--emp-muted)' }}>
-              <div>
-                <strong>Reference:</strong> {payTarget.referenceNo || '—'}
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5 mb-3">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Reference:</span>
+                <span className="font-mono font-bold text-slate-900">
+                  {payTarget.referenceNo || `REC-${payTarget.id.slice(0, 8).toUpperCase()}`}
+                </span>
               </div>
-              <div>
-                <strong>Total:</strong> {formatMoneyLkr(payTarget.totalAmount)}
+              <div className="flex justify-between">
+                <span className="text-slate-500">Total Purchase:</span>
+                <span className="font-semibold text-slate-800">{formatMoneyLkr(payTarget.totalAmount)}</span>
               </div>
-              <div>
-                <strong>Already Paid:</strong> {formatMoneyLkr(payTarget.paidAmount)}
+              <div className="flex justify-between">
+                <span className="text-slate-500">Already Paid:</span>
+                <span className="font-semibold text-emerald-700">{formatMoneyLkr(payTarget.paidAmount)}</span>
               </div>
-              <div>
-                <strong>Outstanding:</strong> {formatMoneyLkr(payTarget.outstandingAmount)}
+              <div className="flex justify-between border-t border-slate-200 pt-1.5 font-bold">
+                <span className="text-slate-700">Outstanding Balance:</span>
+                <span className="text-rose-600">{formatMoneyLkr(payTarget.outstandingAmount)}</span>
               </div>
             </div>
           )}
@@ -1114,7 +1237,7 @@ export default function StockPage() {
             <FormError message={formError} />
             <div className="emp-form-grid">
               <div className="space-y-2">
-                <Label htmlFor="pay-amount">Payment Amount</Label>
+                <Label htmlFor="pay-amount">Payment Amount (LKR)</Label>
                 <Input
                   id="pay-amount"
                   type="number"
@@ -1157,7 +1280,7 @@ export default function StockPage() {
                   id="pay-ref"
                   value={payForm.paymentReference}
                   onChange={(e) => setPayForm({ ...payForm, paymentReference: e.target.value })}
-                  placeholder="Optional"
+                  placeholder="e.g. Cheque # / Slip #"
                 />
               </div>
               <div className="space-y-2" style={{ gridColumn: '1 / -1' }}>
@@ -1167,6 +1290,7 @@ export default function StockPage() {
                   value={payForm.notes}
                   onChange={(e) => setPayForm({ ...payForm, notes: e.target.value })}
                   rows={2}
+                  placeholder="Optional notes regarding this payment"
                 />
               </div>
             </div>

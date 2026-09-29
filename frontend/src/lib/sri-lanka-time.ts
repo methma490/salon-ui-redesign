@@ -1,10 +1,19 @@
-/** Sri Lanka Standard Time — use for all user-facing dates/times. */
+/** Sri Lanka Standard Time — accurate helpers for all user-facing dates and times. */
 export const SRI_LANKA_TZ = 'Asia/Colombo';
 export const SRI_LANKA_LOCALE = 'en-LK';
 
-function toDate(value: string | Date | number | null | undefined): Date | null {
+/**
+ * Normalizes input date/time values (strings, Dates, numbers)
+ * without corrupting local timestamps.
+ */
+export function parseSriLankaDate(value: string | Date | number | null | undefined): Date | null {
   if (value == null || value === '') return null;
-  const d = value instanceof Date ? value : new Date(value);
+  if (value instanceof Date) return value;
+  let str = String(value).trim();
+  if (str.includes(' ') && !str.includes('T')) {
+    str = str.replace(' ', 'T');
+  }
+  const d = new Date(str);
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
@@ -18,38 +27,45 @@ export function sriLankaTodayIso(now = new Date()): string {
   }).format(now);
 }
 
-/** Display date: 18 Sep 2026 */
+/** Display date: Sep 29, 2026 */
 export function formatSriLankaDate(value: string | Date | number | null | undefined): string {
-  const d = toDate(value);
+  const d = parseSriLankaDate(value);
   if (!d) return '—';
-  // Date-only strings (YYYY-MM-DD) — anchor at noon Colombo to avoid day shift
-  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return new Date(`${value}T12:00:00+05:30`).toLocaleDateString(SRI_LANKA_LOCALE, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      timeZone: SRI_LANKA_TZ,
-    });
-  }
   return d.toLocaleDateString(SRI_LANKA_LOCALE, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-    timeZone: SRI_LANKA_TZ,
+    timeZone: 'UTC',
   });
 }
 
-/** Display date+time in Sri Lanka: 18 Sep 2026, 04:14 pm */
+/** Display time in Sri Lanka: 9:05 AM */
+export function formatSriLankaTime(value: string | Date | number | null | undefined): string {
+  const d = parseSriLankaDate(value);
+  if (!d) return '';
+  return d.toLocaleTimeString(SRI_LANKA_LOCALE, {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'UTC',
+  });
+}
+
+/** Display date + time in Sri Lanka: Sep 29, 2026 · 9:05 AM */
 export function formatSriLankaDateTime(value: string | Date | number | null | undefined): string {
-  const d = toDate(value);
+  const d = parseSriLankaDate(value);
   if (!d) return '—';
-  return d.toLocaleString(SRI_LANKA_LOCALE, {
+  const dateStr = d.toLocaleDateString(SRI_LANKA_LOCALE, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
-    hour: '2-digit',
+    timeZone: 'UTC',
+  });
+  const timeStr = d.toLocaleTimeString(SRI_LANKA_LOCALE, {
+    hour: 'numeric',
     minute: '2-digit',
     hour12: true,
-    timeZone: SRI_LANKA_TZ,
+    timeZone: 'UTC',
   });
+  return `${dateStr} · ${timeStr}`;
 }

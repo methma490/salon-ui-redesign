@@ -25,8 +25,8 @@ import {
 } from '@/features/billing/lib/billing-utils';
 
 import type { AdminInvoiceItem, AdminPaymentItem } from '@/features/billing/types/billing.types';
-
 import { usePublicPlans } from '@/features/plans/hooks/usePlans';
+import { toast } from 'sonner';
 
 import { billingCycleLabel } from '@/features/plans/lib/plan-utils';
 
@@ -49,7 +49,7 @@ import {
 import { redirectToPayHereCheckout } from '@/features/signup/lib/payhere';
 
 import { getErrorMessage, OpsError, OpsLoading } from './salon-ops-ui';
-
+import { hasUnrestrictedSalonAccess, isSalonAdmin as checkIsSalonAdmin } from '@/lib/salon-access';
 import './subscription-page.css';
 
 
@@ -417,16 +417,9 @@ export default function SubscriptionPage() {
 
   const { user } = useAuth();
 
-  const isSalonAdmin = user?.roles.includes('SALON_ADMIN') ?? false;
-
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [planAction, setPlanAction] = useState<PlanAction>(null);
-
-  const [actionError, setActionError] = useState<string | null>(null);
-
-  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
-
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const [downloadingInvoiceId, setDownloadingInvoiceId] = useState<string | null>(null);
@@ -434,23 +427,15 @@ export default function SubscriptionPage() {
   const [paymentsPage, setPaymentsPage] = useState(1);
   const [invoicesPage, setInvoicesPage] = useState(1);
 
-
-
   const {
-
     data: context,
-
     isLoading,
-
     isError,
-
     error,
-
     refetch,
-
   } = useTenantSubscription();
 
-
+  const isSalonAdmin = checkIsSalonAdmin(user?.roles) || hasUnrestrictedSalonAccess(user?.roles, context?.features);
 
   const { data: publicPlans = [] } = usePublicPlans();
 
@@ -458,24 +443,14 @@ export default function SubscriptionPage() {
 
   const mutations = useSubscriptionMutations(subscription?.id);
 
-
-
   const { data: payments, isLoading: paymentsLoading } = useTenantPaymentHistory({
-
     page: paymentsPage,
-
     limit: 5,
-
   });
 
-
-
   const { data: invoices, isLoading: invoicesLoading, isError: invoicesError } = useTenantInvoices(
-
     { page: invoicesPage, limit: 5 },
-
-    { enabled: isSalonAdmin },
-
+    { enabled: true },
   );
 
 
@@ -493,25 +468,15 @@ export default function SubscriptionPage() {
 
 
   useEffect(() => {
-
     const payment = searchParams.get('payment');
-
     if (payment === 'success') {
-
-      setActionSuccess('Payment received. Your subscription will update shortly.');
-
+      toast.success('Payment received. Your subscription will update shortly.');
       setSearchParams({}, { replace: true });
-
       void refetch();
-
     } else if (payment === 'cancel') {
-
-      setActionError('Payment was cancelled.');
-
+      toast.error('Payment was cancelled.');
       setSearchParams({}, { replace: true });
-
     }
-
   }, [searchParams, setSearchParams, refetch]);
 
 
@@ -521,9 +486,6 @@ export default function SubscriptionPage() {
     options?: { planId?: string; planPriceId?: string },
   ) => {
     if (!subscription || !isSalonAdmin) return;
-
-    setActionError(null);
-    setActionSuccess(null);
     setCheckoutLoading(true);
 
     try {
@@ -536,7 +498,7 @@ export default function SubscriptionPage() {
       });
       redirectToPayHereCheckout(result.checkout);
     } catch (err) {
-      setActionError(getErrorMessage(err));
+      toast.error(getErrorMessage(err));
     } finally {
       setCheckoutLoading(false);
     }
@@ -545,68 +507,30 @@ export default function SubscriptionPage() {
 
 
   const handleCancel = async () => {
-
     if (!subscription || !isSalonAdmin) return;
-
     if (!window.confirm('Cancel subscription at the end of the current billing period?')) return;
 
-
-
-    setActionError(null);
-
-    setActionSuccess(null);
-
-
-
     try {
-
       await mutations.cancel.mutateAsync();
-
-      setActionSuccess('Subscription will cancel at period end.');
-
+      toast.success('Subscription will cancel at period end.');
     } catch (err) {
-
-      setActionError(getErrorMessage(err));
-
+      toast.error(getErrorMessage(err));
     }
-
   };
-
-
 
   const handleUndoCancel = async () => {
-
     if (!subscription || !isSalonAdmin) return;
 
-
-
-    setActionError(null);
-
-    setActionSuccess(null);
-
-
-
     try {
-
       await mutations.undoCancel.mutateAsync();
-
-      setActionSuccess('Cancellation removed. Your subscription will continue.');
-
+      toast.success('Cancellation removed. Your subscription will continue.');
     } catch (err) {
-
-      setActionError(getErrorMessage(err));
-
+      toast.error(getErrorMessage(err));
     }
-
   };
-
-
 
   const handlePlanChange = async (planId: string) => {
     if (!subscription || !isSalonAdmin || !planAction) return;
-
-    setActionError(null);
-    setActionSuccess(null);
 
     try {
       if (planAction === 'upgrade') {
@@ -616,35 +540,22 @@ export default function SubscriptionPage() {
       }
 
       await mutations.scheduleDowngrade.mutateAsync({ planId });
-      setActionSuccess('Downgrade scheduled for end of billing period.');
+      toast.success('Downgrade scheduled for end of billing period.');
       setPlanAction(null);
     } catch (err) {
-      setActionError(getErrorMessage(err));
+      toast.error(getErrorMessage(err));
     }
   };
 
-
-
   const handleCancelPendingDowngrade = async () => {
-
     if (!subscription || !isSalonAdmin) return;
 
-    setActionError(null);
-
-    setActionSuccess(null);
-
     try {
-
       await mutations.cancelPendingDowngrade.mutateAsync();
-
-      setActionSuccess('Pending downgrade cancelled. You will keep your current plan.');
-
+      toast.success('Pending downgrade cancelled. You will keep your current plan.');
     } catch (err) {
-
-      setActionError(getErrorMessage(err));
-
+      toast.error(getErrorMessage(err));
     }
-
   };
 
 
@@ -660,7 +571,7 @@ export default function SubscriptionPage() {
       link.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      setActionError(getErrorMessage(err));
+      toast.error(getErrorMessage(err));
     } finally {
       setDownloadingInvoiceId(null);
     }
@@ -668,12 +579,11 @@ export default function SubscriptionPage() {
 
   const handleSendInvoiceEmail = async (id: string, invoiceNumber: string) => {
     setEmailingInvoiceId(id);
-    setActionError(null);
     try {
       const res = await tenantSubscriptionsApi.sendInvoiceEmail(id);
-      setActionSuccess(res.message || `Invoice ${invoiceNumber} emailed successfully!`);
+      toast.success(res.message || `Invoice ${invoiceNumber} emailed successfully!`);
     } catch (err) {
-      setActionError(getErrorMessage(err));
+      toast.error(getErrorMessage(err));
     } finally {
       setEmailingInvoiceId(null);
     }
@@ -790,20 +700,10 @@ export default function SubscriptionPage() {
 
 
       {!isSalonAdmin && (
-
         <div className="sub-alert sub-alert-info">
-
           You have view-only access. Contact a Salon Admin to renew or change your plan.
-
         </div>
-
       )}
-
-
-
-      {actionSuccess && <div className="sub-alert sub-alert-success">{actionSuccess}</div>}
-
-      {actionError && <div className="sub-alert sub-alert-error">{actionError}</div>}
 
       {subscription?.pendingPlan &&
         (subscription.status === 'ACTIVE' || subscription.status === 'EXPIRED') && (

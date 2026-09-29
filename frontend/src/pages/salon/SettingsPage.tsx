@@ -24,6 +24,7 @@ import {
   OpsLoading,
   OpsStatusBadge,
 } from './salon-ops-ui';
+import { toast } from 'sonner';
 import './settings-page.css';
 
 type SettingsTab = 'account' | 'business' | 'appearance' | 'subscription' | 'access' | 'payroll';
@@ -85,8 +86,6 @@ export default function SettingsPage() {
     newPassword: '',
     confirmPassword: '',
   });
-  const [formError, setFormError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [createRoleOpen, setCreateRoleOpen] = useState(false);
   const [newRoleForm, setNewRoleForm] = useState({ name: '', description: '', code: '' });
   const [newRoleAccess, setNewRoleAccess] = useState<Record<string, FeatureAccessLevel>>({});
@@ -234,41 +233,37 @@ export default function SettingsPage() {
   const accountMutation = useMutation({
     mutationFn: tenantApi.settings.updateAccount,
     onSuccess: async () => {
-      setSuccessMessage('Account updated successfully.');
-      setFormError(null);
+      toast.success('Account updated successfully.');
       await invalidateAll();
     },
-    onError: (err) => setFormError(getErrorMessage(err)),
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 
   const salonMutation = useMutation({
     mutationFn: tenantApi.settings.updateSalon,
     onSuccess: async () => {
-      setSuccessMessage('Salon information updated successfully.');
-      setFormError(null);
+      toast.success('Salon information updated successfully.');
       await invalidateAll();
     },
-    onError: (err) => setFormError(getErrorMessage(err)),
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 
   const logoMutation = useMutation({
     mutationFn: tenantApi.settings.uploadLogo,
     onSuccess: async () => {
-      setSuccessMessage('Salon logo updated successfully.');
-      setFormError(null);
+      toast.success('Salon logo updated successfully.');
       await invalidateAll();
     },
-    onError: (err) => setFormError(getErrorMessage(err)),
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 
   const removeLogoMutation = useMutation({
     mutationFn: tenantApi.settings.removeLogo,
     onSuccess: async () => {
-      setSuccessMessage('Salon logo removed.');
-      setFormError(null);
+      toast.success('Salon logo removed.');
       await invalidateAll();
     },
-    onError: (err) => setFormError(getErrorMessage(err)),
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 
   const rolePermissionsMutation = useMutation({
@@ -280,56 +275,51 @@ export default function SettingsPage() {
       moduleAccess: Array<{ moduleCode: string; level: FeatureAccessLevel }>;
     }) => tenantApi.settings.updateRolePermissions(roleCode, moduleAccess),
     onSuccess: async () => {
-      setSuccessMessage('Role permissions updated successfully.');
-      setFormError(null);
+      toast.success('Role permissions updated successfully.');
       await invalidateAll();
     },
-    onError: (err) => setFormError(getErrorMessage(err)),
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 
   const createRoleMutation = useMutation({
     mutationFn: tenantApi.settings.createRole,
     onSuccess: async (created) => {
-      setSuccessMessage(`Role "${created.name}" created successfully.`);
-      setFormError(null);
+      toast.success(`Role "${created.name}" created successfully.`);
       setCreateRoleOpen(false);
       setNewRoleForm({ name: '', description: '', code: '' });
       setNewRoleAccess({});
       setSelectedRoleCode(created.code);
       await invalidateAll();
     },
-    onError: (err) => setFormError(getErrorMessage(err)),
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 
   const deleteRoleMutation = useMutation({
     mutationFn: tenantApi.settings.deleteRole,
     onSuccess: async (result) => {
-      setSuccessMessage(`Role "${formatRoleLabel(result.roleCode)}" deleted.`);
-      setFormError(null);
+      toast.success(`Role "${formatRoleLabel(result.roleCode)}" deleted.`);
       setSelectedRoleCode('');
       await invalidateAll();
     },
-    onError: (err) => setFormError(getErrorMessage(err)),
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 
   const passwordMutation = useMutation({
     mutationFn: tenantApi.settings.changePassword,
     onSuccess: () => {
-      setSuccessMessage('Password changed successfully.');
-      setFormError(null);
+      toast.success('Password changed successfully.');
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
     },
-    onError: (err) => setFormError(getErrorMessage(err)),
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 
   const payrollMutation = useMutation({
     mutationFn: (payload: Partial<PayrollSettings>) => tenantApi.payroll.updateSettings(payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['payroll-settings'] });
-      setFormError(null);
-      setSuccessMessage('Payroll EPF / ETF settings saved.');
+      toast.success('Payroll EPF / ETF settings saved.');
     },
-    onError: (err) => setFormError(getErrorMessage(err)),
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 
   const appearanceMutation = useMutation({
@@ -338,10 +328,9 @@ export default function SettingsPage() {
       qc.setQueryData(['tenant-appearance'], result);
       theme.applySaved(result);
       setCustomHex(result.primaryColor);
-      setFormError(null);
-      setSuccessMessage('Appearance updated successfully.');
+      toast.success('Appearance updated successfully.');
     },
-    onError: (err) => setFormError(getErrorMessage(err)),
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 
   const resetAppearanceMutation = useMutation({
@@ -350,10 +339,9 @@ export default function SettingsPage() {
       qc.setQueryData(['tenant-appearance'], result);
       theme.applySaved(result);
       setCustomHex(result.primaryColor);
-      setFormError(null);
-      setSuccessMessage('Appearance reset to default.');
+      toast.success('Appearance reset to default.');
     },
-    onError: (err) => setFormError(getErrorMessage(err)),
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 
   const selectedRoleDef = accessControl?.roles.find((role) => role.code === selectedRoleCode);
@@ -376,11 +364,9 @@ export default function SettingsPage() {
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setFormError(null);
-    setSuccessMessage(null);
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setFormError('New passwords do not match.');
+      toast.error('New passwords do not match.');
       return;
     }
 
@@ -393,8 +379,6 @@ export default function SettingsPage() {
   const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setFormError(null);
-    setSuccessMessage(null);
     logoMutation.mutate(file);
     e.target.value = '';
   };
@@ -411,8 +395,6 @@ export default function SettingsPage() {
 
   const saveRolePermissions = () => {
     if (!selectedRoleCode || permissionsLocked) return;
-    setFormError(null);
-    setSuccessMessage(null);
     rolePermissionsMutation.mutate({
       roleCode: selectedRoleCode,
       moduleAccess: moduleAccessToPayload(selectedModuleAccess, visibleModules),
@@ -420,8 +402,6 @@ export default function SettingsPage() {
   };
 
   const openCreateRole = () => {
-    setFormError(null);
-    setSuccessMessage(null);
     const defaults: Record<string, FeatureAccessLevel> = {};
     for (const module of visibleModules) {
       defaults[module.code] = 'none';
@@ -434,16 +414,14 @@ export default function SettingsPage() {
   const submitCreateRole = () => {
     const name = newRoleForm.name.trim();
     if (!name) {
-      setFormError('Role name is required.');
+      toast.error('Role name is required.');
       return;
     }
     const moduleAccess = moduleAccessToPayload(newRoleAccess, visibleModules);
     if (moduleAccess.every((entry) => entry.level === 'none')) {
-      setFormError('Grant at least one feature permission for the new role.');
+      toast.error('Grant at least one feature permission for the new role.');
       return;
     }
-    setFormError(null);
-    setSuccessMessage(null);
     createRoleMutation.mutate({
       name,
       description: newRoleForm.description.trim() || undefined,
@@ -495,11 +473,6 @@ export default function SettingsPage() {
           <span className="settings-hero-pill">{data.salon.status}</span>
         </div>
       </header>
-
-      {successMessage && (
-        <div className="settings-alert settings-alert-success">{successMessage}</div>
-      )}
-      {formError && <div className="settings-alert settings-alert-error">{formError}</div>}
 
       <nav className="settings-tabs" aria-label="Settings sections">
         {tabs.map((tab) => (
@@ -740,8 +713,6 @@ export default function SettingsPage() {
                               ) {
                                 return;
                               }
-                              setFormError(null);
-                              setSuccessMessage(null);
                               deleteRoleMutation.mutate(selectedRoleCode);
                             }}
                           >
@@ -1115,8 +1086,6 @@ export default function SettingsPage() {
                     className="emp-btn emp-btn-secondary"
                     disabled={removeLogoMutation.isPending}
                     onClick={() => {
-                      setFormError(null);
-                      setSuccessMessage(null);
                       removeLogoMutation.mutate();
                     }}
                   >
@@ -1131,8 +1100,6 @@ export default function SettingsPage() {
             onSubmit={(e) => {
               e.preventDefault();
               if (!isSalonAdmin) return;
-              setFormError(null);
-              setSuccessMessage(null);
               salonMutation.mutate({
                 name: salonForm.name.trim(),
                 email: salonForm.email.trim() || undefined,
@@ -1228,8 +1195,6 @@ export default function SettingsPage() {
             onSubmit={(e) => {
               e.preventDefault();
               if (!isSalonAdmin) return;
-              setFormError(null);
-              setSuccessMessage(null);
               payrollMutation.mutate({
                 employeeEpfRate: Number(payrollForm.employeeEpfRate),
                 employerEpfRate: Number(payrollForm.employerEpfRate),
@@ -1388,8 +1353,6 @@ export default function SettingsPage() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                setFormError(null);
-                setSuccessMessage(null);
                 accountMutation.mutate({ name: accountName.trim() });
               }}
             >
