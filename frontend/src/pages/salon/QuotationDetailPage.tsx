@@ -23,7 +23,6 @@ import {
   FormError,
   FormSubmit,
   getErrorMessage,
-  OpsError,
   OpsLoading,
   SimpleForm,
 } from './salon-ops-ui';
@@ -52,6 +51,10 @@ export default function QuotationDetailPage() {
   const [paymentMethod, setPaymentMethod] = useState('CASH');
   const [paymentAmount, setPaymentAmount] = useState('');
   const [performers, setPerformers] = useState<Record<string, string>>({});
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReasonPreset, setCancelReasonPreset] = useState('Customer requested');
+  const [cancelReasonCustom, setCancelReasonCustom] = useState('');
+  const [notifyCustomer, setNotifyCustomer] = useState(true);
 
   const query = useQuery({
     queryKey: ['quotation', id],
@@ -87,10 +90,13 @@ export default function QuotationDetailPage() {
   });
 
   const cancelMutation = useMutation({
-    mutationFn: () => tenantApi.quotations.cancel(id),
+    mutationFn: (payload: { reason?: string; notifyCustomer?: boolean }) =>
+      tenantApi.quotations.cancel(id, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['quotation', id] });
       qc.invalidateQueries({ queryKey: ['quotations'] });
+      setCancelOpen(false);
+      setError(null);
     },
     onError: (err) => setError(getErrorMessage(err)),
   });
@@ -119,7 +125,49 @@ export default function QuotationDetailPage() {
   if (query.isLoading) return <OpsLoading />;
   if (query.isError || !detail) {
     return (
-      <OpsError message={getErrorMessage(query.error)} onRetry={() => void query.refetch()} />
+      <div className="emp-page qd-page" style={{ padding: '32px 16px', maxWidth: 560, margin: '0 auto' }}>
+        <div
+          style={{
+            background: '#fff',
+            border: '1px solid #e2e8f0',
+            borderRadius: 12,
+            padding: 28,
+            textAlign: 'center',
+            boxShadow: '0 4px 16px rgba(15,23,42,0.04)',
+          }}
+        >
+          <div
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: '50%',
+              backgroundColor: '#fee2e2',
+              color: '#dc2626',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 12px',
+              fontSize: 22,
+              fontWeight: 'bold',
+            }}
+          >
+            !
+          </div>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1e293b', margin: '0 0 8px' }}>
+            Quotation Not Found
+          </h2>
+          <p style={{ color: '#64748b', fontSize: 14, margin: '0 0 20px', lineHeight: 1.5 }}>
+            {getErrorMessage(query.error) ||
+              'The requested quotation could not be found or has been removed.'}
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+            <Button asChild variant="outline">
+              <Link to="/salon/quotations">Back to Quotations</Link>
+            </Button>
+            <Button onClick={() => void query.refetch()}>Retry</Button>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -161,6 +209,41 @@ export default function QuotationDetailPage() {
       </header>
 
       <FormError message={error} />
+
+      {detail.status === 'CANCELLED' && (
+        <div
+          style={{
+            backgroundColor: '#fef2f2',
+            border: '1px solid #fecaca',
+            borderRadius: 8,
+            padding: '12px 16px',
+            marginBottom: 16,
+            color: '#991b1b',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 8,
+            }}
+          >
+            <span style={{ fontWeight: 700, fontSize: 14 }}>QUOTATION CANCELLED</span>
+            {detail.cancelledAt && (
+              <span style={{ fontSize: 12, opacity: 0.85 }}>
+                Cancelled: {formatSriLankaDateTime(detail.cancelledAt)}
+              </span>
+            )}
+          </div>
+          {detail.cancelReason && (
+            <p style={{ margin: '6px 0 0', fontSize: 13 }}>
+              <strong>Cancellation Reason:</strong> {detail.cancelReason}
+            </p>
+          )}
+        </div>
+      )}
 
       <section className="qd-hero" aria-label="Quotation summary">
         <div className="qd-card">
@@ -240,8 +323,12 @@ export default function QuotationDetailPage() {
             type="button"
             variant="destructive"
             className="qd-btn-danger"
-            onClick={() => cancelMutation.mutate()}
-            disabled={cancelMutation.isPending}
+            onClick={() => {
+              setCancelReasonPreset('Customer requested');
+              setCancelReasonCustom('');
+              setNotifyCustomer(!!detail.customerPhone);
+              setCancelOpen(true);
+            }}
           >
             Cancel
           </Button>
@@ -467,6 +554,117 @@ export default function QuotationDetailPage() {
               </div>
             </div>
             <FormSubmit pending={convertMutation.isPending}>Create Invoice</FormSubmit>
+          </SimpleForm>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancel Quotation</DialogTitle>
+          </DialogHeader>
+          <p style={{ fontSize: 13, color: 'var(--qd-muted)' }}>
+            Are you sure you want to cancel quotation <strong>{detail.quotationNo}</strong>?
+          </p>
+          <SimpleForm
+            onSubmit={(e) => {
+              e.preventDefault();
+              const reason =
+                cancelReasonPreset === 'Other'
+                  ? cancelReasonCustom.trim() || 'Other'
+                  : cancelReasonPreset;
+              cancelMutation.mutate({
+                reason,
+                notifyCustomer,
+              });
+            }}
+          >
+            <FormError message={error} />
+            <div className="space-y-2">
+              <Label>Cancellation Reason</Label>
+              <Select
+                value={cancelReasonPreset}
+                onValueChange={(val) => setCancelReasonPreset(val)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select reason" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Customer requested">Customer requested</SelectItem>
+                  <SelectItem value="Price / Budget issue">Price / Budget issue</SelectItem>
+                  <SelectItem value="Service unavailable">Service unavailable / Scheduling issue</SelectItem>
+                  <SelectItem value="Customer did not respond">Customer did not respond</SelectItem>
+                  <SelectItem value="Duplicate quotation">Duplicate quotation</SelectItem>
+                  <SelectItem value="Entered by mistake">Entered by mistake</SelectItem>
+                  <SelectItem value="Other">Other (specify below)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {cancelReasonPreset === 'Other' && (
+              <div className="space-y-2" style={{ marginTop: 8 }}>
+                <Label>Specific Reason</Label>
+                <Input
+                  type="text"
+                  placeholder="Enter reason for cancellation"
+                  value={cancelReasonCustom}
+                  onChange={(e) => setCancelReasonCustom(e.target.value)}
+                  required
+                />
+              </div>
+            )}
+
+            <div
+              style={{
+                margin: '14px 0',
+                padding: '10px 12px',
+                background: '#f8fafc',
+                borderRadius: 8,
+                border: '1px solid #e2e8f0',
+              }}
+            >
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontSize: 13,
+                  cursor: detail.customerPhone ? 'pointer' : 'default',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={notifyCustomer && !!detail.customerPhone}
+                  onChange={(e) => setNotifyCustomer(e.target.checked)}
+                  disabled={!detail.customerPhone}
+                />
+                <span>
+                  Send cancellation notification (SMS) to customer
+                  {detail.customerPhone
+                    ? ` (${detail.customerPhone})`
+                    : ' (No customer phone number available)'}
+                </span>
+              </label>
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setCancelOpen(false)}
+                disabled={cancelMutation.isPending}
+              >
+                Keep Quotation
+              </Button>
+              <Button
+                type="submit"
+                variant="destructive"
+                className="qd-btn-danger"
+                disabled={cancelMutation.isPending}
+              >
+                {cancelMutation.isPending ? 'Cancelling…' : 'Confirm Cancellation'}
+              </Button>
+            </div>
           </SimpleForm>
         </DialogContent>
       </Dialog>

@@ -33,6 +33,7 @@ export interface PayrollSettingsRecord {
   employeeEpfRate: number;
   employerEpfRate: number;
   employerEtfRate: number;
+  maxSalaryAdvancePercentage?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,6 +59,8 @@ export interface EmployeeAdvanceRecord {
   employeeId: string;
   employeeName: string;
   employeeCode: string;
+  basicSalary?: number;
+  maxAdvancePercentage?: number;
   originalAmount: number;
   remainingBalance: number;
   monthlyInstallment: number;
@@ -180,18 +183,21 @@ export class PayrollService {
         `UPDATE ${settings}
          SET employee_epf_rate = COALESCE($2::numeric, employee_epf_rate),
              employer_epf_rate = COALESCE($3::numeric, employer_epf_rate),
-             employer_etf_rate = COALESCE($4::numeric, employer_etf_rate)
+             employer_etf_rate = COALESCE($4::numeric, employer_etf_rate),
+             max_salary_advance_percentage = COALESCE($5::numeric, max_salary_advance_percentage)
          WHERE id = $1::uuid
          RETURNING id,
                    employee_epf_rate::float AS "employeeEpfRate",
                    employer_epf_rate::float AS "employerEpfRate",
                    employer_etf_rate::float AS "employerEtfRate",
+                   COALESCE(max_salary_advance_percentage, 50.00)::float AS "maxSalaryAdvancePercentage",
                    created_at AS "createdAt",
                    updated_at AS "updatedAt"`,
         current.id,
         dto.employeeEpfRate ?? null,
         dto.employerEpfRate ?? null,
         dto.employerEtfRate ?? null,
+        dto.maxSalaryAdvancePercentage ?? null,
       )) as PayrollSettingsRecord[];
 
       await logAudit(tx, schemaName, {
@@ -213,6 +219,7 @@ export class PayrollService {
               employee_epf_rate::float AS "employeeEpfRate",
               employer_epf_rate::float AS "employerEpfRate",
               employer_etf_rate::float AS "employerEtfRate",
+              COALESCE(max_salary_advance_percentage, 50.00)::float AS "maxSalaryAdvancePercentage",
               created_at AS "createdAt",
               updated_at AS "updatedAt"
        FROM ${settings}
@@ -225,12 +232,13 @@ export class PayrollService {
     }
 
     const created = (await tx.$queryRawUnsafe(
-      `INSERT INTO ${settings} (employee_epf_rate, employer_epf_rate, employer_etf_rate)
-       VALUES (8.00, 12.00, 3.00)
+      `INSERT INTO ${settings} (employee_epf_rate, employer_epf_rate, employer_etf_rate, max_salary_advance_percentage)
+       VALUES (8.00, 12.00, 3.00, 50.00)
        RETURNING id,
                  employee_epf_rate::float AS "employeeEpfRate",
                  employer_epf_rate::float AS "employerEpfRate",
                  employer_etf_rate::float AS "employerEtfRate",
+                 COALESCE(max_salary_advance_percentage, 50.00)::float AS "maxSalaryAdvancePercentage",
                  created_at AS "createdAt",
                  updated_at AS "updatedAt"`,
     )) as PayrollSettingsRecord[];
@@ -305,9 +313,10 @@ export class PayrollService {
     return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
       await this.assertEmployeeExists(tx, schemaName, dto.employeeId);
 
-      if (dto.loanType.trim().toLowerCase() === 'salary advance') {
+      const loanType = dto.loanType?.trim() || 'Loan';
+      if (loanType.toLowerCase() === 'salary advance') {
         throw new BadRequestException(
-          'Use Advance Payments to record salary advances. Loans are for personal/other loans only.',
+          'Use Advance Payments to record salary advances. Loans are for employee loans only.',
         );
       }
 
@@ -322,7 +331,7 @@ export class PayrollService {
          VALUES ($1::uuid, $2, $3::numeric, $3::numeric, $4::numeric, $5::date, 'ACTIVE', $6)
          RETURNING id`,
         dto.employeeId,
-        dto.loanType.trim(),
+        loanType,
         dto.originalAmount,
         dto.monthlyInstallment,
         dto.startDate,
@@ -462,10 +471,64 @@ export class PayrollService {
     return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
       await this.assertEmployeeExists(tx, schemaName, dto.employeeId);
 
-      // Advances are always recovered in full on the next payroll (same-month deduction).
-      const fullAmount = dto.originalAmount;
+      const payrollSettings = await this.ensureSettings(tx, schemaName);
+      const defaultSettingPct = Number(payrollSettings.maxSalaryAdvancePercentage ?? 50);
+
+      const employees = tenantTable(schemaName, 'employees');
+      const empRows = (await tx.$queryRawUnsafe(
+        `SELECT id, name, basic_salary::float AS "basicSalary",
+                max_advance_percentage::float AS "maxAdvancePercentage"
+         FROM ${employees}
+         WHERE id = $1::uuid LIMIT 1`,
+        dto.employeeId,
+      )) as Array<{ id: string; name: string; basicSalary: number; maxAdvancePercentage: number | null }>;
+
+      if (!empRows.length) {
+        throw new NotFoundException('Employee not found');
+      }
+
+      const emp = empRows[0];
+      const basicSalary = Number(emp.basicSalary || 0);
+      const maxPct = Number(payrollSettings.maxSalaryAdvancePercentage ?? 50);
+
+      if (basicSalary <= 0) {
+        throw new BadRequestException(
+          `Employee "${emp.name}" does not have a basic salary set. Advances cannot be issued without a basic salary.`,
+        );
+      }
+
+      const maxAllowed = roundMoney((basicSalary * maxPct) / 100);
+
+      if (dto.originalAmount > basicSalary) {
+        throw new BadRequestException(
+          `Advance amount of LKR ${dto.originalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })} cannot exceed employee's basic salary of LKR ${basicSalary.toLocaleString(undefined, { minimumFractionDigits: 2 })}.`,
+        );
+      }
+
+      if (dto.originalAmount > maxAllowed) {
+        throw new BadRequestException(
+          `Advance amount of LKR ${dto.originalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })} exceeds the maximum allowed advance of LKR ${maxAllowed.toLocaleString(undefined, { minimumFractionDigits: 2 })} (${maxPct}% of basic salary).`,
+        );
+      }
 
       const advances = tenantTable(schemaName, 'employee_advances');
+      const activeAdvRows = (await tx.$queryRawUnsafe(
+        `SELECT COALESCE(SUM(remaining_balance), 0)::float AS "totalRemaining"
+         FROM ${advances}
+         WHERE employee_id = $1::uuid AND status = 'ACTIVE'`,
+        dto.employeeId,
+      )) as Array<{ totalRemaining: number }>;
+
+      const currentActive = Number(activeAdvRows[0]?.totalRemaining || 0);
+      if (currentActive + dto.originalAmount > maxAllowed) {
+        throw new BadRequestException(
+          `Employee "${emp.name}" already has active advances of LKR ${currentActive.toLocaleString(undefined, { minimumFractionDigits: 2 })}. Adding this advance would exceed the maximum allowed limit of LKR ${maxAllowed.toLocaleString(undefined, { minimumFractionDigits: 2 })} (${maxPct}% of basic salary).`,
+        );
+      }
+
+      // Advances are recovered in full on payroll.
+      const fullAmount = dto.originalAmount;
+
       const rows = (await tx.$queryRawUnsafe(
         `INSERT INTO ${advances}
            (employee_id, original_amount, remaining_balance, monthly_installment, start_date, status, notes)
@@ -551,6 +614,8 @@ export class PayrollService {
                    a.employee_id AS "employeeId",
                    e.name AS "employeeName",
                    e.code AS "employeeCode",
+                   COALESCE(e.basic_salary, 0)::float AS "basicSalary",
+                   COALESCE(e.max_advance_percentage, 100)::float AS "maxAdvancePercentage",
                    a.original_amount::float AS "originalAmount",
                    a.remaining_balance::float AS "remainingBalance",
                    a.monthly_installment::float AS "monthlyInstallment",
@@ -1298,12 +1363,14 @@ export class PayrollService {
   private itemSelectSql(schemaName: string): string {
     const items = tenantTable(schemaName, 'payroll_items');
     const employees = tenantTable(schemaName, 'employees');
+    const branches = tenantTable(schemaName, 'branches');
     return `SELECT pi.id,
                    pi.payroll_run_id AS "payrollRunId",
                    pi.employee_id AS "employeeId",
                    e.name AS "employeeName",
                    e.code AS "employeeCode",
                    e.designation,
+                   b.name AS "branchName",
                    pi.basic_salary::float AS "basicSalary",
                    pi.commission_percentage::float AS "commissionPercentage",
                    pi.commission_base::float AS "commissionBase",
@@ -1326,7 +1393,8 @@ export class PayrollService {
                    pi.created_at AS "createdAt",
                    pi.updated_at AS "updatedAt"
             FROM ${items} pi
-            INNER JOIN ${employees} e ON e.id = pi.employee_id`;
+            INNER JOIN ${employees} e ON e.id = pi.employee_id
+            LEFT JOIN ${branches} b ON b.id = e.branch_id`;
   }
 
   private async fetchItemById(

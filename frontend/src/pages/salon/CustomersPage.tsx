@@ -1020,41 +1020,43 @@ export default function CustomersPage() {
                         <span className="text-slate-400 block text-[10px] uppercase font-bold">
                           Phone
                         </span>
-                        <span className="font-semibold text-slate-900">{cust.phone || '—'}</span>
+                        <span className="font-semibold text-slate-900 font-mono">{cust.phone || '—'}</span>
                       </div>
                       <div>
                         <span className="text-slate-400 block text-[10px] uppercase font-bold">
-                          Email
+                          Birthday
                         </span>
-                        <span className="text-slate-700 truncate block">{cust.email || '—'}</span>
+                        <span className="text-slate-700">{cust.birthday ? cust.birthday.slice(0, 10) : '—'}</span>
                       </div>
-                      {cust.birthday && (
-                        <div className="col-span-2">
+                      {cust.email && (
+                        <div className="col-span-2 pt-1 border-t border-slate-200/60">
                           <span className="text-slate-400 block text-[10px] uppercase font-bold">
-                            Birthday
+                            Email
                           </span>
-                          <span className="text-slate-700">{cust.birthday.slice(0, 10)}</span>
+                          <span className="text-slate-700 break-all block">{cust.email}</span>
                         </div>
                       )}
                     </div>
 
                     {/* Action buttons */}
-                    <div className="flex items-center justify-end gap-2 pt-1">
+                    <div className="grid grid-cols-4 gap-1.5 pt-1">
                       <button
                         type="button"
                         onClick={() => setHistoryCustomer(cust)}
-                        className="h-8 px-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1"
+                        className="h-8 px-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
+                        title="View History"
                       >
-                        <History className="h-3.5 w-3.5 text-slate-500" />
-                        <span>History</span>
+                        <History className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                        <span className="truncate">History</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => openEdit(cust)}
-                        className="h-8 px-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1"
+                        className="h-8 px-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
+                        title="Edit Customer"
                       >
-                        <Pencil className="h-3.5 w-3.5 text-slate-500" />
+                        <Pencil className="h-3.5 w-3.5 text-slate-500 shrink-0" />
                         <span>Edit</span>
                       </button>
 
@@ -1062,18 +1064,20 @@ export default function CustomersPage() {
                         type="button"
                         disabled={statusMutation.isPending}
                         onClick={() => handleToggleStatus(cust)}
-                        className="h-8 px-2.5 rounded-lg border border-amber-200 bg-amber-50 text-amber-700 text-xs font-semibold"
+                        className="h-8 px-1 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-semibold flex items-center justify-center transition-colors"
+                        title={isActive ? 'Deactivate Customer' : 'Activate Customer'}
                       >
-                        <span>{isActive ? 'Deactivate' : 'Activate'}</span>
+                        <span className="truncate">{isActive ? 'Deactivate' : 'Activate'}</span>
                       </button>
 
                       <button
                         type="button"
                         disabled={deleteMutation.isPending}
                         onClick={() => handleDeleteCustomer(cust)}
-                        className="h-8 px-2.5 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-xs font-semibold flex items-center gap-1"
+                        className="h-8 px-1 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
+                        title="Delete Customer"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <Trash2 className="h-3.5 w-3.5 shrink-0" />
                         <span>Delete</span>
                       </button>
                     </div>

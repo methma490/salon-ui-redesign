@@ -49,6 +49,32 @@ export function buildSmsQuotationMessage(input: {
   return `${salonName}: Your quotation ${input.quotationNo} is ready. Total ${currency} ${Number(input.totalAmount).toLocaleString()}. View: ${input.publicUrl}`;
 }
 
+export function buildSmsQuotationCancelledMessage(input: {
+  quotationNo: string;
+  salonName: string;
+  reason?: string | null;
+}): string {
+  const salonName = resolveQuotationSalonBrand(input.salonName);
+  const reasonText = input.reason ? ` Reason: ${input.reason}.` : '';
+  return `${salonName}: Your quotation ${input.quotationNo} has been cancelled.${reasonText}`;
+}
+
+export function buildWhatsAppQuotationCancelledMessage(input: {
+  customerName: string;
+  quotationNo: string;
+  salonName: string;
+  reason?: string | null;
+}): string {
+  const salonName = resolveQuotationSalonBrand(input.salonName);
+  const firstName = input.customerName.split(/\s+/)[0] || input.customerName;
+  const reasonText = input.reason ? `\nReason: ${input.reason}` : '';
+  return (
+    `Hi ${firstName},\n\n` +
+    `Your quotation ${input.quotationNo} from ${salonName} has been cancelled.${reasonText}\n\n` +
+    `Thank you,\n${salonName}`
+  );
+}
+
 /** Shape public quotation payload — never include internal notes or tenant schema. */
 export function toPublicQuotationView(input: {
   quotationNo: string;
@@ -61,6 +87,8 @@ export function toPublicQuotationView(input: {
   totalAmount: number;
   status: string;
   canRespond: boolean;
+  cancelReason?: string | null;
+  cancelledAt?: string | null;
   items: Array<{
     description: string;
     quantity: number;
@@ -88,6 +116,8 @@ export function toPublicQuotationView(input: {
     totalAmount: input.totalAmount,
     status: input.status,
     canRespond: input.canRespond,
+    cancelReason: input.cancelReason ?? null,
+    cancelledAt: input.cancelledAt ?? null,
     items: input.items,
     salon: {
       name: salonName,

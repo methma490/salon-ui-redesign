@@ -41,6 +41,7 @@ export interface EmployeeRecord {
   commissionType: string;
   epfEnabled: boolean;
   etfEnabled: boolean;
+  maxAdvancePercentage: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -84,6 +85,7 @@ export class EmployeesService {
                    COALESCE(e.commission_type, 'PERCENTAGE_OF_INVOICE_SALES') AS "commissionType",
                    COALESCE(e.epf_enabled, true) AS "epfEnabled",
                    COALESCE(e.etf_enabled, true) AS "etfEnabled",
+                   COALESCE(e.max_advance_percentage, 100)::float AS "maxAdvancePercentage",
                    e.created_at AS "createdAt", e.updated_at AS "updatedAt"
             FROM ${employees} e
             INNER JOIN ${branches} b ON e.branch_id = b.id`;
@@ -410,8 +412,8 @@ export class EmployeesService {
 
       const rows = (await tx.$queryRawUnsafe(
         `INSERT INTO ${employees}
-           (branch_id, user_id, code, name, email, phone, designation, status, basic_salary, commission_rate, epf_enabled, etf_enabled)
-         VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, 'ACTIVE', $8::numeric, $9::numeric, $10::boolean, $11::boolean)
+           (branch_id, user_id, code, name, email, phone, designation, status, basic_salary, commission_rate, epf_enabled, etf_enabled, max_advance_percentage)
+         VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, 'ACTIVE', $8::numeric, $9::numeric, $10::boolean, $11::boolean, $12::numeric)
          RETURNING id`,
         dto.branchId,
         linkedUserId,
@@ -424,6 +426,7 @@ export class EmployeesService {
         dto.commissionRate ?? 0,
         dto.epfEnabled ?? true,
         dto.etfEnabled ?? true,
+        dto.maxAdvancePercentage ?? 100,
       )) as Array<{ id: string }>;
 
       await logAudit(tx, schemaName, {
@@ -538,6 +541,7 @@ export class EmployeesService {
              commission_rate = COALESCE($9::numeric, commission_rate),
              epf_enabled = COALESCE($10::boolean, epf_enabled),
              etf_enabled = COALESCE($11::boolean, etf_enabled),
+             max_advance_percentage = COALESCE($12::numeric, max_advance_percentage),
              updated_at = NOW()
          WHERE id = $1::uuid`,
         id,
@@ -551,6 +555,7 @@ export class EmployeesService {
         dto.commissionRate ?? null,
         dto.epfEnabled ?? null,
         dto.etfEnabled ?? null,
+        dto.maxAdvancePercentage ?? null,
       );
 
       await logAudit(tx, schemaName, {

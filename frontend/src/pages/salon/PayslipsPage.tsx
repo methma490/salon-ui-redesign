@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import html2pdf from 'html2pdf.js';
+import { toast } from 'sonner';
 import {
   tenantApi,
   type PaginatedResponse,
@@ -16,24 +18,26 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { formatMoneyAmount, formatMoneyLkr } from '@/lib/money';
+import { Scissors } from 'lucide-react';
+import { formatMoneyAmount } from '@/lib/money';
+import { resolveUploadUrl } from '@/lib/upload-url';
 import { getErrorMessage, OpsError, OpsLoading, OpsPageHeader } from './salon-ops-ui';
 import './employees-page.css';
 import './payroll-page.css';
 
 const MONTHS = [
-  { value: 1, label: 'January' },
-  { value: 2, label: 'February' },
-  { value: 3, label: 'March' },
-  { value: 4, label: 'April' },
-  { value: 5, label: 'May' },
-  { value: 6, label: 'June' },
-  { value: 7, label: 'July' },
-  { value: 8, label: 'August' },
-  { value: 9, label: 'September' },
-  { value: 10, label: 'October' },
-  { value: 11, label: 'November' },
-  { value: 12, label: 'December' },
+  { value: 1, label: 'January', short: 'Jan' },
+  { value: 2, label: 'February', short: 'Feb' },
+  { value: 3, label: 'March', short: 'Mar' },
+  { value: 4, label: 'April', short: 'Apr' },
+  { value: 5, label: 'May', short: 'May' },
+  { value: 6, label: 'June', short: 'Jun' },
+  { value: 7, label: 'July', short: 'Jul' },
+  { value: 8, label: 'August', short: 'Aug' },
+  { value: 9, label: 'September', short: 'Sep' },
+  { value: 10, label: 'October', short: 'Oct' },
+  { value: 11, label: 'November', short: 'Nov' },
+  { value: 12, label: 'December', short: 'Dec' },
 ];
 
 function unwrapList<T>(payload: PaginatedResponse<T> | T[]): T[] {
@@ -50,6 +54,18 @@ function monthLabel(month: number) {
   return MONTHS.find((m) => m.value === month)?.label ?? String(month);
 }
 
+function monthShort(month: number) {
+  return MONTHS.find((m) => m.value === month)?.short ?? String(month);
+}
+
+function getPayPeriodDates(year: number, month: number) {
+  const mShort = monthShort(month);
+  const lastDay = new Date(year, month, 0).getDate();
+  const payPeriod = `01 ${mShort} ${year} – ${lastDay} ${mShort} ${year}`;
+  const payDate = `${lastDay} ${mShort} ${year}`;
+  return { payPeriod, payDate };
+}
+
 function PayslipStatusBadge({ status }: { status: string }) {
   const cls =
     status === 'PAID'
@@ -60,12 +76,25 @@ function PayslipStatusBadge({ status }: { status: string }) {
   return <span className={cls}>{status}</span>;
 }
 
-function moneyRow(label: string, amount: number, extra = '') {
-  return `<tr${extra}><td style="padding:6px 0;border-bottom:1px solid #f1f5f9">${label}</td><td style="padding:6px 0;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums">LKR ${formatMoney(amount)}</td></tr>`;
-}
-
-function buildPayslipHtml(detail: PayslipDetail, salonName: string) {
+function buildPayslipHtml(
+  detail: PayslipDetail,
+  salon: {
+    name: string;
+    logoUrl?: string | null;
+    address?: string | null;
+    phone?: string | null;
+    email?: string | null;
+  },
+) {
   const period = `${monthLabel(detail.month)} ${detail.year}`;
+  const { payPeriod, payDate } = getPayPeriodDates(detail.year, detail.month);
+  const resolvedLogo = resolveUploadUrl(salon.logoUrl);
+  const contactLine = [
+    salon.phone ? `Tel: ${salon.phone}` : '',
+    salon.email ? `Email: ${salon.email}` : '',
+  ]
+    .filter(Boolean)
+    .join(' &nbsp;|&nbsp; ');
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -73,171 +102,448 @@ function buildPayslipHtml(detail: PayslipDetail, salonName: string) {
   <meta charset="utf-8" />
   <title>Payslip - ${detail.employeeName} - ${period}</title>
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; color: #1e293b; }
-    h1 { text-align: center; margin: 0 0 0.25rem; font-size: 1.25rem; }
-    .meta { text-align: center; color: #64748b; font-size: 0.875rem; margin-bottom: 1.5rem; }
-    .employee { margin-bottom: 1rem; font-size: 0.875rem; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-    .net td { font-weight: 700; border-top: 2px solid #1e293b; padding-top: 0.75rem; }
-    h3 { font-size: 0.75rem; text-transform: uppercase; color: #64748b; margin: 1rem 0 0.5rem; }
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; color: #0f172a; line-height: 1.4; background: #fff; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #e2e8f0; padding-bottom: 1.25rem; margin-bottom: 1.25rem; }
+    .brand-wrap { display: flex; align-items: flex-start; gap: 1rem; }
+    .salon-logo-img { width: 52px; height: 52px; object-fit: contain; border-radius: 8px; border: 1px solid #e2e8f0; padding: 2px; background: #fff; }
+    .salon-name { font-size: 1.45rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.02em; }
+    .salon-sub { font-size: 0.8125rem; color: #475569; margin: 0.2rem 0 0; }
+    .payslip-title-block { text-align: right; }
+    .payslip-title { font-size: 1.6rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: 0.04em; }
+    .period-title { font-size: 1rem; font-weight: 700; color: #1e293b; margin: 0.15rem 0 0.35rem; }
+    .period-sub { font-size: 0.75rem; color: #64748b; margin: 0.1rem 0; }
+    .emp-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 1rem 1.25rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem 2rem; margin-bottom: 1.25rem; font-size: 0.8125rem; }
+    .emp-row { display: flex; align-items: baseline; }
+    .emp-lbl { width: 7.5rem; font-weight: 600; color: #334155; flex-shrink: 0; }
+    .emp-val { font-weight: 500; color: #0f172a; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+    .card { border: 1px solid #e2e8f0; border-radius: 0.5rem; overflow: hidden; background: #fff; margin-bottom: 1.25rem; }
+    .card-head { display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 1rem; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+    .head-earn { background: #f0f7ff; color: #1e3a8a; border-bottom: 1px solid #dbeafe; }
+    .head-ded { background: #fff1f2; color: #9f1239; border-bottom: 1px solid #ffe4e6; }
+    .head-sec { background: #f0f7ff; color: #1e3a8a; border-bottom: 1px solid #dbeafe; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+    td { padding: 0.55rem 1rem; border-bottom: 1px solid #f1f5f9; color: #334155; }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; color: #0f172a; }
+    tr.total td { font-weight: 700; color: #0f172a; background: #f8fafc; border-top: 1.5px solid #cbd5e1; border-bottom: none; font-size: 0.875rem; padding: 0.65rem 1rem; }
+    .net-banner { border-top: 2px solid #e2e8f0; border-bottom: 2px solid #e2e8f0; padding: 1rem 0.5rem; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+    .net-title { font-size: 1.35rem; font-weight: 800; color: #0f172a; margin: 0; }
+    .net-sub { font-size: 0.8125rem; color: #64748b; margin: 0.2rem 0 0; }
+    .net-val { font-size: 1.55rem; font-weight: 800; color: #0f172a; font-variant-numeric: tabular-nums; }
+    .info-box { margin: 0.75rem 1rem; padding: 0.65rem 0.85rem; background: #eff6ff; border: 1px solid #dbeafe; border-radius: 0.375rem; font-size: 0.75rem; color: #1e40af; }
+    .notes { margin-top: 1.5rem; font-size: 0.75rem; color: #475569; line-height: 1.6; }
+    .notes h4 { margin: 0 0 0.35rem; font-size: 0.8125rem; font-weight: 700; color: #1e293b; }
+    .notes ul { margin: 0; padding-left: 1.2rem; }
+    .notes li { margin-bottom: 0.2rem; }
   </style>
 </head>
 <body>
-  <h1>${salonName}</h1>
-  <p class="meta">Payslip — ${period}</p>
-  <div class="employee">
-    <div><strong>${detail.employeeName}</strong> (${detail.employeeCode})</div>
-    <div>Designation: ${detail.designation || '—'}</div>
-    <div>Status: ${detail.status}</div>
+  <div class="header">
+    <div class="brand-wrap">
+      ${resolvedLogo ? `<img src="${resolvedLogo}" class="salon-logo-img" alt="${salon.name}" />` : ''}
+      <div>
+        <h1 class="salon-name">${salon.name}</h1>
+        ${salon.address ? `<p class="salon-sub">${salon.address}</p>` : ''}
+        ${contactLine ? `<p class="salon-sub">${contactLine}</p>` : ''}
+      </div>
+    </div>
+    <div class="payslip-title-block">
+      <div class="payslip-title">PAYSLIP</div>
+      <div class="period-title">${period}</div>
+      <div class="period-sub">Pay Period: ${payPeriod}</div>
+      <div class="period-sub">Pay Date: ${payDate}</div>
+    </div>
   </div>
-  <h3>Earnings</h3>
-  <table>
-    ${moneyRow('Basic Salary', detail.basicSalary)}
-    ${moneyRow('Commission', detail.commissionAmount)}
-    ${moneyRow('Bonus / Allowance', detail.bonus)}
-    ${moneyRow('Gross Salary', detail.grossSalary)}
-  </table>
-  <h3>Commission Details</h3>
-  <table>
-    ${moneyRow('Employee Service Sales', detail.commissionBase ?? 0)}
-    <tr><td style="padding:6px 0;border-bottom:1px solid #f1f5f9">Commission Rate</td><td style="padding:6px 0;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums">${detail.commissionPercentage ?? 0}%</td></tr>
-    ${moneyRow('Commission', detail.commissionAmount)}
-    ${(detail.commissionInvoiceCount ?? 0) > 0 ? `<tr><td style="padding:6px 0;border-bottom:1px solid #f1f5f9">Eligible Invoices</td><td style="padding:6px 0;border-bottom:1px solid #f1f5f9;text-align:right;font-variant-numeric:tabular-nums">${detail.commissionInvoiceCount}</td></tr>` : ''}
-  </table>
-  <h3>Deductions</h3>
-  <table>
-    ${moneyRow('Employee EPF', detail.employeeEpf)}
-    ${moneyRow('Salary Advance', detail.advanceDeduction ?? 0)}
-    ${moneyRow('Loan Deduction', detail.loanDeduction)}
-    ${moneyRow('Other Deduction', detail.otherDeduction)}
-    ${moneyRow('Total Deductions', detail.totalDeductions)}
-    ${moneyRow('Net Salary', detail.netSalary, ' class="net"')}
-  </table>
-  <h3>Employer Contributions</h3>
-  <table>
-    ${moneyRow('Employer EPF', detail.employerEpf)}
-    ${moneyRow('Employer ETF', detail.employerEtf)}
-  </table>
+
+  <div class="emp-box">
+    <div>
+      <div class="emp-row"><span class="emp-lbl">Employee Name</span><span>: &nbsp;</span><span class="emp-val">${detail.employeeName}</span></div>
+      <div class="emp-row" style="margin-top:0.4rem"><span class="emp-lbl">Employee ID</span><span>: &nbsp;</span><span class="emp-val">${detail.employeeCode}</span></div>
+      <div class="emp-row" style="margin-top:0.4rem"><span class="emp-lbl">Designation</span><span>: &nbsp;</span><span class="emp-val">${detail.designation || 'Stylist'}</span></div>
+      <div class="emp-row" style="margin-top:0.4rem"><span class="emp-lbl">Department</span><span>: &nbsp;</span><span class="emp-val">${detail.branchName || 'Salon Operations'}</span></div>
+    </div>
+    <div>
+      <div class="emp-row"><span class="emp-lbl">Employment Type</span><span>: &nbsp;</span><span class="emp-val">Full-time</span></div>
+      <div class="emp-row" style="margin-top:0.4rem"><span class="emp-lbl">Bank Account</span><span>: &nbsp;</span><span class="emp-val">—</span></div>
+      <div class="emp-row" style="margin-top:0.4rem"><span class="emp-lbl">Status</span><span>: &nbsp;</span><span class="emp-val">${detail.status}</span></div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-head head-earn">
+        <span>Earnings</span>
+        <span>Amount (LKR)</span>
+      </div>
+      <table>
+        <tr><td>Basic Salary</td><td class="num">${formatMoney(detail.basicSalary)}</td></tr>
+        <tr><td>Commission</td><td class="num">${formatMoney(detail.commissionAmount)}</td></tr>
+        <tr><td>Bonus / Allowance</td><td class="num">${formatMoney(detail.bonus)}</td></tr>
+        <tr><td>Other Allowance</td><td class="num">0.00</td></tr>
+        <tr class="total"><td>Total Earnings (Gross Salary)</td><td class="num">${formatMoney(detail.grossSalary)}</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-head head-ded">
+        <span>Deductions</span>
+        <span>Amount (LKR)</span>
+      </div>
+      <table>
+        <tr><td>Employee EPF (8%)</td><td class="num">${formatMoney(detail.employeeEpf)}</td></tr>
+        <tr><td>Salary Advance</td><td class="num">${formatMoney(detail.advanceDeduction ?? 0)}</td></tr>
+        <tr><td>Loan Deduction</td><td class="num">${formatMoney(detail.loanDeduction)}</td></tr>
+        <tr><td>Other Deduction</td><td class="num">${formatMoney(detail.otherDeduction)}</td></tr>
+        <tr class="total"><td>Total Deductions</td><td class="num">${formatMoney(detail.totalDeductions)}</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="net-banner">
+    <div>
+      <div class="net-title">Net Salary</div>
+      <div class="net-sub">(Total Earnings – Total Deductions)</div>
+    </div>
+    <div class="net-val">LKR ${formatMoney(detail.netSalary)}</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head head-sec">
+      <span>Commission Details</span>
+    </div>
+    <table>
+      <thead>
+        <tr style="background:#f8fafc;font-size:0.75rem;font-weight:700;color:#64748b">
+          <td style="padding:0.45rem 1rem">Description</td>
+          <td style="padding:0.45rem 1rem;text-align:right">Amount / Rate</td>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Employee Service Sales</td><td class="num">${formatMoney(detail.commissionBase ?? 0)}</td></tr>
+        <tr><td>Commission Rate</td><td class="num">${detail.commissionPercentage ?? 0}%</td></tr>
+        <tr class="total"><td>Commission</td><td class="num">${formatMoney(detail.commissionAmount)}</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-head head-sec">
+      <span>Employer Contributions</span>
+    </div>
+    <table>
+      <thead>
+        <tr style="background:#f8fafc;font-size:0.75rem;font-weight:700;color:#64748b">
+          <td style="padding:0.45rem 1rem">Description</td>
+          <td style="padding:0.45rem 1rem;text-align:right">Amount (LKR)</td>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Employer EPF (12%)</td><td class="num">${formatMoney(detail.employerEpf)}</td></tr>
+        <tr><td>Employer ETF (3%)</td><td class="num">${formatMoney(detail.employerEtf)}</td></tr>
+      </tbody>
+    </table>
+    <div class="info-box">
+      ℹ Employer contributions are additional amounts paid by the company and are not deducted from the employee's salary.
+    </div>
+  </div>
+
+  <div class="notes">
+    <h4>Notes:</h4>
+    <ul>
+      <li>This is a computer generated payslip and does not require a signature.</li>
+      <li>Please contact the HR / Payroll department for any queries.</li>
+      <li>All amounts are in Sri Lankan Rupees (LKR).</li>
+    </ul>
+  </div>
 </body>
 </html>`;
 }
 
-function downloadPayslipHtml(detail: PayslipDetail, salonName: string) {
-  const html = buildPayslipHtml(detail, salonName);
+function PayslipLogo({ logoUrl, name }: { logoUrl?: string | null; name: string }) {
+  const [imgError, setImgError] = useState(false);
+  const resolved = resolveUploadUrl(logoUrl);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [resolved]);
+
+  if (resolved && !imgError) {
+    return (
+      <img
+        key={resolved}
+        src={resolved}
+        alt={name}
+        onError={() => setImgError(true)}
+        className="ps-logo-img"
+      />
+    );
+  }
+
+  return (
+    <div className="ps-logo-fallback">
+      {name ? name.slice(0, 2).toUpperCase() : <Scissors size={24} />}
+    </div>
+  );
+}
+
+function downloadPayslipHtml(
+  detail: PayslipDetail,
+  salon: {
+    name: string;
+    logoUrl?: string | null;
+    address?: string | null;
+    phone?: string | null;
+    email?: string | null;
+  },
+) {
+  const html = buildPayslipHtml(detail, salon);
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   const safeName = detail.employeeCode || detail.employeeName.replace(/\s+/g, '-');
   anchor.href = url;
-  anchor.download = `payslip-${safeName}-${detail.year}-${detail.month}.html`;
+  anchor.download = `Payslip-${safeName}-${detail.year}-${detail.month}.html`;
   anchor.click();
   URL.revokeObjectURL(url);
 }
 
-function PayslipPrintView({ detail, salonName }: { detail: PayslipDetail; salonName: string }) {
+function PayslipModernView({
+  detail,
+  salon,
+}: {
+  detail: PayslipDetail;
+  salon: {
+    name: string;
+    logoUrl?: string | null;
+    address?: string | null;
+    phone?: string | null;
+    email?: string | null;
+  };
+}) {
+  const period = `${monthLabel(detail.month)} ${detail.year}`;
+  const { payPeriod, payDate } = getPayPeriodDates(detail.year, detail.month);
+  const contactLine = [
+    salon.phone ? `Tel: ${salon.phone}` : '',
+    salon.email ? `Email: ${salon.email}` : '',
+  ]
+    .filter(Boolean)
+    .join(' | ');
+
   return (
-    <div className="payslip-print-area" id="payslip-print-area">
-      <div className="payslip-header">
-        <h2>{salonName}</h2>
-        <p>Payslip</p>
-        <p>
-          {monthLabel(detail.month)} {detail.year}
-        </p>
-      </div>
-
-      <div className="payslip-meta">
-        <div>
-          <strong>Employee:</strong> {detail.employeeName} ({detail.employeeCode})
-        </div>
-        <div>
-          <strong>Designation:</strong> {detail.designation || '—'}
-        </div>
-        <div>
-          <strong>Status:</strong> {detail.status}
-        </div>
-      </div>
-
-      <div className="payslip-section">
-        <div className="payslip-section-title">Earnings</div>
-        <div className="payslip-row">
-          <span className="label">Basic Salary</span>
-          <span className="value">LKR {formatMoney(detail.basicSalary)}</span>
-        </div>
-        <div className="payslip-row">
-          <span className="label">Commission</span>
-          <span className="value">LKR {formatMoney(detail.commissionAmount)}</span>
-        </div>
-        <div className="payslip-row">
-          <span className="label">Bonus / Allowance</span>
-          <span className="value">LKR {formatMoney(detail.bonus)}</span>
-        </div>
-        <div className="payslip-row">
-          <span className="label">Gross Salary</span>
-          <span className="value">LKR {formatMoney(detail.grossSalary)}</span>
-        </div>
-      </div>
-
-      <div className="payslip-section">
-        <div className="payslip-section-title">Commission Details</div>
-        <div className="payslip-row">
-          <span className="label">Employee Service Sales</span>
-          <span className="value">LKR {formatMoney(detail.commissionBase ?? 0)}</span>
-        </div>
-        <div className="payslip-row">
-          <span className="label">Commission Rate</span>
-          <span className="value">{detail.commissionPercentage ?? 0}%</span>
-        </div>
-        <div className="payslip-row">
-          <span className="label">Commission</span>
-          <span className="value">LKR {formatMoney(detail.commissionAmount)}</span>
-        </div>
-        {(detail.commissionInvoiceCount ?? 0) > 0 && (
-          <div className="payslip-row">
-            <span className="label">Eligible Invoices</span>
-            <span className="value">{detail.commissionInvoiceCount}</span>
+    <div className="payslip-modern" id="payslip-modern-view">
+      {/* Header */}
+      <div className="ps-header">
+        <div className="ps-brand">
+          <PayslipLogo logoUrl={salon.logoUrl} name={salon.name} />
+          <div className="ps-brand-info">
+            <h1>{salon.name}</h1>
+            {salon.address && <p>{salon.address}</p>}
+            {contactLine && <p>{contactLine}</p>}
           </div>
-        )}
-      </div>
+        </div>
 
-      <div className="payslip-section">
-        <div className="payslip-section-title">Deductions</div>
-        <div className="payslip-row">
-          <span className="label">Employee EPF</span>
-          <span className="value">LKR {formatMoney(detail.employeeEpf)}</span>
-        </div>
-        <div className="payslip-row">
-          <span className="label">Salary Advance</span>
-          <span className="value">LKR {formatMoney(detail.advanceDeduction ?? 0)}</span>
-        </div>
-        <div className="payslip-row">
-          <span className="label">Loan Deduction</span>
-          <span className="value">LKR {formatMoney(detail.loanDeduction)}</span>
-        </div>
-        <div className="payslip-row">
-          <span className="label">Other Deduction</span>
-          <span className="value">LKR {formatMoney(detail.otherDeduction)}</span>
-        </div>
-        <div className="payslip-row">
-          <span className="label">Total Deductions</span>
-          <span className="value">LKR {formatMoney(detail.totalDeductions)}</span>
+        <div className="ps-title-block">
+          <h2>PAYSLIP</h2>
+          <div className="ps-period-title">{period}</div>
+          <div className="ps-meta-line">Pay Period: {payPeriod}</div>
+          <div className="ps-meta-line">Pay Date: {payDate}</div>
         </div>
       </div>
 
-      <div className="payslip-row total">
-        <span className="label">Net Salary</span>
-        <span className="value">LKR {formatMoney(detail.netSalary)}</span>
+      {/* Employee Details Box */}
+      <div className="ps-emp-box">
+        <div className="space-y-1.5">
+          <div className="ps-emp-row">
+            <span className="ps-emp-label">Employee Name</span>
+            <span className="ps-emp-sep">:</span>
+            <span className="ps-emp-val">{detail.employeeName}</span>
+          </div>
+          <div className="ps-emp-row">
+            <span className="ps-emp-label">Employee ID</span>
+            <span className="ps-emp-sep">:</span>
+            <span className="ps-emp-val">{detail.employeeCode}</span>
+          </div>
+          <div className="ps-emp-row">
+            <span className="ps-emp-label">Designation</span>
+            <span className="ps-emp-sep">:</span>
+            <span className="ps-emp-val">{detail.designation || 'Stylist'}</span>
+          </div>
+          <div className="ps-emp-row">
+            <span className="ps-emp-label">Department</span>
+            <span className="ps-emp-sep">:</span>
+            <span className="ps-emp-val">{detail.branchName || 'Salon Operations'}</span>
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="ps-emp-row">
+            <span className="ps-emp-label">Employment Type</span>
+            <span className="ps-emp-sep">:</span>
+            <span className="ps-emp-val">Full-time</span>
+          </div>
+          <div className="ps-emp-row">
+            <span className="ps-emp-label">Bank Account</span>
+            <span className="ps-emp-sep">:</span>
+            <span className="ps-emp-val">—</span>
+          </div>
+          <div className="ps-emp-row">
+            <span className="ps-emp-label">Status</span>
+            <span className="ps-emp-sep">:</span>
+            <span className="ps-emp-val">{detail.status}</span>
+          </div>
+        </div>
       </div>
 
-      <div className="payslip-section" style={{ marginTop: '1.5rem' }}>
-        <div className="payslip-section-title">Employer Contributions</div>
-        <div className="payslip-row">
-          <span className="label">Employer EPF</span>
-          <span className="value">LKR {formatMoney(detail.employerEpf)}</span>
+      {/* 2-Column Earnings & Deductions */}
+      <div className="ps-two-col">
+        <div className="ps-table-card">
+          <div className="ps-table-head earnings">
+            <span>EARNINGS</span>
+            <span>Amount (LKR)</span>
+          </div>
+          <table className="ps-table">
+            <tbody>
+              <tr>
+                <td>Basic Salary</td>
+                <td>{formatMoney(detail.basicSalary)}</td>
+              </tr>
+              <tr>
+                <td>Commission</td>
+                <td>{formatMoney(detail.commissionAmount)}</td>
+              </tr>
+              <tr>
+                <td>Bonus / Allowance</td>
+                <td>{formatMoney(detail.bonus)}</td>
+              </tr>
+              <tr>
+                <td>Other Allowance</td>
+                <td>0.00</td>
+              </tr>
+              <tr className="total-row">
+                <td>Total Earnings (Gross Salary)</td>
+                <td>{formatMoney(detail.grossSalary)}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        <div className="payslip-row">
-          <span className="label">Employer ETF</span>
-          <span className="value">LKR {formatMoney(detail.employerEtf)}</span>
+
+        <div className="ps-table-card">
+          <div className="ps-table-head deductions">
+            <span>DEDUCTIONS</span>
+            <span>Amount (LKR)</span>
+          </div>
+          <table className="ps-table">
+            <tbody>
+              <tr>
+                <td>Employee EPF (8%)</td>
+                <td>{formatMoney(detail.employeeEpf)}</td>
+              </tr>
+              <tr>
+                <td>Salary Advance</td>
+                <td>{formatMoney(detail.advanceDeduction ?? 0)}</td>
+              </tr>
+              <tr>
+                <td>Loan Deduction</td>
+                <td>{formatMoney(detail.loanDeduction)}</td>
+              </tr>
+              <tr>
+                <td>Other Deduction</td>
+                <td>{formatMoney(detail.otherDeduction)}</td>
+              </tr>
+              <tr className="total-row">
+                <td>Total Deductions</td>
+                <td>{formatMoney(detail.totalDeductions)}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
+      </div>
+
+      {/* Net Salary Banner */}
+      <div className="ps-net-banner">
+        <div className="ps-net-left">
+          <h3>Net Salary</h3>
+          <p>(Total Earnings – Total Deductions)</p>
+        </div>
+        <div className="ps-net-right">LKR {formatMoney(detail.netSalary)}</div>
+      </div>
+
+      {/* Commission Details Card */}
+      <div className="ps-section-card">
+        <div className="ps-table-head section">
+          <span>COMMISSION DETAILS</span>
+        </div>
+        <table className="ps-table">
+          <thead>
+            <tr style={{ background: '#f8fafc', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>
+              <td style={{ padding: '0.45rem 1rem' }}>Description</td>
+              <td style={{ padding: '0.45rem 1rem', textAlign: 'right' }}>Amount / Rate</td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Employee Service Sales</td>
+              <td>{formatMoney(detail.commissionBase ?? 0)}</td>
+            </tr>
+            <tr>
+              <td>Commission Rate</td>
+              <td>{detail.commissionPercentage ?? 0}%</td>
+            </tr>
+            <tr className="total-row">
+              <td>Commission</td>
+              <td>{formatMoney(detail.commissionAmount)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Employer Contributions Card */}
+      <div className="ps-section-card">
+        <div className="ps-table-head section">
+          <span>EMPLOYER CONTRIBUTIONS</span>
+        </div>
+        <table className="ps-table">
+          <thead>
+            <tr style={{ background: '#f8fafc', fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>
+              <td style={{ padding: '0.45rem 1rem' }}>Description</td>
+              <td style={{ padding: '0.45rem 1rem', textAlign: 'right' }}>Amount (LKR)</td>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Employer EPF (12%)</td>
+              <td>{formatMoney(detail.employerEpf)}</td>
+            </tr>
+            <tr>
+              <td>Employer ETF (3%)</td>
+              <td>{formatMoney(detail.employerEtf)}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div className="ps-info-box">
+          <svg className="ps-info-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path
+              fillRule="evenodd"
+              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+              clipRule="evenodd"
+            />
+          </svg>
+          <span>
+            Employer contributions are additional amounts paid by the company and are not deducted
+            from the employee&apos;s salary.
+          </span>
+        </div>
+      </div>
+
+      {/* Notes */}
+      <div className="ps-notes">
+        <h4>Notes:</h4>
+        <ul>
+          <li>This is a computer generated payslip and does not require a signature.</li>
+          <li>Please contact the HR / Payroll department for any queries.</li>
+          <li>All amounts are in Sri Lankan Rupees (LKR).</li>
+        </ul>
       </div>
     </div>
   );
@@ -249,6 +555,7 @@ export default function PayslipsPage() {
   const [yearFilter, setYearFilter] = useState('all');
   const [monthFilter, setMonthFilter] = useState('all');
   const [viewId, setViewId] = useState<string | null>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const listParams: Record<string, string> = { limit: '100' };
   if (yearFilter !== 'all') listParams.year = yearFilter;
@@ -278,7 +585,11 @@ export default function PayslipsPage() {
   const { data: settings } = useQuery({
     queryKey: ['tenant-settings'],
     queryFn: tenantApi.settings.get,
-    staleTime: 60_000,
+  });
+
+  const { data: branches = [] } = useQuery({
+    queryKey: ['branches'],
+    queryFn: tenantApi.branches.list,
   });
 
   const { data: payslipDetail, isLoading: detailLoading } = useQuery({
@@ -287,9 +598,50 @@ export default function PayslipsPage() {
     enabled: !!viewId,
   });
 
-  const salonName = settings?.salon.name ?? 'Salon';
+  const employeeBranch =
+    branches.find((b) => b.name === payslipDetail?.branchName) ??
+    branches.find((b) => b.isMain) ??
+    branches[0];
+
+  const salonLogo =
+    settings?.salon.logoUrl ||
+    (settings?.salon as unknown as { logoThumbnailUrl?: string | null })?.logoThumbnailUrl ||
+    null;
+
+  const salonInfo = {
+    name: settings?.salon.name || 'Salon',
+    logoUrl: salonLogo,
+    address: employeeBranch?.address || null,
+    phone: employeeBranch?.phone || settings?.salon.phone || null,
+    email: employeeBranch?.email || settings?.salon.email || null,
+  };
+
+  const handleDownloadPdf = async () => {
+    const element = document.getElementById('payslip-modern-view');
+    if (!element || !payslipDetail) return;
+
+    const opt = {
+      margin: [6, 6, 6, 6],
+      filename: `Payslip-${payslipDetail.employeeCode || payslipDetail.employeeName.replace(/\s+/g, '-')}-${payslipDetail.year}-${String(payslipDetail.month).padStart(2, '0')}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    };
+
+    setDownloadingPdf(true);
+    try {
+      // @ts-expect-error html2pdf typing
+      await html2pdf().set(opt).from(element).save();
+      toast.success('Payslip PDF downloaded successfully');
+    } catch (err) {
+      console.error('PDF export failed:', err);
+      toast.error('Failed to generate PDF');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
   const yearOptions = Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i);
-  const totalNet = payslips.reduce((sum, p) => sum + p.netSalary, 0);
 
   if (isLoading) return <OpsLoading />;
   if (isError) return <OpsError message={getErrorMessage(error)} onRetry={() => void refetch()} />;
@@ -297,17 +649,6 @@ export default function PayslipsPage() {
   return (
     <div className="emp-page payroll-page">
       <OpsPageHeader title="Payslips" subtitle="View and print finalized employee payslips" />
-
-      <div className="emp-stats">
-        <div className="emp-stat">
-          <div className="emp-stat-value">{payslips.length}</div>
-          <div className="emp-stat-label">Payslips</div>
-        </div>
-        <div className="emp-stat">
-          <div className="emp-stat-value">{formatMoneyLkr(totalNet, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-          <div className="emp-stat-label">Total net</div>
-        </div>
-      </div>
 
       <div className="emp-panel">
         <div className="payroll-toolbar">
@@ -456,12 +797,12 @@ export default function PayslipsPage() {
       </div>
 
       <Dialog open={!!viewId} onOpenChange={(open) => !open && setViewId(null)}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-4xl">
           <DialogHeader className="payslip-no-print">
-            <DialogTitle>Payslip</DialogTitle>
+            <DialogTitle>Employee Payslip</DialogTitle>
           </DialogHeader>
 
-          {detailLoading && <div className="emp-skeleton" style={{ height: 200 }} />}
+          {detailLoading && <div className="emp-skeleton" style={{ height: 260 }} />}
 
           {payslipDetail && (
             <>
@@ -469,6 +810,14 @@ export default function PayslipsPage() {
                 <button
                   type="button"
                   className="emp-btn emp-btn-primary"
+                  onClick={handleDownloadPdf}
+                  disabled={downloadingPdf}
+                >
+                  {downloadingPdf ? 'Generating PDF…' : 'Download PDF'}
+                </button>
+                <button
+                  type="button"
+                  className="emp-btn emp-btn-secondary"
                   onClick={() => window.print()}
                 >
                   Print
@@ -476,12 +825,12 @@ export default function PayslipsPage() {
                 <button
                   type="button"
                   className="emp-btn emp-btn-secondary"
-                  onClick={() => downloadPayslipHtml(payslipDetail, salonName)}
+                  onClick={() => downloadPayslipHtml(payslipDetail, salonInfo)}
                 >
                   Download HTML
                 </button>
               </div>
-              <PayslipPrintView detail={payslipDetail} salonName={salonName} />
+              <PayslipModernView detail={payslipDetail} salon={salonInfo} />
             </>
           )}
         </DialogContent>

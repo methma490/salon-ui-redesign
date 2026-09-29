@@ -69,6 +69,7 @@ type EmployeeForm = {
   commissionRate: string;
   epfEnabled: boolean;
   etfEnabled: boolean;
+  maxAdvancePercentage: string;
   photoUrl?: string;
 };
 
@@ -96,6 +97,7 @@ const emptyForm: EmployeeForm = {
   commissionRate: '0',
   epfEnabled: true,
   etfEnabled: true,
+  maxAdvancePercentage: '100',
   photoUrl: '',
 };
 
@@ -116,6 +118,7 @@ function toCreatePayload(form: EmployeeForm) {
     commissionRate: Number(form.commissionRate) || 0,
     epfEnabled: form.epfEnabled,
     etfEnabled: form.etfEnabled,
+    maxAdvancePercentage: form.maxAdvancePercentage ? Number(form.maxAdvancePercentage) : 100,
   };
   const phone = form.phone.trim();
   const email = form.email.trim();
@@ -137,6 +140,7 @@ function toEditPayload(form: EmployeeForm, hasLogin: boolean) {
     commissionRate: Number(form.commissionRate) || 0,
     epfEnabled: form.epfEnabled,
     etfEnabled: form.etfEnabled,
+    maxAdvancePercentage: form.maxAdvancePercentage ? Number(form.maxAdvancePercentage) : 100,
   };
   const phone = form.phone.trim();
   const email = form.email.trim();
@@ -444,6 +448,14 @@ export default function EmployeesPage() {
     placeholderData: (previousData) => previousData,
   });
 
+  const { data: payrollSettings } = useQuery({
+    queryKey: ['payroll-settings'],
+    queryFn: tenantApi.payroll.getSettings,
+    staleTime: 60_000,
+  });
+
+  const systemDefaultAdvancePct = Number(payrollSettings?.maxSalaryAdvancePercentage ?? 50);
+
   const filteredEmployees = useMemo(() => {
     if (roleFilter === 'all') return allEmployees;
     if (roleFilter === 'STAFF') {
@@ -670,6 +682,7 @@ export default function EmployeesPage() {
       commissionRate: String(emp.commissionRate ?? 0),
       epfEnabled: emp.epfEnabled ?? true,
       etfEnabled: emp.etfEnabled ?? true,
+      maxAdvancePercentage: String(emp.maxAdvancePercentage ?? 100),
     });
   };
 
@@ -1547,65 +1560,98 @@ export default function EmployeesPage() {
                 </div>
 
                 {payrollEnabled && (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold text-slate-700">
-                        EPF Enabled
-                      </Label>
-                      <Select
-                        value={
-                          (editEmployee ? editForm.epfEnabled : form.epfEnabled)
-                            ? 'yes'
-                            : 'no'
-                        }
-                        onValueChange={(v) =>
-                          editEmployee
-                            ? setEditForm({ ...editForm, epfEnabled: v === 'yes' })
-                            : setForm({ ...form, epfEnabled: v === 'yes' })
-                        }
-                      >
-                        <SelectTrigger className="h-10 rounded-xl text-xs">
-                          <div className="flex items-center gap-2">
-                            <ShieldCheck className="h-4 w-4 text-slate-400" />
-                            <SelectValue />
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="yes">Yes</SelectItem>
-                          <SelectItem value="no">No</SelectItem>
-                        </SelectContent>
-                      </Select>
+                  <>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold text-slate-700">
+                          EPF Enabled
+                        </Label>
+                        <Select
+                          value={
+                            (editEmployee ? editForm.epfEnabled : form.epfEnabled)
+                              ? 'yes'
+                              : 'no'
+                          }
+                          onValueChange={(v) =>
+                            editEmployee
+                              ? setEditForm({ ...editForm, epfEnabled: v === 'yes' })
+                              : setForm({ ...form, epfEnabled: v === 'yes' })
+                          }
+                        >
+                          <SelectTrigger className="h-10 rounded-xl text-xs">
+                            <div className="flex items-center gap-2">
+                              <ShieldCheck className="h-4 w-4 text-slate-400" />
+                              <SelectValue />
+                            </div>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="yes">Yes</SelectItem>
+                            <SelectItem value="no">No</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-semibold text-slate-700">
+                          ETF Enabled
+                        </Label>
+                        <Select
+                          value={
+                            (editEmployee ? editForm.etfEnabled : form.etfEnabled)
+                              ? 'yes'
+                              : 'no'
+                          }
+                          onValueChange={(v) =>
+                            editEmployee
+                              ? setEditForm({ ...editForm, etfEnabled: v === 'yes' })
+                              : setForm({ ...form, etfEnabled: v === 'yes' })
+                          }
+                        >
+                          <SelectTrigger className="h-10 rounded-xl text-xs">
+                            <div className="flex items-center gap-2">
+                              <ShieldCheck className="h-4 w-4 text-slate-400" />
+                              <SelectValue />
+                            </div>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="yes">Yes</SelectItem>
+                            <SelectItem value="no">No</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold text-slate-700">
-                        ETF Enabled
+                      <Label htmlFor="emp-maxadv" className="text-xs font-semibold text-slate-700">
+                        Max Advance Limit (% of Basic Salary)
                       </Label>
-                      <Select
-                        value={
-                          (editEmployee ? editForm.etfEnabled : form.etfEnabled)
-                            ? 'yes'
-                            : 'no'
-                        }
-                        onValueChange={(v) =>
-                          editEmployee
-                            ? setEditForm({ ...editForm, etfEnabled: v === 'yes' })
-                            : setForm({ ...form, etfEnabled: v === 'yes' })
-                        }
-                      >
-                        <SelectTrigger className="h-10 rounded-xl text-xs">
-                          <div className="flex items-center gap-2">
-                            <ShieldCheck className="h-4 w-4 text-slate-400" />
-                            <SelectValue />
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="yes">Yes</SelectItem>
-                          <SelectItem value="no">No</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="relative">
+                        <Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                        <Input
+                          id="emp-maxadv"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="1"
+                          value={
+                            editEmployee
+                              ? editForm.maxAdvancePercentage
+                              : form.maxAdvancePercentage
+                          }
+                          onChange={(e) =>
+                            editEmployee
+                              ? setEditForm({ ...editForm, maxAdvancePercentage: e.target.value })
+                              : setForm({ ...form, maxAdvancePercentage: e.target.value })
+                          }
+                          placeholder="100"
+                          className="pl-9 h-10 rounded-xl text-xs"
+                        />
+                      </div>
+                      <p className="text-[11px] text-slate-500">
+                        Maximum percentage of basic salary that can be requested as salary advance (e.g. 50% or 100%).
+                      </p>
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
             </div>
@@ -1791,9 +1837,27 @@ export default function EmployeesPage() {
               e.preventDefault();
               if (!advanceEmployee) return;
               setFormError(null);
+              const amount = Number(advanceForm.amount);
+              const basicSalary = Number(advanceEmployee.basicSalary || 0);
+              const maxPct = systemDefaultAdvancePct;
+              const maxAllowed = Math.round((basicSalary * maxPct) / 100 * 100) / 100;
+
+              if (basicSalary <= 0) {
+                setFormError('Employee has no basic salary set. Cannot issue advance.');
+                return;
+              }
+              if (amount > basicSalary) {
+                setFormError(`Advance amount cannot exceed basic salary of LKR ${formatSalary(basicSalary)}.`);
+                return;
+              }
+              if (amount > maxAllowed) {
+                setFormError(`Advance amount cannot exceed maximum allowed limit of LKR ${formatSalary(maxAllowed)} (${maxPct}% of basic salary).`);
+                return;
+              }
+
               advanceMutation.mutate({
                 employeeId: advanceEmployee.id,
-                amount: Number(advanceForm.amount),
+                amount,
                 notes: advanceForm.notes || undefined,
               });
             }}
@@ -1801,14 +1865,23 @@ export default function EmployeesPage() {
           >
             <FormError message={formError} />
 
-            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
-              <p className="font-semibold text-slate-900">
-                {advanceEmployee?.name} ({advanceEmployee?.code})
-              </p>
-              <p className="text-slate-500">
-                Basic Salary: {formatSalary(advanceEmployee?.basicSalary)}
-              </p>
-            </div>
+            {advanceEmployee && (() => {
+              const basicSalary = Number(advanceEmployee.basicSalary || 0);
+              const maxPct = systemDefaultAdvancePct;
+              const maxAllowed = Math.round((basicSalary * maxPct) / 100 * 100) / 100;
+
+              return (
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+                  <p className="font-semibold text-slate-900">
+                    {advanceEmployee.name} ({advanceEmployee.code})
+                  </p>
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-slate-600">
+                    <span>Basic Salary: <strong className="text-slate-900">LKR {formatSalary(basicSalary)}</strong></span>
+                    <span>Max Advance ({maxPct}%): <strong className="text-emerald-700">LKR {formatSalary(maxAllowed)}</strong></span>
+                  </div>
+                </div>
+              );
+            })()}
 
             <div className="space-y-1.5">
               <Label htmlFor="adv-amount" className="text-xs font-semibold">

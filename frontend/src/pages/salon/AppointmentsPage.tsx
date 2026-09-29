@@ -492,15 +492,15 @@ export default function AppointmentsPage() {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 w-full lg:w-auto">
           {/* Branch Selector */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-500">Branch</span>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <span className="text-xs font-semibold text-slate-500 shrink-0">Branch</span>
             <Select
               value={activeBranchId}
               onValueChange={(val) => setBranchFilter(val)}
             >
-              <SelectTrigger className="h-10 px-3 rounded-xl border-slate-200 bg-white text-xs font-semibold min-w-[210px] flex items-center gap-2 shadow-xs">
+              <SelectTrigger className="h-10 px-3 rounded-xl border-slate-200 bg-white text-xs font-semibold flex-1 sm:flex-initial sm:min-w-[200px] flex items-center gap-2 shadow-xs">
                 <Building2 className="h-4 w-4 text-[var(--brand-primary,#0d5c3d)] shrink-0" />
                 <SelectValue placeholder="Select branch" />
               </SelectTrigger>
@@ -515,11 +515,11 @@ export default function AppointmentsPage() {
           </div>
 
           {/* Date Selector */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-500">Date</span>
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <span className="text-xs font-semibold text-slate-500 shrink-0">Date</span>
             <div className="flex items-center bg-white border border-slate-200 rounded-xl h-10 px-2 gap-1 shadow-xs">
-              <Calendar className="h-4 w-4 text-slate-400 mr-1" />
-              <span className="text-xs font-bold text-slate-800 min-w-[92px]">
+              <Calendar className="h-4 w-4 text-slate-400 mr-1 shrink-0" />
+              <span className="text-xs font-bold text-slate-800 min-w-[80px] sm:min-w-[92px]">
                 {formatDateDisplay(selectedDate)}
               </span>
               <button
@@ -542,7 +542,7 @@ export default function AppointmentsPage() {
             <button
               type="button"
               onClick={() => setSelectedDate(todayIso())}
-              className="h-10 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-xs transition-colors cursor-pointer"
+              className="h-10 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-xs transition-colors cursor-pointer"
             >
               Today
             </button>
@@ -552,7 +552,7 @@ export default function AppointmentsPage() {
           <button
             type="button"
             onClick={() => openCreate()}
-            className="inline-flex items-center gap-1.5 h-10 px-4 rounded-xl bg-[var(--brand-primary,#0d5c3d)] hover:bg-[var(--brand-hover,#0a4a31)] text-white text-xs font-bold shadow-xs transition-colors cursor-pointer"
+            className="inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-xl bg-[var(--brand-primary,#0d5c3d)] hover:bg-[var(--brand-hover,#0a4a31)] text-white text-xs font-bold shadow-xs transition-colors cursor-pointer w-full sm:w-auto"
           >
             <Plus className="h-4 w-4" />
             <span>+ New Appointment</span>
@@ -563,13 +563,13 @@ export default function AppointmentsPage() {
       {/* Main Card Container */}
       <div className="rounded-2xl border border-slate-200/90 bg-white shadow-xs overflow-hidden">
         {/* Subheader bar inside card */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-3.5 border-b border-slate-100 bg-white">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-3.5 sm:px-5 py-3 sm:py-3.5 border-b border-slate-100 bg-white">
           <div className="flex items-center gap-2 text-slate-800 font-bold text-sm">
             <Calendar className="h-4 w-4 text-[var(--brand-primary,#0d5c3d)]" />
             <span>{formatFullDateHeader(selectedDate)}</span>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {/* View switcher tabs */}
             <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
               <button

@@ -13,6 +13,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { formatMoneyAmount, formatMoneyLkr } from '@/lib/money';
 import {
   getErrorMessage,
@@ -169,12 +177,15 @@ export default function PayrollRunsPage() {
     onError: (err) => toast.error(getErrorMessage(err)),
   });
 
+  const [finalizeConfirmOpen, setFinalizeConfirmOpen] = useState(false);
+
   const finalizeMutation = useMutation({
     mutationFn: (id: string) => tenantApi.payroll.finalize(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['payroll-runs'] });
       qc.invalidateQueries({ queryKey: ['payroll-run', selectedRunId] });
-      toast.success('Payroll finalized successfully.');
+      setFinalizeConfirmOpen(false);
+      toast.success('Payroll run finalized successfully! Payslips generated.');
     },
     onError: (err) => toast.error(getErrorMessage(err)),
   });
@@ -216,13 +227,7 @@ export default function PayrollRunsPage() {
 
   const confirmFinalize = () => {
     if (!selectedRun) return;
-    if (
-      window.confirm(
-        'Finalize this payroll run? Edits will be locked and payslips will be generated.',
-      )
-    ) {
-      finalizeMutation.mutate(selectedRun.id);
-    }
+    setFinalizeConfirmOpen(true);
   };
 
   const yearOptions = Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i);
@@ -709,6 +714,50 @@ export default function PayrollRunsPage() {
           )}
         </div>
       )}
+
+      <Dialog open={finalizeConfirmOpen} onOpenChange={setFinalizeConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Finalize Payroll Run</DialogTitle>
+          </DialogHeader>
+          <div style={{ fontSize: 14, color: '#475569', lineHeight: 1.5, margin: '8px 0 16px' }}>
+            {selectedRun && (
+              <>
+                Are you sure you want to finalize the payroll run for{' '}
+                <strong>
+                  {monthLabel(selectedRun.month)} {selectedRun.year}
+                </strong>
+                ?
+                <p style={{ marginTop: 8, fontSize: 13, color: '#64748b' }}>
+                  Edits will be locked and official payslips will be generated for{' '}
+                  <strong>{items.length}</strong> employees.
+                </p>
+              </>
+            )}
+          </div>
+          <DialogFooter style={{ gap: 8 }}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setFinalizeConfirmOpen(false)}
+              disabled={finalizeMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={finalizeMutation.isPending}
+              onClick={() => {
+                if (selectedRun) {
+                  finalizeMutation.mutate(selectedRun.id);
+                }
+              }}
+            >
+              {finalizeMutation.isPending ? 'Finalizing…' : 'Confirm & Finalize'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

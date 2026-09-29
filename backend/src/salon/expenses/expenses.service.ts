@@ -137,15 +137,19 @@ export class ExpensesService {
     userId: string,
   ): Promise<ExpenseCategoryRecord> {
     const table = tenantTable(schemaName, 'expense_categories');
-    const code = dto.code.trim().toUpperCase();
 
     return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
-      const existing = await tx.$queryRawUnsafe<Array<{ id: string }>>(
-        `SELECT id FROM ${table} WHERE code = $1 LIMIT 1`,
-        code,
-      );
-      if (existing.length > 0) {
-        throw new ConflictException('Expense category code already exists');
+      let code = dto.code?.trim().toUpperCase();
+      if (!code) {
+        code = await generateSequentialCode(tx, table, 'EXPC-');
+      } else {
+        const existing = await tx.$queryRawUnsafe<Array<{ id: string }>>(
+          `SELECT id FROM ${table} WHERE code = $1 LIMIT 1`,
+          code,
+        );
+        if (existing.length > 0) {
+          throw new ConflictException('Expense category code already exists');
+        }
       }
 
       const rows = await tx.$queryRawUnsafe<ExpenseCategoryRecord[]>(
@@ -209,6 +213,36 @@ export class ExpensesService {
       });
 
       return rows[0];
+    });
+  }
+
+  async deleteCategory(
+    schemaName: string,
+    id: string,
+    userId: string,
+  ): Promise<{ id: string; success: boolean }> {
+    const table = tenantTable(schemaName, 'expense_categories');
+
+    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      const existing = await tx.$queryRawUnsafe<Array<{ id: string; code: string; name: string }>>(
+        `SELECT id, code, name FROM ${table} WHERE id = $1::uuid LIMIT 1`,
+        id,
+      );
+      if (!existing[0]) {
+        throw new NotFoundException('Expense category not found');
+      }
+
+      await tx.$queryRawUnsafe(`DELETE FROM ${table} WHERE id = $1::uuid`, id);
+
+      await logAudit(tx, schemaName, {
+        userId,
+        action: 'EXPENSE_CATEGORY_DELETE',
+        entityType: 'expense_category',
+        entityId: id,
+        details: { code: existing[0].code, name: existing[0].name },
+      });
+
+      return { id, success: true };
     });
   }
 
@@ -431,6 +465,25 @@ export class ExpensesService {
         throw new NotFoundException('Expense not found');
       }
       return updated;
+    });
+  }
+
+  async delete(schemaName: string, id: string, userId: string): Promise<{ id: string; success: boolean }> {
+    const table = tenantTable(schemaName, 'expenses');
+    const existing = await this.findById(schemaName, id);
+
+    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      await tx.$queryRawUnsafe(`DELETE FROM ${table} WHERE id = $1::uuid`, id);
+
+      await logAudit(tx, schemaName, {
+        userId,
+        action: 'EXPENSE_DELETE',
+        entityType: 'expense',
+        entityId: id,
+        details: { code: existing.code, title: existing.title, amount: existing.amount },
+      });
+
+      return { id, success: true };
     });
   }
 }

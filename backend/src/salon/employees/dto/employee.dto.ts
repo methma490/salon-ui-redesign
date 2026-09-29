@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  Max,
   MaxLength,
   Min,
   MinLength,
@@ -64,6 +65,13 @@ export class CreateEmployeeDto {
   @IsOptional()
   @IsBoolean()
   etfEnabled?: boolean;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(100)
+  maxAdvancePercentage?: number;
 
   /** When set, creates a login user and assigns this role (requires email + password). */
   @IsOptional()
@@ -130,6 +138,13 @@ export class UpdateEmployeeDto {
   @IsOptional()
   @IsBoolean()
   etfEnabled?: boolean;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(100)
+  maxAdvancePercentage?: number;
 
   @IsOptional()
   @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))

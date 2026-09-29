@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../auth/interfaces/auth.interface';
@@ -52,6 +52,16 @@ export class ExpensesController {
     return this.expensesService.updateCategory(tenant.schemaName, id, dto, user.id);
   }
 
+  @Delete('expense-categories/:id')
+  @RequirePermission('EXPENSE_DELETE')
+  deleteCategory(
+    @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    return this.expensesService.deleteCategory(tenant.schemaName, id, user.id);
+  }
+
   @Get('expenses')
   @RequirePermission('EXPENSE_VIEW')
   list(@CurrentTenant() tenant: TenantContext, @Query() query: ListExpensesQueryDto) {
@@ -94,5 +104,15 @@ export class ExpensesController {
     @Body() dto: UpdateExpenseStatusDto,
   ) {
     return this.expensesService.updateStatus(tenant.schemaName, id, dto, user.id);
+  }
+
+  @Delete('expenses/:id')
+  @RequirePermission('EXPENSE_DELETE')
+  delete(
+    @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+  ) {
+    return this.expensesService.delete(tenant.schemaName, id, user.id);
   }
 }

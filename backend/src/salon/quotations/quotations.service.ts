@@ -15,6 +15,7 @@ import { APP_NAME_FALLBACK } from '../../config/brand.constants';
 import { logAudit } from '../utils/audit.util';
 import { PosService } from '../pos/pos.service';
 import {
+  CancelQuotationDto,
   ConvertQuotationDto,
   CreateQuotationDto,
   ListQuotationsQueryDto,
@@ -22,6 +23,7 @@ import {
 } from './dto/quotation.dto';
 import { MessagingService } from './messaging.service';
 import {
+  buildSmsQuotationCancelledMessage,
   buildSmsQuotationMessage,
   buildWhatsAppQuotationMessage,
   messageUsesPlatformAsPrimaryBrand,
@@ -48,6 +50,23 @@ export class QuotationsService {
     private readonly posService: PosService,
     private readonly configService: ConfigService,
   ) {}
+
+  private async ensureQuotationsTableSynced(
+    tx: { $executeRawUnsafe: (query: string, ...values: unknown[]) => Promise<unknown> },
+    schemaName: string,
+  ) {
+    const quotations = tenantTable(schemaName, 'quotations');
+    try {
+      await tx.$executeRawUnsafe(
+        `ALTER TABLE ${quotations} ADD COLUMN IF NOT EXISTS cancel_reason VARCHAR(255)`,
+      );
+      await tx.$executeRawUnsafe(
+        `ALTER TABLE ${quotations} ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP`,
+      );
+    } catch {
+      // Ignore if concurrent or already present
+    }
+  }
 
   private statusCast(schemaName: string, paramIndex: number) {
     return `$${paramIndex}::text::"${schemaName}".quotation_status`;
@@ -535,19 +554,36 @@ export class QuotationsService {
     });
   }
 
-  async cancel(schemaName: string, id: string, userId: string) {
+  async cancel(
+    schemaName: string,
+    tenantId: string,
+    id: string,
+    userId: string,
+    dto?: CancelQuotationDto,
+  ) {
     const detail = await this.loadQuotationDetail(schemaName, { id });
     if (['CONVERTED', 'CANCELLED'].includes(detail.status)) {
       throw new BadRequestException('Quotation cannot be cancelled');
     }
+
+    const salon = await this.resolveSalonBranding(tenantId);
+    const salonName = resolveQuotationSalonBrand(salon.name);
+    const reason = (dto?.reason ?? '').trim() || null;
+    const shouldNotify = dto?.notifyCustomer !== false;
+
     const quotations = tenantTable(schemaName, 'quotations');
-    const statusCast = this.statusCast(schemaName, 2);
-    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+    const statusCast = this.statusCast(schemaName, 3);
+    await this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      await this.ensureQuotationsTableSynced(tx, schemaName);
       await tx.$queryRawUnsafe(
         `UPDATE ${quotations}
-         SET status = ${statusCast}, updated_at = NOW()
+         SET status = ${statusCast},
+             cancel_reason = $2,
+             cancelled_at = NOW(),
+             updated_at = NOW()
          WHERE id = $1::uuid`,
         id,
+        reason,
         'CANCELLED',
       );
       await logAudit(tx, schemaName, {
@@ -555,9 +591,48 @@ export class QuotationsService {
         action: 'QUOTATION_CANCEL',
         entityType: 'quotation',
         entityId: id,
+        details: { reason, notifyCustomer: shouldNotify },
       });
-      return { id, status: 'CANCELLED' };
     });
+
+    let messageSent = false;
+    let messageError: string | null = null;
+
+    if (shouldNotify && detail.customerPhone) {
+      const e164 = normalizePhoneE164(detail.customerPhone);
+      if (e164) {
+        const message = buildSmsQuotationCancelledMessage({
+          quotationNo: detail.quotationNo,
+          salonName,
+          reason,
+        });
+
+        try {
+          const result = await this.messagingService.sendSms(e164, message);
+          await this.recordMessage(schemaName, {
+            quotationId: id,
+            channel: 'SMS',
+            recipient: e164,
+            message,
+            status: result.status,
+            providerMessageId: result.providerMessageId,
+            failureReason: result.failureReason,
+            userId,
+          });
+          messageSent = result.status === 'SENT';
+        } catch (err) {
+          messageError = err instanceof Error ? err.message : 'Failed to send SMS';
+        }
+      }
+    }
+
+    return {
+      id,
+      status: 'CANCELLED',
+      cancelReason: reason,
+      messageSent,
+      messageError,
+    };
   }
 
   async prepareWhatsApp(schemaName: string, tenantId: string, id: string, userId: string) {
@@ -680,7 +755,6 @@ export class QuotationsService {
     for (const tenant of tenants) {
       try {
         const detail = await this.loadQuotationDetail(tenant.schemaName, { publicToken: token });
-        if (['CANCELLED'].includes(detail.status)) continue;
         const displayStatus = resolveDisplayStatus(detail.status, detail.validUntil);
         return toPublicQuotationView({
           quotationNo: detail.quotationNo,
@@ -694,6 +768,8 @@ export class QuotationsService {
           status: displayStatus,
           canRespond:
             ['SENT', 'DRAFT'].includes(detail.status) && displayStatus !== 'EXPIRED',
+          cancelReason: detail.cancelReason || detail.declineReason || null,
+          cancelledAt: detail.cancelledAt ? new Date(detail.cancelledAt).toISOString() : null,
           items: detail.items.map((i) => ({
             description: i.descriptionSnapshot,
             quantity: i.quantity,
@@ -887,7 +963,7 @@ export class QuotationsService {
     const rows = detail.items
       .map(
         (i) =>
-          `<tr><td>${escapeHtml(i.descriptionSnapshot)}</td><td style="text-align:right">${i.quantity}</td><td style="text-align:right">${formatLkr(i.quotationUnitPrice)}</td><td style="text-align:right">${formatLkr(i.lineTotal)}</td></tr>`,
+          `<tr><td>${escapeHtml(i.descriptionSnapshot)}</td><td style="text-align:right">${i.quantity}</td><td style="text-align:right">${formatMoneyNumber(i.quotationUnitPrice)}</td><td style="text-align:right">${formatMoneyNumber(i.lineTotal)}</td></tr>`,
       )
       .join('');
 
@@ -898,6 +974,7 @@ h1{margin:0 0 4px;font-size:22px;color:${detail.salon.primaryColor || '#0d5c3d'}
 .muted{color:#64748b;font-size:13px}
 table{width:100%;border-collapse:collapse;margin-top:18px}
 th,td{border-bottom:1px solid #e2e8f0;padding:8px;font-size:13px;text-align:left}
+th.num,td.num{text-align:right}
 .total{font-size:18px;font-weight:700;margin-top:16px}
 .footer{margin-top:28px;font-size:11px;color:#94a3b8}
 </style></head><body>
@@ -905,7 +982,7 @@ th,td{border-bottom:1px solid #e2e8f0;padding:8px;font-size:13px;text-align:left
 <p class="muted">QUOTATION ${escapeHtml(detail.quotationNo)}</p>
 <p><strong>Customer:</strong> ${escapeHtml(detail.customerName)} · ${escapeHtml(detail.customerPhone || '')}</p>
 <p><strong>Date:</strong> ${escapeHtml(formatSriLankaDate(detail.quotationDate))} · <strong>Valid until:</strong> ${escapeHtml(detail.validUntil ? formatSriLankaDate(detail.validUntil) : '—')}</p>
-<table><thead><tr><th>Service</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead><tbody>${rows}</tbody></table>
+<table><thead><tr><th>Service</th><th style="text-align:right">Qty</th><th style="text-align:right">Price (LKR)</th><th style="text-align:right">Total (LKR)</th></tr></thead><tbody>${rows}</tbody></table>
 <p class="total">Total: ${formatLkr(detail.totalAmount)}</p>
 ${detail.customerNotes ? `<p><strong>Notes:</strong> ${escapeHtml(detail.customerNotes)}</p>` : ''}
 <p class="footer">Powered by ${escapeHtml(APP_NAME_FALLBACK)}</p>
@@ -987,6 +1064,7 @@ ${detail.customerNotes ? `<p><strong>Notes:</strong> ${escapeHtml(detail.custome
     if (!param) throw new BadRequestException('Missing quotation key');
 
     return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      await this.ensureQuotationsTableSynced(tx, schemaName);
       const rows = await tx.$queryRawUnsafe<
         Array<{
           id: string;
@@ -1011,6 +1089,8 @@ ${detail.customerNotes ? `<p><strong>Notes:</strong> ${escapeHtml(detail.custome
           acceptedAt: Date | null;
           declinedAt: Date | null;
           declineReason: string | null;
+          cancelReason: string | null;
+          cancelledAt: Date | null;
           createdAt: Date;
         }>
       >(
@@ -1032,6 +1112,8 @@ ${detail.customerNotes ? `<p><strong>Notes:</strong> ${escapeHtml(detail.custome
                 q.accepted_at AS "acceptedAt",
                 q.declined_at AS "declinedAt",
                 q.decline_reason AS "declineReason",
+                q.cancel_reason AS "cancelReason",
+                q.cancelled_at AS "cancelledAt",
                 q.created_at AS "createdAt"
          FROM ${quotations} q
          INNER JOIN ${customers} c ON q.customer_id = c.id
@@ -1097,5 +1179,9 @@ function escapeHtml(value: string) {
 }
 
 function formatLkr(value: number) {
-  return `LKR ${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  return `LKR ${Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatMoneyNumber(value: number) {
+  return Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }

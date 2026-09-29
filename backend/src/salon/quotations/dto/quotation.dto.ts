@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsDateString,
   IsEnum,
   IsNumber,
@@ -116,6 +117,10 @@ export class UpdateQuotationDto {
   @IsOptional()
   @IsString()
   internalNotes?: string;
+
+  @IsOptional()
+  @IsEnum(['DRAFT', 'SENT'])
+  status?: 'DRAFT' | 'SENT';
 }
 
 export class ListQuotationsQueryDto extends PaginationQueryDto {
@@ -195,3 +200,15 @@ export class PublicDeclineQuotationDto {
   @MaxLength(100)
   reason?: string;
 }
+
+export class CancelQuotationDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  reason?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  notifyCustomer?: boolean;
+}
+

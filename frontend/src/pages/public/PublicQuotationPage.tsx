@@ -54,19 +54,69 @@ export default function PublicQuotationPage() {
   });
 
   if (query.isLoading) {
-    return <div style={{ padding: 40, textAlign: 'center' }}>Loading quotation…</div>;
+    return (
+      <div style={{ padding: 48, textAlign: 'center', color: '#64748b', fontSize: 16 }}>
+        Loading quotation…
+      </div>
+    );
   }
 
   if (query.isError || !query.data) {
     return (
-      <div style={{ padding: 40, textAlign: 'center' }}>
-        {getErrorMessage(query.error) || 'Quotation not found'}
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#f8fafc',
+          padding: 16,
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 460,
+            width: '100%',
+            background: '#fff',
+            borderRadius: 16,
+            padding: 32,
+            textAlign: 'center',
+            boxShadow: '0 8px 30px rgba(15,23,42,0.06)',
+            border: '1px solid #e2e8f0',
+          }}
+        >
+          <div
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: '50%',
+              backgroundColor: '#fee2e2',
+              color: '#dc2626',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px',
+              fontSize: 24,
+              fontWeight: 'bold',
+            }}
+          >
+            !
+          </div>
+          <h2 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 8px', color: '#1e293b' }}>
+            Quotation Unavailable
+          </h2>
+          <p style={{ color: '#64748b', fontSize: 14, margin: 0, lineHeight: 1.5 }}>
+            {getErrorMessage(query.error) ||
+              'This quotation could not be found or may no longer be available. Please contact your salon for assistance.'}
+          </p>
+        </div>
       </div>
     );
   }
 
   const data = query.data;
   const brand = data.salon.primaryColor || '#0d5c3d';
+  const isCancelled = data.status === 'CANCELLED';
 
   return (
     <div
@@ -90,8 +140,47 @@ export default function PublicQuotationPage() {
         <QuotationLogo logoUrl={data.salon.logoUrl} />
         <h1 style={{ margin: 0, color: brand, fontSize: 28 }}>{data.salon.name}</h1>
         <p style={{ margin: '4px 0 16px', color: '#64748b' }}>
-          QUOTATION {data.quotationNo} · {data.status}
+          QUOTATION {data.quotationNo} ·{' '}
+          <span
+            style={{
+              display: 'inline-block',
+              padding: '2px 8px',
+              borderRadius: 4,
+              fontSize: 12,
+              fontWeight: 600,
+              backgroundColor: isCancelled ? '#fee2e2' : '#f1f5f9',
+              color: isCancelled ? '#dc2626' : '#475569',
+            }}
+          >
+            {data.status}
+          </span>
         </p>
+
+        {isCancelled && (
+          <div
+            style={{
+              padding: '12px 16px',
+              backgroundColor: '#fef2f2',
+              border: '1px solid #fecaca',
+              borderRadius: 10,
+              color: '#991b1b',
+              marginBottom: 16,
+            }}
+          >
+            <strong style={{ display: 'block', fontSize: 14, marginBottom: 2 }}>
+              This quotation has been cancelled
+            </strong>
+            {data.cancelReason ? (
+              <span style={{ fontSize: 13 }}>
+                <strong>Reason:</strong> {data.cancelReason}
+              </span>
+            ) : (
+              <span style={{ fontSize: 13 }}>
+                This quotation is no longer valid. Please contact the salon for more information.
+              </span>
+            )}
+          </div>
+        )}
 
         <p>
           <strong>Customer:</strong> {data.customerName}

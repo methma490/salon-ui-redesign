@@ -136,8 +136,8 @@ const navGroups: NavGroup[] = [
         module: 'QUOTATIONS',
       },
       {
-        to: '/salon/sales-analytics',
-        label: 'Sales Analytics',
+        to: '/salon/reports?tab=sales',
+        label: 'Sales Report',
         icon: BarChart3,
         feature: 'POS',
         module: 'POS',
@@ -303,17 +303,24 @@ const navGroups: NavGroup[] = [
     module: 'POS',
     children: [
       {
-        to: '/salon/reports',
-        label: 'Business Reports',
-        icon: BarChart3,
+        to: '/salon/reports?tab=sales',
+        label: 'Sales Report',
+        icon: Receipt,
         feature: 'REPORTS',
         module: 'POS',
       },
       {
-        to: '/salon/sales-analytics',
-        label: 'Sales Analytics',
-        icon: BarChart3,
-        feature: 'POS',
+        to: '/salon/reports?tab=employee-performance',
+        label: 'Employee Performance',
+        icon: UserSquare2,
+        feature: 'REPORTS',
+        module: 'POS',
+      },
+      {
+        to: '/salon/reports?tab=inventory',
+        label: 'Inventory Report',
+        icon: Package,
+        feature: 'REPORTS',
         module: 'POS',
       },
     ],
@@ -351,6 +358,8 @@ function SidebarLink({
   onNavigate?: () => void;
   access?: NavAccessState;
 }) {
+  const location = useLocation();
+
   if (access === 'disabled') {
     return (
       <div
@@ -364,11 +373,17 @@ function SidebarLink({
     );
   }
 
+  const currentUrl = location.pathname + location.search;
+  const isQueryLink = to.includes('?');
+  const isActive = isQueryLink
+    ? currentUrl === to || (to === '/salon/reports?tab=sales' && location.pathname === '/salon/reports' && !location.search)
+    : location.pathname === to || (to !== '/salon/dashboard' && location.pathname.startsWith(to));
+
   return (
     <NavLink
       to={to}
       onClick={onNavigate}
-      className={({ isActive }) => cn('salon-sidebar-link', isActive && 'active')}
+      className={() => cn('salon-sidebar-link', isActive && 'active')}
     >
       <Icon className="salon-sidebar-link-icon" strokeWidth={2} />
       <span className="salon-sidebar-link-label">{label}</span>

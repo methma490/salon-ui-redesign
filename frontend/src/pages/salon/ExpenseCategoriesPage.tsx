@@ -1,13 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { tenantApi } from '@/api/tenant.api';
+import { toast } from 'sonner';
+import { tenantApi, type ExpenseCategory } from '@/api/tenant.api';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import {
   FormError,
   FormSubmit,
   FormTextarea,
   getErrorMessage,
+  OpsDeleteButton,
   OpsEditButton,
   OpsError,
   OpsLoading,
@@ -35,6 +45,7 @@ export default function ExpenseCategoriesPage() {
   const [form, setForm] = useState({ code: '', name: '', description: '' });
   const [editId, setEditId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ name: '', description: '' });
+  const [deleteCategoryItem, setDeleteCategoryItem] = useState<ExpenseCategory | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
   const createMutation = useMutation({
@@ -44,6 +55,7 @@ export default function ExpenseCategoriesPage() {
       setForm({ code: '', name: '', description: '' });
       setFormError(null);
       setCreateOpen(false);
+      toast.success('Category created successfully');
     },
     onError: (err) => setFormError(getErrorMessage(err)),
   });
@@ -55,8 +67,19 @@ export default function ExpenseCategoriesPage() {
       qc.invalidateQueries({ queryKey: ['expense-categories'] });
       setEditId(null);
       setFormError(null);
+      toast.success('Category updated successfully');
     },
     onError: (err) => setFormError(getErrorMessage(err)),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => tenantApi.expenseCategories.delete(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['expense-categories'] });
+      setDeleteCategoryItem(null);
+      toast.success('Category deleted successfully');
+    },
+    onError: (err) => toast.error(getErrorMessage(err)),
   });
 
   if (isLoading) return <OpsLoading />;
@@ -81,12 +104,6 @@ export default function ExpenseCategoriesPage() {
         }
       />
 
-      <div className="emp-stats">
-        <div className="emp-stat">
-          <div className="emp-stat-value">{categories.length}</div>
-          <div className="emp-stat-label">Categories</div>
-        </div>
-      </div>
 
       <div className="emp-panel">
         <div className="emp-panel-header">
@@ -127,6 +144,7 @@ export default function ExpenseCategoriesPage() {
                         });
                       }}
                     />
+                    <OpsDeleteButton onClick={() => setDeleteCategoryItem(category)} />
                   </div>
                 </article>
               ))}
@@ -160,6 +178,7 @@ export default function ExpenseCategoriesPage() {
                               });
                             }}
                           />
+                          <OpsDeleteButton onClick={() => setDeleteCategoryItem(category)} />
                         </div>
                       </td>
                     </tr>
@@ -177,7 +196,7 @@ export default function ExpenseCategoriesPage() {
             e.preventDefault();
             setFormError(null);
             createMutation.mutate({
-              code: form.code.trim().toUpperCase(),
+              code: form.code.trim() ? form.code.trim().toUpperCase() : undefined,
               name: form.name.trim(),
               description: form.description.trim() || undefined,
             });
@@ -185,14 +204,16 @@ export default function ExpenseCategoriesPage() {
         >
           <FormError message={formError} />
           <div className="space-y-2">
-            <Label htmlFor="ec-code">Code</Label>
+            <Label htmlFor="ec-code">Code (Optional)</Label>
             <Input
               id="ec-code"
               value={form.code}
               onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })}
-              placeholder="RENT"
-              required
+              placeholder="e.g. RENT (auto-generated if empty)"
             />
+            <p style={{ fontSize: 12, color: 'var(--emp-muted, #64748b)' }}>
+              Leave blank to automatically generate a unique category code.
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="ec-name">Name</Label>
@@ -259,6 +280,42 @@ export default function ExpenseCategoriesPage() {
           <FormSubmit pending={updateMutation.isPending}>Save Changes</FormSubmit>
         </SimpleForm>
       </SimpleFormDialog>
+
+      <Dialog
+        open={!!deleteCategoryItem}
+        onOpenChange={(open) => !open && setDeleteCategoryItem(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Category</DialogTitle>
+          </DialogHeader>
+          <p style={{ color: 'var(--emp-muted, #64748b)', fontSize: 14 }}>
+            Are you sure you want to delete category{' '}
+            <strong>{deleteCategoryItem?.name}</strong> ({deleteCategoryItem?.code})?
+          </p>
+          <DialogFooter style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteCategoryItem(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => {
+                if (deleteCategoryItem) {
+                  deleteMutation.mutate(deleteCategoryItem.id);
+                }
+              }}
+            >
+              {deleteMutation.isPending ? 'Deleting…' : 'Delete Category'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
