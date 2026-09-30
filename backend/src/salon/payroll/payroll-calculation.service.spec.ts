@@ -46,6 +46,27 @@ describe('payroll-calculation.service', () => {
     expect(result.netSalary).toBe(60000);
   });
 
+  it('caps salary advance deduction so it never exceeds basic salary in a payroll period', () => {
+    const result = calculatePayrollLine({
+      basicSalary: 35000,
+      commissionPercentage: 0,
+      commissionBase: 0,
+      bonus: 0,
+      otherDeduction: 0,
+      epfEnabled: true,
+      etfEnabled: true,
+      rates,
+      activeLoans: [
+        { id: 'adv-1', remainingBalance: 62000, monthlyInstallment: 62000, source: 'advance' },
+      ],
+    });
+
+    expect(result.basicSalary).toBe(35000);
+    expect(result.advanceDeduction).toBe(35000); // Capped at basic salary!
+    expect(result.loanDeductions[0].amount).toBe(35000);
+    expect(result.loanDeductions[0].balanceAfter).toBe(27000);
+  });
+
   it('caps loan deduction at remaining balance', () => {
     expect(calculateLoanDeductionAmount(3000, 5000)).toBe(3000);
     expect(calculateLoanDeductionAmount(50000, 5000)).toBe(5000);

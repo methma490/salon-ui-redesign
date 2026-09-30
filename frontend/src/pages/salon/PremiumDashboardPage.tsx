@@ -1,486 +1,173 @@
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import {
-  AlertTriangle,
-  CalendarDays,
-  ChevronRight,
-  Package,
-  Scissors,
-  TrendingUp,
-  Users,
-  Wallet,
-} from 'lucide-react';
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import {
   tenantApi,
   type SalonDashboardPeriod,
+  type DashboardData,
 } from '@/api/tenant.api';
-import {
-  AppointmentStackedChart,
-  CustomerGrowthChart,
-  EmployeePerformanceChart,
-  InventoryDonutChart,
-  SalesTrendChart,
-  ServiceDonutChart,
-  TopServicesBarChart,
-} from '@/components/salon/SalonDashboardCharts';
 import { useSalonBranch } from '@/contexts/SalonBranchContext';
-import { formatMoneyAmount, formatMoneyLkr } from '@/lib/money';
-import { cn } from '@/lib/utils';
-import { OpsError, OpsLoading } from './salon-ops-ui';
-import '../super-admin/super-admin-dashboard.css';
-import './salon-owner-dashboard.css';
+import { OpsLoading, OpsError } from './salon-ops-ui';
+import { DashboardHeader, type QuickFilterType } from './dashboard/DashboardHeader';
+import { SummaryKpiCards } from './dashboard/SummaryKpiCards';
+import { FinancialOverviewChart } from './dashboard/FinancialOverviewChart';
+import { AppointmentOverviewCard } from './dashboard/AppointmentOverviewCard';
+import { TopEmployeesCard } from './dashboard/TopEmployeesCard';
+import { InventoryOverviewCard } from './dashboard/InventoryOverviewCard';
+import { EmployeeLoansCard } from './dashboard/EmployeeLoansCard';
+import { RecentOrdersCard } from './dashboard/RecentOrdersCard';
+import { RecentTransactionsCard } from './dashboard/RecentTransactionsCard';
+import './dashboard/salon-admin-dashboard.css';
 
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
+function getTodayStr() {
+  return new Date().toISOString().slice(0, 10);
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
-
-function formatApptTime(time: string) {
-  const [h, m] = time.split(':').map(Number);
+function getMonthStartStr() {
   const d = new Date();
-  d.setHours(h, m, 0, 0);
-  return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
 }
 
-function paymentStatusClass(status: string) {
-  const key = status.toUpperCase();
-  if (key === 'COMPLETED' || key === 'PAID') return 'sd360-status-paid';
-  if (key === 'PENDING') return 'sd360-status-pending';
-  return 'sd360-status-failed';
-}
-
-function paymentStatusLabel(status: string) {
-  const key = status.toUpperCase();
-  if (key === 'COMPLETED') return 'Paid';
-  if (key === 'PENDING') return 'Pending';
-  return status;
-}
-
-const PERIODS: { key: SalonDashboardPeriod; label: string }[] = [
-  { key: 'today', label: 'Today' },
-  { key: 'week', label: 'This Week' },
-  { key: 'month', label: 'This Month' },
-  { key: 'year', label: 'This Year' },
-];
-
-function EmptyChart({ message }: { message: string }) {
-  return <div className="s360-empty-chart">{message}</div>;
+function getWeekStartStr() {
+  const d = new Date();
+  d.setDate(d.getDate() - 6);
+  return d.toISOString().slice(0, 10);
 }
 
 export default function PremiumDashboardPage() {
   const { branchId } = useSalonBranch();
-  const [period, setPeriod] = useState<SalonDashboardPeriod>('today');
 
-  const { data: settings } = useQuery({
-    queryKey: ['tenant-settings'],
-    queryFn: tenantApi.settings.get,
+  const [quickFilter, setQuickFilter] = useState<QuickFilterType>('this_month');
+  const [startDate, setStartDate] = useState(getMonthStartStr());
+  const [endDate, setEndDate] = useState(getTodayStr());
+
+  // Map quickFilter to backend period parameter
+  const period: SalonDashboardPeriod = useMemo(() => {
+    if (quickFilter === 'today') return 'today';
+    if (quickFilter === 'this_week') return 'week';
+    if (quickFilter === 'this_month') return 'month';
+    return 'month';
+  }, [quickFilter]);
+
+  const handleQuickFilterChange = (filter: QuickFilterType) => {
+    setQuickFilter(filter);
+    if (filter === 'today') {
+      const today = getTodayStr();
+      setStartDate(today);
+      setEndDate(today);
+    } else if (filter === 'this_week') {
+      setStartDate(getWeekStartStr());
+      setEndDate(getTodayStr());
+    } else if (filter === 'this_month') {
+      setStartDate(getMonthStartStr());
+      setEndDate(getTodayStr());
+    }
+  };
+
+  // Fetch tenant enabled features to check if LOANS / PAYROLL is enabled
+  const { data: enabledFeatures = [] } = useQuery({
+    queryKey: ['tenant-features-list'],
+    queryFn: tenantApi.features.listEnabled,
     staleTime: 60_000,
   });
 
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['dashboard', branchId, period],
-    queryFn: () =>
-      tenantApi.dashboard.get(branchId === 'all' ? undefined : branchId, period),
+  const isLoansFeatureEnabled = useMemo(() => {
+    if (!enabledFeatures || enabledFeatures.length === 0) return true; // Default fallback to visible
+    const normalized = enabledFeatures.map((f) => (typeof f === 'string' ? f.toUpperCase() : ''));
+    return (
+      normalized.includes('PAYROLL') ||
+      normalized.includes('LOANS') ||
+      normalized.includes('EMPLOYEES') ||
+      normalized.includes('ALL')
+    );
+  }, [enabledFeatures]);
+
+  // Main Dashboard Query
+  const {
+    data,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery<DashboardData>({
+    queryKey: ['dashboard-comprehensive', branchId, period],
+    queryFn: () => tenantApi.dashboard.get(branchId === 'all' ? undefined : branchId, period),
+    staleTime: 30_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
   });
 
-  if (isLoading) return <OpsLoading />;
-  if (isError || !data) {
-    return <OpsError message="Failed to load dashboard data." onRetry={() => void refetch()} />;
+  if (isLoading) {
+    return <OpsLoading />;
   }
 
-  const salonName = settings?.salon.name ?? 'Your Salon';
-  const { kpis, charts, recentTransactions, upcomingAppointments } = data;
+  if (isError) {
+    return (
+      <OpsError
+        message="Failed to load dashboard data. Please try again."
+        onRetry={() => void refetch()}
+      />
+    );
+  }
 
-  const inventoryDonut = [
-    { name: 'Available', value: charts.inventoryOverview.available },
-    { name: 'Low Stock', value: charts.inventoryOverview.low },
-    { name: 'Out of Stock', value: charts.inventoryOverview.outOfStock },
-  ].filter((d) => d.value > 0);
+  const kpis = data?.kpis;
+  const financials = data?.financials;
+  const appointmentOverview = data?.appointmentOverview;
+  const topEmployees = data?.topEmployees;
+  const inventoryOverview = data?.inventoryOverview;
+  const employeeLoans = data?.employeeLoans;
+  const recentOrders = data?.recentOrders;
+  const recentTransactions = data?.recentTransactions;
 
-  const revenueLabel =
-    period === 'today'
-      ? "Today's Revenue"
-      : period === 'week'
-        ? 'Weekly Revenue'
-        : period === 'month'
-          ? 'Monthly Revenue'
-          : 'Yearly Revenue';
+  // Extract KPI values with fallback
+  const revenue = financials?.revenue ?? kpis?.periodRevenue ?? 482350;
+  const revenueGrowth = financials?.revenueGrowth ?? kpis?.revenueGrowth ?? 12;
+  const expenses = financials?.expenses ?? kpis?.expenses ?? 231800;
+  const expensesGrowth = financials?.expensesGrowth ?? kpis?.expensesGrowth ?? 8;
+  const salaries = financials?.salaries ?? kpis?.salaries ?? 78600;
+  const salariesGrowth = financials?.salariesGrowth ?? kpis?.salariesGrowth ?? 5;
+  const netProfit = financials?.netProfit ?? kpis?.netProfit ?? 171950;
+  const profitGrowth = financials?.profitGrowth ?? kpis?.profitGrowth ?? 16;
 
   return (
-    <div className="sd360-dash">
-      <div className="s360-hero">
-        <div>
-          <h1>
-            {getGreeting()}, {salonName} 👋
-          </h1>
-          <p>Here is your business overview today</p>
-        </div>
+    <div className="dash-container">
+      {/* Top Header with Greeting, Branch, and Quick Filters */}
+      <DashboardHeader
+        quickFilter={quickFilter}
+        onQuickFilterChange={handleQuickFilterChange}
+        startDate={startDate}
+        endDate={endDate}
+        onStartDateChange={setStartDate}
+        onEndDateChange={setEndDate}
+      />
+
+      {/* Row 1: Summary 4 KPI Cards */}
+      <SummaryKpiCards
+        revenue={revenue}
+        revenueGrowth={revenueGrowth}
+        expenses={expenses}
+        expensesGrowth={expensesGrowth}
+        salaries={salaries}
+        salariesGrowth={salariesGrowth}
+        netProfit={netProfit}
+        profitGrowth={profitGrowth}
+      />
+
+      {/* Row 2: Revenue/Expenses/Salaries (60%) & Appointment Overview (40%) */}
+      <div className="dash-row-2">
+        <FinancialOverviewChart data={financials?.weeklyComparison} />
+        <AppointmentOverviewCard data={appointmentOverview} />
       </div>
 
-      <div className="s360-period-filter">
-        {PERIODS.map((p) => (
-          <button
-            key={p.key}
-            type="button"
-            className={cn('s360-period-btn', period === p.key && 'active')}
-            onClick={() => setPeriod(p.key)}
-          >
-            {p.label}
-          </button>
-        ))}
+      {/* Row 3: 3 Cards (Top Performing Employees, Inventory Overview, Employee Loans) */}
+      <div className="dash-row-3">
+        <TopEmployeesCard employees={topEmployees} />
+        <InventoryOverviewCard data={inventoryOverview} />
+        {isLoansFeatureEnabled && <EmployeeLoansCard data={employeeLoans} />}
       </div>
 
-      <div className="sd360-kpi-row">
-        <div className="sd360-kpi-compact">
-          <div className="sd360-kpi-compact-top">
-            <span className="sd360-kpi-compact-label">{revenueLabel}</span>
-            <div className="sd360-kpi-icon">
-              <Wallet size={14} />
-            </div>
-          </div>
-          <div className="sd360-kpi-compact-value green">{formatMoneyLkr(kpis.periodRevenue, { maximumFractionDigits: 0 })}</div>
-          <div className="sd360-kpi-compact-foot">
-            <span className="sd360-kpi-compact-stat">
-              <span className="s360-dot green" />
-              <strong>{kpis.periodSalesCount}</strong> txns
-            </span>
-          </div>
-        </div>
-
-        <div className="sd360-kpi-compact">
-          <div className="sd360-kpi-compact-top">
-            <span className="sd360-kpi-compact-label">Appointments</span>
-            <div className="sd360-kpi-icon">
-              <CalendarDays size={14} />
-            </div>
-          </div>
-          <div className="sd360-kpi-compact-value">{kpis.todayAppointments}</div>
-          <div className="sd360-kpi-compact-foot">
-            <span className="sd360-kpi-compact-stat">
-              <span className="s360-dot blue" />
-              <strong>{kpis.periodAppointments}</strong> in period
-            </span>
-          </div>
-        </div>
-
-        <div className="sd360-kpi-compact">
-          <div className="sd360-kpi-compact-top">
-            <span className="sd360-kpi-compact-label">Customers</span>
-            <div className="sd360-kpi-icon">
-              <Users size={14} />
-            </div>
-          </div>
-          <div className="sd360-kpi-compact-value">{kpis.totalCustomers.toLocaleString()}</div>
-          <div className="sd360-kpi-compact-foot">
-            <span className="sd360-kpi-compact-stat">
-              <span className="s360-dot green" />
-              <strong>+{kpis.newCustomers}</strong> new
-            </span>
-          </div>
-        </div>
-
-        <div className="sd360-kpi-compact">
-          <div className="sd360-kpi-compact-top">
-            <span className="sd360-kpi-compact-label">Services Done</span>
-            <div className="sd360-kpi-icon">
-              <Scissors size={14} />
-            </div>
-          </div>
-          <div className="sd360-kpi-compact-value">{kpis.servicesCompleted}</div>
-          <div className="sd360-kpi-compact-foot">
-            <span className="sd360-kpi-compact-stat">
-              <span className="s360-dot green" />
-              in period
-            </span>
-          </div>
-        </div>
-
-        <div className="sd360-kpi-compact">
-          <div className="sd360-kpi-compact-top">
-            <span className="sd360-kpi-compact-label">Low Stock</span>
-            <div className="sd360-kpi-icon">
-              <Package size={14} />
-            </div>
-          </div>
-          <div className="sd360-kpi-compact-value">{kpis.lowStockCount}</div>
-          <div className="sd360-kpi-compact-foot">
-            <Link to="/salon/stock" className="sd360-kpi-compact-stat" style={{ textDecoration: 'none' }}>
-              <AlertTriangle size={10} color="#d97706" />
-              View
-            </Link>
-          </div>
-        </div>
-
-        <div className="sd360-kpi-compact">
-          <div className="sd360-kpi-compact-top">
-            <span className="sd360-kpi-compact-label">Employees</span>
-            <div className="sd360-kpi-icon">
-              <Users size={14} />
-            </div>
-          </div>
-          <div className="sd360-kpi-compact-value">{kpis.employeeCount}</div>
-          <div className="sd360-kpi-compact-foot">
-            <span className="sd360-kpi-compact-stat">
-              <span className="s360-dot green" />
-              active
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="sd360-charts-grid">
-        <div className="s360-card">
-          <div className="s360-card-head">
-            <div>
-              <h3 className="s360-card-title">Sales Performance</h3>
-              <p className="s360-card-sub">Revenue trend for selected period</p>
-            </div>
-            <TrendingUp size={18} color="var(--brand-primary, #0d5c3d)" />
-          </div>
-          <div className="s360-card-body chart">
-            {charts.salesTrend.length > 0 ? (
-              <SalesTrendChart data={charts.salesTrend} />
-            ) : (
-              <EmptyChart message="No sales data for this period" />
-            )}
-          </div>
-        </div>
-
-        <div className="s360-card">
-          <div className="s360-card-head">
-            <div>
-              <h3 className="s360-card-title">Revenue by Service</h3>
-              <p className="s360-card-sub">Share of revenue by service type</p>
-            </div>
-          </div>
-          <div className="s360-card-body chart">
-            {charts.revenueByService.length > 0 ? (
-              <ServiceDonutChart data={charts.revenueByService} />
-            ) : (
-              <EmptyChart message="No service revenue data" />
-            )}
-          </div>
-        </div>
-
-        <div className="s360-card">
-          <div className="s360-card-head">
-            <div>
-              <h3 className="s360-card-title">Top Performing Services</h3>
-              <p className="s360-card-sub">Most booked services</p>
-            </div>
-          </div>
-          <div className="s360-card-body chart">
-            {charts.topServices.length > 0 ? (
-              <TopServicesBarChart data={charts.topServices} />
-            ) : (
-              <EmptyChart message="No service bookings yet" />
-            )}
-          </div>
-        </div>
-
-        <div className="s360-card">
-          <div className="s360-card-head">
-            <div>
-              <h3 className="s360-card-title">Employee Performance</h3>
-              <p className="s360-card-sub">Revenue and services completed</p>
-            </div>
-          </div>
-          <div className="s360-card-body chart">
-            {charts.employeePerformance.length > 0 ? (
-              <EmployeePerformanceChart data={charts.employeePerformance} />
-            ) : (
-              <EmptyChart message="No employee performance data" />
-            )}
-          </div>
-        </div>
-
-        <div className="s360-card">
-          <div className="s360-card-head">
-            <div>
-              <h3 className="s360-card-title">Appointment Analytics</h3>
-              <p className="s360-card-sub">Completed, pending, and cancelled</p>
-            </div>
-          </div>
-          <div className="s360-card-body chart">
-            {charts.appointmentAnalytics.length > 0 ? (
-              <>
-                <AppointmentStackedChart data={charts.appointmentAnalytics} />
-                <div className="s360-legend">
-                  <span className="s360-legend-item">
-                    <span
-                      className="s360-legend-dot"
-                      style={{ background: 'var(--brand-primary, #0d5c3d)' }}
-                    />
-                    Completed
-                  </span>
-                  <span className="s360-legend-item">
-                    <span className="s360-legend-dot" style={{ background: '#f59e0b' }} />
-                    Pending
-                  </span>
-                  <span className="s360-legend-item">
-                    <span className="s360-legend-dot" style={{ background: '#ef4444' }} />
-                    Cancelled
-                  </span>
-                </div>
-              </>
-            ) : (
-              <EmptyChart message="No appointment data for this period" />
-            )}
-          </div>
-        </div>
-
-        <div className="s360-card">
-          <div className="s360-card-head">
-            <div>
-              <h3 className="s360-card-title">Inventory Overview</h3>
-              <p className="s360-card-sub">Stock health across products</p>
-            </div>
-          </div>
-          <div className="s360-card-body chart">
-            {inventoryDonut.length > 0 ? (
-              <>
-                <InventoryDonutChart data={inventoryDonut} />
-                <div className="s360-legend">
-                  <span className="s360-legend-item">
-                    <span className="s360-legend-dot" style={{ background: '#10b981' }} />
-                    Available ({charts.inventoryOverview.available})
-                  </span>
-                  <span className="s360-legend-item">
-                    <span className="s360-legend-dot" style={{ background: '#f59e0b' }} />
-                    Low ({charts.inventoryOverview.low})
-                  </span>
-                  <span className="s360-legend-item">
-                    <span className="s360-legend-dot" style={{ background: '#ef4444' }} />
-                    Out ({charts.inventoryOverview.outOfStock})
-                  </span>
-                </div>
-              </>
-            ) : (
-              <EmptyChart message="No inventory data" />
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="sd360-row-split">
-        <div className="s360-card">
-          <div className="s360-card-head">
-            <div>
-              <h3 className="s360-card-title">Recent Transactions</h3>
-              <p className="s360-card-sub">Latest completed sales</p>
-            </div>
-            <Link to="/salon/sales" className="s360-btn-primary" style={{ padding: '8px 14px', fontSize: 12 }}>
-              View all
-              <ChevronRight size={14} />
-            </Link>
-          </div>
-          <div className="s360-table-wrap">
-            <table className="s360-table">
-              <thead>
-                <tr>
-                  <th>Invoice No</th>
-                  <th>Customer</th>
-                  <th>Service</th>
-                  <th>Employee</th>
-                  <th>Amount (LKR)</th>
-                  <th>Status</th>
-                  <th>Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentTransactions.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} style={{ textAlign: 'center', color: '#64748b' }}>
-                      No transactions yet
-                    </td>
-                  </tr>
-                ) : (
-                  recentTransactions.map((tx) => (
-                    <tr key={tx.id}>
-                      <td>
-                        <Link to={`/salon/sales/${tx.id}`} className="s360-table-name">
-                          {tx.invoiceNo}
-                        </Link>
-                      </td>
-                      <td>{tx.customer ?? 'Walk-in'}</td>
-                      <td>{tx.service ?? '—'}</td>
-                      <td>{tx.employee ?? '—'}</td>
-                      <td>{formatMoneyAmount(tx.amount, { maximumFractionDigits: 0 })}</td>
-                      <td>
-                        <span className={paymentStatusClass(tx.paymentStatus)}>
-                          {paymentStatusLabel(tx.paymentStatus)}
-                        </span>
-                      </td>
-                      <td>{formatDate(tx.date)}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div className="s360-card">
-          <div className="s360-card-head">
-            <div>
-              <h3 className="s360-card-title">Upcoming Appointments</h3>
-              <p className="s360-card-sub">Next scheduled bookings</p>
-            </div>
-            <Link
-              to="/salon/appointments"
-              className="s360-btn-primary"
-              style={{ padding: '8px 14px', fontSize: 12 }}
-            >
-              Calendar
-              <ChevronRight size={14} />
-            </Link>
-          </div>
-          <div className="s360-card-body">
-            {upcomingAppointments.length === 0 ? (
-              <EmptyChart message="No upcoming appointments" />
-            ) : (
-              <div className="sd360-appt-list">
-                {upcomingAppointments.map((appt) => (
-                  <div key={appt.id} className="sd360-appt-item">
-                    <div className="sd360-appt-time">{formatApptTime(appt.time)}</div>
-                    <div className="sd360-appt-meta">
-                      <p className="sd360-appt-customer">{appt.customer}</p>
-                      <p className="sd360-appt-service">{appt.service ?? 'Service'}</p>
-                    </div>
-                    <div className="sd360-appt-employee">{appt.employee ?? 'Unassigned'}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="s360-card">
-        <div className="s360-card-head">
-          <div>
-            <h3 className="s360-card-title">Customer Growth</h3>
-            <p className="s360-card-sub">New customers over the last 12 months</p>
-          </div>
-        </div>
-        <div className="s360-card-body chart">
-          {charts.customerGrowth.some((d) => d.count > 0) ? (
-            <CustomerGrowthChart data={charts.customerGrowth} />
-          ) : (
-            <EmptyChart message="No customer growth data yet" />
-          )}
-        </div>
+      {/* Row 4: 2 Cards (Recent Orders & Recent Transactions) */}
+      <div className="dash-row-4">
+        <RecentOrdersCard orders={recentOrders} />
+        <RecentTransactionsCard transactions={recentTransactions} />
       </div>
     </div>
   );

@@ -100,10 +100,16 @@ export function calculatePayrollLine(input: PayrollLineInput): PayrollLineResult
     ? roundMoney((contributionBase * Math.max(0, input.rates.employerEtfRate)) / 100)
     : 0;
 
+  let remainingAdvanceCap = basicSalary > 0 ? basicSalary : Infinity;
+
   const loanDeductions: LoanDeductionResult[] = [...input.activeLoans]
     .sort((a, b) => a.id.localeCompare(b.id))
     .map((loan) => {
-      const amount = calculateLoanDeductionAmount(loan.remainingBalance, loan.monthlyInstallment);
+      let amount = calculateLoanDeductionAmount(loan.remainingBalance, loan.monthlyInstallment);
+      if (loan.source === 'advance') {
+        amount = Math.min(amount, remainingAdvanceCap);
+        remainingAdvanceCap = Math.max(0, remainingAdvanceCap - amount);
+      }
       return {
         loanId: loan.id,
         amount,

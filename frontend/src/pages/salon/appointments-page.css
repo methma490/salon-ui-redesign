@@ -482,4 +482,64 @@
     min-height: 34px !important;
     font-size: 12px !important;
   }
+
+  .apt-timeline-container {
+    min-width: 780px;
+  }
+
+  .apt-timeline-emp-head {
+    width: 130px;
+    min-width: 130px;
+    padding: 8px 10px;
+    font-size: 11px;
+    position: sticky;
+    left: 0;
+    z-index: 25;
+    background: #f8fafc;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.04);
+  }
+
+  .apt-timeline-emp-cell {
+    width: 130px;
+    min-width: 130px;
+    padding: 8px 10px;
+    font-size: 12px;
+    position: sticky;
+    left: 0;
+    z-index: 15;
+    background: #fff;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.04);
+  }
+
+  .apt-timeline-time-col {
+    font-size: 10px;
+    padding: 8px 0;
+  }
+
+  .apt-dialog-content {
+    width: calc(100vw - 1rem);
+    max-height: 94vh;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1024px) {
+  .apt-timeline-emp-head {
+    width: 160px;
+    min-width: 160px;
+    position: sticky;
+    left: 0;
+    z-index: 25;
+    background: #f8fafc;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.04);
+  }
+
+  .apt-timeline-emp-cell {
+    width: 160px;
+    min-width: 160px;
+    position: sticky;
+    left: 0;
+    z-index: 15;
+    background: #fff;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, 0.04);
+  }
 }

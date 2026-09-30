@@ -1,6 +1,8 @@
 import { APP_NAME_FALLBACK } from '../../config/brand.constants';
 import {
+  buildSmsQuotationCancelledMessage,
   buildSmsQuotationMessage,
+  buildWhatsAppQuotationCancelledMessage,
   buildWhatsAppQuotationMessage,
   messageUsesPlatformAsPrimaryBrand,
   resolveQuotationSalonBrand,
@@ -64,6 +66,32 @@ describe('quotation branding', () => {
     });
     expect(msg.startsWith('Salon Elegance:')).toBe(true);
     expect(msg).not.toMatch(new RegExp(`^${APP_NAME_FALLBACK}:`));
+  });
+
+  it('SMS cancellation message includes quotation number, salon name and reason', () => {
+    const msg = buildSmsQuotationCancelledMessage({
+      quotationNo: 'QT-000125',
+      salonName: 'Salon Elegance',
+      reason: 'Customer requested',
+    });
+    expect(msg).toContain('Salon Elegance');
+    expect(msg).toContain('QT-000125');
+    expect(msg).toContain('cancelled');
+    expect(msg).toContain('Reason: Customer requested');
+  });
+
+  it('WhatsApp cancellation message includes quotation number, salon name and reason', () => {
+    const msg = buildWhatsAppQuotationCancelledMessage({
+      customerName: 'Brynne Mckee',
+      quotationNo: 'QT-000125',
+      salonName: 'Salon Elegance',
+      reason: 'Price too high',
+    });
+    expect(msg).toContain('Hi Brynne');
+    expect(msg).toContain('Salon Elegance');
+    expect(msg).toContain('QT-000125');
+    expect(msg).toContain('cancelled');
+    expect(msg).toContain('Reason: Price too high');
   });
 });
 
@@ -172,6 +200,43 @@ describe('public quotation shaping / expiry', () => {
     expect(resolveDisplayStatus('CANCELLED', '2026-09-01', new Date('2026-09-18'))).toBe(
       'CANCELLED',
     );
+  });
+
+  it('retains quotation details and shows cancellation reason in public view', () => {
+    const view = toPublicQuotationView({
+      quotationNo: 'QT-000125',
+      quotationDate: '2026-09-29',
+      validUntil: '2026-10-05',
+      customerName: 'Brynne Mckee',
+      customerNotes: null,
+      subtotal: 5000,
+      discountAmount: 0,
+      totalAmount: 5000,
+      status: 'CANCELLED',
+      canRespond: false,
+      cancelReason: 'Customer requested',
+      items: [
+        {
+          description: "Men's Hair Cut",
+          quantity: 1,
+          unitPrice: 5000,
+          lineTotal: 5000,
+        },
+      ],
+      salon: {
+        name: 'Main Branch Salon',
+        phone: '0716507008',
+        email: 'info@salon.com',
+        logoUrl: null,
+        primaryColor: '#0d5c3d',
+      },
+    });
+
+    expect(view.status).toBe('CANCELLED');
+    expect(view.canRespond).toBe(false);
+    expect(view.cancelReason).toBe('Customer requested');
+    expect(view.items.length).toBe(1);
+    expect(view.totalAmount).toBe(5000);
   });
 });
 

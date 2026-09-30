@@ -139,6 +139,18 @@ async function syncAllTenantSchemas(prisma: PrismaClient): Promise<void> {
         await prisma.$executeRawUnsafe(
           `CREATE INDEX IF NOT EXISTS idx_pb_branch_id ON "${schema}".product_branches(branch_id)`,
         );
+        await prisma.$executeRawUnsafe(
+          `ALTER TABLE "${schema}".quotations ADD COLUMN IF NOT EXISTS cancel_reason VARCHAR(255)`,
+        );
+        await prisma.$executeRawUnsafe(
+          `ALTER TABLE "${schema}".quotations ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP`,
+        );
+        await prisma.$executeRawUnsafe(
+          `ALTER TABLE "${schema}".employees ADD COLUMN IF NOT EXISTS max_advance_percentage NUMERIC(5,2) NOT NULL DEFAULT 100.00`,
+        );
+        await prisma.$executeRawUnsafe(
+          `ALTER TABLE "${schema}".payroll_settings ADD COLUMN IF NOT EXISTS max_salary_advance_percentage NUMERIC(5,2) NOT NULL DEFAULT 50.00`,
+        );
       } catch (err) {
         logger.warn(`Could not sync schema ${schema}: ${err}`);
       }

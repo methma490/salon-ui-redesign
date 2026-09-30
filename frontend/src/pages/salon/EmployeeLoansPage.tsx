@@ -27,12 +27,6 @@ import {
 import './employees-page.css';
 import './payroll-page.css';
 
-const LOAN_TYPES = [
-  { value: 'Personal Loan', label: 'Personal Loan' },
-  { value: 'Emergency Loan', label: 'Emergency Loan' },
-  { value: 'Other', label: 'Other' },
-] as const;
-
 const LOAN_STATUSES = ['ACTIVE', 'COMPLETED', 'CANCELLED'] as const;
 
 function unwrapList<T>(payload: PaginatedResponse<T> | T[]): T[] {
@@ -61,7 +55,6 @@ function LoanStatusBadge({ status }: { status: string }) {
 
 type LoanForm = {
   employeeId: string;
-  loanType: string;
   originalAmount: string;
   monthlyInstallment: string;
   startDate: string;
@@ -69,7 +62,6 @@ type LoanForm = {
 };
 
 type EditLoanForm = {
-  loanType: string;
   monthlyInstallment: string;
   status: string;
   notes: string;
@@ -77,7 +69,6 @@ type EditLoanForm = {
 
 const emptyLoanForm = (): LoanForm => ({
   employeeId: '',
-  loanType: 'Personal Loan',
   originalAmount: '',
   monthlyInstallment: '',
   startDate: todayIso(),
@@ -93,7 +84,6 @@ export default function EmployeeLoansPage() {
   const [detailLoanId, setDetailLoanId] = useState<string | null>(null);
   const [form, setForm] = useState<LoanForm>(emptyLoanForm());
   const [editForm, setEditForm] = useState<EditLoanForm>({
-    loanType: 'Personal Loan',
     monthlyInstallment: '',
     status: 'ACTIVE',
     notes: '',
@@ -164,7 +154,6 @@ export default function EmployeeLoansPage() {
     setFormError(null);
     setEditLoan(loan);
     setEditForm({
-      loanType: loan.loanType,
       monthlyInstallment: String(loan.monthlyInstallment),
       status: loan.status,
       notes: loan.notes || '',
@@ -181,7 +170,7 @@ export default function EmployeeLoansPage() {
     <div className="emp-page payroll-page">
       <OpsPageHeader
         title="Employee Loans"
-        subtitle="Track personal and other employee loans with monthly repayments"
+        subtitle="Track employee loans with monthly repayments"
         action={
           <button type="button" className="emp-btn emp-btn-primary" onClick={openCreate}>
             + Create Loan
@@ -254,7 +243,7 @@ export default function EmployeeLoansPage() {
                   <div className="emp-card-top">
                     <div>
                       <div className="emp-name-cell">{loan.employeeName}</div>
-                      <div className="emp-code">{loan.loanType}</div>
+                      <div className="emp-code">{loan.employeeCode}</div>
                     </div>
                     <LoanStatusBadge status={loan.status} />
                   </div>
@@ -291,7 +280,6 @@ export default function EmployeeLoansPage() {
                 <thead>
                   <tr>
                     <th>Employee</th>
-                    <th>Type</th>
                     <th className="num">Original (LKR)</th>
                     <th className="num">Remaining (LKR)</th>
                     <th className="num">Installment (LKR)</th>
@@ -307,7 +295,6 @@ export default function EmployeeLoansPage() {
                         <div className="emp-name-cell">{loan.employeeName}</div>
                         <div className="emp-code">{loan.employeeCode}</div>
                       </td>
-                      <td>{loan.loanType}</td>
                       <td className="num">{formatMoney(loan.originalAmount)}</td>
                       <td className="num" style={{ fontWeight: 700 }}>
                         {formatMoney(loan.remainingBalance)}
@@ -359,7 +346,6 @@ export default function EmployeeLoansPage() {
             setFormError(null);
             createMutation.mutate({
               employeeId: form.employeeId,
-              loanType: form.loanType,
               originalAmount: Number(form.originalAmount),
               monthlyInstallment: Number(form.monthlyInstallment),
               startDate: form.startDate,
@@ -381,21 +367,6 @@ export default function EmployeeLoansPage() {
                 {employees.map((emp) => (
                   <SelectItem key={emp.id} value={emp.id}>
                     {emp.name} ({emp.code})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>Loan type</Label>
-            <Select value={form.loanType} onValueChange={(v) => setForm({ ...form, loanType: v })}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {LOAN_TYPES.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>
-                    {t.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -460,7 +431,6 @@ export default function EmployeeLoansPage() {
             updateMutation.mutate({
               id: editLoan.id,
               data: {
-                loanType: editForm.loanType,
                 monthlyInstallment: Number(editForm.monthlyInstallment),
                 status: editForm.status,
                 notes: editForm.notes.trim() || undefined,
@@ -469,24 +439,6 @@ export default function EmployeeLoansPage() {
           }}
         >
           <FormError message={formError} />
-          <div className="space-y-2">
-            <Label>Loan type</Label>
-            <Select
-              value={editForm.loanType}
-              onValueChange={(v) => setEditForm({ ...editForm, loanType: v })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {LOAN_TYPES.map((t) => (
-                  <SelectItem key={t.value} value={t.value}>
-                    {t.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
           <div className="space-y-2">
             <Label>Monthly installment (LKR)</Label>
             <Input
@@ -540,7 +492,6 @@ export default function EmployeeLoansPage() {
                 <div>
                   <strong>{loanDetail.employeeName}</strong> ({loanDetail.employeeCode})
                 </div>
-                <div>Type: {loanDetail.loanType}</div>
                 <div>
                   Status: <LoanStatusBadge status={loanDetail.status} />
                 </div>

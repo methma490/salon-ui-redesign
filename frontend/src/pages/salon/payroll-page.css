@@ -655,82 +655,304 @@
   }
 }
 
-/* Payslip print (shared) */
+/* Payslip print & modern view (Screenshot 5 design) */
 .payslip-modal-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.payslip-print-area {
-  background: #fff;
-  border: 1px solid var(--pr-line);
-  border-radius: 0.5rem;
-  padding: 1.25rem;
-  max-width: 640px;
-  margin: 0 auto;
-}
-
-.payslip-header {
-  text-align: center;
+  align-items: center;
+  gap: 0.6rem;
   margin-bottom: 1.25rem;
-  padding-bottom: 0.85rem;
-  border-bottom: 2px solid #1e293b;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--pr-line);
 }
 
-.payslip-header h2 {
-  margin: 0 0 0.25rem;
-  font-size: 1.15rem;
-  font-weight: 700;
+.payslip-modern {
+  background: #ffffff;
+  color: #0f172a;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  padding: 2rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  max-width: 820px;
+  margin: 0 auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
 }
 
-.payslip-header p {
-  margin: 0.125rem 0;
-  font-size: 0.85rem;
-  color: var(--pr-muted);
-}
-
-.payslip-meta {
-  display: grid;
-  gap: 0.45rem;
-  margin-bottom: 1.1rem;
-  font-size: 0.85rem;
-}
-
-.payslip-section {
-  margin-bottom: 1rem;
-}
-
-.payslip-section-title {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--pr-muted);
-  margin-bottom: 0.45rem;
-}
-
-.payslip-row {
+.ps-header {
   display: flex;
   justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.35rem 0;
-  font-size: 0.85rem;
-  border-bottom: 1px solid #f1f5f9;
+  align-items: flex-start;
+  gap: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 1.25rem;
 }
 
-.payslip-row.total {
+.ps-brand {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.ps-logo,
+.ps-logo-img {
+  width: 3.25rem;
+  height: 3.25rem;
+  object-fit: contain;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  padding: 0.15rem;
+  background-color: #ffffff;
+  flex-shrink: 0;
+}
+
+.ps-logo-fallback {
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 0.5rem;
+  background-color: #0f172a;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: 0.05em;
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.ps-brand-info h1 {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.ps-brand-info p {
+  margin: 0.2rem 0 0;
+  font-size: 0.8125rem;
+  color: #475569;
+}
+
+.ps-title-block {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.ps-title-block h2 {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: 0.04em;
+}
+
+.ps-period-title {
+  margin: 0.15rem 0 0.35rem;
+  font-size: 1rem;
   font-weight: 700;
-  border-top: 2px solid #1e293b;
-  border-bottom: none;
-  padding-top: 0.7rem;
-  margin-top: 0.4rem;
-  font-size: 0.95rem;
+  color: #1e293b;
 }
 
-.payslip-row .value {
+.ps-meta-line {
+  margin: 0.1rem 0;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+/* Employee Details Box */
+.ps-emp-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 2rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.8125rem;
+}
+
+.ps-emp-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.ps-emp-label {
+  font-weight: 600;
+  color: #334155;
+  width: 7.5rem;
+  flex-shrink: 0;
+}
+
+.ps-emp-sep {
+  color: #94a3b8;
+  margin-right: 0.25rem;
+}
+
+.ps-emp-val {
+  font-weight: 500;
+  color: #0f172a;
+  word-break: break-word;
+}
+
+/* 2-Column Earnings & Deductions */
+.ps-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.ps-table-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.ps-table-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ps-table-head.earnings {
+  background: #f0f7ff;
+  color: #1e3a8a;
+  border-bottom: 1px solid #dbeafe;
+}
+
+.ps-table-head.deductions {
+  background: #fff1f2;
+  color: #9f1239;
+  border-bottom: 1px solid #ffe4e6;
+}
+
+.ps-table-head.section {
+  background: #f0f7ff;
+  color: #1e3a8a;
+  border-bottom: 1px solid #dbeafe;
+}
+
+.ps-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.ps-table tr td {
+  padding: 0.55rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+}
+
+.ps-table tr td:last-child {
+  text-align: right;
   font-variant-numeric: tabular-nums;
+  color: #0f172a;
+}
+
+.ps-table tr.total-row td {
+  font-weight: 700;
+  color: #0f172a;
+  background: #f8fafc;
+  border-top: 1.5px solid #cbd5e1;
+  border-bottom: none;
+  font-size: 0.875rem;
+  padding: 0.65rem 1rem;
+}
+
+/* Net Salary Banner */
+.ps-net-banner {
+  border-top: 2px solid #e2e8f0;
+  border-bottom: 2px solid #e2e8f0;
+  padding: 1rem 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.ps-net-left h3 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.ps-net-left p {
+  margin: 0.2rem 0 0;
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+.ps-net-right {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Full Width Section Cards */
+.ps-section-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+  background: #ffffff;
+}
+
+.ps-info-box {
+  margin: 0.75rem 1rem;
+  padding: 0.65rem 0.85rem;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #1e40af;
+  line-height: 1.4;
+}
+
+.ps-info-icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+/* Notes Section */
+.ps-notes {
+  margin-top: 1.5rem;
+  font-size: 0.75rem;
+  color: #475569;
+  line-height: 1.6;
+}
+
+.ps-notes h4 {
+  margin: 0 0 0.35rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.ps-notes ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.ps-notes li {
+  margin-bottom: 0.2rem;
 }
 
 @media print {
@@ -738,22 +960,25 @@
     visibility: hidden;
   }
 
-  .payslip-print-area,
-  .payslip-print-area * {
+  .payslip-modern,
+  .payslip-modern * {
     visibility: visible;
   }
 
-  .payslip-print-area {
+  .payslip-modern {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
+    max-width: 100%;
     border: none;
+    box-shadow: none;
     padding: 0;
-    max-width: none;
+    margin: 0;
   }
 
   .payslip-no-print {
     display: none !important;
   }
 }
+

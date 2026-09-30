@@ -191,7 +191,7 @@ export function OpsPageHeader({
   action,
 }: {
   title: string;
-  subtitle: string;
+  subtitle?: string;
   action?: ReactNode;
 }) {
   return (
@@ -200,7 +200,7 @@ export function OpsPageHeader({
         <div className="emp-title-row">
           <h1>{title}</h1>
         </div>
-        <p className="emp-subtitle">{subtitle}</p>
+        {subtitle && <p className="emp-subtitle">{subtitle}</p>}
       </div>
       {action}
     </header>

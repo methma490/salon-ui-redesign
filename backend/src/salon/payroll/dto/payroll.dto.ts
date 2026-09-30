@@ -35,16 +35,24 @@ export class UpdatePayrollSettingsDto {
   @Min(0)
   @Max(100)
   employerEtfRate?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(100)
+  maxSalaryAdvancePercentage?: number;
 }
 
 export class CreateEmployeeLoanDto {
   @IsUUID()
   employeeId!: string;
 
+  @IsOptional()
   @IsString()
   @MinLength(2)
   @MaxLength(100)
-  loanType!: string;
+  loanType?: string;
 
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })

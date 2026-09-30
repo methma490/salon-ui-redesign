@@ -12,6 +12,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   FormError,
   FormSubmit,
@@ -214,6 +222,7 @@ export default function ExpensesPage() {
   const [dateTo, setDateTo] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [editExpense, setEditExpense] = useState<Expense | null>(null);
+  const [deleteExpense, setDeleteExpense] = useState<Expense | null>(null);
   const [form, setForm] = useState<ExpenseForm>(emptyForm(branchId));
   const [editForm, setEditForm] = useState<ExpenseForm>(emptyForm(branchId));
   const [formError, setFormError] = useState<string | null>(null);
@@ -281,6 +290,15 @@ export default function ExpensesPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['expenses'] }),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => tenantApi.expenses.delete(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['expenses'] });
+      setDeleteExpense(null);
+    },
+    onError: (err) => alert(getErrorMessage(err)),
+  });
+
   const openCreate = () => {
     setFormError(null);
     const defaultBranch =
@@ -335,8 +353,8 @@ export default function ExpensesPage() {
 
       <div className="emp-panel emp-form-panel">
         <div className="emp-form-panel-title">Filters</div>
-        <div className="emp-filter-grid">
-          <div className="emp-filter-field">
+        <div className="expense-filter-grid">
+          <div className="emp-filter-field expense-filter-search">
             <Label>Search</Label>
             <Input
               placeholder="Title, code, notes…"
@@ -415,29 +433,47 @@ export default function ExpensesPage() {
           <>
             <div className="emp-cards">
               {expenses.map((expense) => (
-                <article key={expense.id} className="emp-card">
-                  <div className="emp-card-top">
+                <article key={expense.id} className="expense-card">
+                  <div className="expense-card-top">
                     <div>
-                      <div className="emp-name-cell">{expense.title}</div>
-                      <div className="emp-code">{expense.code}</div>
+                      <div className="expense-card-title">{expense.title}</div>
+                      <div className="expense-card-code">{expense.code}</div>
                     </div>
                     <OpsStatusBadge status={expense.status} />
                   </div>
-                  <div className="emp-card-meta">
-                    <span>
-                      <strong>Amount:</strong> {formatMoney(expense.amount)}
-                    </span>
-                    <span>
-                      <strong>Date:</strong> {expense.expenseDate.slice(0, 10)}
-                    </span>
-                    <span>
-                      <strong>Category:</strong> {expense.categoryName || '—'}
-                    </span>
-                    <span>
-                      <strong>Branch:</strong> {expense.branchName}
-                    </span>
+
+                  <div className="expense-card-amount">
+                    LKR {formatMoney(expense.amount)}
                   </div>
-                  <div className="emp-card-actions">
+
+                  <div className="expense-card-grid">
+                    <div className="expense-card-item">
+                      <span className="expense-card-label">Category</span>
+                      <span className="expense-card-val">{expense.categoryName || '—'}</span>
+                    </div>
+                    <div className="expense-card-item">
+                      <span className="expense-card-label">Branch</span>
+                      <span className="expense-card-val">{expense.branchName}</span>
+                    </div>
+                    <div className="expense-card-item">
+                      <span className="expense-card-label">Date</span>
+                      <span className="expense-card-val">{expense.expenseDate.slice(0, 10)}</span>
+                    </div>
+                    <div className="expense-card-item">
+                      <span className="expense-card-label">Payment</span>
+                      <span className="expense-card-val">
+                        {formatPaymentMethod(expense.paymentMethod)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {expense.notes && (
+                    <div className="expense-card-notes">
+                      {expense.notes}
+                    </div>
+                  )}
+
+                  <div className="expense-card-actions">
                     {expense.status === 'ACTIVE' && (
                       <OpsEditButton onClick={() => openEdit(expense)} />
                     )}
@@ -452,6 +488,14 @@ export default function ExpensesPage() {
                       }
                     >
                       {expense.status === 'ACTIVE' ? 'Void' : 'Restore'}
+                    </button>
+                    <button
+                      type="button"
+                      className="emp-btn emp-btn-danger"
+                      style={{ color: '#dc2626', borderColor: '#fecaca', background: '#fef2f2' }}
+                      onClick={() => setDeleteExpense(expense)}
+                    >
+                      Delete
                     </button>
                   </div>
                 </article>
@@ -507,6 +551,14 @@ export default function ExpensesPage() {
                             }
                           >
                             {expense.status === 'ACTIVE' ? 'Void' : 'Restore'}
+                          </button>
+                          <button
+                            type="button"
+                            className="emp-link-btn"
+                            style={{ color: '#dc2626' }}
+                            onClick={() => setDeleteExpense(expense)}
+                          >
+                            Delete
                           </button>
                         </div>
                       </td>
@@ -583,6 +635,44 @@ export default function ExpensesPage() {
           <FormSubmit pending={updateMutation.isPending}>Save Changes</FormSubmit>
         </SimpleForm>
       </SimpleFormDialog>
+
+      <Dialog open={!!deleteExpense} onOpenChange={(open) => !open && setDeleteExpense(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Expense</DialogTitle>
+          </DialogHeader>
+          <div style={{ fontSize: 14, color: '#475569', lineHeight: 1.5, margin: '8px 0 16px' }}>
+            Are you sure you want to permanently delete expense{' '}
+            <strong>{deleteExpense?.title}</strong> ({deleteExpense?.code}) of{' '}
+            <strong>{formatMoneyLkr(deleteExpense?.amount ?? 0)}</strong>?
+            <p style={{ marginTop: 8, color: '#dc2626', fontSize: 13 }}>
+              This action cannot be undone.
+            </p>
+          </div>
+          <DialogFooter style={{ gap: 8 }}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteExpense(null)}
+              disabled={deleteMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => {
+                if (deleteExpense) {
+                  deleteMutation.mutate(deleteExpense.id);
+                }
+              }}
+            >
+              {deleteMutation.isPending ? 'Deleting…' : 'Confirm Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

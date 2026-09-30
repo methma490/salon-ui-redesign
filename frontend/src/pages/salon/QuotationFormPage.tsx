@@ -212,7 +212,7 @@ export default function QuotationFormPage() {
     discountAmount: Number(discountAmount) || 0,
     customerNotes: customerNotes || undefined,
     internalNotes: internalNotes || undefined,
-    status: 'DRAFT' as const,
+    status: (isEdit && existingQuery.data?.status === 'SENT' ? 'SENT' : 'DRAFT') as 'DRAFT' | 'SENT',
     items: lines.map((line) => ({
       serviceId: line.serviceId,
       quantity: Number(line.quantity),

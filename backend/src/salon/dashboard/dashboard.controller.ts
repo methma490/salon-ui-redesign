@@ -36,6 +36,24 @@ export class DashboardController {
 export class ReportsController {
   constructor(private readonly dashboardService: DashboardService) {}
 
+  @Get('sales-report')
+  @RequirePermission('SALE_VIEW')
+  salesReport(
+    @CurrentTenant() tenant: TenantContext,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
+    @Query('branchId') branchId?: string,
+    @Query('paymentMethod') paymentMethod?: string,
+  ) {
+    return this.dashboardService.getSalesReport(
+      tenant.schemaName,
+      startDate,
+      endDate,
+      branchId,
+      paymentMethod,
+    );
+  }
+
   @Get('daily-sales')
   @RequirePermission('SALE_VIEW')
   dailySales(
@@ -101,12 +119,36 @@ export class ReportsController {
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
     @Query('branchId') branchId?: string,
+    @Query('search') search?: string,
   ) {
     return this.dashboardService.getEmployeePerformanceReport(
       tenant.schemaName,
       startDate,
       endDate,
       branchId,
+      search,
+    );
+  }
+
+  @Get('inventory-report')
+  @RequirePermission('PRODUCT_VIEW')
+  inventoryReport(
+    @CurrentTenant() tenant: TenantContext,
+    @Query('branchId') branchId?: string,
+    @Query('categoryId') categoryId?: string,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.dashboardService.getInventoryReport(
+      tenant.schemaName,
+      branchId,
+      categoryId,
+      status,
+      search,
+      startDate,
+      endDate,
     );
   }
 

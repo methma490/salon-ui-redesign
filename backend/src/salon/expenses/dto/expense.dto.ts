@@ -19,10 +19,11 @@ export const EXPENSE_PAYMENT_METHODS = ['CASH', 'CARD', 'BANK_TRANSFER', 'OTHER'
 export type ExpensePaymentMethod = (typeof EXPENSE_PAYMENT_METHODS)[number];
 
 export class CreateExpenseCategoryDto {
+  @IsOptional()
+  @Transform(emptyToUndefined)
   @IsString()
-  @MinLength(2)
   @MaxLength(50)
-  code!: string;
+  code?: string;
 
   @IsString()
   @MinLength(2)

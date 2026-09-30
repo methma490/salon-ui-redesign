@@ -93,6 +93,7 @@ export default function SettingsPage() {
     employeeEpfRate: '',
     employerEpfRate: '',
     employerEtfRate: '',
+    maxSalaryAdvancePercentage: '50',
   });
   const [customHex, setCustomHex] = useState('');
   const theme = useTenantTheme();
@@ -138,6 +139,7 @@ export default function SettingsPage() {
         employeeEpfRate: String(payrollSettings.employeeEpfRate),
         employerEpfRate: String(payrollSettings.employerEpfRate),
         employerEtfRate: String(payrollSettings.employerEtfRate),
+        maxSalaryAdvancePercentage: String(payrollSettings.maxSalaryAdvancePercentage ?? 50),
       });
     }
   }, [payrollSettings]);
@@ -1183,10 +1185,10 @@ export default function SettingsPage() {
       {activeTab === 'payroll' && payrollEnabled && (
         <section className="settings-panel">
           <div className="settings-panel-header">
-            <h2>EPF / ETF Rates</h2>
+            <h2>Payroll & Statutory Settings</h2>
             <p>
               {isSalonAdmin
-                ? 'Default statutory contribution percentages used when generating payroll'
+                ? 'Default statutory contribution percentages and salary advance limits used across payroll'
                 : 'View-only — only Salon Admin can edit payroll rates'}
             </p>
           </div>
@@ -1199,6 +1201,7 @@ export default function SettingsPage() {
                 employeeEpfRate: Number(payrollForm.employeeEpfRate),
                 employerEpfRate: Number(payrollForm.employerEpfRate),
                 employerEtfRate: Number(payrollForm.employerEtfRate),
+                maxSalaryAdvancePercentage: Number(payrollForm.maxSalaryAdvancePercentage),
               });
             }}
           >
@@ -1259,6 +1262,31 @@ export default function SettingsPage() {
                   disabled={!isSalonAdmin}
                   required
                 />
+              </div>
+              <div className="settings-field">
+                <label className="emp-label" htmlFor="settings-max-advance">
+                  Max Salary Advance Percentage (%)
+                </label>
+                <input
+                  id="settings-max-advance"
+                  className="settings-input"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={payrollForm.maxSalaryAdvancePercentage}
+                  onChange={(e) =>
+                    setPayrollForm({
+                      ...payrollForm,
+                      maxSalaryAdvancePercentage: e.target.value,
+                    })
+                  }
+                  disabled={!isSalonAdmin}
+                  required
+                />
+                <p style={{ fontSize: 12, color: 'var(--emp-muted, #64748b)', marginTop: 4 }}>
+                  Sets the maximum percentage of basic salary an employee can request as a salary advance.
+                </p>
               </div>
             </div>
 

@@ -57,6 +57,7 @@ export interface Employee {
   commissionRate?: number;
   epfEnabled?: boolean;
   etfEnabled?: boolean;
+  maxAdvancePercentage?: number;
 }
 
 export interface AssignableEmployeeRole {
@@ -276,6 +277,7 @@ export interface PayrollSettings {
   employeeEpfRate: number;
   employerEpfRate: number;
   employerEtfRate: number;
+  maxSalaryAdvancePercentage?: number;
 }
 
 export interface EmployeeLoan {
@@ -297,6 +299,8 @@ export interface EmployeeAdvance {
   employeeId: string;
   employeeName: string;
   employeeCode: string;
+  basicSalary?: number;
+  maxAdvancePercentage?: number;
   originalAmount: number;
   remainingBalance: number;
   monthlyInstallment: number;
@@ -355,6 +359,7 @@ export interface PayrollItem {
   commissionInvoiceCount?: number;
   commissionPeriodFrom?: string;
   commissionPeriodTo?: string;
+  branchName?: string | null;
 }
 
 export interface PayrollRun {
@@ -518,6 +523,8 @@ export interface QuotationDetail extends QuotationListItem {
   acceptedAt: string | null;
   declinedAt: string | null;
   declineReason: string | null;
+  cancelReason?: string | null;
+  cancelledAt?: string | null;
   items: Array<{
     id: string;
     serviceId: string | null;
@@ -559,6 +566,8 @@ export interface PublicQuotationView {
   totalAmount: number;
   status: string;
   canRespond: boolean;
+  cancelReason?: string | null;
+  cancelledAt?: string | null;
   items: Array<{
     description: string;
     quantity: number;
@@ -744,7 +753,88 @@ export interface DashboardData {
     servicesCompleted: number;
     lowStockCount: number;
     employeeCount: number;
+    expenses?: number;
+    expensesGrowth?: number;
+    salaries?: number;
+    salariesGrowth?: number;
+    netProfit?: number;
+    profitGrowth?: number;
+    revenueGrowth?: number;
   };
+  financials?: {
+    revenue: number;
+    revenueGrowth: number;
+    expenses: number;
+    expensesGrowth: number;
+    salaries: number;
+    salariesGrowth: number;
+    netProfit: number;
+    profitGrowth: number;
+    weeklyComparison: Array<{
+      week: string;
+      revenue: number;
+      expenses: number;
+      salaries: number;
+    }>;
+  };
+  appointmentOverview?: {
+    total: number;
+    completed: number;
+    completedPct: number;
+    pending: number;
+    pendingPct: number;
+    cancelled: number;
+    cancelledPct: number;
+    noShow: number;
+    noShowPct: number;
+    trend: Array<{
+      name?: string;
+      date: string;
+      completed: number;
+      pending: number;
+      cancelled: number;
+      noShow: number;
+    }>;
+  };
+  topEmployees?: Array<{
+    id: string;
+    rank: number;
+    name: string;
+    avatarUrl: string | null;
+    revenue: number;
+    servicesDone: number;
+    progressPct: number;
+  }>;
+  inventoryOverview?: {
+    totalProducts: number;
+    inStock: number;
+    inStockPct: number;
+    lowStock: number;
+    lowStockPct: number;
+    outOfStock: number;
+    outOfStockPct: number;
+    stockValue: number;
+  };
+  employeeLoans?: {
+    activeCount: number;
+    totalOutstanding: number;
+    recentLoans: Array<{
+      id: string;
+      employeeName: string;
+      avatarUrl: string | null;
+      amount: number;
+      remainingBalance: number;
+      status: string;
+    }>;
+  };
+  recentOrders?: Array<{
+    id: string;
+    saleNumber: string;
+    customerName: string;
+    amount: number;
+    status: string;
+    date: string;
+  }>;
   todaySales: { total: number; count: number };
   monthlySales: { total: number; count: number };
   totalCustomers: number;
@@ -772,12 +862,15 @@ export interface DashboardData {
   };
   recentTransactions: Array<{
     id: string;
-    invoiceNo: string;
-    customer: string | null;
-    service: string | null;
-    employee: string | null;
+    invoiceNo?: string;
+    customer?: string | null;
+    service?: string | null;
+    employee?: string | null;
     amount: number;
-    paymentStatus: string;
+    paymentStatus?: string;
+    type?: string;
+    category?: string;
+    status?: string;
     date: string;
   }>;
   upcomingAppointments: Array<{
@@ -984,7 +1077,8 @@ export const tenantApi = {
       api.post('/tenant/quotations', data).then((r) => r.data),
     update: (id: string, data: Record<string, unknown>) =>
       api.patch(`/tenant/quotations/${id}`, data).then((r) => r.data),
-    cancel: (id: string) => api.post(`/tenant/quotations/${id}/cancel`).then((r) => r.data),
+    cancel: (id: string, data?: { reason?: string; notifyCustomer?: boolean }) =>
+      api.post(`/tenant/quotations/${id}/cancel`, data).then((r) => r.data),
     whatsapp: (id: string) =>
       api.post<{ externalUrl: string; salonName: string }>(`/tenant/quotations/${id}/whatsapp`).then((r) => r.data),
     sms: (id: string) => api.post(`/tenant/quotations/${id}/sms`).then((r) => r.data),
@@ -1130,6 +1224,10 @@ export const tenantApi = {
       api.post<ExpenseCategory>('/tenant/expense-categories', data).then((r) => r.data),
     update: (id: string, data: Record<string, unknown>) =>
       api.patch<ExpenseCategory>(`/tenant/expense-categories/${id}`, data).then((r) => r.data),
+    delete: (id: string) =>
+      api
+        .delete<{ id: string; success: boolean }>(`/tenant/expense-categories/${id}`)
+        .then((r) => r.data),
   },
 
   expenses: {
@@ -1142,6 +1240,8 @@ export const tenantApi = {
       api.patch<Expense>(`/tenant/expenses/${id}`, data).then((r) => r.data),
     updateStatus: (id: string, status: string) =>
       api.patch<Expense>(`/tenant/expenses/${id}/status`, { status }).then((r) => r.data),
+    delete: (id: string) =>
+      api.delete<{ id: string; success: boolean }>(`/tenant/expenses/${id}`).then((r) => r.data),
   },
 
   payroll: {
@@ -1299,6 +1399,8 @@ export const tenantApi = {
   },
 
   reports: {
+    salesReport: (params: Record<string, string>) =>
+      api.get<SalesReportResponse>('/tenant/reports/sales-report', { params }).then((r) => r.data),
     dailySales: (params: Record<string, string>) =>
       api.get('/tenant/reports/daily-sales', { params }).then((r) => r.data),
     branchSales: (params: Record<string, string>) =>
@@ -1308,7 +1410,13 @@ export const tenantApi = {
     productSales: (params: Record<string, string>) =>
       api.get('/tenant/reports/product-sales', { params }).then((r) => r.data),
     employeePerformance: (params: Record<string, string>) =>
-      api.get('/tenant/reports/employee-performance', { params }).then((r) => r.data),
+      api
+        .get<EmployeePerformanceReportResponse>('/tenant/reports/employee-performance', { params })
+        .then((r) => r.data),
+    inventoryReport: (params?: Record<string, string>) =>
+      api
+        .get<InventoryReportResponse>('/tenant/reports/inventory-report', { params })
+        .then((r) => r.data),
     lowStock: (params?: Record<string, string>) =>
       api.get('/tenant/reports/low-stock', { params }).then((r) => r.data),
   },
@@ -1344,4 +1452,106 @@ export interface InAppNotification {
   } | null;
   readAt?: string | null;
   createdAt: string;
+}
+
+export interface SalesReportResponse {
+  summary: {
+    totalSales: number;
+    serviceSales: number;
+    productSales: number;
+    totalDiscounts: number;
+    serviceSalesPct: number;
+    productSalesPct: number;
+    totalSalesGrowth?: number;
+    discountsGrowth?: number;
+  };
+  chart: Array<{
+    date: string;
+    label: string;
+    serviceSales: number;
+    productSales: number;
+    discounts: number;
+    total: number;
+  }>;
+  serviceTransactions: Array<{
+    id: string;
+    invoiceNo: string;
+    createdAt: string;
+    employeeName: string;
+    customerName: string;
+    customerPhone: string;
+    serviceName: string;
+    grossAmount: number;
+    discountAmount: number;
+    netAmount: number;
+    paymentMethod: string;
+    branchName: string;
+  }>;
+  productTransactions: Array<{
+    id: string;
+    invoiceNo: string;
+    createdAt: string;
+    customerName: string;
+    customerPhone: string;
+    productName: string;
+    quantity: number;
+    grossAmount: number;
+    discountAmount: number;
+    netAmount: number;
+    paymentMethod: string;
+    branchName: string;
+  }>;
+}
+
+export interface EmployeePerformanceReportResponse {
+  employees: Array<{
+    id: string;
+    index: number;
+    name: string;
+    code: string;
+    designation: string;
+    servicesCompleted: number;
+    serviceSales: number;
+    productSales: number;
+    totalSales: number;
+    commission: number;
+  }>;
+  summary: {
+    totalServicesCompleted: number;
+    totalServiceSales: number;
+    totalProductSales: number;
+    totalSales: number;
+    totalCommission: number;
+  };
+}
+
+export interface InventoryReportResponse {
+  products: Array<{
+    id: string;
+    index: number;
+    name: string;
+    sku: string;
+    categoryName: string;
+    imageUrl: string | null;
+    currentStock: number;
+    stockValue: number;
+    stockIn: number;
+    stockOut: number;
+    adjustments: number;
+    status: 'In Stock' | 'Low Stock' | 'Out of Stock';
+  }>;
+  summary: {
+    totalProducts: number;
+    totalStockUnits: number;
+    totalStockValue: number;
+    lowStockCount: number;
+    outOfStockCount: number;
+  };
+  summaryTotals: {
+    currentStock: number;
+    stockValue: number;
+    stockIn: number;
+    stockOut: number;
+    adjustments: number;
+  };
 }

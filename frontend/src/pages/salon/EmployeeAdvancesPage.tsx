@@ -117,6 +117,12 @@ export default function EmployeeAdvancesPage() {
 
   const activeEmployees = (employees as Employee[]).filter((e) => e.status === 'ACTIVE');
 
+  const { data: payrollSettings } = useQuery({
+    queryKey: ['payroll-settings'],
+    queryFn: tenantApi.payroll.getSettings,
+    staleTime: 60_000,
+  });
+
   const { data: detail, isLoading: detailLoading } = useQuery({
     queryKey: ['payroll-advance', detailId],
     queryFn: () => tenantApi.payroll.getAdvance(detailId!),
@@ -172,6 +178,8 @@ export default function EmployeeAdvancesPage() {
 
   if (isLoading) return <OpsLoading />;
   if (isError) return <OpsError message={getErrorMessage(error)} onRetry={() => void refetch()} />;
+
+  const systemDefaultPct = Number(payrollSettings?.maxSalaryAdvancePercentage ?? 50);
 
   return (
     <div className="emp-page payroll-page">
@@ -355,6 +363,25 @@ export default function EmployeeAdvancesPage() {
               setFormError('Advance amount must be greater than 0.');
               return;
             }
+
+            const emp = activeEmployees.find((e) => e.id === form.employeeId);
+            const basicSalary = Number(emp?.basicSalary || 0);
+            const maxPct = systemDefaultPct;
+            const maxAllowed = Math.round(((basicSalary * maxPct) / 100) * 100) / 100;
+
+            if (basicSalary <= 0) {
+              setFormError(`Employee "${emp?.name || ''}" does not have a basic salary set. Cannot issue advance.`);
+              return;
+            }
+            if (amount > basicSalary) {
+              setFormError(`Advance amount cannot exceed basic salary of LKR ${formatMoney(basicSalary)}.`);
+              return;
+            }
+            if (amount > maxAllowed) {
+              setFormError(`Advance amount cannot exceed maximum allowed limit of LKR ${formatMoney(maxAllowed)} (${maxPct}% of basic salary).`);
+              return;
+            }
+
             createMutation.mutate({
               employeeId: form.employeeId,
               originalAmount: amount,
@@ -382,6 +409,33 @@ export default function EmployeeAdvancesPage() {
               </SelectContent>
             </Select>
           </div>
+
+          {(() => {
+            const emp = activeEmployees.find((e) => e.id === form.employeeId);
+            if (!emp) return null;
+            const basicSalary = Number(emp.basicSalary || 0);
+            const maxPct = systemDefaultPct;
+            const maxAllowed = Math.round(((basicSalary * maxPct) / 100) * 100) / 100;
+
+            return (
+              <div
+                style={{
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: 8,
+                  padding: '10px 12px',
+                  fontSize: 13,
+                  lineHeight: 1.5,
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 }}>
+                  <span>Basic Salary: <strong>LKR {formatMoney(basicSalary)}</strong></span>
+                  <span>Max Allowed ({maxPct}%): <strong style={{ color: '#0d5c3d' }}>LKR {formatMoney(maxAllowed)}</strong></span>
+                </div>
+              </div>
+            );
+          })()}
+
           <div className="space-y-2">
             <Label>Advance amount</Label>
             <Input

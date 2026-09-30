@@ -22,7 +22,6 @@ import SaleDetailsPage from '@/pages/salon/SaleDetailsPage';
 import QuotationsPage from '@/pages/salon/QuotationsPage';
 import QuotationFormPage from '@/pages/salon/QuotationFormPage';
 import QuotationDetailPage from '@/pages/salon/QuotationDetailPage';
-import SalesAnalyticsPage from '@/pages/salon/SalesAnalyticsPage';
 import ExpensesPage from '@/pages/salon/ExpensesPage';
 import ExpenseCategoriesPage from '@/pages/salon/ExpenseCategoriesPage';
 import PayrollRunsPage from '@/pages/salon/PayrollRunsPage';
@@ -59,7 +58,7 @@ export default function SalonAdminRoutes() {
           <Route path="quotations/new" element={<QuotationFormPage />} />
           <Route path="quotations/:id/edit" element={<QuotationFormPage />} />
           <Route path="quotations/:id" element={<QuotationDetailPage />} />
-          <Route path="sales-analytics" element={<SalesAnalyticsPage />} />
+          <Route path="sales-analytics" element={<Navigate to="/salon/reports?tab=sales" replace />} />
           <Route path="expenses" element={<ExpensesPage />} />
           <Route path="expense-categories" element={<ExpenseCategoriesPage />} />
           <Route path="payroll" element={<PayrollRunsPage />} />

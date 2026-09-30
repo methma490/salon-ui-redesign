@@ -20,6 +20,7 @@ import { PermissionGuard } from '../../tenant/guards/permission.guard';
 import { TenantContextGuard } from '../../tenant/guards/tenant-context.guard';
 import { TenantContext } from '../../tenant/interfaces/tenant-context.interface';
 import {
+  CancelQuotationDto,
   ConvertQuotationDto,
   CreateQuotationDto,
   ListQuotationsQueryDto,
@@ -79,8 +80,9 @@ export class QuotationsController {
     @CurrentTenant() tenant: TenantContext,
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
+    @Body() dto?: CancelQuotationDto,
   ) {
-    return this.quotationsService.cancel(tenant.schemaName, id, user.id);
+    return this.quotationsService.cancel(tenant.schemaName, tenant.tenantId, id, user.id, dto);
   }
 
   @Post(':id/whatsapp')
