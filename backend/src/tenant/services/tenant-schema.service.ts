@@ -19,14 +19,17 @@ export class TenantSchemaService {
   async withTenantSchema<T>(
     schemaName: string,
     callback: (ctx: TenantSchemaContext) => Promise<T>,
+    options?: { timeoutMs?: number },
   ): Promise<T> {
     assertTrustedTenantSchemaName(schemaName);
 
-    return this.prisma.$transaction(async (tx) =>
-      callback({
-        tx,
-        schemaName,
-      }),
+    return this.prisma.$transaction(
+      async (tx) =>
+        callback({
+          tx,
+          schemaName,
+        }),
+      { timeout: options?.timeoutMs ?? 5000 },
     );
   }
 }

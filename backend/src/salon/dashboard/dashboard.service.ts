@@ -95,7 +95,9 @@ export class DashboardService {
     const payrollRunsTable = tenantTable(schemaName, 'payroll_runs');
     const employeeLoansTable = tenantTable(schemaName, 'employee_loans');
 
-    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+    return this.tenantSchemaService.withTenantSchema(
+      schemaName,
+      async ({ tx }) => {
       const branchParams = branchId ? [branchId] : [];
       const branchCond = branchId ? 'AND s.branch_id = $1::uuid' : '';
       const branchCondPlain = branchId ? 'AND branch_id = $1::uuid' : '';
@@ -736,8 +738,11 @@ export class DashboardService {
           employee: null as string | null,
         })),
       };
-    });
+      },
+      { timeoutMs: 30_000 },
+    );
   }
+
 
   async getDailySalesReport(
     schemaName: string,
