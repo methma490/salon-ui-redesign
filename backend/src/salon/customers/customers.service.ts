@@ -368,8 +368,8 @@ export class CustomersService {
                   (
                     SELECT json_agg(
                       json_build_object(
-                        'id', aps.id,
-                        'name', aps.name,
+                        'id', aps.service_id,
+                        'name', aps.service_name,
                         'price', aps.price::float,
                         'durationMinutes', aps.duration_minutes
                       )

@@ -285,15 +285,19 @@ export default function AppointmentsPage() {
   );
 
   const { data: employees = [] } = useQuery({
-    queryKey: ['employees', activeBranchId],
-    queryFn: () =>
-      tenantApi.employees.list(activeBranchId ? { branchId: activeBranchId } : undefined),
+    queryKey: ['employees'],
+    queryFn: () => tenantApi.employees.list(),
   });
 
   const activeEmployees = useMemo(
-    () => employees.filter((e) => e.status === 'ACTIVE'),
-    [employees],
+    () => employees.filter((e) => e.status === 'ACTIVE' && e.branchId === activeBranchId),
+    [employees, activeBranchId],
   );
+
+  const formEmployees = useMemo(() => {
+    const branchId = editAppointment ? editForm.branchId : form.branchId;
+    return employees.filter((employee) => employee.status === 'ACTIVE' && employee.branchId === branchId);
+  }, [employees, editAppointment, editForm.branchId, form.branchId]);
 
   const listParams = useMemo(() => {
     const params: Record<string, string> = {
@@ -853,6 +857,7 @@ export default function AppointmentsPage() {
                       <th className="py-3 px-4">Customer</th>
                       <th className="py-3 px-4">Time</th>
                       <th className="py-3 px-4">Branch</th>
+                      <th className="py-3 px-4">Employee</th>
                       <th className="py-3 px-4">Services</th>
                       <th className="py-3 px-4">Total</th>
                       <th className="py-3 px-4">Status</th>
@@ -875,6 +880,9 @@ export default function AppointmentsPage() {
                             {apt.startTime} – {apt.endTime}
                           </td>
                           <td className="py-3 px-4 text-slate-600">{apt.branchName}</td>
+                          <td className="py-3 px-4 text-slate-600">
+                            {apt.employeeName || 'Unassigned'}
+                          </td>
                           <td className="py-3 px-4 text-slate-700 max-w-[200px] truncate">
                             {apt.services.map((s) => s.name).join(', ') || '—'}
                           </td>
@@ -1002,6 +1010,10 @@ export default function AppointmentsPage() {
                 setFormError('Please select a branch.');
                 return;
               }
+              if (!activeF.employeeId) {
+                setFormError('Please select an employee.');
+                return;
+              }
               if (activeF.serviceIds.length === 0) {
                 setFormError('Please select at least one service.');
                 return;
@@ -1098,8 +1110,8 @@ export default function AppointmentsPage() {
                   value={editAppointment ? editForm.branchId : form.branchId}
                   disabled={editAppointment?.status === 'COMPLETED'}
                   onValueChange={(val) => {
-                    if (editAppointment) setEditForm({ ...editForm, branchId: val });
-                    else setForm({ ...form, branchId: val });
+                    if (editAppointment) setEditForm({ ...editForm, branchId: val, employeeId: '' });
+                    else setForm({ ...form, branchId: val, employeeId: '' });
                   }}
                 >
                   <SelectTrigger className="h-10 rounded-xl border-slate-200 text-xs">
@@ -1129,6 +1141,29 @@ export default function AppointmentsPage() {
                   className="h-10 rounded-xl border-slate-200 text-xs"
                 />
               </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-slate-800">Employee</Label>
+              <Select
+                value={editAppointment ? editForm.employeeId : form.employeeId}
+                disabled={editAppointment?.status === 'COMPLETED'}
+                onValueChange={(value) => {
+                  if (editAppointment) setEditForm({ ...editForm, employeeId: value });
+                  else setForm({ ...form, employeeId: value });
+                }}
+              >
+                <SelectTrigger className="h-10 rounded-xl border-slate-200 text-xs">
+                  <SelectValue placeholder="Select employee" />
+                </SelectTrigger>
+                <SelectContent>
+                  {formEmployees.map((employee) => (
+                    <SelectItem key={employee.id} value={employee.id} className="text-xs">
+                      {employee.name}{employee.designation ? ` · ${employee.designation}` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Start and End Time */}

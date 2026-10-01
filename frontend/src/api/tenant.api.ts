@@ -116,6 +116,7 @@ export interface Appointment {
   branchId: string;
   branchName: string;
   employeeId: string | null;
+  employeeName: string | null;
   appointmentDate: string;
   startTime: string;
   endTime: string;
