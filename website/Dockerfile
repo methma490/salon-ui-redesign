@@ -9,7 +9,7 @@ RUN npm ci
 COPY . .
 
 ARG NEXT_PUBLIC_API_URL=https://saloon-server.bc.dartcodes.com/api
-ARG NEXT_PUBLIC_APP_URL=https://salon-frontend.bc.dartcodes.com
+ARG NEXT_PUBLIC_APP_URL=https://saloon-client.bc.dartcodes.com
 ARG NEXT_PUBLIC_SITE_URL=https://salon-main-website.bc.dartcodes.com
 
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL

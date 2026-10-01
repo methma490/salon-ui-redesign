@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - production
   workflow_dispatch: # Allows manual trigger from GitHub Actions tab
 
 permissions:
@@ -26,20 +27,20 @@ permissions:
 #   - NEXT_PUBLIC_API_URL (optional; falls back to VITE_API_BASE_URL in build)
 # ==============================================================================
 env:
-  # Server URL (e.g. https://captain.your-domain.com)
-  CAPROVER_SERVER: ${{ secrets.CAPROVER_SERVER || 'https://captain.your-domain.com' }}
+  # Server URL (CapRover Dashboard root)
+  CAPROVER_SERVER: ${{ secrets.CAPROVER_SERVER || 'https://captain.bc.dartcodes.com' }}
 
   # Backend App Settings
   BACKEND_APP_NAME: ${{ secrets.BACKEND_APP_NAME || 'saloon-server' }}
-  BACKEND_APP_TOKEN: ${{ secrets.BACKEND_APP_TOKEN || '' }}
+  BACKEND_APP_TOKEN: ${{ secrets.BACKEND_APP_TOKEN || secrets.CAPROVER_APP_TOKEN || secrets.CAPROVER_PASSWORD || secrets.CAPROVER_TOKEN || '' }}
 
   # Frontend App Settings
-  FRONTEND_APP_NAME: ${{ secrets.FRONTEND_APP_NAME || 'salon-frontend' }}
-  FRONTEND_APP_TOKEN: ${{ secrets.FRONTEND_APP_TOKEN || '' }}
+  FRONTEND_APP_NAME: ${{ secrets.FRONTEND_APP_NAME || 'saloon-client' }}
+  FRONTEND_APP_TOKEN: ${{ secrets.FRONTEND_APP_TOKEN || secrets.CAPROVER_APP_TOKEN || secrets.CAPROVER_PASSWORD || secrets.CAPROVER_TOKEN || '' }}
 
   # Marketing website (Next.js)
   WEBSITE_APP_NAME: ${{ secrets.WEBSITE_APP_NAME || 'salon-main-website' }}
-  WEBSITE_APP_TOKEN: ${{ secrets.WEBSITE_APP_TOKEN || '' }}
+  WEBSITE_APP_TOKEN: ${{ secrets.WEBSITE_APP_TOKEN || secrets.CAPROVER_APP_TOKEN || secrets.CAPROVER_PASSWORD || secrets.CAPROVER_TOKEN || '' }}
 
 jobs:
   # ----------------------------------------------------------------------------
@@ -78,6 +79,17 @@ jobs:
             ghcr.io/${{ env.IMAGE_OWNER }}/salon-backend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Validate CapRover Configuration
+        run: |
+          if [ -z "${{ env.CAPROVER_SERVER }}" ] || [ "${{ env.CAPROVER_SERVER }}" = "https://captain.your-domain.com" ]; then
+            echo "::error::CAPROVER_SERVER is missing or set to placeholder! Please set CAPROVER_SERVER in GitHub Secrets (e.g. https://captain.yourdomain.com)."
+            exit 1
+          fi
+          if [ -z "${{ env.BACKEND_APP_TOKEN }}" ]; then
+            echo "::error::BACKEND_APP_TOKEN is missing! Go to CapRover Dashboard -> Apps -> ${{ env.BACKEND_APP_NAME }} -> Deployment tab -> Enable App Token -> copy token and add secret BACKEND_APP_TOKEN in GitHub Settings."
+            exit 1
+          fi
 
       - name: Deploy Backend Image to CapRover
         uses: caprover/deploy-from-github@v1.1.2
@@ -125,6 +137,17 @@ jobs:
             ghcr.io/${{ env.IMAGE_OWNER }}/salon-frontend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Validate CapRover Configuration
+        run: |
+          if [ -z "${{ env.CAPROVER_SERVER }}" ] || [ "${{ env.CAPROVER_SERVER }}" = "https://captain.your-domain.com" ]; then
+            echo "::error::CAPROVER_SERVER is missing or set to placeholder! Please set CAPROVER_SERVER in GitHub Secrets (e.g. https://captain.yourdomain.com)."
+            exit 1
+          fi
+          if [ -z "${{ env.FRONTEND_APP_TOKEN }}" ]; then
+            echo "::error::FRONTEND_APP_TOKEN is missing! Go to CapRover Dashboard -> Apps -> ${{ env.FRONTEND_APP_NAME }} -> Deployment tab -> Enable App Token -> copy token and add secret FRONTEND_APP_TOKEN in GitHub Settings."
+            exit 1
+          fi
 
       - name: Deploy Frontend Image to CapRover
         uses: caprover/deploy-from-github@v1.1.2
@@ -179,7 +202,7 @@ jobs:
 
           APP_URL="${{ secrets.NEXT_PUBLIC_APP_URL }}"
           if [ -z "$APP_URL" ]; then
-            APP_URL="https://salon-frontend.bc.dartcodes.com"
+            APP_URL="https://saloon-client.bc.dartcodes.com"
           fi
           echo "app_url=$APP_URL" >> "$GITHUB_OUTPUT"
 
@@ -198,6 +221,17 @@ jobs:
             ghcr.io/${{ env.IMAGE_OWNER }}/salon-website:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Validate CapRover Configuration
+        run: |
+          if [ -z "${{ env.CAPROVER_SERVER }}" ] || [ "${{ env.CAPROVER_SERVER }}" = "https://captain.your-domain.com" ]; then
+            echo "::error::CAPROVER_SERVER is missing or set to placeholder! Please set CAPROVER_SERVER in GitHub Secrets (e.g. https://captain.yourdomain.com)."
+            exit 1
+          fi
+          if [ -z "${{ env.WEBSITE_APP_TOKEN }}" ]; then
+            echo "::error::WEBSITE_APP_TOKEN is missing! Go to CapRover Dashboard -> Apps -> ${{ env.WEBSITE_APP_NAME }} -> Deployment tab -> Enable App Token -> copy token and add secret WEBSITE_APP_TOKEN in GitHub Settings."
+            exit 1
+          fi
 
       - name: Deploy Website Image to CapRover
         uses: caprover/deploy-from-github@v1.1.2
