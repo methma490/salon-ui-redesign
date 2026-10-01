@@ -27,8 +27,8 @@
 .dash-top-header {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  justify-content: space-between;
+  align-items: center;
+  text-align: center;
   gap: 1rem;
 }
 
@@ -36,12 +36,25 @@
   .dash-top-header {
     flex-direction: row;
     align-items: flex-start;
+    justify-content: space-between;
+    text-align: left;
     gap: 1.25rem;
   }
 }
 
 .dash-greeting-wrap {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .dash-greeting-wrap {
+    align-items: flex-start;
+    text-align: left;
+  }
 }
 
 .dash-greeting-wrap h1 {
@@ -52,8 +65,15 @@
   margin: 0 0 0.25rem 0;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   line-height: 1.25;
+}
+
+@media (min-width: 768px) {
+  .dash-greeting-wrap h1 {
+    justify-content: flex-start;
+  }
 }
 
 @media (min-width: 640px) {
@@ -73,6 +93,13 @@
   color: #64748b;
   margin: 0;
   line-height: 1.4;
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .dash-greeting-wrap p {
+    text-align: left;
+  }
 }
 
 @media (min-width: 640px) {
@@ -89,6 +116,7 @@
 .dash-top-actions {
   display: flex;
   align-items: center;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 0.625rem;
   width: 100%;
@@ -104,6 +132,7 @@
 .dash-quick-pills {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   background: #ffffff;
   padding: 0.25rem;
   border-radius: 0.625rem;
@@ -111,9 +140,16 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
   gap: 0.25rem;
   max-width: 100%;
+  margin: 0 auto;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+}
+
+@media (min-width: 768px) {
+  .dash-quick-pills {
+    margin: 0;
+  }
 }
 
 .dash-quick-pills::-webkit-scrollbar {
@@ -178,24 +214,24 @@
 }
 
 /* ------------------------------------------------------------------------- */
-/* SUMMARY KPI CARDS (ROW 1 - 2x2 ON MOBILE, 4 COLUMNS ON DESKTOP)          */
+/* SUMMARY KPI CARDS (ROW 1 - 2x2 ON MOBILE & TABLET, 4 COLUMNS ON DESKTOP)  */
 /* ------------------------------------------------------------------------- */
 .dash-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.625rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
 }
 
 @media (min-width: 640px) {
   .dash-kpi-grid {
-    gap: 0.875rem;
+    gap: 1rem;
   }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1180px) {
   .dash-kpi-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1.25rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.125rem;
   }
 }
 
@@ -203,7 +239,7 @@
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 0.75rem;
-  padding: 0.75rem 0.625rem;
+  padding: 0.875rem 0.75rem;
   display: flex;
   align-items: flex-start;
   gap: 0.625rem;
@@ -221,7 +257,7 @@
   }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1400px) {
   .dash-kpi-card {
     padding: 1.25rem;
     gap: 1rem;
@@ -233,8 +269,8 @@
 }
 
 .dash-kpi-icon-wrap {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: 0.5rem;
   display: flex;
   align-items: center;
@@ -250,7 +286,7 @@
   }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1400px) {
   .dash-kpi-icon-wrap {
     width: 44px;
     height: 44px;
@@ -282,13 +318,14 @@
   flex-direction: column;
   flex: 1;
   min-width: 0;
+  overflow: hidden;
 }
 
 .dash-kpi-label {
-  font-size: 0.6875rem;
+  font-size: 0.725rem;
   font-weight: 600;
   color: #64748b;
-  margin-bottom: 0.15rem;
+  margin-bottom: 0.2rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -302,42 +339,56 @@
 }
 
 .dash-kpi-value {
-  font-size: 0.95rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.25rem;
+  line-height: 1.15;
+}
+
+.dash-kpi-currency {
+  font-size: 0.725rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: normal;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.dash-kpi-num {
+  font-size: 1.05rem;
   font-weight: 800;
   color: #0f172a;
   letter-spacing: -0.02em;
-  margin-bottom: 0.2rem;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@media (min-width: 480px) {
-  .dash-kpi-value {
-    font-size: 1.1rem;
-  }
+  word-break: normal;
 }
 
 @media (min-width: 640px) {
-  .dash-kpi-value {
+  .dash-kpi-currency {
+    font-size: 0.8rem;
+  }
+  .dash-kpi-num {
     font-size: 1.25rem;
   }
 }
 
-@media (min-width: 1200px) {
-  .dash-kpi-value {
+@media (min-width: 1400px) {
+  .dash-kpi-num {
     font-size: 1.375rem;
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.1rem;
   }
 }
 
 .dash-kpi-trend {
   display: inline-flex;
   align-items: center;
-  gap: 0.15rem;
-  font-size: 0.625rem;
+  gap: 0.2rem;
+  font-size: 0.65rem;
   font-weight: 700;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   white-space: nowrap;
 }
 
@@ -361,13 +412,7 @@
   color: #94a3b8;
   margin-left: 0.15rem;
   white-space: nowrap;
-  display: none;
-}
-
-@media (min-width: 480px) {
-  .dash-trend-subtext {
-    display: inline;
-  }
+  display: inline;
 }
 
 /* ------------------------------------------------------------------------- */

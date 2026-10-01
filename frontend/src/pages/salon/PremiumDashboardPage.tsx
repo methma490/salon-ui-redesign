@@ -117,15 +117,15 @@ export default function PremiumDashboardPage() {
   const recentOrders = data?.recentOrders;
   const recentTransactions = data?.recentTransactions;
 
-  // Extract KPI values with fallback
-  const revenue = financials?.revenue ?? kpis?.periodRevenue ?? 482350;
-  const revenueGrowth = financials?.revenueGrowth ?? kpis?.revenueGrowth ?? 12;
-  const expenses = financials?.expenses ?? kpis?.expenses ?? 231800;
-  const expensesGrowth = financials?.expensesGrowth ?? kpis?.expensesGrowth ?? 8;
-  const salaries = financials?.salaries ?? kpis?.salaries ?? 78600;
-  const salariesGrowth = financials?.salariesGrowth ?? kpis?.salariesGrowth ?? 5;
-  const netProfit = financials?.netProfit ?? kpis?.netProfit ?? 171950;
-  const profitGrowth = financials?.profitGrowth ?? kpis?.profitGrowth ?? 16;
+  // Extract KPI values with 0 fallback
+  const revenue = financials?.revenue ?? kpis?.periodRevenue ?? 0;
+  const revenueGrowth = financials?.revenueGrowth ?? kpis?.revenueGrowth ?? 0;
+  const expenses = financials?.expenses ?? kpis?.expenses ?? 0;
+  const expensesGrowth = financials?.expensesGrowth ?? kpis?.expensesGrowth ?? 0;
+  const salaries = financials?.salaries ?? kpis?.salaries ?? 0;
+  const salariesGrowth = financials?.salariesGrowth ?? kpis?.salariesGrowth ?? 0;
+  const netProfit = financials?.netProfit ?? kpis?.netProfit ?? 0;
+  const profitGrowth = financials?.profitGrowth ?? kpis?.profitGrowth ?? 0;
 
   return (
     <div className="dash-container">

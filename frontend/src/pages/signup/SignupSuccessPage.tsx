@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { signupApi, type SignupOrderStatus } from '@/features/signup/api/signup.api';
+import { websiteHomeUrl } from '@/config/website-url';
 
 export default function SignupSuccessPage() {
   const [params] = useSearchParams();
@@ -36,12 +37,12 @@ export default function SignupSuccessPage() {
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-background">
       <header className="flex h-14 shrink-0 items-center justify-center border-b border-border/60">
-        <Link to="/" className="flex items-center gap-2 text-sm font-semibold">
+        <a href={websiteHomeUrl()} className="flex items-center gap-2 text-sm font-semibold">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Scissors className="h-3.5 w-3.5" />
           </span>
           Dart Smart Salon
-        </Link>
+        </a>
       </header>
 
       <main className="flex flex-1 items-center justify-center px-4">
@@ -56,7 +57,7 @@ export default function SignupSuccessPage() {
           <div className="w-full max-w-sm space-y-4 text-center">
             <p className="font-medium text-destructive">{error}</p>
             <Button asChild variant="outline" className="w-full">
-              <Link to="/">Back to home</Link>
+              <a href={websiteHomeUrl()}>Back to home</a>
             </Button>
           </div>
         )}
@@ -99,7 +100,7 @@ export default function SignupSuccessPage() {
                   Login will be enabled after super admin activation.
                 </p>
                 <Button asChild variant="outline" className="w-full">
-                  <Link to="/">Back to home</Link>
+                  <a href={websiteHomeUrl()}>Back to home</a>
                 </Button>
               </div>
             ) : (

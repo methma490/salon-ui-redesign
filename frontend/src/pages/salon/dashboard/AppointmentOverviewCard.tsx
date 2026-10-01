@@ -46,20 +46,12 @@ export function AppointmentOverviewCard({ data }: AppointmentOverviewCardProps) 
   const primaryColor = theme?.palette?.primary ?? '#2563eb';
   const [timeframe, setTimeframe] = useState('month');
 
-  const total = data?.total || 186;
-  const completedPct = data?.completedPct ?? 84;
-  const pendingPct = data?.pendingPct ?? 12;
-  const cancelledPct = data?.cancelledPct ?? 4;
+  const total = data?.total || 0;
+  const completedPct = data?.completedPct ?? 0;
+  const pendingPct = data?.pendingPct ?? 0;
+  const cancelledPct = data?.cancelledPct ?? 0;
 
-  const trendData = data?.trend && data.trend.length > 0 ? data.trend : [
-    { date: 'Sep 1', completed: 12, pending: 4, cancelled: 1, noShow: 0 },
-    { date: 'Sep 5', completed: 18, pending: 6, cancelled: 2, noShow: 0 },
-    { date: 'Sep 10', completed: 15, pending: 8, cancelled: 1, noShow: 1 },
-    { date: 'Sep 15', completed: 22, pending: 5, cancelled: 2, noShow: 0 },
-    { date: 'Sep 20', completed: 20, pending: 9, cancelled: 3, noShow: 1 },
-    { date: 'Sep 25', completed: 25, pending: 11, cancelled: 2, noShow: 0 },
-    { date: 'Sep 30', completed: 28, pending: 14, cancelled: 3, noShow: 1 },
-  ];
+  const trendData = data?.trend && data.trend.length > 0 ? data.trend : [];
 
   return (
     <div className="dash-card">
@@ -144,66 +136,70 @@ export function AppointmentOverviewCard({ data }: AppointmentOverviewCardProps) 
         </div>
       </div>
 
-      <div className="w-full h-48 sm:h-52">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={trendData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-            <CartesianGrid stroke="#f1f5f9" vertical={false} />
-            <XAxis
-              dataKey="date"
-              stroke="#94a3b8"
-              fontSize={10}
-              tickLine={false}
-              axisLine={{ stroke: '#e2e8f0' }}
-            />
-            <YAxis
-              stroke="#94a3b8"
-              fontSize={10}
-              tickLine={false}
-              axisLine={false}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: '#ffffff',
-                borderRadius: '8px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                fontSize: '11px',
-              }}
-            />
-            <Line
-              type="monotone"
-              dataKey="completed"
-              stroke={primaryColor}
-              strokeWidth={2}
-              dot={{ r: 3, fill: primaryColor }}
-              activeDot={{ r: 5 }}
-            />
-            <Line
-              type="monotone"
-              dataKey="pending"
-              stroke="#fb923c"
-              strokeWidth={2}
-              dot={{ r: 3, fill: '#fb923c' }}
-              activeDot={{ r: 5 }}
-            />
-            <Line
-              type="monotone"
-              dataKey="cancelled"
-              stroke="#f43f5e"
-              strokeWidth={2}
-              dot={{ r: 3, fill: '#f43f5e' }}
-              activeDot={{ r: 5 }}
-            />
-            <Line
-              type="monotone"
-              dataKey="noShow"
-              stroke="#94a3b8"
-              strokeWidth={1.5}
-              strokeDasharray="3 3"
-              dot={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+      <div className="w-full h-48 sm:h-52 flex items-center justify-center">
+        {trendData.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={trendData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+              <CartesianGrid stroke="#f1f5f9" vertical={false} />
+              <XAxis
+                dataKey="date"
+                stroke="#94a3b8"
+                fontSize={10}
+                tickLine={false}
+                axisLine={{ stroke: '#e2e8f0' }}
+              />
+              <YAxis
+                stroke="#94a3b8"
+                fontSize={10}
+                tickLine={false}
+                axisLine={false}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '8px',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                  fontSize: '11px',
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="completed"
+                stroke={primaryColor}
+                strokeWidth={2}
+                dot={{ r: 3, fill: primaryColor }}
+                activeDot={{ r: 5 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="pending"
+                stroke="#fb923c"
+                strokeWidth={2}
+                dot={{ r: 3, fill: '#fb923c' }}
+                activeDot={{ r: 5 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="cancelled"
+                stroke="#f43f5e"
+                strokeWidth={2}
+                dot={{ r: 3, fill: '#f43f5e' }}
+                activeDot={{ r: 5 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="noShow"
+                stroke="#94a3b8"
+                strokeWidth={1.5}
+                strokeDasharray="3 3"
+                dot={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="text-xs text-slate-400 font-medium">No appointment trend data for this period</div>
+        )}
       </div>
     </div>
   );
