@@ -16,7 +16,7 @@ import {
 } from 'recharts';
 
 function brandPrimary(): string {
-  if (typeof window === 'undefined') return '#0d5c3d';
+  if (typeof window === 'undefined') return '#a44a5c';
   const fromCss = getComputedStyle(document.documentElement)
     .getPropertyValue('--brand-primary')
     .trim();
@@ -25,7 +25,7 @@ function brandPrimary(): string {
   )
     .getPropertyValue('--brand-primary')
     .trim();
-  return fromRoot || fromCss || '#0d5c3d';
+  return fromRoot || fromCss || '#a44a5c';
 }
 
 function pieColors(primary: string) {

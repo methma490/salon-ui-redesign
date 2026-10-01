@@ -1,9 +1,24 @@
 /* Modern Appointments & Timeline Calendar Styles */
 
+.apt-timeline-scroll {
+  height: clamp(360px, calc(100vh - 300px), 700px);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.apt-timeline-scroll::before {
+  content: '';
+  position: sticky;
+  top: 0;
+  display: block;
+  height: 28px;
+  background: #fff;
+  z-index: 10;
+}
+
 .apt-timeline-container {
   min-width: 980px;
   position: relative;
-  padding-top: 28px;
 }
 
 .apt-timeline-header-row {
@@ -11,7 +26,7 @@
   border-bottom: 1px solid #f1f5f9;
   background: #f8fafc;
   position: sticky;
-  top: 0;
+  top: 28px;
   z-index: 20;
   overflow: visible;
 }
@@ -113,8 +128,6 @@
 
 .apt-appointment-chip {
   position: absolute;
-  top: 8px;
-  bottom: 8px;
   border-radius: 10px;
   border: 1px solid #e2e8f0;
   background: #ffffff;
@@ -535,6 +548,10 @@
 }
 
 @media (max-width: 639px) {
+  .apt-timeline-scroll {
+    height: clamp(220px, calc(100dvh - 340px), 620px);
+  }
+
   .apt-filters-row {
     padding: 8px 10px;
     gap: 8px;

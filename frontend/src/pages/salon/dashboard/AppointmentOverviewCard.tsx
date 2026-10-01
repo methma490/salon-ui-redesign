@@ -47,9 +47,9 @@ export function AppointmentOverviewCard({ data }: AppointmentOverviewCardProps) 
   const [timeframe, setTimeframe] = useState('month');
 
   const total = data?.total || 0;
-  const completedPct = data?.completedPct ?? 0;
-  const pendingPct = data?.pendingPct ?? 0;
-  const cancelledPct = data?.cancelledPct ?? 0;
+  const completed = data?.completed ?? 0;
+  const pending = data?.pending ?? 0;
+  const cancelled = data?.cancelled ?? 0;
 
   const trendData = data?.trend && data.trend.length > 0 ? data.trend : [];
 
@@ -90,7 +90,7 @@ export function AppointmentOverviewCard({ data }: AppointmentOverviewCardProps) 
             <CheckCircle2 className="h-4 w-4" />
           </div>
           <div className="dash-appt-stat-info">
-            <span className="dash-appt-stat-val">{completedPct}%</span>
+            <span className="dash-appt-stat-val">{completed}</span>
             <span className="dash-appt-stat-lbl">Completed</span>
           </div>
         </div>
@@ -100,7 +100,7 @@ export function AppointmentOverviewCard({ data }: AppointmentOverviewCardProps) 
             <Clock className="h-4 w-4" />
           </div>
           <div className="dash-appt-stat-info">
-            <span className="dash-appt-stat-val">{pendingPct}%</span>
+            <span className="dash-appt-stat-val">{pending}</span>
             <span className="dash-appt-stat-lbl">Pending</span>
           </div>
         </div>
@@ -110,7 +110,7 @@ export function AppointmentOverviewCard({ data }: AppointmentOverviewCardProps) 
             <XCircle className="h-4 w-4" />
           </div>
           <div className="dash-appt-stat-info">
-            <span className="dash-appt-stat-val">{cancelledPct}%</span>
+            <span className="dash-appt-stat-val">{cancelled}</span>
             <span className="dash-appt-stat-lbl">Cancelled</span>
           </div>
         </div>

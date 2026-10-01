@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayNotEmpty,
   IsArray,
   IsDateString,
   IsEnum,
@@ -174,6 +175,12 @@ export class UpdateProductStatusDto {
 export class StockInDto {
   @IsUUID()
   branchId!: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsUUID('4', { each: true })
+  branchIds?: string[];
 
   @IsUUID()
   productId!: string;

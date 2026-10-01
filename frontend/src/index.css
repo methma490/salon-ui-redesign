@@ -1,26 +1,26 @@
 @import 'tailwindcss';
 
 @theme inline {
-  /* Soft forest / professional green — matches MN-Group dashboard style */
-  --color-background: oklch(0.985 0.004 155);
-  --color-foreground: oklch(0.21 0.02 265);
+  /* Warm burgundy and gold palette shared with the public website */
+  --color-background: #faf7f4;
+  --color-foreground: #111111;
   --color-card: oklch(1 0 0);
-  --color-card-foreground: oklch(0.21 0.02 265);
+  --color-card-foreground: #111111;
   --color-popover: oklch(1 0 0);
-  --color-popover-foreground: oklch(0.21 0.02 265);
-  --color-primary: oklch(0.42 0.11 155);
-  --color-primary-foreground: oklch(0.99 0 0);
-  --color-secondary: oklch(0.97 0.02 155);
-  --color-secondary-foreground: oklch(0.38 0.09 155);
-  --color-muted: oklch(0.965 0.012 155);
-  --color-muted-foreground: oklch(0.52 0.02 265);
-  --color-accent: oklch(0.96 0.03 155);
-  --color-accent-foreground: oklch(0.38 0.09 155);
+  --color-popover-foreground: #111111;
+  --color-primary: #a44a5c;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f5e8eb;
+  --color-secondary-foreground: #8a3d4d;
+  --color-muted: #f3ebe1;
+  --color-muted-foreground: #6b6b6b;
+  --color-accent: #f5e8eb;
+  --color-accent-foreground: #8a3d4d;
   --color-destructive: oklch(0.55 0.2 25);
   --color-destructive-foreground: oklch(0.99 0 0);
-  --color-border: oklch(0.91 0.01 155);
-  --color-input: oklch(0.91 0.01 155);
-  --color-ring: oklch(0.55 0.12 155);
+  --color-border: #e8e2dc;
+  --color-input: #e8e2dc;
+  --color-ring: #d4af7c;
   --color-success: oklch(0.62 0.17 155);
   --color-warning: oklch(0.68 0.16 55);
   --radius-lg: 0.75rem;
@@ -49,16 +49,16 @@
 /* Salon Admin brand tokens — overridden at runtime by TenantThemeProvider */
 .salon-theme-root {
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  --brand-primary: #0d5c3d;
-  --brand-hover: #0a4a31;
-  --brand-active: #064e32;
-  --brand-soft: #ecfdf3;
-  --brand-soft-strong: #d1fae5;
-  --brand-border: #a7f3d0;
-  --brand-focus: #6ee7b7;
-  --brand-ring: #34d399;
+  --brand-primary: #a44a5c;
+  --brand-hover: #8a3d4d;
+  --brand-active: #71313f;
+  --brand-soft: #f5e8eb;
+  --brand-soft-strong: #ecd2d8;
+  --brand-border: #d9aab3;
+  --brand-focus: #d4af7c;
+  --brand-ring: #d4af7c;
   --brand-foreground: #ffffff;
-  --brand-soft-bg: #ecfdf3;
+  --brand-soft-bg: #f5e8eb;
 
   /* Shared s360-* dashboard accents (also used by Super Admin with green defaults) */
   --s360-brand: var(--brand-primary);

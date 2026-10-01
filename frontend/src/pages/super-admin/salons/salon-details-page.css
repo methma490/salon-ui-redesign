@@ -1,6 +1,6 @@
 .sd-page {
-  --sd-primary: #0d5c3d;
-  --sd-primary-soft: #ecfdf3;
+  --sd-primary: #a44a5c;
+  --sd-primary-soft: #f5e8eb;
   --sd-border: #e5ebe8;
   --sd-muted: #64748b;
   --sd-surface: #ffffff;
@@ -88,7 +88,7 @@
 }
 
 .sd-btn-primary:hover {
-  background: #0a4a31;
+  background: #8a3d4d;
 }
 
 .sd-btn-secondary {

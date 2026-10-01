@@ -115,7 +115,7 @@ export default function PublicQuotationPage() {
   }
 
   const data = query.data;
-  const brand = data.salon.primaryColor || '#0d5c3d';
+  const brand = data.salon.primaryColor || '#a44a5c';
   const isCancelled = data.status === 'CANCELLED';
 
   return (

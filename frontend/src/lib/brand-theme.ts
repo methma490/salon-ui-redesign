@@ -1,9 +1,10 @@
 /** Tenant brand palette generation from a single HEX color. */
 
-export const DEFAULT_PRIMARY_COLOR = '#0D5C3D';
+export const DEFAULT_PRIMARY_COLOR = '#A44A5C';
 
 export const BRAND_COLOR_PRESETS: Array<{ id: string; label: string; color: string }> = [
-  { id: 'forest', label: 'Forest Green', color: '#0D5C3D' },
+  { id: 'burgundy', label: 'Burgundy', color: '#A44A5C' },
+  { id: 'gold', label: 'Gold', color: '#D4AF7C' },
   { id: 'green', label: 'Green', color: '#16A34A' },
   { id: 'emerald', label: 'Emerald', color: '#059669' },
   { id: 'teal', label: 'Teal', color: '#0D9488' },
@@ -84,13 +85,14 @@ export function buildBrandPalette(primaryInput: string): BrandPalette {
   const primary = isValidHexColor(primaryInput)
     ? normalizeHexColor(primaryInput)
     : DEFAULT_PRIMARY_COLOR;
-  const hover = mix(primary, '#000000', 0.12);
-  const active = mix(primary, '#000000', 0.22);
-  const soft = mix(primary, '#FFFFFF', 0.92);
-  const softStrong = mix(primary, '#FFFFFF', 0.82);
-  const border = mix(primary, '#FFFFFF', 0.7);
-  const focus = mix(primary, '#FFFFFF', 0.45);
-  const ring = mix(primary, '#FFFFFF', 0.35);
+  const isWebsiteDefault = primary === DEFAULT_PRIMARY_COLOR;
+  const hover = isWebsiteDefault ? '#8A3D4D' : mix(primary, '#000000', 0.12);
+  const active = isWebsiteDefault ? '#71313F' : mix(primary, '#000000', 0.22);
+  const soft = isWebsiteDefault ? '#F5E8EB' : mix(primary, '#FFFFFF', 0.92);
+  const softStrong = isWebsiteDefault ? '#ECD2D8' : mix(primary, '#FFFFFF', 0.82);
+  const border = isWebsiteDefault ? '#D9AAB3' : mix(primary, '#FFFFFF', 0.7);
+  const focus = isWebsiteDefault ? '#D4AF7C' : mix(primary, '#FFFFFF', 0.45);
+  const ring = isWebsiteDefault ? '#D4AF7C' : mix(primary, '#FFFFFF', 0.35);
 
   return {
     primary,

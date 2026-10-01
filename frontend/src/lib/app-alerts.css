@@ -1,0 +1,35 @@
+.swal2-popup.app-confirm-popup {
+  border: 1px solid #e2e8f0;
+  border-radius: 1.25rem;
+  box-shadow: 0 20px 50px rgb(15 23 42 / 18%);
+}
+
+.app-confirm-popup .app-confirm-title {
+  margin-top: 0.5rem;
+  color: #0f172a;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.app-confirm-popup .app-confirm-content {
+  margin-top: 0.5rem;
+  color: #475569;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.app-confirm-popup .app-confirm-actions {
+  gap: 0.625rem;
+  margin-top: 1.25rem;
+}
+
+.app-confirm-popup .app-confirm-button,
+.app-confirm-popup .app-cancel-button {
+  min-height: 2.5rem;
+  margin: 0;
+  padding: 0.625rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}

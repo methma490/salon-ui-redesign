@@ -165,11 +165,11 @@ function OpenMapLink({ lat, lng, name }: { lat?: number | null; lng?: number | n
       href={osmUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 hover:underline hover:text-emerald-700 transition-colors"
+      className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--brand-primary,#0d5c3d)] hover:underline hover:text-[var(--brand-hover,#0a4a31)] transition-colors"
       title={`View ${name || 'branch'} coordinates on OpenStreetMap`}
       onClick={(e) => e.stopPropagation()}
     >
-      <Globe className="h-3 w-3 text-emerald-600" />
+      <Globe className="h-3 w-3 text-[var(--brand-primary,#0d5c3d)]" />
       <span>
         {lat.toFixed(4)}, {lng.toFixed(4)}
       </span>
@@ -254,7 +254,7 @@ function BranchFormFields({
               type="button"
               onClick={() => handleAutoSuggestCode()}
               disabled={isSuggestingCode}
-              className="inline-flex items-center gap-1 text-xs text-emerald-600 hover:underline disabled:opacity-50"
+              className="inline-flex items-center gap-1 text-xs text-[var(--brand-primary,#0d5c3d)] hover:text-[var(--brand-hover,#0a4a31)] hover:underline disabled:opacity-50"
             >
               <Sparkles className="h-3 w-3" />
               <span>{isSuggestingCode ? 'Generating...' : 'Auto Generate'}</span>
@@ -481,39 +481,39 @@ function BranchDetailsDrawer({
               onClick={() => setActiveTab('overview')}
               className={`py-3 transition-colors relative ${
                 activeTab === 'overview'
-                  ? 'text-emerald-700 font-bold'
+                  ? 'text-[var(--brand-primary,#0d5c3d)] font-bold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Overview
               {activeTab === 'overview' && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-700 rounded-full" />
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--brand-primary,#0d5c3d)] rounded-full" />
               )}
             </button>
             <button
               onClick={() => setActiveTab('settings')}
               className={`py-3 transition-colors relative ${
                 activeTab === 'settings'
-                  ? 'text-emerald-700 font-bold'
+                  ? 'text-[var(--brand-primary,#0d5c3d)] font-bold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Settings
               {activeTab === 'settings' && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-700 rounded-full" />
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--brand-primary,#0d5c3d)] rounded-full" />
               )}
             </button>
             <button
               onClick={() => setActiveTab('operational')}
               className={`py-3 transition-colors relative ${
                 activeTab === 'operational'
-                  ? 'text-emerald-700 font-bold'
+                  ? 'text-[var(--brand-primary,#0d5c3d)] font-bold'
                   : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               Operational Info
               {activeTab === 'operational' && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-700 rounded-full" />
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--brand-primary,#0d5c3d)] rounded-full" />
               )}
             </button>
           </div>
@@ -557,7 +557,7 @@ function BranchDetailsDrawer({
                   </div>
                   <button
                     onClick={() => navigate('/salon/employees')}
-                    className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+                    className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-[var(--brand-primary,#0d5c3d)] hover:text-[var(--brand-hover,#0a4a31)]"
                   >
                     <span>View Staff</span>
                     <ArrowRight className="h-3.5 w-3.5" />
@@ -595,7 +595,7 @@ function BranchDetailsDrawer({
                   </div>
                   <button
                     onClick={() => navigate('/salon/services')}
-                    className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+                    className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-[var(--brand-primary,#0d5c3d)] hover:text-[var(--brand-hover,#0a4a31)]"
                   >
                     <span>View Services</span>
                     <ArrowRight className="h-3.5 w-3.5" />
@@ -633,7 +633,7 @@ function BranchDetailsDrawer({
                   </div>
                   <button
                     onClick={() => navigate('/salon/stock')}
-                    className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+                    className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-[var(--brand-primary,#0d5c3d)] hover:text-[var(--brand-hover,#0a4a31)]"
                   >
                     <span>View Inventory</span>
                     <ArrowRight className="h-3.5 w-3.5" />
@@ -667,7 +667,7 @@ function BranchDetailsDrawer({
                   </div>
                   <button
                     onClick={() => navigate('/salon/customers')}
-                    className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+                    className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-[var(--brand-primary,#0d5c3d)] hover:text-[var(--brand-hover,#0a4a31)]"
                   >
                     <span>View Customers</span>
                     <ArrowRight className="h-3.5 w-3.5" />
@@ -709,7 +709,7 @@ function BranchDetailsDrawer({
                   </div>
                   <button
                     onClick={() => navigate('/salon/appointments')}
-                    className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+                    className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-[var(--brand-primary,#0d5c3d)] hover:text-[var(--brand-hover,#0a4a31)]"
                   >
                     <span>View Appointments</span>
                     <ArrowRight className="h-3.5 w-3.5" />
@@ -749,7 +749,7 @@ function BranchDetailsDrawer({
                   </div>
                   <button
                     onClick={() => navigate('/salon/reports')}
-                    className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+                    className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-[var(--brand-primary,#0d5c3d)] hover:text-[var(--brand-hover,#0a4a31)]"
                   >
                     <span>View Sales Reports</span>
                     <ArrowRight className="h-3.5 w-3.5" />
@@ -814,7 +814,7 @@ function BranchDetailsDrawer({
                     <Button
                       variant="outline"
                       onClick={() => onEdit(branch)}
-                      className="justify-start gap-2 h-10 text-xs font-semibold"
+                      className="justify-start gap-2 h-10 text-xs font-semibold text-[var(--brand-primary,#0d5c3d)] hover:bg-[var(--brand-soft,#f0fdf4)] hover:border-[var(--brand-border,#bbf7d0)]"
                     >
                       <Pencil className="h-4 w-4" />
                       Edit Branch Details
@@ -827,7 +827,7 @@ function BranchDetailsDrawer({
                         className={`justify-start gap-2 h-10 text-xs font-semibold ${
                           branch.status === 'ACTIVE'
                             ? 'text-amber-700 hover:bg-amber-50'
-                            : 'text-emerald-700 hover:bg-emerald-50'
+                            : 'text-[var(--brand-primary,#0d5c3d)] hover:bg-[var(--brand-soft,#f0fdf4)]'
                         }`}
                       >
                         <EyeOff className="h-4 w-4" />
@@ -972,7 +972,12 @@ export default function BranchesPage() {
       <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-6 space-y-3">
         <h3 className="text-lg font-bold text-destructive">Could not load branches</h3>
         <p className="text-sm text-muted-foreground">{getErrorMessage(error)}</p>
-        <Button onClick={() => void refetch()}>Try again</Button>
+        <Button
+          onClick={() => void refetch()}
+          className="bg-[var(--brand-primary,#0d5c3d)] text-white hover:bg-[var(--brand-hover,#0a4a31)]"
+        >
+          Try again
+        </Button>
       </div>
     );
   }
@@ -990,7 +995,7 @@ export default function BranchesPage() {
 
         {canManageBranches ? (
           <Button
-            className="w-full sm:w-auto gap-2 bg-[#026038] hover:bg-[#024e2d] text-white font-semibold rounded-lg px-4 h-10 shadow-xs transition-colors"
+            className="w-full sm:w-auto gap-2 bg-[var(--brand-primary,#0d5c3d)] hover:bg-[var(--brand-hover,#0a4a31)] text-white font-semibold rounded-lg px-4 h-10 shadow-xs transition-colors"
             onClick={() => {
               setFormError(null);
               setForm({
@@ -1034,7 +1039,7 @@ export default function BranchesPage() {
             <Button
               variant="outline"
               size="icon"
-              className="h-9 w-9 border-slate-200 text-slate-600 shrink-0 rounded-lg hover:bg-slate-50"
+              className="h-9 w-9 border-slate-200 text-[var(--brand-primary,#0d5c3d)] shrink-0 rounded-lg hover:bg-[var(--brand-soft,#f0fdf4)] hover:border-[var(--brand-border,#bbf7d0)]"
               title="Filters"
             >
               <SlidersHorizontal className="h-4 w-4" />
@@ -1140,7 +1145,7 @@ export default function BranchesPage() {
                             {/* Edit */}
                             <button
                               onClick={() => openEdit(branch)}
-                              className="h-8 w-8 rounded-lg border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center justify-center transition-colors"
+                              className="h-8 w-8 rounded-lg border border-slate-200 text-[var(--brand-primary,#0d5c3d)] hover:text-[var(--brand-hover,#0a4a31)] hover:bg-[var(--brand-soft,#f0fdf4)] hover:border-[var(--brand-border,#bbf7d0)] flex items-center justify-center transition-colors"
                               title="Edit branch"
                             >
                               <Pencil className="h-3.5 w-3.5" />
@@ -1149,7 +1154,7 @@ export default function BranchesPage() {
                             {/* View Drawer */}
                             <button
                               onClick={() => setDrawerBranch(branch)}
-                              className="h-8 w-8 rounded-lg border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center justify-center transition-colors"
+                              className="h-8 w-8 rounded-lg border border-slate-200 text-[var(--brand-primary,#0d5c3d)] hover:text-[var(--brand-hover,#0a4a31)] hover:bg-[var(--brand-soft,#f0fdf4)] hover:border-[var(--brand-border,#bbf7d0)] flex items-center justify-center transition-colors"
                               title="View branch operational info"
                             >
                               <Eye className="h-3.5 w-3.5" />
@@ -1168,7 +1173,7 @@ export default function BranchesPage() {
                                 className={`h-8 w-8 rounded-lg border flex items-center justify-center transition-colors ${
                                   isActive
                                     ? 'bg-amber-50/80 border-amber-200/80 text-amber-700 hover:bg-amber-100'
-                                    : 'bg-emerald-50/80 border-emerald-200/80 text-emerald-700 hover:bg-emerald-100'
+                                    : 'bg-[var(--brand-soft,#f0fdf4)] border-[var(--brand-border,#bbf7d0)] text-[var(--brand-primary,#0d5c3d)] hover:bg-[var(--brand-soft,#f0fdf4)]'
                                 }`}
                                 title={isActive ? 'Deactivate branch' : 'Activate branch'}
                               >
@@ -1248,7 +1253,7 @@ export default function BranchesPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => setDrawerBranch(branch)}
-                        className="gap-1.5 text-xs h-8 text-slate-700"
+                        className="gap-1.5 text-xs h-8 text-[var(--brand-primary,#0d5c3d)] hover:bg-[var(--brand-soft,#f0fdf4)] hover:border-[var(--brand-border,#bbf7d0)]"
                       >
                         <Eye className="h-3.5 w-3.5" />
                         Details
@@ -1259,7 +1264,7 @@ export default function BranchesPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => openEdit(branch)}
-                          className="h-8 px-2.5 text-xs text-slate-700"
+                          className="h-8 px-2.5 text-xs text-[var(--brand-primary,#0d5c3d)] hover:bg-[var(--brand-soft,#f0fdf4)] hover:border-[var(--brand-border,#bbf7d0)]"
                         >
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
@@ -1274,7 +1279,9 @@ export default function BranchesPage() {
                               })
                             }
                             className={`h-8 px-2.5 text-xs ${
-                              isActive ? 'text-amber-700 bg-amber-50' : 'text-emerald-700 bg-emerald-50'
+                              isActive
+                                ? 'text-amber-700 bg-amber-50 hover:bg-amber-100'
+                                : 'text-[var(--brand-primary,#0d5c3d)] bg-[var(--brand-soft,#f0fdf4)] hover:bg-[var(--brand-soft,#f0fdf4)]'
                             }`}
                           >
                             <EyeOff className="h-3.5 w-3.5" />
@@ -1303,7 +1310,7 @@ export default function BranchesPage() {
                 </Button>
                 <Button
                   size="icon"
-                  className="h-8 w-8 rounded-lg bg-[#026038] text-white hover:bg-[#024e2d] font-semibold text-xs"
+                  className="h-8 w-8 rounded-lg bg-[var(--brand-primary,#0d5c3d)] text-white hover:bg-[var(--brand-hover,#0a4a31)] font-semibold text-xs"
                 >
                   1
                 </Button>

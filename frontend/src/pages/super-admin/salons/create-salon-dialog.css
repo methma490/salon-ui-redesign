@@ -1,7 +1,7 @@
 /* Scoped tokens — modal is portaled to body, outside .emp-page */
 .csd-modal {
-  --emp-primary: #0d5c3d;
-  --emp-primary-hover: #0a4a31;
+  --emp-primary: #a44a5c;
+  --emp-primary-hover: #8a3d4d;
   --emp-surface: #ffffff;
   --emp-border: #e5ebe8;
   --emp-muted: #64748b;

@@ -63,6 +63,65 @@ export class AppointmentsService {
     return `$${paramIndex}::text::"${schemaName}".appointment_status`;
   }
 
+  private timeToMinutes(time: string): number {
+    const [hours, minutes] = time.split(':').slice(0, 2).map(Number);
+    return hours * 60 + minutes;
+  }
+
+  private async assertEmployeeCapacity(
+    tx: TenantTx,
+    schemaName: string,
+    employeeId: string,
+    appointmentDate: string,
+    startTime: string,
+    endTime: string,
+    excludeAppointmentId?: string,
+  ): Promise<void> {
+    const employees = tenantTable(schemaName, 'employees');
+    const appointments = tenantTable(schemaName, 'appointments');
+
+    // Serialize capacity checks for this employee so concurrent requests cannot exceed the limit.
+    await tx.$queryRawUnsafe(`SELECT id FROM ${employees} WHERE id = $1::uuid FOR UPDATE`, employeeId);
+    const overlapping = await tx.$queryRawUnsafe<Array<{ startTime: string; endTime: string }>>(
+      `SELECT start_time::text AS "startTime", end_time::text AS "endTime"
+       FROM ${appointments}
+       WHERE employee_id = $1::uuid
+         AND appointment_date = $2::date
+         AND start_time < $4::time
+         AND end_time > $3::time
+         AND ($5::uuid IS NULL OR id <> $5::uuid)
+         AND status::text NOT IN ('CANCELLED', 'NO_SHOW')`,
+      employeeId,
+      appointmentDate,
+      startTime,
+      endTime,
+      excludeAppointmentId ?? null,
+    );
+
+    const candidateStart = this.timeToMinutes(startTime);
+    const candidateEnd = this.timeToMinutes(endTime);
+    const events: Array<{ time: number; delta: number }> = [];
+    for (const appointment of overlapping) {
+      events.push(
+        { time: Math.max(candidateStart, this.timeToMinutes(appointment.startTime)), delta: 1 },
+        { time: Math.min(candidateEnd, this.timeToMinutes(appointment.endTime)), delta: -1 },
+      );
+    }
+    events.sort((a, b) => a.time - b.time || a.delta - b.delta);
+    let concurrent = 0;
+    let maxConcurrent = 0;
+    for (const event of events) {
+      concurrent += event.delta;
+      maxConcurrent = Math.max(maxConcurrent, concurrent);
+    }
+
+    if (maxConcurrent >= 3) {
+      throw new BadRequestException(
+        'This employee already has 3 overlapping appointments during that time. Choose another time slot or employee.',
+      );
+    }
+  }
+
   private mapServices(
     raw: Array<{
       id: string;
@@ -252,22 +311,6 @@ export class AppointmentsService {
     }
   }
 
-  private async assertEntityExists(
-    tx: TenantTx,
-    schemaName: string,
-    table: string,
-    id: string,
-    label: string,
-  ): Promise<void> {
-    const rows = await tx.$queryRawUnsafe<Array<{ id: string }>>(
-      `SELECT id FROM ${table} WHERE id = $1::uuid LIMIT 1`,
-      id,
-    );
-    if (rows.length === 0) {
-      throw new NotFoundException(`${label} not found`);
-    }
-  }
-
   private async assertBranchActive(
     tx: TenantTx,
     schemaName: string,
@@ -283,6 +326,24 @@ export class AppointmentsService {
     }
     if (rows[0].status !== 'ACTIVE') {
       throw new BadRequestException('Branch is currently deactivated and cannot accept appointments');
+    }
+  }
+
+  private async assertCustomerActive(
+    tx: TenantTx,
+    schemaName: string,
+    customerId: string,
+  ): Promise<void> {
+    const customers = tenantTable(schemaName, 'customers');
+    const rows = await tx.$queryRawUnsafe<Array<{ id: string; status: string }>>(
+      `SELECT id, status::text AS status FROM ${customers} WHERE id = $1::uuid LIMIT 1`,
+      customerId,
+    );
+    if (rows.length === 0) {
+      throw new NotFoundException('Customer not found');
+    }
+    if (rows[0].status !== 'ACTIVE') {
+      throw new BadRequestException('This customer is inactive and cannot be booked for an appointment');
     }
   }
 
@@ -446,7 +507,6 @@ export class AppointmentsService {
     userId: string,
   ): Promise<AppointmentRecord> {
     const appointments = tenantTable(schemaName, 'appointments');
-    const customers = tenantTable(schemaName, 'customers');
     const startTime = this.normalizeTime(dto.startTime);
     const endTime = this.normalizeTime(dto.endTime);
 
@@ -457,10 +517,18 @@ export class AppointmentsService {
     const appointmentId = await this.tenantSchemaService.withTenantSchema(
       schemaName,
       async ({ tx }) => {
-        await this.assertEntityExists(tx, schemaName, customers, dto.customerId, 'Customer');
+        await this.assertCustomerActive(tx, schemaName, dto.customerId);
         await this.assertBranchActive(tx, schemaName, dto.branchId);
         if (dto.employeeId) {
           await this.assertEmployeeActiveAtBranch(tx, schemaName, dto.employeeId, dto.branchId);
+          await this.assertEmployeeCapacity(
+            tx,
+            schemaName,
+            dto.employeeId,
+            dto.appointmentDate,
+            startTime,
+            endTime,
+          );
         }
 
         const snapshots = await this.fetchServiceSnapshots(tx, schemaName, dto.serviceIds);
@@ -513,7 +581,6 @@ export class AppointmentsService {
     userId: string,
   ): Promise<AppointmentRecord> {
     const appointments = tenantTable(schemaName, 'appointments');
-    const customers = tenantTable(schemaName, 'customers');
     const appointmentServices = tenantTable(schemaName, 'appointment_services');
 
     const existing = await this.findById(schemaName, id);
@@ -522,8 +589,8 @@ export class AppointmentsService {
     }
 
     await this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
-      if (dto.customerId) {
-        await this.assertEntityExists(tx, schemaName, customers, dto.customerId, 'Customer');
+      if (dto.customerId && dto.customerId !== existing.customerId) {
+        await this.assertCustomerActive(tx, schemaName, dto.customerId);
       }
       if (dto.branchId) {
         await this.assertBranchActive(tx, schemaName, dto.branchId);
@@ -542,6 +609,23 @@ export class AppointmentsService {
 
       if (startTime && endTime && startTime >= endTime) {
         throw new BadRequestException('endTime must be after startTime');
+      }
+
+      const targetEmployeeId = dto.employeeId ?? existing.employeeId;
+      if (
+        targetEmployeeId &&
+        existing.status !== 'CANCELLED' &&
+        existing.status !== 'NO_SHOW'
+      ) {
+        await this.assertEmployeeCapacity(
+          tx,
+          schemaName,
+          targetEmployeeId,
+          dto.appointmentDate ?? existing.appointmentDate,
+          startTime ?? existing.startTime,
+          endTime ?? existing.endTime,
+          id,
+        );
       }
 
       await tx.$queryRawUnsafe(
@@ -600,6 +684,17 @@ export class AppointmentsService {
     }
 
     await this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      if (dto.status !== 'CANCELLED' && dto.status !== 'NO_SHOW' && existing.employeeId) {
+        await this.assertEmployeeCapacity(
+          tx,
+          schemaName,
+          existing.employeeId,
+          existing.appointmentDate,
+          existing.startTime,
+          existing.endTime,
+          id,
+        );
+      }
       await tx.$queryRawUnsafe(
         `UPDATE ${appointments}
          SET status = ${this.appointmentStatusCast(schemaName, 2)}, updated_at = NOW()

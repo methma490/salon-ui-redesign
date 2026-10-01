@@ -48,6 +48,7 @@ export interface Employee {
   phone: string | null;
   email: string | null;
   designation: string | null;
+  photoUrl?: string | null;
   branchId: string;
   branchName: string;
   userId: string | null;
@@ -90,6 +91,7 @@ export interface CustomerBookingHistoryItem {
   status: string;
   notes: string | null;
   branchName: string;
+  employeeName: string | null;
   totalPrice: number;
   services: Array<{
     id: string;
@@ -921,6 +923,18 @@ export const tenantApi = {
       api.patch<Employee>(`/tenant/employees/${id}`, data).then((r) => r.data),
     updateStatus: (id: string, status: string) =>
       api.patch<Employee>(`/tenant/employees/${id}/status`, { status }).then((r) => r.data),
+    uploadPhoto: (file: File, employeeId?: string) => {
+      const formData = new FormData();
+      formData.append('image', file);
+      const path = employeeId
+        ? `/tenant/employees/${employeeId}/upload-photo`
+        : '/tenant/employees/upload-photo';
+      return api
+        .post<{ photoUrl: string }>(path, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        .then((r) => r.data);
+    },
     delete: (id: string) =>
       api.delete<{ id: string; success: boolean }>(`/tenant/employees/${id}`).then((r) => r.data),
   },
@@ -930,6 +944,10 @@ export const tenantApi = {
       api
         .get<PaginatedResponse<Appointment> | Appointment[]>('/tenant/appointments', { params })
         .then((r) => unwrapPaginatedList(r.data)),
+    listPaginated: (params?: Record<string, string>) =>
+      api
+        .get<PaginatedResponse<Appointment>>('/tenant/appointments', { params })
+        .then((r) => r.data),
     getById: (id: string) =>
       api.get<Appointment>(`/tenant/appointments/${id}`).then((r) => r.data),
     create: (data: Record<string, unknown>) =>

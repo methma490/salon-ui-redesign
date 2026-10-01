@@ -18,7 +18,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { appAlert } from '@/lib/app-alerts';
 import { tenantApi, type Service, type ServiceCategory } from '@/api/tenant.api';
 import { useDebouncedSearch } from '@/hooks/useDebounce';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -326,7 +326,7 @@ export default function ServicesPage() {
     },
     onError: (err) => {
       const msg = getErrorMessage(err);
-      Swal.fire({
+      appAlert({
         icon: 'error',
         title: 'Action Failed',
         text: msg,
@@ -339,7 +339,7 @@ export default function ServicesPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['services'] });
       qc.invalidateQueries({ queryKey: ['service-categories'] });
-      Swal.fire({
+      appAlert({
         icon: 'success',
         title: 'Deleted!',
         text: 'Service has been deleted successfully.',
@@ -349,7 +349,7 @@ export default function ServicesPage() {
     },
     onError: (err) => {
       const msg = getErrorMessage(err);
-      Swal.fire({
+      appAlert({
         icon: 'error',
         title: 'Cannot Delete Service',
         text: msg,
@@ -362,7 +362,7 @@ export default function ServicesPage() {
       const parentCat = categories.find((c) => c.id === svc.categoryId);
       const isCategoryInactive = svc.categoryIsActive === false || parentCat?.status === 'INACTIVE';
       if (isCategoryInactive) {
-        Swal.fire({
+        appAlert({
           icon: 'warning',
           title: 'Category Is Inactive',
           html: `
@@ -389,7 +389,7 @@ export default function ServicesPage() {
   };
 
   const handleDeleteService = (svc: Service) => {
-    Swal.fire({
+    appAlert({
       title: 'Delete Service?',
       html: `
         <div style="text-align: center;">
