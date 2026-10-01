@@ -28,6 +28,7 @@ export interface AppointmentRecord {
   branchId: string;
   branchName: string;
   employeeId: string | null;
+  employeeName: string | null;
   appointmentDate: string;
   startTime: string;
   endTime: string;
@@ -91,6 +92,7 @@ export class AppointmentsService {
     branchId: string;
     branchName: string;
     employeeId: string | null;
+    employeeName: string | null;
     appointmentDate: string;
     startTime: string;
     endTime: string;
@@ -120,6 +122,7 @@ export class AppointmentsService {
       branchId: row.branchId,
       branchName: row.branchName,
       employeeId: row.employeeId,
+      employeeName: row.employeeName,
       appointmentDate: row.appointmentDate,
       startTime: row.startTime,
       endTime: row.endTime,
@@ -136,6 +139,7 @@ export class AppointmentsService {
     const appointments = tenantTable(schemaName, 'appointments');
     const customers = tenantTable(schemaName, 'customers');
     const branches = tenantTable(schemaName, 'branches');
+    const employees = tenantTable(schemaName, 'employees');
     const appointmentServices = tenantTable(schemaName, 'appointment_services');
 
     return `
@@ -143,6 +147,7 @@ export class AppointmentsService {
              a.customer_id AS "customerId", c.name AS "customerName", c.phone AS "customerPhone",
              a.branch_id AS "branchId", b.name AS "branchName",
              a.employee_id AS "employeeId",
+             e.name AS "employeeName",
              a.appointment_date::text AS "appointmentDate",
              to_char(a.start_time, 'HH24:MI') AS "startTime",
              to_char(a.end_time, 'HH24:MI') AS "endTime",
@@ -166,6 +171,7 @@ export class AppointmentsService {
       FROM ${appointments} a
       INNER JOIN ${customers} c ON a.customer_id = c.id
       INNER JOIN ${branches} b ON a.branch_id = b.id
+      LEFT JOIN ${employees} e ON a.employee_id = e.id
       LEFT JOIN ${appointmentServices} aps ON aps.appointment_id = a.id
     `;
   }
@@ -331,6 +337,7 @@ export class AppointmentsService {
           branchId: string;
           branchName: string;
           employeeId: string | null;
+          employeeName: string | null;
           appointmentDate: string;
           startTime: string;
           endTime: string;
@@ -344,7 +351,7 @@ export class AppointmentsService {
       >(
         `${this.appointmentSelectSql(schemaName)}
          WHERE ${conditions.join(' AND ')}
-         GROUP BY a.id, c.name, c.phone, b.name
+         GROUP BY a.id, c.name, c.phone, b.name, e.name
          ORDER BY a.appointment_date ASC, a.start_time ASC${paginationClause}`,
         ...params,
         ...paginationParams,
@@ -404,6 +411,7 @@ export class AppointmentsService {
             branchId: string;
             branchName: string;
             employeeId: string | null;
+            employeeName: string | null;
             appointmentDate: string;
             startTime: string;
             endTime: string;
@@ -417,7 +425,7 @@ export class AppointmentsService {
         >(
           `${this.appointmentSelectSql(schemaName)}
            WHERE a.id = $1::uuid
-           GROUP BY a.id, c.name, c.phone, b.name
+           GROUP BY a.id, c.name, c.phone, b.name, e.name
            LIMIT 1`,
           id,
         );

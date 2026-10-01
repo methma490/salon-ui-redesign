@@ -347,7 +347,7 @@ function CustomerBookingHistoryDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { data: history = [], isLoading } = useQuery({
+  const { data: history = [], isLoading, isError, error } = useQuery({
     queryKey: ['customer-booking-history', customer?.id],
     queryFn: () => (customer ? tenantApi.customers.bookingHistory(customer.id) : Promise.resolve([])),
     enabled: open && !!customer,
@@ -370,6 +370,11 @@ function CustomerBookingHistoryDialog({
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-[var(--brand-primary,#0d5c3d)]" />
             <span className="ml-2 text-sm text-slate-500">Loading booking records...</span>
+          </div>
+        ) : isError ? (
+          <div className="text-center py-10 px-4 border border-rose-200 rounded-xl bg-rose-50/50">
+            <p className="text-sm font-medium text-rose-700">Could not load booking history</p>
+            <p className="text-xs text-rose-600 mt-0.5">{getErrorMessage(error)}</p>
           </div>
         ) : history.length === 0 ? (
           <div className="text-center py-10 px-4 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
