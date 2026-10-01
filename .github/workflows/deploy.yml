@@ -19,6 +19,11 @@ permissions:
 #   - FRONTEND_APP_NAME
 #   - FRONTEND_APP_TOKEN
 #   - VITE_API_BASE_URL (Optional, e.g. https://api.yourdomain.com/api)
+#   - WEBSITE_APP_NAME (CapRover app slug, e.g. salon-main-website)
+#   - WEBSITE_APP_TOKEN (CapRover app deploy token)
+#   - NEXT_PUBLIC_SITE_URL (e.g. https://salon-main-website.bc.dartcodes.com)
+#   - NEXT_PUBLIC_APP_URL (salon Vite app URL for login/signup links)
+#   - NEXT_PUBLIC_API_URL (optional; falls back to VITE_API_BASE_URL in build)
 # ==============================================================================
 env:
   # Server URL (e.g. https://captain.your-domain.com)
@@ -31,6 +36,10 @@ env:
   # Frontend App Settings
   FRONTEND_APP_NAME: ${{ secrets.FRONTEND_APP_NAME || 'salon-frontend' }}
   FRONTEND_APP_TOKEN: ${{ secrets.FRONTEND_APP_TOKEN || '' }}
+
+  # Marketing website (Next.js)
+  WEBSITE_APP_NAME: ${{ secrets.WEBSITE_APP_NAME || 'salon-main-website' }}
+  WEBSITE_APP_TOKEN: ${{ secrets.WEBSITE_APP_TOKEN || '' }}
 
 jobs:
   # ----------------------------------------------------------------------------
@@ -124,3 +133,76 @@ jobs:
           app: '${{ env.FRONTEND_APP_NAME }}'
           token: '${{ env.FRONTEND_APP_TOKEN }}'
           image: 'ghcr.io/${{ env.IMAGE_OWNER }}/salon-frontend:${{ env.SHORT_SHA }}'
+
+  # ----------------------------------------------------------------------------
+  # 3. BUILD WEBSITE DOCKER IMAGE & DEPLOY VIA GHCR
+  # ----------------------------------------------------------------------------
+  deploy-website:
+    name: Build & Deploy Website (Next.js)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set Environment Variables (Image Owner & Short SHA)
+        run: |
+          echo "IMAGE_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          echo "SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)" >> $GITHUB_ENV
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve public env for Next.js build
+        id: website_env
+        run: |
+          API_URL="${{ secrets.NEXT_PUBLIC_API_URL }}"
+          if [ -z "$API_URL" ]; then
+            API_URL="${{ secrets.VITE_API_BASE_URL }}"
+          fi
+          if [ -z "$API_URL" ]; then
+            API_URL="https://saloon-server.bc.dartcodes.com/api"
+          fi
+          echo "api_url=$API_URL" >> "$GITHUB_OUTPUT"
+
+          SITE_URL="${{ secrets.NEXT_PUBLIC_SITE_URL }}"
+          if [ -z "$SITE_URL" ]; then
+            SITE_URL="https://salon-main-website.bc.dartcodes.com"
+          fi
+          echo "site_url=$SITE_URL" >> "$GITHUB_OUTPUT"
+
+          APP_URL="${{ secrets.NEXT_PUBLIC_APP_URL }}"
+          if [ -z "$APP_URL" ]; then
+            APP_URL="https://salon-frontend.bc.dartcodes.com"
+          fi
+          echo "app_url=$APP_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Build and Push Website Image to GHCR
+        uses: docker/build-push-action@v5
+        with:
+          context: ./website
+          file: ./website/Dockerfile
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ steps.website_env.outputs.api_url }}
+            NEXT_PUBLIC_APP_URL=${{ steps.website_env.outputs.app_url }}
+            NEXT_PUBLIC_SITE_URL=${{ steps.website_env.outputs.site_url }}
+          tags: |
+            ghcr.io/${{ env.IMAGE_OWNER }}/salon-website:${{ env.SHORT_SHA }}
+            ghcr.io/${{ env.IMAGE_OWNER }}/salon-website:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy Website Image to CapRover
+        uses: caprover/deploy-from-github@v1.1.2
+        with:
+          server: '${{ env.CAPROVER_SERVER }}'
+          app: '${{ env.WEBSITE_APP_NAME }}'
+          token: '${{ env.WEBSITE_APP_TOKEN }}'
+          image: 'ghcr.io/${{ env.IMAGE_OWNER }}/salon-website:${{ env.SHORT_SHA }}'
