@@ -115,6 +115,7 @@ export interface Appointment {
   customerPhone: string | null;
   branchId: string;
   branchName: string;
+  employeeId: string | null;
   appointmentDate: string;
   startTime: string;
   endTime: string;

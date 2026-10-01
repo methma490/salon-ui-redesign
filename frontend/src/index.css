@@ -24,6 +24,7 @@
   --color-success: oklch(0.62 0.17 155);
   --color-warning: oklch(0.68 0.16 55);
   --radius-lg: 0.75rem;
+  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
@@ -37,10 +38,17 @@
     min-height: 100vh;
     overflow-x: hidden;
   }
+
+  /* Admin shells only — portals (dialogs/selects) inherit via body */
+  body:has(.salon-theme-root),
+  body:has(.admin-panel-root) {
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  }
 }
 
 /* Salon Admin brand tokens — overridden at runtime by TenantThemeProvider */
 .salon-theme-root {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   --brand-primary: #0d5c3d;
   --brand-hover: #0a4a31;
   --brand-active: #064e32;
@@ -75,6 +83,11 @@
   --color-accent-foreground: var(--brand-primary);
   --color-secondary: var(--brand-soft);
   --color-secondary-foreground: var(--brand-primary);
+}
+
+.salon-theme-root .reports-container,
+.salon-theme-root .payslip-modern {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer utilities {

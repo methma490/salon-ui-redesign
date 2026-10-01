@@ -39,7 +39,7 @@ export function DashboardHeader({
     <div className="dash-top-header">
       <div className="dash-greeting-wrap">
         <h1>
-          {getGreeting()}, {userName}! 👋
+          {getGreeting()}, {userName}!
         </h1>
         <p>
           Here&apos;s how your salon is performing at <span className="dash-greeting-branch">{branchName}</span>.

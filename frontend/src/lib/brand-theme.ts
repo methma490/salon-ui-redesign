@@ -120,6 +120,22 @@ export function brandPaletteToCssVars(palette: BrandPalette): BrandCssVars {
     '--brand-ring': palette.ring,
     '--brand-foreground': palette.foreground,
 
+    /* Base semantic tokens used by UI components & Tailwind v4 */
+    '--primary': palette.primary,
+    '--primary-foreground': palette.foreground,
+    '--color-primary': palette.primary,
+    '--color-primary-foreground': palette.foreground,
+    '--ring': palette.ring,
+    '--color-ring': palette.ring,
+    '--accent': palette.soft,
+    '--accent-foreground': palette.primary,
+    '--color-accent': palette.soft,
+    '--color-accent-foreground': palette.primary,
+    '--secondary': palette.soft,
+    '--secondary-foreground': palette.primary,
+    '--color-secondary': palette.soft,
+    '--color-secondary-foreground': palette.primary,
+
     /* Shared dashboard accents */
     '--s360-brand': palette.primary,
     '--s360-brand-hover': palette.hover,
@@ -146,15 +162,11 @@ export function brandPaletteToCssVars(palette: BrandPalette): BrandCssVars {
 
     /* Soft surfaces used by sidebar / pages */
     '--brand-soft-bg': palette.soft,
-
-    /* Tailwind v4 theme tokens inside salon workspace */
-    '--color-primary': palette.primary,
-    '--color-primary-foreground': palette.foreground,
-    '--color-ring': palette.ring,
-    '--color-accent': palette.soft,
-    '--color-accent-foreground': palette.primary,
-    '--color-secondary': palette.soft,
-    '--color-secondary-foreground': palette.primary,
+    '--sidebar-primary': palette.primary,
+    '--sidebar-primary-foreground': palette.foreground,
+    '--sidebar-accent': palette.soft,
+    '--sidebar-accent-foreground': palette.primary,
+    '--sidebar-ring': palette.ring,
   };
 }
 

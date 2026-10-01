@@ -10,6 +10,8 @@ import {
   LogOut,
   Menu,
   Package,
+  PanelLeftClose,
+  PanelLeftOpen,
   Receipt,
   Scissors,
   Settings,
@@ -85,17 +87,21 @@ function SalonLogo({
 function SalonBrand({
   salonName,
   logoUrl,
+  collapsed = false,
 }: {
   salonName: string;
   logoUrl: string | null;
+  collapsed?: boolean;
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-3">
+    <div className={cn('flex min-w-0 items-center', collapsed ? 'justify-center' : 'gap-3')}>
       <SalonLogo logoUrl={logoUrl} />
-      <div className="min-w-0">
-        <p className="text-xs text-muted-foreground">{APP_NAME}</p>
-        <p className="truncate text-base font-semibold leading-tight">{salonName}</p>
-      </div>
+      {!collapsed && (
+        <div className="salon-brand-text-wrap min-w-0">
+          <p className="text-xs text-muted-foreground">{APP_NAME}</p>
+          <p className="truncate text-base font-semibold leading-tight">{salonName}</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -351,12 +357,14 @@ function SidebarLink({
   icon: Icon,
   onNavigate,
   access = 'allowed',
+  collapsed = false,
 }: {
   to: string;
   label: string;
   icon: LucideIcon;
   onNavigate?: () => void;
   access?: NavAccessState;
+  collapsed?: boolean;
 }) {
   const location = useLocation();
 
@@ -364,11 +372,11 @@ function SidebarLink({
     return (
       <div
         className="salon-sidebar-link salon-sidebar-link-disabled"
-        title="No access for your role"
+        title={`${label} (No access)`}
         aria-disabled="true"
       >
         <Icon className="salon-sidebar-link-icon" strokeWidth={2} />
-        <span className="salon-sidebar-link-label">{label}</span>
+        {!collapsed && <span className="salon-sidebar-link-label">{label}</span>}
       </div>
     );
   }
@@ -383,10 +391,12 @@ function SidebarLink({
     <NavLink
       to={to}
       onClick={onNavigate}
+      title={label}
+      aria-label={label}
       className={() => cn('salon-sidebar-link', isActive && 'active')}
     >
       <Icon className="salon-sidebar-link-icon" strokeWidth={2} />
-      <span className="salon-sidebar-link-label">{label}</span>
+      {!collapsed && <span className="salon-sidebar-link-label">{label}</span>}
     </NavLink>
   );
 }
@@ -412,11 +422,13 @@ function NavItems({
   roles,
   permissions,
   onNavigate,
+  collapsed = false,
 }: {
   enabledFeatures: string[];
   roles: string[];
   permissions: string[];
   onNavigate?: () => void;
+  collapsed?: boolean;
 }) {
   const location = useLocation();
 
@@ -434,6 +446,7 @@ function NavItems({
               icon={group.icon}
               onNavigate={onNavigate}
               access={access}
+              collapsed={collapsed}
             />
           );
         }
@@ -454,10 +467,10 @@ function NavItems({
         );
 
         return (
-          <div key={group.label}>
+          <div key={group.label} title={collapsed ? group.label : undefined}>
             <div className={cn('salon-sidebar-section', isChildActive && 'active')}>
               <GroupIcon className="salon-sidebar-section-icon" strokeWidth={2.25} />
-              <span>{group.label}</span>
+              {!collapsed && <span>{group.label}</span>}
             </div>
             <div className="salon-sidebar-children">
               {childrenWithAccess.map(({ item, access }) => (
@@ -468,6 +481,7 @@ function NavItems({
                   icon={item.icon}
                   onNavigate={onNavigate}
                   access={access}
+                  collapsed={collapsed}
                 />
               ))}
             </div>
@@ -485,6 +499,8 @@ function SalonAdminHeader({
   enabledFeatures,
   roles,
   permissions,
+  collapsed = false,
+  onToggleCollapse,
 }: {
   salonName: string;
   salonLogoUrl: string | null;
@@ -492,6 +508,8 @@ function SalonAdminHeader({
   enabledFeatures: string[];
   roles: string[];
   permissions: string[];
+  collapsed?: boolean;
+  onToggleCollapse?: () => void;
 }) {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -544,7 +562,8 @@ function SalonAdminHeader({
               <p className="truncate text-sm font-medium">{user?.name}</p>
               {roleLabel && (
                 <p className="salon-brand-text truncate text-xs font-medium">{roleLabel}</p>
-              )}              <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+              )}
+              <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
             </div>
             <button
               type="button"
@@ -639,17 +658,32 @@ function SalonAdminHeader({
               </div>
             </SheetContent>
           </Sheet>
-          <SalonLogo logoUrl={salonLogoUrl} size="sm" />
-          <div className="min-w-0 flex-1">
-            <p className="salon-mobile-header-title">{salonName}</p>
-            {selectedBranch && (
-              <p className="truncate text-[10px] text-muted-foreground">{selectedBranch.name}</p>
-            )}
+
+          {/* Centered Mobile Salon Brand */}
+          <div className="flex min-w-0 flex-1 items-center justify-center gap-2 pr-2">
+            <SalonLogo logoUrl={salonLogoUrl} size="sm" />
+            <div className="min-w-0 text-left">
+              <p className="salon-mobile-header-title truncate">{salonName}</p>
+              {selectedBranch && (
+                <p className="truncate text-[10px] text-muted-foreground">{selectedBranch.name}</p>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Desktop: branch selector */}
+        {/* Desktop: collapse button + branch selector */}
         <div className="hidden min-w-0 flex-1 items-center gap-3 md:flex">
+          {collapsed && onToggleCollapse && (
+            <button
+              type="button"
+              className="salon-collapse-btn"
+              title="Expand sidebar"
+              aria-label="Expand sidebar"
+              onClick={onToggleCollapse}
+            >
+              <PanelLeftOpen className="h-4 w-4" />
+            </button>
+          )}
           <div className="flex items-center gap-1.5">
             <Select value={branchId} onValueChange={setBranchId}>
               <SelectTrigger
@@ -692,6 +726,26 @@ function SalonAdminLayoutInner() {
   const location = useLocation();
   const mainRef = useRef<HTMLElement>(null);
 
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('salon_sidebar_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('salon_sidebar_collapsed', String(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  };
+
   const { data: features = [] } = useQuery({
     queryKey: ['tenant-features'],
     queryFn: tenantApi.features,
@@ -720,32 +774,71 @@ function SalonAdminLayoutInner() {
 
   return (
     <div className="flex h-dvh overflow-hidden bg-background">
-      <aside className="salon-sidebar-aside hidden h-dvh w-[260px] shrink-0 flex-col border-r border-border md:flex">
-        <div className="flex h-16 shrink-0 items-center border-b border-border px-5">
-          <SalonBrand salonName={salonName} logoUrl={salonLogoUrl} />
+      <aside
+        className={cn(
+          "salon-sidebar-aside hidden h-dvh shrink-0 flex-col border-r border-border md:flex",
+          collapsed ? "is-collapsed w-[72px]" : "w-[260px]"
+        )}
+      >
+        <div
+          className={cn(
+            "flex h-16 shrink-0 items-center border-b border-border",
+            collapsed ? "justify-center px-2" : "justify-between px-4"
+          )}
+        >
+          <SalonBrand salonName={salonName} logoUrl={salonLogoUrl} collapsed={collapsed} />
+          {!collapsed && (
+            <button
+              type="button"
+              className="salon-collapse-btn"
+              title="Collapse sidebar"
+              aria-label="Collapse sidebar"
+              onClick={toggleCollapsed}
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
+          )}
         </div>
-        <div className="salon-sidebar-scroll flex min-h-0 flex-1 flex-col justify-between overflow-y-auto p-3">
+        <div className="salon-sidebar-scroll flex min-h-0 flex-1 flex-col justify-between overflow-y-auto p-2 sm:p-3">
           <NavItems
             enabledFeatures={features}
             roles={roles}
             permissions={permissions}
+            collapsed={collapsed}
           />
           <div className="mt-4 shrink-0">
             <Separator className="mb-4" />
-            <div className="mb-3 px-3">
-              {roleLabel && (
-                <div className="truncate text-xs font-medium text-foreground">{roleLabel}</div>
-              )}
-              <div className="truncate text-xs text-muted-foreground">{user?.email}</div>
-            </div>
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-2"
-              onClick={() => void handleLogout()}
-            >
-              <LogOut className="h-4 w-4" />
-              Logout
-            </Button>
+            {!collapsed ? (
+              <>
+                <div className="mb-3 px-3">
+                  {roleLabel && (
+                    <div className="truncate text-xs font-medium text-foreground">{roleLabel}</div>
+                  )}
+                  <div className="truncate text-xs text-muted-foreground">{user?.email}</div>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2"
+                  onClick={() => void handleLogout()}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-lg"
+                  title={`Logout (${user?.email})`}
+                  aria-label="Logout"
+                  onClick={() => void handleLogout()}
+                >
+                  <LogOut className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </aside>
@@ -758,6 +851,8 @@ function SalonAdminLayoutInner() {
           enabledFeatures={features}
           roles={roles}
           permissions={permissions}
+          collapsed={collapsed}
+          onToggleCollapse={toggleCollapsed}
         />
 
         <main

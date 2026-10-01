@@ -22,15 +22,7 @@ export function TopEmployeesCard({ employees }: TopEmployeesCardProps) {
   const theme = useTenantTheme();
   const primaryColor = theme?.palette?.primary ?? '#2563eb';
 
-  const defaultList: TopEmployeeItem[] = [
-    { id: '1', rank: 1, name: 'Sanduni Lakmali', revenue: 102350, servicesDone: 86, progressPct: 95 },
-    { id: '2', rank: 2, name: 'Nimesha Dias', revenue: 88420, servicesDone: 71, progressPct: 82 },
-    { id: '3', rank: 3, name: 'Kasuni Tharuka', revenue: 76800, servicesDone: 64, progressPct: 71 },
-    { id: '4', rank: 4, name: 'Ruvini Perera', revenue: 68210, servicesDone: 58, progressPct: 63 },
-    { id: '5', rank: 5, name: 'Anjali Mendis', revenue: 54300, servicesDone: 46, progressPct: 50 },
-  ];
-
-  const list = employees && employees.length > 0 ? employees : defaultList;
+  const list = employees ?? [];
 
   return (
     <div className="dash-card">
@@ -52,45 +44,53 @@ export function TopEmployeesCard({ employees }: TopEmployeesCardProps) {
             </tr>
           </thead>
           <tbody>
-            {list.slice(0, 5).map((emp, idx) => {
-              const rank = emp.rank || idx + 1;
-              const avatarSrc = resolveUploadUrl(emp.avatarUrl);
-              const progress = emp.progressPct || Math.round((emp.revenue / (list[0]?.revenue || 1)) * 100);
+            {list.length > 0 ? (
+              list.slice(0, 5).map((emp, idx) => {
+                const rank = emp.rank || idx + 1;
+                const avatarSrc = resolveUploadUrl(emp.avatarUrl);
+                const progress = emp.progressPct || Math.round((emp.revenue / (list[0]?.revenue || 1)) * 100);
 
-              return (
-                <tr key={emp.id || idx}>
-                  <td className="text-xs text-slate-400 font-semibold">{rank}</td>
-                  <td>
-                    <div className="dash-emp-row">
-                      {avatarSrc ? (
-                        <img src={avatarSrc} alt={emp.name} className="dash-emp-avatar" />
-                      ) : (
-                        <div className="dash-emp-avatar" style={{ backgroundColor: primaryColor }}>
-                          {emp.name.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <span className="dash-emp-name text-xs">{emp.name}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="dash-revenue-progress">
-                      <span className="dash-revenue-val">
-                        {formatMoneyAmount(emp.revenue)}
-                      </span>
-                      <div className="dash-mini-bar-track">
-                        <div
-                          className="dash-mini-bar-fill"
-                          style={{ width: `${Math.min(progress, 100)}%`, backgroundColor: primaryColor }}
-                        />
+                return (
+                  <tr key={emp.id || idx}>
+                    <td className="text-xs text-slate-400 font-semibold">{rank}</td>
+                    <td>
+                      <div className="dash-emp-row">
+                        {avatarSrc ? (
+                          <img src={avatarSrc} alt={emp.name} className="dash-emp-avatar" />
+                        ) : (
+                          <div className="dash-emp-avatar" style={{ backgroundColor: primaryColor }}>
+                            {emp.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <span className="dash-emp-name text-xs">{emp.name}</span>
                       </div>
-                    </div>
-                  </td>
-                  <td style={{ textAlign: 'right', fontWeight: 600, fontSize: '12px' }}>
-                    {emp.servicesDone}
-                  </td>
-                </tr>
-              );
-            })}
+                    </td>
+                    <td>
+                      <div className="dash-revenue-progress">
+                        <span className="dash-revenue-val">
+                          {formatMoneyAmount(emp.revenue)}
+                        </span>
+                        <div className="dash-mini-bar-track">
+                          <div
+                            className="dash-mini-bar-fill"
+                            style={{ width: `${Math.min(progress, 100)}%`, backgroundColor: primaryColor }}
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ textAlign: 'right', fontWeight: 600, fontSize: '12px' }}>
+                      {emp.servicesDone}
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan={4} className="text-center py-6 text-xs text-slate-400">
+                  No employee performance data recorded for this period.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

@@ -27,6 +27,7 @@ export interface AppointmentRecord {
   customerPhone: string | null;
   branchId: string;
   branchName: string;
+  employeeId: string | null;
   appointmentDate: string;
   startTime: string;
   endTime: string;
@@ -89,6 +90,7 @@ export class AppointmentsService {
     customerPhone: string | null;
     branchId: string;
     branchName: string;
+    employeeId: string | null;
     appointmentDate: string;
     startTime: string;
     endTime: string;
@@ -117,6 +119,7 @@ export class AppointmentsService {
       customerPhone: row.customerPhone,
       branchId: row.branchId,
       branchName: row.branchName,
+      employeeId: row.employeeId,
       appointmentDate: row.appointmentDate,
       startTime: row.startTime,
       endTime: row.endTime,
@@ -139,6 +142,7 @@ export class AppointmentsService {
       SELECT a.id, a.code,
              a.customer_id AS "customerId", c.name AS "customerName", c.phone AS "customerPhone",
              a.branch_id AS "branchId", b.name AS "branchName",
+             a.employee_id AS "employeeId",
              a.appointment_date::text AS "appointmentDate",
              to_char(a.start_time, 'HH24:MI') AS "startTime",
              to_char(a.end_time, 'HH24:MI') AS "endTime",
@@ -276,6 +280,23 @@ export class AppointmentsService {
     }
   }
 
+  private async assertEmployeeActiveAtBranch(
+    tx: TenantTx,
+    schemaName: string,
+    employeeId: string,
+    branchId: string,
+  ): Promise<void> {
+    const employees = tenantTable(schemaName, 'employees');
+    const rows = await tx.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT id FROM ${employees} WHERE id = $1::uuid AND branch_id = $2::uuid AND status = 'ACTIVE' LIMIT 1`,
+      employeeId,
+      branchId,
+    );
+    if (rows.length === 0) {
+      throw new BadRequestException('Employee is not active at the selected branch');
+    }
+  }
+
   private appointmentFromClause(schemaName: string): string {
     const appointments = tenantTable(schemaName, 'appointments');
     const customers = tenantTable(schemaName, 'customers');
@@ -309,6 +330,7 @@ export class AppointmentsService {
           customerPhone: string | null;
           branchId: string;
           branchName: string;
+          employeeId: string | null;
           appointmentDate: string;
           startTime: string;
           endTime: string;
@@ -381,6 +403,7 @@ export class AppointmentsService {
             customerPhone: string | null;
             branchId: string;
             branchName: string;
+            employeeId: string | null;
             appointmentDate: string;
             startTime: string;
             endTime: string;
@@ -428,18 +451,22 @@ export class AppointmentsService {
       async ({ tx }) => {
         await this.assertEntityExists(tx, schemaName, customers, dto.customerId, 'Customer');
         await this.assertBranchActive(tx, schemaName, dto.branchId);
+        if (dto.employeeId) {
+          await this.assertEmployeeActiveAtBranch(tx, schemaName, dto.employeeId, dto.branchId);
+        }
 
         const snapshots = await this.fetchServiceSnapshots(tx, schemaName, dto.serviceIds);
         const code = await generateSequentialCode(tx, appointments, 'APT-');
 
         const rows = await tx.$queryRawUnsafe<Array<{ id: string }>>(
           `INSERT INTO ${appointments}
-             (code, customer_id, branch_id, appointment_date, start_time, end_time, notes, created_by)
-           VALUES ($1, $2::uuid, $3::uuid, $4::date, $5::time, $6::time, $7, $8::uuid)
+             (code, customer_id, branch_id, employee_id, appointment_date, start_time, end_time, notes, created_by)
+           VALUES ($1, $2::uuid, $3::uuid, $4::uuid, $5::date, $6::time, $7::time, $8, $9::uuid)
            RETURNING id`,
           code,
           dto.customerId,
           dto.branchId,
+          dto.employeeId ?? null,
           dto.appointmentDate,
           startTime,
           endTime,
@@ -458,6 +485,7 @@ export class AppointmentsService {
           details: {
             customerId: dto.customerId,
             branchId: dto.branchId,
+            employeeId: dto.employeeId ?? null,
             appointmentDate: dto.appointmentDate,
             serviceIds: dto.serviceIds,
           },
@@ -492,6 +520,14 @@ export class AppointmentsService {
       if (dto.branchId) {
         await this.assertBranchActive(tx, schemaName, dto.branchId);
       }
+      if (dto.employeeId) {
+        await this.assertEmployeeActiveAtBranch(
+          tx,
+          schemaName,
+          dto.employeeId,
+          dto.branchId ?? existing.branchId,
+        );
+      }
 
       const startTime = dto.startTime ? this.normalizeTime(dto.startTime) : null;
       const endTime = dto.endTime ? this.normalizeTime(dto.endTime) : null;
@@ -502,17 +538,19 @@ export class AppointmentsService {
 
       await tx.$queryRawUnsafe(
         `UPDATE ${appointments}
-         SET customer_id = COALESCE($2::uuid, customer_id),
+             SET customer_id = COALESCE($2::uuid, customer_id),
              branch_id = COALESCE($3::uuid, branch_id),
-             appointment_date = COALESCE($4::date, appointment_date),
-             start_time = COALESCE($5::time, start_time),
-             end_time = COALESCE($6::time, end_time),
-             notes = COALESCE($7, notes),
+             employee_id = COALESCE($4::uuid, employee_id),
+             appointment_date = COALESCE($5::date, appointment_date),
+             start_time = COALESCE($6::time, start_time),
+             end_time = COALESCE($7::time, end_time),
+             notes = COALESCE($8, notes),
              updated_at = NOW()
          WHERE id = $1::uuid`,
         id,
         dto.customerId ?? null,
         dto.branchId ?? null,
+        dto.employeeId ?? null,
         dto.appointmentDate ?? null,
         startTime,
         endTime,

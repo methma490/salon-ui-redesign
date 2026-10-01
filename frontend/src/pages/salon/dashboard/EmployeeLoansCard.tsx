@@ -27,17 +27,9 @@ export function EmployeeLoansCard({ data }: EmployeeLoansCardProps) {
   const theme = useTenantTheme();
   const primaryColor = theme?.palette?.primary ?? '#2563eb';
 
-  const defaultLoans: LoanItem[] = [
-    { id: '1', employeeName: 'Nimesha Dias', amount: 30000, status: 'Active' },
-    { id: '2', employeeName: 'Kasuni Tharuka', amount: 25000, status: 'Active' },
-    { id: '3', employeeName: 'Ruvini Perera', amount: 20000, status: 'Active' },
-    { id: '4', employeeName: 'Anjali Mendis', amount: 15000, status: 'Active' },
-    { id: '5', employeeName: 'Tharushi Silva', amount: 10000, status: 'Completed' },
-  ];
-
-  const activeCount = data?.activeCount || 5;
-  const totalOutstanding = data?.totalOutstanding || 120000;
-  const loansList = data?.recentLoans && data.recentLoans.length > 0 ? data.recentLoans : defaultLoans;
+  const activeCount = data?.activeCount || 0;
+  const totalOutstanding = data?.totalOutstanding || 0;
+  const loansList = data?.recentLoans ?? [];
 
   return (
     <div className="dash-card">
@@ -76,41 +68,47 @@ export function EmployeeLoansCard({ data }: EmployeeLoansCardProps) {
           </Link>
         </div>
 
-        {loansList.slice(0, 5).map((loan, idx) => {
-          const avatarSrc = resolveUploadUrl(loan.avatarUrl);
-          const isCompleted = loan.status?.toUpperCase() === 'COMPLETED';
-          const isOverdue = loan.status?.toUpperCase() === 'OVERDUE';
+        {loansList.length > 0 ? (
+          loansList.slice(0, 5).map((loan, idx) => {
+            const avatarSrc = resolveUploadUrl(loan.avatarUrl);
+            const isCompleted = loan.status?.toUpperCase() === 'COMPLETED';
+            const isOverdue = loan.status?.toUpperCase() === 'OVERDUE';
 
-          return (
-            <div key={loan.id || idx} className="dash-loan-item-row">
-              <div className="flex items-center gap-2 min-w-0">
-                {avatarSrc ? (
-                  <img src={avatarSrc} alt={loan.employeeName} className="dash-emp-avatar" />
-                ) : (
-                  <div className="dash-emp-avatar" style={{ backgroundColor: primaryColor }}>
-                    {loan.employeeName.charAt(0).toUpperCase()}
-                  </div>
-                )}
-                <span className="font-medium text-xs text-slate-800 truncate">
-                  {loan.employeeName}
-                </span>
-              </div>
+            return (
+              <div key={loan.id || idx} className="dash-loan-item-row">
+                <div className="flex items-center gap-2 min-w-0">
+                  {avatarSrc ? (
+                    <img src={avatarSrc} alt={loan.employeeName} className="dash-emp-avatar" />
+                  ) : (
+                    <div className="dash-emp-avatar" style={{ backgroundColor: primaryColor }}>
+                      {loan.employeeName.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <span className="font-medium text-xs text-slate-800 truncate">
+                    {loan.employeeName}
+                  </span>
+                </div>
 
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="dash-loan-item-amount text-xs">
-                  LKR {formatMoneyAmount(loan.amount)}
-                </span>
-                <span
-                  className={`dash-status-pill ${
-                    isCompleted ? 'completed' : isOverdue ? 'overdue' : 'active'
-                  }`}
-                >
-                  {loan.status}
-                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="dash-loan-item-amount text-xs">
+                    LKR {formatMoneyAmount(loan.amount)}
+                  </span>
+                  <span
+                    className={`dash-status-pill ${
+                      isCompleted ? 'completed' : isOverdue ? 'overdue' : 'active'
+                    }`}
+                  >
+                    {loan.status}
+                  </span>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        ) : (
+          <div className="py-4 text-center text-xs text-slate-400">
+            No active employee loans.
+          </div>
+        )}
       </div>
 
       <Link to="/salon/payroll/loans" className="dash-card-footer-link">

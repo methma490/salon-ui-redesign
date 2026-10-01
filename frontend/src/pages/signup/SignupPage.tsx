@@ -15,8 +15,8 @@ import {
   Sparkles,
   User,
 } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -29,6 +29,7 @@ import {
   formatPrice,
 } from '@/features/plans/lib/plan-utils';
 import { usePublicPlans } from '@/features/plans/hooks/usePlans';
+import { websiteHomeUrl, websitePricingUrl } from '@/config/website-url';
 
 export default function SignupPage() {
   const { planId } = useParams<{ planId: string }>();
@@ -56,8 +57,31 @@ export default function SignupPage() {
 
   const [submitting, setSubmitting] = useState(false);
 
+  const defaultFeatures = useMemo(
+    () => [
+      'Analytics & reports',
+      'Appointments management',
+      'Customer management',
+      'Expense tracking',
+    ],
+    []
+  );
+
+  const planFeatures = useMemo(() => {
+    if (plan?.features && Array.isArray(plan.features) && plan.features.length > 0) {
+      return plan.features.map((f: { name: string }) => f.name);
+    }
+    return defaultFeatures;
+  }, [plan, defaultFeatures]);
+
+  useEffect(() => {
+    if (!planId) {
+      window.location.replace(websitePricingUrl());
+    }
+  }, [planId]);
+
   if (!planId) {
-    return <Navigate to="/#pricing" replace />;
+    return null;
   }
 
   if (isLoading) {
@@ -73,25 +97,11 @@ export default function SignupPage() {
       <div className="flex h-screen flex-col items-center justify-center gap-4 bg-slate-50 px-4">
         <p className="text-lg font-medium text-slate-900">Plan not found</p>
         <Button asChild className="bg-[#064e3b] text-white">
-          <Link to="/#pricing">Back to pricing</Link>
+          <a href={websitePricingUrl()}>Back to pricing</a>
         </Button>
       </div>
     );
   }
-
-  const defaultFeatures = [
-    'Analytics & reports',
-    'Appointments management',
-    'Customer management',
-    'Expense tracking',
-  ];
-
-  const planFeatures = useMemo(() => {
-    if (plan.features && Array.isArray(plan.features) && plan.features.length > 0) {
-      return plan.features.map((f) => f.name);
-    }
-    return defaultFeatures;
-  }, [plan]);
 
   const validateStep1 = () => {
     if (!salonName.trim()) {
@@ -192,20 +202,20 @@ export default function SignupPage() {
             size="sm"
             className="h-8 gap-1.5 rounded-lg px-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
           >
-            <Link to="/#pricing">
+            <a href={websitePricingUrl()}>
               <ArrowLeft className="h-4 w-4" />
               <span>Plans</span>
-            </Link>
+            </a>
           </Button>
 
-          <Link to="/" className="flex items-center gap-2.5">
+          <a href={websiteHomeUrl()} className="flex items-center gap-2.5">
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#064e3b] text-white shadow-sm">
               <Scissors className="h-4 w-4" />
             </span>
             <span className="text-sm font-bold tracking-tight text-slate-900">
               Dart Smart Salon
             </span>
-          </Link>
+          </a>
         </div>
 
         {plan && (
@@ -493,10 +503,10 @@ export default function SignupPage() {
                       asChild
                       className="h-11 w-full rounded-xl border-slate-200 bg-slate-50 px-5 text-slate-700 hover:bg-slate-100 sm:w-auto"
                     >
-                      <Link to="/#pricing">
+                      <a href={websitePricingUrl()}>
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Back to plans
-                      </Link>
+                      </a>
                     </Button>
 
                     <Button

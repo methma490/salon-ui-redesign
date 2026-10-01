@@ -12,7 +12,8 @@ import {
   Plus,
   User,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import Swal from 'sweetalert2';
 import {
   tenantApi,
@@ -80,6 +81,19 @@ const CHIP_COLORS = [
   'apt-chip-emerald',
 ];
 
+function appointmentCalendarColorClass(status: string, index: number): string {
+  switch (status) {
+    case 'CONFIRMED':
+      return 'apt-chip-confirmed';
+    case 'COMPLETED':
+      return 'apt-chip-completed';
+    case 'PENDING':
+      return 'apt-chip-pending';
+    default:
+      return CHIP_COLORS[index % CHIP_COLORS.length];
+  }
+}
+
 const MONTHS = [
   { value: '01', label: 'January' },
   { value: '02', label: 'February' },
@@ -142,6 +156,35 @@ function formatFullDateHeader(date: string): string {
   });
 }
 
+function snapTimelineMinutes(ratio: number, totalMinutes: number, step: number): number {
+  const raw = Math.max(0, Math.min(0.999, ratio)) * totalMinutes;
+  return Math.floor(raw / step) * step;
+}
+
+function minutesFromStartToLabel(startHour: number, minutesFromStart: number): string {
+  const total = startHour * 60 + minutesFromStart;
+  const d = new Date();
+  d.setHours(Math.floor(total / 60), total % 60, 0, 0);
+  return d.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+}
+
+function unwrapCreatedCustomer(payload: unknown): Customer | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const record = payload as Record<string, unknown>;
+  if (typeof record.id === 'string' && typeof record.name === 'string') {
+    return payload as Customer;
+  }
+  const nested = record.data;
+  if (nested && typeof nested === 'object' && typeof (nested as Customer).id === 'string') {
+    return nested as Customer;
+  }
+  return null;
+}
+
 function appointmentStatusClass(status: string): string {
   switch (status) {
     case 'CONFIRMED':
@@ -179,6 +222,12 @@ export default function AppointmentsPage() {
   const [activeTab, setActiveTab] = useState<Tab>('calendar');
   const [selectedDate, setSelectedDate] = useState(todayIso());
   const [interval, setInterval] = useState<'15' | '30' | '60'>('15');
+  const [hoverSlot, setHoverSlot] = useState<{
+    empId: string;
+    percent: number;
+    widthPct: number;
+    label: string;
+  } | null>(null);
   const [branchFilter, setBranchFilter] = useState<string>(() =>
     ribbonBranchId !== 'all' ? ribbonBranchId : branches[0]?.id || '',
   );
@@ -197,6 +246,9 @@ export default function AppointmentsPage() {
   const [quickCustomerOpen, setQuickCustomerOpen] = useState(false);
   const [quickCustomerForm, setQuickCustomerForm] = useState<QuickCustomerForm>(emptyQuickCustomer);
   const [quickCustomerError, setQuickCustomerError] = useState<string | null>(null);
+  const [createdCustomer, setCreatedCustomer] = useState<Customer | null>(null);
+  const quickCustomerOpenRef = useRef(false);
+  quickCustomerOpenRef.current = quickCustomerOpen;
 
   // Synchronize branch selection
   useEffect(() => {
@@ -215,6 +267,12 @@ export default function AppointmentsPage() {
     queryKey: ['customers'],
     queryFn: () => tenantApi.customers.list(),
   });
+
+  const customerOptions = useMemo(() => {
+    if (!createdCustomer) return customers;
+    if (customers.some((c) => c.id === createdCustomer.id)) return customers;
+    return [createdCustomer, ...customers];
+  }, [customers, createdCustomer]);
 
   const { data: services = [] } = useQuery({
     queryKey: ['services'],
@@ -260,24 +318,24 @@ export default function AppointmentsPage() {
   // Create Quick Customer Mutation
   const quickCustomerMutation = useMutation({
     mutationFn: tenantApi.customers.create,
-    onSuccess: (newCust: Customer) => {
-      qc.invalidateQueries({ queryKey: ['customers'] });
+    onSuccess: (payload: unknown) => {
+      const newCust = unwrapCreatedCustomer(payload);
+      if (!newCust?.id) return;
+      setCreatedCustomer(newCust);
+      qc.setQueryData<Customer[]>(['customers'], (old) => {
+        const list = old ?? [];
+        if (list.some((c) => c.id === newCust.id)) return list;
+        return [newCust, ...list];
+      });
       setQuickCustomerOpen(false);
       setQuickCustomerForm(emptyQuickCustomer);
       setQuickCustomerError(null);
-      // Auto-select in current form
-      if (createOpen) {
-        setForm((prev) => ({ ...prev, customerId: newCust.id }));
-      } else if (editAppointment) {
+      if (editAppointment) {
         setEditForm((prev) => ({ ...prev, customerId: newCust.id }));
+      } else {
+        setForm((prev) => ({ ...prev, customerId: newCust.id }));
       }
-      Swal.fire({
-        icon: 'success',
-        title: 'Customer Created',
-        text: `${newCust.name} was added and selected.`,
-        timer: 1600,
-        showConfirmButton: false,
-      });
+      void qc.invalidateQueries({ queryKey: ['customers'] });
     },
     onError: (err: any) => {
       setQuickCustomerError(getErrorMessage(err));
@@ -293,13 +351,7 @@ export default function AppointmentsPage() {
       setForm(emptyForm);
       setFormError(null);
       setCreateOpen(false);
-      Swal.fire({
-        icon: 'success',
-        title: 'Appointment Booked',
-        text: 'Appointment was scheduled successfully.',
-        timer: 1600,
-        showConfirmButton: false,
-      });
+      toast.success('Appointment was scheduled successfully.');
     },
     onError: (err) => setFormError(getErrorMessage(err)),
   });
@@ -312,13 +364,7 @@ export default function AppointmentsPage() {
       qc.invalidateQueries({ queryKey: ['appointments-calendar'] });
       setFormError(null);
       setEditAppointment(null);
-      Swal.fire({
-        icon: 'success',
-        title: 'Appointment Updated',
-        text: 'Appointment details updated.',
-        timer: 1600,
-        showConfirmButton: false,
-      });
+      toast.success('Appointment details updated.');
     },
     onError: (err) => setFormError(getErrorMessage(err)),
   });
@@ -388,6 +434,7 @@ export default function AppointmentsPage() {
     setEditForm({
       customerId: appointment.customerId,
       branchId: appointment.branchId,
+      employeeId: appointment.employeeId || '',
       appointmentDate: appointment.appointmentDate,
       startTime: appointment.startTime,
       endTime: appointment.endTime,
@@ -462,15 +509,18 @@ export default function AppointmentsPage() {
     const map = new Map<string, Appointment[]>();
     activeEmployees.forEach((emp) => map.set(emp.id, []));
 
-    // Distribute appointments
-    appointments.forEach((apt, idx) => {
-      // If employee list exists, place on employee row
-      if (activeEmployees.length > 0) {
-        const targetEmp = activeEmployees[idx % activeEmployees.length];
-        const list = map.get(targetEmp.id) || [];
-        list.push(apt);
-        map.set(targetEmp.id, list);
-      }
+    appointments.forEach((apt) => {
+      const assignedEmployeeId = activeEmployees.some((emp) => emp.id === apt.employeeId)
+        ? apt.employeeId
+        : activeEmployees[
+            [...apt.id].reduce((hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0, 0) %
+              activeEmployees.length
+          ]?.id;
+      if (!assignedEmployeeId) return;
+
+      const list = map.get(assignedEmployeeId) || [];
+      list.push(apt);
+      map.set(assignedEmployeeId, list);
     });
 
     return map;
@@ -555,7 +605,7 @@ export default function AppointmentsPage() {
             className="inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-xl bg-[var(--brand-primary,#0d5c3d)] hover:bg-[var(--brand-hover,#0a4a31)] text-white text-xs font-bold shadow-xs transition-colors cursor-pointer w-full sm:w-auto"
           >
             <Plus className="h-4 w-4" />
-            <span>+ New Appointment</span>
+            <span>New Appointment</span>
           </button>
         </div>
       </div>
@@ -564,9 +614,21 @@ export default function AppointmentsPage() {
       <div className="rounded-2xl border border-slate-200/90 bg-white shadow-xs overflow-hidden">
         {/* Subheader bar inside card */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-3.5 sm:px-5 py-3 sm:py-3.5 border-b border-slate-100 bg-white">
-          <div className="flex items-center gap-2 text-slate-800 font-bold text-sm">
+          <div className="flex items-center gap-2.5 text-slate-800 font-bold text-sm">
             <Calendar className="h-4 w-4 text-[var(--brand-primary,#0d5c3d)]" />
             <span>{formatFullDateHeader(selectedDate)}</span>
+            {activeTab === 'calendar' && (
+              <Select value={interval} onValueChange={(v) => setInterval(v as '15' | '30' | '60')}>
+                <SelectTrigger className="h-8 w-[5.75rem] px-2 rounded-lg border-slate-200 text-xs font-medium bg-slate-50/50 font-semibold">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="15">15 mins</SelectItem>
+                  <SelectItem value="30">30 mins</SelectItem>
+                  <SelectItem value="60">1 hour</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -595,20 +657,6 @@ export default function AppointmentsPage() {
                 List View
               </button>
             </div>
-
-            {/* Interval Selector */}
-            {activeTab === 'calendar' && (
-              <Select value={interval} onValueChange={(v) => setInterval(v as '15' | '30' | '60')}>
-                <SelectTrigger className="h-8 px-2.5 rounded-lg border-slate-200 text-xs font-medium bg-slate-50/50">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="15">15 mins</SelectItem>
-                  <SelectItem value="30">30 mins</SelectItem>
-                  <SelectItem value="60">1 hour</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
 
             {/* Date Nav Buttons */}
             <div className="flex items-center gap-1">
@@ -695,17 +743,43 @@ export default function AppointmentsPage() {
                       {/* Timeline Track Right */}
                       <div
                         className="apt-timeline-track"
+                        onMouseMove={(e) => {
+                          if ((e.target as HTMLElement).closest('.apt-appointment-chip')) {
+                            setHoverSlot(null);
+                            return;
+                          }
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const ratio = (e.clientX - rect.left) / rect.width;
+                          const step = Number(interval);
+                          const snapped = snapTimelineMinutes(ratio, TOTAL_MINUTES, step);
+                          setHoverSlot({
+                            empId: emp.id,
+                            percent: (snapped / TOTAL_MINUTES) * 100,
+                            widthPct: (step / TOTAL_MINUTES) * 100,
+                            label: minutesFromStartToLabel(TIMELINE_START_HOUR, snapped),
+                          });
+                        }}
+                        onMouseLeave={() => setHoverSlot(null)}
                         onClick={(e) => {
                           const rect = e.currentTarget.getBoundingClientRect();
                           const clickX = e.clientX - rect.left;
                           const ratio = Math.max(0, Math.min(1, clickX / rect.width));
-                          const clickedMin = Math.floor((ratio * TOTAL_MINUTES) / 15) * 15;
+                          const step = Number(interval);
+                          const clickedMin = snapTimelineMinutes(ratio, TOTAL_MINUTES, step);
                           const h = TIMELINE_START_HOUR + Math.floor(clickedMin / 60);
                           const m = clickedMin % 60;
                           const startStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
                           openCreate({ employeeId: emp.id, startTime: startStr });
                         }}
                       >
+                        {hoverSlot?.empId === emp.id && (
+                          <div
+                            className="apt-slot-hover"
+                            style={{ left: `${hoverSlot.percent}%`, width: `${hoverSlot.widthPct}%` }}
+                          >
+                            <span className="apt-slot-hover-label">{hoverSlot.label}</span>
+                          </div>
+                        )}
                         {/* Live Time Line Span */}
                         {currentTimeInfo && (
                           <div
@@ -727,7 +801,7 @@ export default function AppointmentsPage() {
                             100 - leftPct,
                             (durationMin / TOTAL_MINUTES) * 100,
                           );
-                          const colorClass = CHIP_COLORS[aptIdx % CHIP_COLORS.length];
+                          const colorClass = appointmentCalendarColorClass(apt.status, aptIdx);
                           const serviceNames =
                             apt.services.map((s) => s.name).join(', ') || 'Service';
 
@@ -875,27 +949,38 @@ export default function AppointmentsPage() {
       <Dialog
         open={createOpen || editAppointment !== null}
         onOpenChange={(open) => {
+          if (!open && quickCustomerOpenRef.current) {
+            setQuickCustomerOpen(false);
+            return;
+          }
           if (!open) {
             setCreateOpen(false);
             setEditAppointment(null);
             setFormError(null);
+            setCreatedCustomer(null);
           }
         }}
       >
         <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl bg-white shadow-xl">
           <DialogHeader className="text-left">
             <DialogTitle className="text-xl font-bold text-slate-900">
-              {editAppointment ? 'Edit Appointment' : 'New Appointment'}
+              {quickCustomerOpen
+                ? 'Create Customer'
+                : editAppointment
+                  ? 'Edit Appointment'
+                  : 'New Appointment'}
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              {editAppointment
-                ? 'Update booking details, schedule or services.'
-                : 'Schedule a visit with selected services and stylist.'}
+              {quickCustomerOpen
+                ? 'Add a customer and they will be selected on this appointment.'
+                : editAppointment
+                  ? 'Update booking details, schedule or services.'
+                  : 'Schedule a visit with selected services and stylist.'}
             </DialogDescription>
           </DialogHeader>
 
           {/* Locked Status Banner for Completed Appointments */}
-          {editAppointment?.status === 'COMPLETED' && (
+          {editAppointment?.status === 'COMPLETED' && !quickCustomerOpen && (
             <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium">
               <Lock className="h-4 w-4 shrink-0 text-emerald-600" />
               <span>
@@ -930,6 +1015,7 @@ export default function AppointmentsPage() {
                   data: {
                     customerId: activeF.customerId,
                     branchId: activeF.branchId,
+                    employeeId: activeF.employeeId || undefined,
                     appointmentDate: activeF.appointmentDate,
                     startTime: activeF.startTime,
                     endTime: activeF.endTime,
@@ -947,6 +1033,7 @@ export default function AppointmentsPage() {
                 createMutation.mutate({
                   customerId: activeF.customerId,
                   branchId: activeF.branchId,
+                  employeeId: activeF.employeeId || undefined,
                   appointmentDate: activeF.appointmentDate,
                   startTime: activeF.startTime,
                   endTime: activeF.endTime,
@@ -955,7 +1042,7 @@ export default function AppointmentsPage() {
                 });
               }
             }}
-            className="space-y-4 pt-2"
+            className={`space-y-4 pt-2 ${quickCustomerOpen ? 'hidden' : ''}`}
           >
             <FormError message={formError} />
 
@@ -982,25 +1069,25 @@ export default function AppointmentsPage() {
                 </button>
               </div>
 
-              <Select
+              <select
+                id="apt-customer-select"
                 value={editAppointment ? editForm.customerId : form.customerId}
                 disabled={editAppointment?.status === 'COMPLETED'}
-                onValueChange={(val) => {
+                onChange={(e) => {
+                  const val = e.target.value;
                   if (editAppointment) setEditForm({ ...editForm, customerId: val });
                   else setForm({ ...form, customerId: val });
                 }}
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-800 outline-none focus:ring-2 focus:ring-[var(--brand-ring,#34d399)] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <SelectTrigger id="apt-customer-select" className="h-10 rounded-xl border-slate-200 text-xs">
-                  <SelectValue placeholder="Select customer" />
-                </SelectTrigger>
-                <SelectContent className="max-h-60">
-                  {customers.map((c) => (
-                    <SelectItem key={c.id} value={c.id} className="text-xs">
-                      {c.name} {c.phone ? `(${c.phone})` : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <option value="">Select customer</option>
+                {customerOptions.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                    {c.phone ? ` (${c.phone})` : ''}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Branch and Date */}
@@ -1189,25 +1276,13 @@ export default function AppointmentsPage() {
               )}
             </div>
           </form>
-        </DialogContent>
-      </Dialog>
 
-      {/* Quick Customer Creation Modal */}
-      <Dialog open={quickCustomerOpen} onOpenChange={setQuickCustomerOpen}>
-        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto p-6 rounded-2xl bg-white shadow-2xl z-50">
-          <DialogHeader className="text-left">
-            <DialogTitle className="text-lg font-bold text-slate-900">
-              Create Customer
-            </DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
-              Add a new customer to your records and select them automatically.
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleQuickCustomerSubmit} className="space-y-3.5 pt-2">
+          <form
+            onSubmit={handleQuickCustomerSubmit}
+            className={`space-y-3.5 pt-2 ${quickCustomerOpen ? '' : 'hidden'}`}
+          >
             <FormError message={quickCustomerError} />
 
-            {/* Name */}
             <div className="space-y-1">
               <Label className="text-xs font-semibold text-slate-800">
                 Full name <span className="text-rose-500">*</span>
@@ -1220,13 +1295,12 @@ export default function AppointmentsPage() {
                     setQuickCustomerForm({ ...quickCustomerForm, name: e.target.value })
                   }
                   placeholder="Customer name"
-                  required
+                  required={quickCustomerOpen}
                   className="h-9 pl-9 rounded-xl border-slate-200 text-xs"
                 />
               </div>
             </div>
 
-            {/* Phone & Email */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs font-semibold text-slate-800">
@@ -1240,7 +1314,7 @@ export default function AppointmentsPage() {
                       setQuickCustomerForm({ ...quickCustomerForm, phone: e.target.value })
                     }
                     placeholder="0771234567"
-                    required
+                    required={quickCustomerOpen}
                     className="h-9 pl-9 rounded-xl border-slate-200 text-xs"
                   />
                 </div>
@@ -1263,7 +1337,6 @@ export default function AppointmentsPage() {
               </div>
             </div>
 
-            {/* Birthday */}
             <div className="space-y-1">
               <Label className="text-xs font-semibold text-slate-800">Birthday</Label>
               <div className="grid grid-cols-3 gap-2">
@@ -1311,7 +1384,6 @@ export default function AppointmentsPage() {
               </div>
             </div>
 
-            {/* Notes */}
             <div className="space-y-1">
               <Label className="text-xs font-semibold text-slate-800">Notes</Label>
               <Input
@@ -1324,14 +1396,13 @@ export default function AppointmentsPage() {
               />
             </div>
 
-            {/* Buttons */}
             <div className="flex items-center gap-2 pt-2">
               <button
                 type="button"
                 onClick={() => setQuickCustomerOpen(false)}
                 className="flex-1 h-9 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer"
               >
-                Cancel
+                Back
               </button>
               <button
                 type="submit"
