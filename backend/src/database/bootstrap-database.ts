@@ -92,6 +92,12 @@ async function syncAllTenantSchemas(prisma: PrismaClient): Promise<void> {
     for (const schema of schemas) {
       if (!schema) continue;
       try {
+        // Keep this first: this column is read by the appointment list query. Other
+        // optional sync statements may fail on partially provisioned tenant schemas.
+        await prisma.$executeRawUnsafe(
+          `ALTER TABLE "${schema}".appointments ADD COLUMN IF NOT EXISTS employee_id UUID`,
+        );
+
         await prisma.$executeRawUnsafe(
           `ALTER TABLE "${schema}".branches ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION`,
         );

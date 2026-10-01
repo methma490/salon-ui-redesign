@@ -3,6 +3,7 @@
 .apt-timeline-container {
   min-width: 980px;
   position: relative;
+  padding-top: 28px;
 }
 
 .apt-timeline-header-row {
@@ -11,13 +12,14 @@
   background: #f8fafc;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 20;
+  overflow: visible;
 }
 
 .apt-timeline-emp-head {
   width: 200px;
   min-width: 200px;
-  padding: 10px 16px;
+  padding: 38px 16px 10px;
   font-size: 12px;
   font-weight: 700;
   color: #475569;
@@ -31,6 +33,8 @@
   flex: 1;
   display: flex;
   position: relative;
+  padding-top: 32px;
+  overflow: visible;
 }
 
 .apt-timeline-time-col {
@@ -67,9 +71,37 @@
   z-index: 2;
 }
 
+.apt-slot-hover {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  z-index: 4;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--brand-primary, #0d5c3d) 8%, transparent);
+  border-radius: 8px;
+  border: 1px dashed color-mix(in srgb, var(--brand-primary, #0d5c3d) 35%, #e2e8f0);
+}
+
+.apt-slot-hover-label {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #0f172a;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
+}
+
 .apt-timeline-track {
   flex: 1;
   position: relative;
+  cursor: pointer;
   background: repeating-linear-gradient(
     90deg,
     transparent,
@@ -101,6 +133,24 @@
   transform: translateY(-1px);
   box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
   z-index: 8;
+}
+
+.apt-chip-pending {
+  background: #fef3c7;
+  border-color: #fcd34d;
+  border-left: 4px solid #f59e0b;
+}
+
+.apt-chip-confirmed {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  border-left: 4px solid #3b82f6;
+}
+
+.apt-chip-completed {
+  background: #d1fae5;
+  border-color: #6ee7b7;
+  border-left: 4px solid #10b981;
 }
 
 .apt-chip-blue {
@@ -141,18 +191,36 @@
   pointer-events: none;
 }
 
+.apt-timeline-time-head .apt-live-time-indicator {
+  top: 0;
+}
+
 .apt-live-time-badge {
   position: absolute;
-  top: -24px;
-  transform: translateX(-50%);
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -100%);
   background: #f43f5e;
   color: #fff;
   font-size: 10px;
   font-weight: 700;
-  padding: 2px 6px;
+  line-height: 1.2;
+  padding: 3px 8px;
   border-radius: 9999px;
   white-space: nowrap;
-  box-shadow: 0 2px 4px rgba(244, 63, 94, 0.3);
+  box-shadow: 0 2px 6px rgba(244, 63, 94, 0.35);
+  z-index: 13;
+}
+
+.apt-live-time-badge::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -2px;
+  width: 2px;
+  height: 2px;
+  transform: translateX(-50%);
+  background: #f43f5e;
 }
 
 .apt-dialog-content {
