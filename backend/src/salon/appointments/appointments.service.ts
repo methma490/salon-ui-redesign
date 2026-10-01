@@ -255,6 +255,10 @@ export class AppointmentsService {
       conditions.push(`a.branch_id = $${idx++}::uuid`);
       params.push(query.branchId);
     }
+    if ('employeeId' in query && query.employeeId) {
+      conditions.push(`a.employee_id = $${idx++}::uuid`);
+      params.push(query.employeeId);
+    }
     if ('customerId' in query && query.customerId) {
       conditions.push(`a.customer_id = $${idx++}::uuid`);
       params.push(query.customerId);
@@ -536,8 +540,8 @@ export class AppointmentsService {
 
         const rows = await tx.$queryRawUnsafe<Array<{ id: string }>>(
           `INSERT INTO ${appointments}
-             (code, customer_id, branch_id, employee_id, appointment_date, start_time, end_time, notes, created_by)
-           VALUES ($1, $2::uuid, $3::uuid, $4::uuid, $5::date, $6::time, $7::time, $8, $9::uuid)
+             (code, customer_id, branch_id, employee_id, appointment_date, start_time, end_time, notes, status, created_by)
+           VALUES ($1, $2::uuid, $3::uuid, $4::uuid, $5::date, $6::time, $7::time, $8, 'CONFIRMED', $9::uuid)
            RETURNING id`,
           code,
           dto.customerId,

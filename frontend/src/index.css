@@ -85,6 +85,37 @@
   --color-secondary-foreground: var(--brand-primary);
 }
 
+/* Keep primary page titles consistent across both admin workspaces. */
+body:has(.salon-theme-root) main h1,
+body:has(.admin-panel-root) main h1 {
+  margin-block: 0;
+  color: var(--color-foreground, #111111) !important;
+  font-size: 1.875rem !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.admin-page-content {
+  width: 100%;
+  min-width: 0;
+  max-width: 1500px;
+  margin-inline: auto;
+  padding: 1rem;
+}
+
+@media (min-width: 640px) {
+  .admin-page-content {
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .admin-page-content {
+    padding: 2rem;
+  }
+}
+
 .salon-theme-root .reports-container,
 .salon-theme-root .payslip-modern {
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;

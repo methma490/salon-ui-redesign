@@ -3,21 +3,27 @@
 .salon-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .salon-sidebar-section {
   display: flex;
+  width: 100%;
   align-items: center;
-  gap: 8px;
-  padding: 12px 12px 6px;
-  margin-top: 4px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #94a3b8;
-  transition: color 0.15s ease;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-top: 5px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 450;
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgb(255 255 255 / 88%);
+  transition: color 0.15s ease, background 0.15s ease;
 }
 
 .salon-sidebar-section:first-child {
@@ -25,38 +31,55 @@
 }
 
 .salon-sidebar-section.active {
-  color: var(--brand-primary, #0d5c3d);
+  color: #fff;
+  background: rgb(255 255 255 / 7%);
 }
 
 .salon-sidebar-section-icon {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+.salon-sidebar-section:hover {
+  color: #fff;
+  background: rgb(255 255 255 / 9%);
+}
+
+.salon-sidebar-chevron {
   width: 15px;
   height: 15px;
-  flex-shrink: 0;
+  margin-left: auto;
+  transition: transform 0.18s ease;
+}
+
+.salon-sidebar-chevron.expanded {
+  transform: rotate(180deg);
 }
 
 .salon-sidebar-link {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 12px;
-  border-radius: 10px;
+  padding: 10px 12px;
+  border-radius: 9px;
   font-size: 13px;
-  font-weight: 500;
-  color: #475569;
+  font-weight: 450;
+  color: rgb(255 255 255 / 88%);
   text-decoration: none;
   transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .salon-sidebar-link:hover {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: rgb(255 255 255 / 9%);
+  color: #fff;
 }
 
 .salon-sidebar-link.active {
-  background: var(--brand-soft, #ecfdf3);
+  background: var(--brand-soft, #f5e8eb);
   color: var(--brand-primary, #0d5c3d);
   font-weight: 600;
-  box-shadow: inset 3px 0 0 var(--brand-primary, #0d5c3d);
+  box-shadow: inset 3px 0 0 var(--brand-primary, #0d5c3d), 0 2px 8px rgb(0 0 0 / 12%);
   padding-left: 9px;
 }
 
@@ -64,12 +87,12 @@
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-  color: #64748b;
+  color: rgb(255 255 255 / 72%);
   transition: color 0.15s ease;
 }
 
 .salon-sidebar-link:hover .salon-sidebar-link-icon {
-  color: #334155;
+  color: #fff;
 }
 
 .salon-sidebar-link.active .salon-sidebar-link-icon {
@@ -84,16 +107,15 @@
 .salon-sidebar-children {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 0 0 4px 10px;
-  margin-bottom: 4px;
-  border-left: 1px solid #e2e8f0;
-  margin-left: 20px;
+  gap: 3px;
+  padding: 2px 0 5px 10px;
+  margin: 0 0 3px 20px;
+  border-left: 1px solid color-mix(in srgb, var(--brand-primary, #a44a5c) 58%, transparent);
 }
 
 .salon-sidebar-children .salon-sidebar-link {
   font-size: 12.5px;
-  padding: 7px 10px;
+  padding: 8px 10px;
   border-radius: 8px;
 }
 
@@ -110,94 +132,159 @@
   opacity: 0.45;
   cursor: not-allowed;
   pointer-events: none;
-  color: #94a3b8;
+  color: rgb(255 255 255 / 48%);
 }
 
 .salon-sidebar-link-disabled .salon-sidebar-link-icon {
-  color: #94a3b8;
+  color: rgb(255 255 255 / 42%);
 }
 
 .salon-sidebar-aside {
-  background: #fff;
+  color: #fff;
+  background: color-mix(in srgb, var(--brand-primary, #a44a5c) 68%, #170812);
+  border-color: color-mix(in srgb, var(--brand-primary, #a44a5c) 62%, #170812) !important;
   transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.salon-sidebar-aside .salon-sidebar-brand {
+  border-color: color-mix(in srgb, var(--brand-primary, #a44a5c) 58%, #170812) !important;
+}
+
+.salon-sidebar-footer {
+  border-top: 1px solid color-mix(in srgb, var(--brand-primary, #a44a5c) 52%, #170812);
+  background: inherit;
+}
+
+.salon-sidebar-aside .salon-brand-text-wrap p:first-child {
+  color: rgb(255 255 255 / 66%);
+}
+
+.salon-sidebar-aside .salon-brand-text-wrap p:last-child {
+  color: #fff;
+}
+
+.salon-sidebar-aside > .salon-sidebar-brand .bg-muted {
+  background: var(--brand-soft, #f5e8eb);
+  border-color: var(--brand-border, #d9aab3);
 }
 
 .salon-sidebar-aside.is-collapsed {
   width: 72px;
 }
 
-.salon-sidebar-aside.is-collapsed .salon-brand-text-wrap {
+.salon-sidebar-aside.is-collapsed .salon-sidebar-brand {
+  justify-content: center;
+  padding-right: 8px;
+  padding-left: 8px;
+}
+
+.salon-sidebar-aside.is-collapsed .salon-brand-text-wrap,
+.salon-sidebar-aside.is-collapsed .salon-sidebar-link-label,
+.salon-sidebar-aside.is-collapsed .salon-sidebar-section span,
+.salon-sidebar-aside.is-collapsed .salon-sidebar-chevron,
+.salon-sidebar-aside.is-collapsed .salon-sidebar-user-role,
+.salon-sidebar-aside.is-collapsed .salon-sidebar-user-email {
   display: none;
+}
+
+.salon-sidebar-aside.is-collapsed .salon-sidebar {
+  align-items: center;
 }
 
 .salon-sidebar-aside.is-collapsed .salon-sidebar-link {
   justify-content: center;
-  padding: 10px 0;
   width: 44px;
   height: 44px;
   margin: 0 auto;
-  border-radius: 10px;
+  padding: 10px 0;
   gap: 0;
 }
 
 .salon-sidebar-aside.is-collapsed .salon-sidebar-link.active {
-  box-shadow: none;
   padding-left: 0;
-  border: 1px solid var(--brand-border, #bbf7d0);
+  box-shadow: inset 0 0 0 1px var(--brand-border, #d9aab3);
 }
 
-.salon-sidebar-aside.is-collapsed .salon-sidebar-link-label {
-  display: none;
+.salon-sidebar-aside.is-collapsed .salon-sidebar-link-icon {
+  width: 22px;
+  height: 22px;
 }
 
 .salon-sidebar-aside.is-collapsed .salon-sidebar-section {
   justify-content: center;
-  padding: 8px 0 4px;
+  width: 44px;
+  height: 44px;
+  margin-top: 5px;
+  padding: 0;
   font-size: 0;
-  gap: 0;
+  letter-spacing: 0;
 }
 
-.salon-sidebar-aside.is-collapsed .salon-sidebar-section span {
-  display: none;
+.salon-sidebar-aside.is-collapsed .salon-sidebar-section-icon {
+  width: 21px;
+  height: 21px;
 }
 
 .salon-sidebar-aside.is-collapsed .salon-sidebar-children {
-  margin-left: 0;
-  padding: 0;
-  border-left: none;
-  gap: 4px;
+  display: none;
 }
 
-.salon-sidebar-aside.is-collapsed .salon-sidebar-children .salon-sidebar-link {
-  padding: 8px 0;
+.salon-sidebar-aside.is-collapsed .salon-sidebar-separator {
+  margin-bottom: 10px;
+}
+
+.salon-sidebar-aside.is-collapsed .salon-sidebar-logout.is-icon {
+  display: flex;
   width: 40px;
   height: 40px;
+  padding: 0;
 }
 
 .salon-collapse-btn {
   display: inline-flex;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
-  color: #64748b;
+  border: 1px solid color-mix(in srgb, var(--brand-primary, #a44a5c) 55%, #fff);
+  border-radius: 9px;
+  color: #fff;
+  background: color-mix(in srgb, var(--brand-primary, #a44a5c) 62%, #170812);
   cursor: pointer;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .salon-collapse-btn:hover {
-  background: #f1f5f9;
-  color: #0f172a;
-  border-color: #cbd5e1;
+  background: color-mix(in srgb, var(--brand-primary, #a44a5c) 50%, #170812);
+  border-color: var(--brand-border, #d9aab3);
+}
+
+.salon-sidebar-separator {
+  background: color-mix(in srgb, var(--brand-primary, #a44a5c) 56%, #170812);
+}
+
+.salon-sidebar-user-role {
+  color: #fff;
+}
+
+.salon-sidebar-user-email {
+  color: rgb(255 255 255 / 68%);
+}
+
+.salon-sidebar-logout {
+  color: #fff !important;
+  border-color: color-mix(in srgb, var(--brand-primary, #a44a5c) 55%, #fff) !important;
+  background: color-mix(in srgb, var(--brand-primary, #a44a5c) 62%, #170812) !important;
+}
+
+.salon-sidebar-logout:hover {
+  background: color-mix(in srgb, var(--brand-primary, #a44a5c) 54%, #170812) !important;
 }
 
 .salon-sidebar-scroll {
   scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
+  scrollbar-color: var(--brand-primary, #a44a5c) transparent;
 }
 
 /* Mobile sheet sidebar */
@@ -209,13 +296,16 @@
   padding: 0 !important;
   gap: 0 !important;
   overflow: hidden !important;
+  color: #fff !important;
+  background: color-mix(in srgb, var(--brand-primary, #a44a5c) 68%, #170812) !important;
 }
 
 .salon-mobile-sheet-header {
   flex-shrink: 0;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid color-mix(in srgb, var(--brand-primary, #a44a5c) 52%, #170812);
   padding: 1rem 3rem 1rem 1rem;
-  background: #fff;
+  color: #fff;
+  background: color-mix(in srgb, var(--brand-primary, #a44a5c) 68%, #170812);
 }
 
 .salon-mobile-sheet-nav {
@@ -227,14 +317,37 @@
   -webkit-overflow-scrolling: touch;
   padding: 0.75rem;
   scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
+  scrollbar-color: var(--brand-primary, #a44a5c) transparent;
+}
+
+.salon-mobile-sheet > .border-b {
+  border-color: color-mix(in srgb, var(--brand-primary, #a44a5c) 52%, #170812) !important;
+  background: transparent;
+}
+
+.salon-mobile-sheet .text-muted-foreground {
+  color: rgb(255 255 255 / 68%) !important;
+}
+
+.salon-mobile-sheet .salon-brand-text-wrap p:last-child {
+  color: #fff;
 }
 
 .salon-mobile-sheet-footer {
   flex-shrink: 0;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid color-mix(in srgb, var(--brand-primary, #a44a5c) 52%, #170812);
   padding: 1rem;
-  background: #fff;
+  background: color-mix(in srgb, var(--brand-primary, #a44a5c) 68%, #170812);
+}
+
+.salon-mobile-sheet-footer .text-foreground {
+  color: #fff;
+}
+
+.salon-mobile-sheet-footer button {
+  color: #fff;
+  border-color: color-mix(in srgb, var(--brand-primary, #a44a5c) 55%, #fff);
+  background: color-mix(in srgb, var(--brand-primary, #a44a5c) 62%, #170812);
 }
 
 /* App header */

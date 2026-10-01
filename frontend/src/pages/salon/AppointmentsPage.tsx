@@ -232,6 +232,8 @@ export default function AppointmentsPage() {
   const [selectedDate, setSelectedDate] = useState(todayIso());
   const [listPage, setListPage] = useState(1);
   const [listLimit, setListLimit] = useState(10);
+  const [listStatusFilter, setListStatusFilter] = useState('all');
+  const [listEmployeeFilter, setListEmployeeFilter] = useState('all');
   const [interval, setInterval] = useState<'15' | '30' | '60'>('15');
   const [hoverSlot, setHoverSlot] = useState<{
     empId: string;
@@ -275,7 +277,7 @@ export default function AppointmentsPage() {
 
   useEffect(() => {
     setListPage(1);
-  }, [selectedDate, activeBranchId]);
+  }, [selectedDate, activeBranchId, listStatusFilter, listEmployeeFilter]);
 
   // Queries
   const { data: customers = [] } = useQuery({
@@ -322,6 +324,11 @@ export default function AppointmentsPage() {
     [employees, activeBranchId],
   );
 
+  const listFilterEmployees = useMemo(
+    () => employees.filter((employee) => employee.branchId === activeBranchId),
+    [employees, activeBranchId],
+  );
+
   const formEmployees = useMemo(() => {
     const branchId = editAppointment ? editForm.branchId : form.branchId;
     return employees.filter((employee) => employee.status === 'ACTIVE' && employee.branchId === branchId);
@@ -336,6 +343,12 @@ export default function AppointmentsPage() {
     return params;
   }, [selectedDate, activeBranchId]);
 
+  const listViewParams = useMemo(() => ({
+    ...listParams,
+    ...(listStatusFilter !== 'all' ? { status: listStatusFilter } : {}),
+    ...(listEmployeeFilter !== 'all' ? { employeeId: listEmployeeFilter } : {}),
+  }), [listParams, listStatusFilter, listEmployeeFilter]);
+
   const {
     data: appointments = [],
     isLoading,
@@ -348,10 +361,10 @@ export default function AppointmentsPage() {
   });
 
   const { data: paginatedList, isLoading: isListLoading } = useQuery({
-    queryKey: ['appointments', 'list-view', listParams, listPage, listLimit],
+    queryKey: ['appointments', 'list-view', listViewParams, listPage, listLimit],
     queryFn: () =>
       tenantApi.appointments.listPaginated({
-        ...listParams,
+        ...listViewParams,
         page: String(listPage),
         limit: String(listLimit),
       }),
@@ -583,7 +596,7 @@ export default function AppointmentsPage() {
   if (isError) return <OpsError message={getErrorMessage(error)} onRetry={() => void refetch()} />;
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-[1500px] mx-auto space-y-6">
+    <div className="mx-auto w-full max-w-[1500px] space-y-6">
       {/* Top Header matching screenshot */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
@@ -915,9 +928,51 @@ export default function AppointmentsPage() {
         ) : (
           /* List View */
           <div className="divide-y divide-slate-100">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 px-3.5 sm:px-4 py-3 bg-slate-50/60">
+              <Select
+                value={listStatusFilter}
+                onValueChange={setListStatusFilter}
+              >
+                <SelectTrigger
+                  aria-label="Filter appointments by status"
+                  className="h-9 w-full sm:w-48 rounded-lg border-slate-200 bg-white text-xs font-medium text-slate-700"
+                >
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  {STATUS_OPTIONS.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {status.replace(/_/g, ' ')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={listEmployeeFilter}
+                onValueChange={setListEmployeeFilter}
+              >
+                <SelectTrigger
+                  aria-label="Filter appointments by employee"
+                  className="h-9 w-full sm:w-56 rounded-lg border-slate-200 bg-white text-xs font-medium text-slate-700"
+                >
+                  <SelectValue placeholder="All employees" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All employees</SelectItem>
+                  {listFilterEmployees.map((employee) => (
+                    <SelectItem key={employee.id} value={employee.id}>
+                      {employee.name}{employee.status !== 'ACTIVE' ? ' (Inactive)' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             {listMeta?.total === 0 ? (
               <div className="text-center py-16 text-slate-400 text-sm">
-                No appointments booked for {formatDateDisplay(selectedDate)}.
+                {listStatusFilter !== 'all' || listEmployeeFilter !== 'all'
+                  ? 'No appointments match the selected filters.'
+                  : `No appointments booked for ${formatDateDisplay(selectedDate)}.`}
               </div>
             ) : isListLoading && !paginatedList ? (
               <div className="py-12">

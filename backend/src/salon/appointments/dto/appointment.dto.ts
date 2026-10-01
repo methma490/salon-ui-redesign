@@ -129,6 +129,10 @@ export class ListAppointmentsQueryDto extends PaginationQueryDto {
 
   @IsOptional()
   @IsUUID()
+  employeeId?: string;
+
+  @IsOptional()
+  @IsUUID()
   customerId?: string;
 
   @IsOptional()
