@@ -32,6 +32,11 @@ export class CreateAppointmentDto {
   @IsUUID()
   branchId!: string;
 
+  @IsOptional()
+  @Transform(emptyToUndefined)
+  @IsUUID()
+  employeeId?: string;
+
   @IsDateString()
   appointmentDate!: string;
 
@@ -67,6 +72,11 @@ export class UpdateAppointmentDto {
   @IsOptional()
   @IsUUID()
   branchId?: string;
+
+  @IsOptional()
+  @Transform(emptyToUndefined)
+  @IsUUID()
+  employeeId?: string;
 
   @IsOptional()
   @IsDateString()
