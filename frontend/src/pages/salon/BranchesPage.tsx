@@ -28,6 +28,7 @@ import {
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tenantApi, type Branch } from '@/api/tenant.api';
+import { formatMoneyAmount } from '@/lib/money';
 import {
   FormError,
   FormSubmit,
@@ -362,7 +363,69 @@ function BranchDetailsDrawer({
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'overview' | 'settings' | 'operational'>('operational');
 
+  // Real Queries for Operational Info
+  const branchId = branch?.id;
+  const { data: dashToday } = useQuery({
+    queryKey: ['branch-drawer-dash-today', branchId],
+    queryFn: () => tenantApi.dashboard.get(branchId, 'today'),
+    enabled: open && Boolean(branchId) && activeTab === 'operational',
+  });
+
+  const { data: dashMonth } = useQuery({
+    queryKey: ['branch-drawer-dash-month', branchId],
+    queryFn: () => tenantApi.dashboard.get(branchId, 'month'),
+    enabled: open && Boolean(branchId) && activeTab === 'operational',
+  });
+
+  const { data: branchEmployees = [] } = useQuery({
+    queryKey: ['branch-drawer-employees', branchId],
+    queryFn: () => tenantApi.employees.list({ branchId: branchId! }),
+    enabled: open && Boolean(branchId) && activeTab === 'operational',
+  });
+
+  const { data: branchServices = [] } = useQuery({
+    queryKey: ['branch-drawer-services', branchId],
+    queryFn: () => tenantApi.services.list({ branchId: branchId! }),
+    enabled: open && Boolean(branchId) && activeTab === 'operational',
+  });
+
+  const { data: customersList = [] } = useQuery({
+    queryKey: ['branch-drawer-customers'],
+    queryFn: () => tenantApi.customers.list(),
+    enabled: open && Boolean(branchId) && activeTab === 'operational',
+  });
+
   if (!open || !branch) return null;
+
+  // Real computed metrics
+  const totalEmployees = branchEmployees.length;
+  const activeEmployees = branchEmployees.filter((e) => e.status === 'ACTIVE').length;
+  const managerEmployees = branchEmployees.filter(
+    (e) =>
+      (e.designation && e.designation.toLowerCase().includes('manager')) ||
+      (e.systemRoles && e.systemRoles.some((r) => r.toLowerCase().includes('manager')))
+  ).length;
+  const inactiveEmployees = branchEmployees.filter((e) => e.status === 'INACTIVE').length;
+
+  const totalServices = branchServices.length;
+  const activeServices = branchServices.filter((s) => s.status === 'ACTIVE').length;
+  const inactiveServices = branchServices.filter((s) => s.status === 'INACTIVE').length;
+
+  const totalProducts = dashMonth?.inventoryOverview?.totalProducts ?? 0;
+  const lowStock = dashMonth?.inventoryOverview?.lowStock ?? 0;
+  const outOfStock = dashMonth?.inventoryOverview?.outOfStock ?? 0;
+
+  const totalCustomers = customersList.length;
+
+  const apptsToday = dashToday?.appointmentOverview?.total ?? 0;
+  const apptsThisMonth = dashMonth?.appointmentOverview?.total ?? 0;
+  const apptsCompleted = dashMonth?.appointmentOverview?.completed ?? 0;
+  const apptsCancelled = dashMonth?.appointmentOverview?.cancelled ?? 0;
+
+  const todayRevenue = dashToday?.financials?.revenue ?? dashToday?.kpis?.periodRevenue ?? 0;
+  const monthRevenue = dashMonth?.financials?.revenue ?? dashMonth?.kpis?.periodRevenue ?? 0;
+  const monthOrdersCount = dashMonth?.recentOrders?.length ?? 0;
+  const avgTransaction = monthOrdersCount > 0 ? Math.round(monthRevenue / monthOrdersCount) : 0;
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -473,21 +536,21 @@ function BranchDetailsDrawer({
                     </div>
                     <div className="mt-4">
                       <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-slate-900">8</span>
+                        <span className="text-3xl font-bold text-slate-900">{totalEmployees}</span>
                         <span className="text-xs text-slate-500 font-medium">Total Employees</span>
                       </div>
                       <div className="mt-3 space-y-1.5 text-xs text-slate-600">
                         <p className="flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                          <span>7 Active Employees</span>
+                          <span>{activeEmployees} Active Employees</span>
                         </p>
                         <p className="flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-blue-500" />
-                          <span>1 Managers</span>
+                          <span>{managerEmployees} Managers</span>
                         </p>
                         <p className="flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-slate-400" />
-                          <span>0 Inactive Employees</span>
+                          <span>{inactiveEmployees} Inactive Employees</span>
                         </p>
                       </div>
                     </div>
@@ -515,17 +578,17 @@ function BranchDetailsDrawer({
                     </div>
                     <div className="mt-4">
                       <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-slate-900">24</span>
+                        <span className="text-3xl font-bold text-slate-900">{totalServices}</span>
                         <span className="text-xs text-slate-500 font-medium">Total Services</span>
                       </div>
                       <div className="mt-3 space-y-1.5 text-xs text-slate-600">
                         <p className="flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                          <span>22 Active Services</span>
+                          <span>{activeServices} Active Services</span>
                         </p>
                         <p className="flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-slate-400" />
-                          <span>2 Inactive Services</span>
+                          <span>{inactiveServices} Inactive Services</span>
                         </p>
                       </div>
                     </div>
@@ -553,17 +616,17 @@ function BranchDetailsDrawer({
                     </div>
                     <div className="mt-4">
                       <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-slate-900">156</span>
+                        <span className="text-3xl font-bold text-slate-900">{totalProducts}</span>
                         <span className="text-xs text-slate-500 font-medium">Total Products</span>
                       </div>
                       <div className="mt-3 space-y-1.5 text-xs text-slate-600">
                         <p className="flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-amber-500" />
-                          <span>8 Low Stock Items</span>
+                          <span>{lowStock} Low Stock Items</span>
                         </p>
                         <p className="flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-rose-500" />
-                          <span>3 Out of Stock Items</span>
+                          <span>{outOfStock} Out of Stock Items</span>
                         </p>
                       </div>
                     </div>
@@ -591,17 +654,13 @@ function BranchDetailsDrawer({
                     </div>
                     <div className="mt-4">
                       <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-slate-900">312</span>
+                        <span className="text-3xl font-bold text-slate-900">{totalCustomers}</span>
                         <span className="text-xs text-slate-500 font-medium">Total Customers</span>
                       </div>
                       <div className="mt-3 space-y-1.5 text-xs text-slate-600">
                         <p className="flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                          <span>28 New Customers (This Month)</span>
-                        </p>
-                        <p className="flex items-center gap-2">
-                          <span className="h-2 w-2 rounded-full bg-blue-500" />
-                          <span>184 Returning Customers</span>
+                          <span>Registered Salon Clients</span>
                         </p>
                       </div>
                     </div>
@@ -629,21 +688,21 @@ function BranchDetailsDrawer({
                     </div>
                     <div className="mt-4">
                       <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-bold text-slate-900">12</span>
+                        <span className="text-3xl font-bold text-slate-900">{apptsToday}</span>
                         <span className="text-xs text-slate-500 font-medium">Appointments Today</span>
                       </div>
                       <div className="mt-3 space-y-1.5 text-xs text-slate-600">
                         <p className="flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                          <span>184 This Month</span>
+                          <span>{apptsThisMonth} This Month</span>
                         </p>
                         <p className="flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-blue-500" />
-                          <span>156 Completed</span>
+                          <span>{apptsCompleted} Completed</span>
                         </p>
                         <p className="flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-rose-500" />
-                          <span>8 Cancelled</span>
+                          <span>{apptsCancelled} Cancelled</span>
                         </p>
                       </div>
                     </div>
@@ -671,17 +730,19 @@ function BranchDetailsDrawer({
                     </div>
                     <div className="mt-4">
                       <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-bold text-slate-900">LKR 42,500</span>
+                        <span className="text-2xl font-bold text-slate-900">
+                          LKR {formatMoneyAmount(todayRevenue)}
+                        </span>
                       </div>
                       <p className="text-xs text-slate-500 font-medium">Today's Sales</p>
                       <div className="mt-3 space-y-1.5 text-xs text-slate-600">
                         <p className="flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                          <span>LKR 450,000 This Month</span>
+                          <span>LKR {formatMoneyAmount(monthRevenue)} This Month</span>
                         </p>
                         <p className="flex items-center gap-2">
                           <span className="h-2 w-2 rounded-full bg-blue-500" />
-                          <span>LKR 2,446 Average Transaction</span>
+                          <span>LKR {formatMoneyAmount(avgTransaction)} Average Transaction</span>
                         </p>
                       </div>
                     </div>

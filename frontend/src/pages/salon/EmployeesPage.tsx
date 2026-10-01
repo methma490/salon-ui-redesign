@@ -727,7 +727,7 @@ export default function EmployeesPage() {
           <p className="mt-1 text-sm">{getErrorMessage(error)}</p>
           <button
             type="button"
-            className="mt-4 px-4 py-2 bg-emerald-700 text-white rounded-lg font-medium text-sm hover:bg-emerald-800 transition-colors"
+            className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:opacity-90 transition-opacity"
             onClick={() => void refetch()}
           >
             Try again

@@ -4,12 +4,13 @@
   "version": "0.0.1",
   "description": "Dart Smart Salon - multi-tenant salon management platform",
   "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:website\"",
     "dev:frontend": "npm run dev --prefix frontend",
     "dev:backend": "npm run start:dev --prefix backend",
-    "install:all": "npm install && npm install --prefix frontend && npm install --prefix backend",
-    "build": "npm run build --prefix frontend && npm run build --prefix backend",
-    "lint": "npm run lint --prefix frontend && npm run lint --prefix backend",
+    "dev:website": "npm run dev --prefix website",
+    "install:all": "npm install && npm install --prefix frontend && npm install --prefix backend && npm install --prefix website",
+    "build": "npm run build --prefix website && npm run build --prefix frontend && npm run build --prefix backend",
+    "lint": "npm run lint --prefix website && npm run lint --prefix frontend && npm run lint --prefix backend",
     "format": "npm run format --prefix frontend && npm run format --prefix backend"
   },
   "devDependencies": {

@@ -22,17 +22,17 @@ export function InventoryOverviewCard({ data }: InventoryOverviewCardProps) {
   const theme = useTenantTheme();
   const primaryColor = theme?.palette?.primary ?? '#2563eb';
 
-  const totalProducts = data?.totalProducts || 320;
-  const inStock = data?.inStock || 245;
-  const inStockPct = data?.inStockPct ?? 76;
-  const lowStock = data?.lowStock || 35;
-  const lowStockPct = data?.lowStockPct ?? 11;
-  const outOfStock = data?.outOfStock || 15;
-  const outOfStockPct = data?.outOfStockPct ?? 5;
-  const stockValue = data?.stockValue || 250000;
+  const totalProducts = data?.totalProducts || 0;
+  const inStock = data?.inStock || 0;
+  const inStockPct = data?.inStockPct ?? 0;
+  const lowStock = data?.lowStock || 0;
+  const lowStockPct = data?.lowStockPct ?? 0;
+  const outOfStock = data?.outOfStock || 0;
+  const outOfStockPct = data?.outOfStockPct ?? 0;
+  const stockValue = data?.stockValue || 0;
 
-  const stockToAdd = Math.max(0, totalProducts - (inStock + lowStock + outOfStock)) || 25;
-  const stockToAddPct = Math.max(0, 100 - (inStockPct + lowStockPct + outOfStockPct)) || 8;
+  const stockToAdd = Math.max(0, totalProducts - (inStock + lowStock + outOfStock));
+  const stockToAddPct = Math.max(0, 100 - (inStockPct + lowStockPct + outOfStockPct));
 
   const chartData = [
     { name: 'In Stock', value: inStock, color: primaryColor },

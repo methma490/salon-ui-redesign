@@ -28,15 +28,7 @@ function formatDate(dateStr: string) {
 }
 
 export function RecentTransactionsCard({ transactions }: RecentTransactionsCardProps) {
-  const defaultTransactions: TransactionItem[] = [
-    { id: '1', date: '2026-09-30T10:42:00', type: 'Income', category: 'POS Order', amount: 6500, status: 'Paid' },
-    { id: '2', date: '2026-09-30T09:30:00', type: 'Expense', category: 'Product Purchase', amount: 12000, status: 'Paid' },
-    { id: '3', date: '2026-09-29T18:15:00', type: 'Salary', category: 'Staff Salary', amount: 35000, status: 'Paid' },
-    { id: '4', date: '2026-09-29T16:20:00', type: 'Expense', category: 'Utilities', amount: 8500, status: 'Paid' },
-    { id: '5', date: '2026-09-29T13:10:00', type: 'Income', category: 'POS Order', amount: 4800, status: 'Paid' },
-  ];
-
-  const list = transactions && transactions.length > 0 ? transactions : defaultTransactions;
+  const list = transactions ?? [];
 
   return (
     <div className="dash-card">
@@ -64,36 +56,44 @@ export function RecentTransactionsCard({ transactions }: RecentTransactionsCardP
             </tr>
           </thead>
           <tbody>
-            {list.slice(0, 5).map((tx, idx) => {
-              const typeLower = (tx.type || 'income').toLowerCase();
+            {list.length > 0 ? (
+              list.slice(0, 5).map((tx, idx) => {
+                const typeLower = (tx.type || 'income').toLowerCase();
 
-              return (
-                <tr key={tx.id || idx}>
-                  <td className="text-slate-400 text-xs font-semibold">{idx + 1}</td>
-                  <td className="text-xs text-slate-600">{formatDate(tx.date)}</td>
-                  <td>
-                    <span
-                      className={`dash-status-pill ${
-                        typeLower === 'expense'
-                          ? 'expense'
-                          : typeLower === 'salary'
-                          ? 'salary'
-                          : 'income'
-                      }`}
-                    >
-                      {tx.type || 'Income'}
-                    </span>
-                  </td>
-                  <td className="text-xs font-medium text-slate-700">{tx.category || 'POS Order'}</td>
-                  <td style={{ textAlign: 'right', fontWeight: 700, fontSize: '12px' }}>
-                    {formatMoneyAmount(tx.amount)}
-                  </td>
-                  <td style={{ textAlign: 'center' }}>
-                    <span className="dash-status-pill paid">{tx.status || 'Paid'}</span>
-                  </td>
-                </tr>
-              );
-            })}
+                return (
+                  <tr key={tx.id || idx}>
+                    <td className="text-slate-400 text-xs font-semibold">{idx + 1}</td>
+                    <td className="text-xs text-slate-600">{formatDate(tx.date)}</td>
+                    <td>
+                      <span
+                        className={`dash-status-pill ${
+                          typeLower === 'expense'
+                            ? 'expense'
+                            : typeLower === 'salary'
+                            ? 'salary'
+                            : 'income'
+                        }`}
+                      >
+                        {tx.type || 'Income'}
+                      </span>
+                    </td>
+                    <td className="text-xs font-medium text-slate-700">{tx.category || 'POS Order'}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 700, fontSize: '12px' }}>
+                      {formatMoneyAmount(tx.amount)}
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <span className="dash-status-pill paid">{tx.status || 'Paid'}</span>
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan={6} className="text-center py-6 text-xs text-slate-400">
+                  No recent transactions recorded.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

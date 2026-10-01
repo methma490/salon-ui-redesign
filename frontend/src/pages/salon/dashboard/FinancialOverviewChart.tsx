@@ -33,12 +33,7 @@ export function FinancialOverviewChart({ data }: FinancialOverviewChartProps) {
   const primaryColor = theme?.palette?.primary ?? '#2563eb';
   const [timeframe, setTimeframe] = useState('month');
 
-  const chartData = data && data.length > 0 ? data : [
-    { week: 'Week 1', revenue: 130000, expenses: 75000, salaries: 35000 },
-    { week: 'Week 2', revenue: 145000, expenses: 95000, salaries: 38000 },
-    { week: 'Week 3', revenue: 185000, expenses: 105000, salaries: 42000 },
-    { week: 'Week 4', revenue: 175000, expenses: 92000, salaries: 45000 },
-  ];
+  const chartData = data && data.length > 0 ? data : [];
 
   return (
     <div className="dash-card">
@@ -78,44 +73,48 @@ export function FinancialOverviewChart({ data }: FinancialOverviewChartProps) {
         </div>
       </div>
 
-      <div className="w-full h-60 sm:h-72">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={chartData}
-            margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-            barGap={6}
-            barCategoryGap="25%"
-          >
-            <CartesianGrid stroke="#f1f5f9" vertical={false} />
-            <XAxis
-              dataKey="week"
-              stroke="#94a3b8"
-              fontSize={11}
-              tickLine={false}
-              axisLine={{ stroke: '#e2e8f0' }}
-            />
-            <YAxis
-              stroke="#94a3b8"
-              fontSize={11}
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(v) => `${Number(v) >= 1000 ? `${Math.round(Number(v) / 1000)}k` : v}`}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: '#ffffff',
-                borderRadius: '8px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                fontSize: '12px',
-              }}
-              formatter={(value: any) => [`LKR ${Number(value).toLocaleString()}`, '']}
-            />
-            <Bar dataKey="revenue" name="Revenue" fill={primaryColor} radius={[4, 4, 0, 0]} maxBarSize={32} />
-            <Bar dataKey="expenses" name="Expenses" fill="#f87171" radius={[4, 4, 0, 0]} maxBarSize={32} />
-            <Bar dataKey="salaries" name="Salaries" fill="#fb923c" radius={[4, 4, 0, 0]} maxBarSize={32} />
-          </BarChart>
-        </ResponsiveContainer>
+      <div className="w-full h-60 sm:h-72 flex items-center justify-center">
+        {chartData.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={chartData}
+              margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+              barGap={6}
+              barCategoryGap="25%"
+            >
+              <CartesianGrid stroke="#f1f5f9" vertical={false} />
+              <XAxis
+                dataKey="week"
+                stroke="#94a3b8"
+                fontSize={11}
+                tickLine={false}
+                axisLine={{ stroke: '#e2e8f0' }}
+              />
+              <YAxis
+                stroke="#94a3b8"
+                fontSize={11}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(v) => `${Number(v) >= 1000 ? `${Math.round(Number(v) / 1000)}k` : v}`}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '8px',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+                  fontSize: '12px',
+                }}
+                formatter={(value: any) => [`LKR ${Number(value).toLocaleString()}`, '']}
+              />
+              <Bar dataKey="revenue" name="Revenue" fill={primaryColor} radius={[4, 4, 0, 0]} maxBarSize={32} />
+              <Bar dataKey="expenses" name="Expenses" fill="#f87171" radius={[4, 4, 0, 0]} maxBarSize={32} />
+              <Bar dataKey="salaries" name="Salaries" fill="#fb923c" radius={[4, 4, 0, 0]} maxBarSize={32} />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="text-xs text-slate-400 font-medium">No financial comparison data for this period</div>
+        )}
       </div>
     </div>
   );

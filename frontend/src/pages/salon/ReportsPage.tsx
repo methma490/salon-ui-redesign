@@ -495,11 +495,11 @@ export default function ReportsPage() {
               <div className="reports-stat-content">
                 <span className="reports-stat-label">Total Sales</span>
                 <span className="reports-stat-value">
-                  LKR {formatMoneyAmount(salesData?.summary?.totalSales ?? 850000)}
+                  LKR {formatMoneyAmount(salesData?.summary?.totalSales ?? 0)}
                 </span>
                 <div className="reports-trend-badge reports-trend-up-green">
                   <TrendingUp className="h-3.5 w-3.5" />
-                  <span>{salesData?.summary?.totalSalesGrowth ?? 12}%</span>
+                  <span>{salesData?.summary?.totalSalesGrowth ?? 0}%</span>
                   <span className="reports-trend-subtext">vs previous period</span>
                 </div>
               </div>
@@ -513,17 +513,17 @@ export default function ReportsPage() {
               <div className="reports-stat-content">
                 <span className="reports-stat-label">Service Sales</span>
                 <span className="reports-stat-value">
-                  LKR {formatMoneyAmount(salesData?.summary?.serviceSales ?? 620000)}
+                  LKR {formatMoneyAmount(salesData?.summary?.serviceSales ?? 0)}
                 </span>
                 <div className="reports-stat-progress-wrap">
                   <div className="reports-stat-progress-track">
                     <div
                       className="reports-stat-progress-bar reports-progress-blue"
-                      style={{ width: `${salesData?.summary?.serviceSalesPct ?? 73}%` }}
+                      style={{ width: `${salesData?.summary?.serviceSalesPct ?? 0}%` }}
                     />
                   </div>
                   <span className="reports-stat-progress-pct">
-                    {salesData?.summary?.serviceSalesPct ?? 73}%
+                    {salesData?.summary?.serviceSalesPct ?? 0}%
                   </span>
                 </div>
               </div>
@@ -537,17 +537,17 @@ export default function ReportsPage() {
               <div className="reports-stat-content">
                 <span className="reports-stat-label">Product Sales</span>
                 <span className="reports-stat-value">
-                  LKR {formatMoneyAmount(salesData?.summary?.productSales ?? 230000)}
+                  LKR {formatMoneyAmount(salesData?.summary?.productSales ?? 0)}
                 </span>
                 <div className="reports-stat-progress-wrap">
                   <div className="reports-stat-progress-track">
                     <div
                       className="reports-stat-progress-bar reports-progress-sky"
-                      style={{ width: `${salesData?.summary?.productSalesPct ?? 27}%` }}
+                      style={{ width: `${salesData?.summary?.productSalesPct ?? 0}%` }}
                     />
                   </div>
                   <span className="reports-stat-progress-pct">
-                    {salesData?.summary?.productSalesPct ?? 27}%
+                    {salesData?.summary?.productSalesPct ?? 0}%
                   </span>
                 </div>
               </div>
@@ -561,11 +561,11 @@ export default function ReportsPage() {
               <div className="reports-stat-content">
                 <span className="reports-stat-label">Total Discounts</span>
                 <span className="reports-stat-value">
-                  LKR {formatMoneyAmount(salesData?.summary?.totalDiscounts ?? 45000)}
+                  LKR {formatMoneyAmount(salesData?.summary?.totalDiscounts ?? 0)}
                 </span>
                 <div className="reports-trend-badge reports-trend-up-red">
                   <TrendingUp className="h-3.5 w-3.5" />
-                  <span>{salesData?.summary?.discountsGrowth ?? 10}%</span>
+                  <span>{salesData?.summary?.discountsGrowth ?? 0}%</span>
                   <span className="reports-trend-subtext">vs previous period</span>
                 </div>
               </div>
@@ -609,19 +609,7 @@ export default function ReportsPage() {
             <div className="w-full h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
-                  data={salesData?.chart && salesData.chart.length > 0 ? salesData.chart : [
-                    { date: '2026-09-01', label: '1 Sep', serviceSales: 15000, productSales: 6000, discounts: 2000, total: 21000 },
-                    { date: '2026-09-04', label: '4 Sep', serviceSales: 10000, productSales: 5000, discounts: 1500, total: 15000 },
-                    { date: '2026-09-07', label: '7 Sep', serviceSales: 22000, productSales: 8000, discounts: 2500, total: 30000 },
-                    { date: '2026-09-10', label: '10 Sep', serviceSales: 18000, productSales: 9000, discounts: 2000, total: 27000 },
-                    { date: '2026-09-13', label: '13 Sep', serviceSales: 28000, productSales: 14000, discounts: 4000, total: 42000 },
-                    { date: '2026-09-16', label: '16 Sep', serviceSales: 21000, productSales: 8000, discounts: 2500, total: 29000 },
-                    { date: '2026-09-19', label: '19 Sep', serviceSales: 27000, productSales: 9000, discounts: 3000, total: 36000 },
-                    { date: '2026-09-22', label: '22 Sep', serviceSales: 35000, productSales: 14000, discounts: 4500, total: 49000 },
-                    { date: '2026-09-25', label: '25 Sep', serviceSales: 40000, productSales: 12000, discounts: 3500, total: 52000 },
-                    { date: '2026-09-28', label: '28 Sep', serviceSales: 36000, productSales: 15000, discounts: 4000, total: 51000 },
-                    { date: '2026-09-30', label: '30 Sep', serviceSales: 45000, productSales: 18000, discounts: 5000, total: 63000 },
-                  ]}
+                  data={salesData?.chart && salesData.chart.length > 0 ? salesData.chart : []}
                   margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
                 >
                   <defs>
@@ -793,33 +781,31 @@ export default function ReportsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {(salesData?.serviceTransactions && salesData.serviceTransactions.length > 0
-                      ? salesData.serviceTransactions.slice((servicePage - 1) * servicePerPage, servicePage * servicePerPage)
-                      : [
-                          { id: '1', createdAt: '01 Sep 2026 10:15 AM', invoiceNo: 'INV-0001', employeeName: 'Chamathka', customerName: 'Nimal Perera', customerPhone: '077 123 4567', serviceName: 'Haircut', grossAmount: 3000, discountAmount: 300, netAmount: 2700, paymentMethod: 'Cash', branchName: 'Moratuwa' },
-                          { id: '2', createdAt: '01 Sep 2026 11:30 AM', invoiceNo: 'INV-0002', employeeName: 'Sanduni', customerName: 'Kavindi Silva', customerPhone: '076 234 5678', serviceName: 'Hair Coloring', grossAmount: 8000, discountAmount: 500, netAmount: 7500, paymentMethod: 'Card', branchName: 'Moratuwa' },
-                          { id: '3', createdAt: '02 Sep 2026 02:20 PM', invoiceNo: 'INV-0003', employeeName: 'Tharushi', customerName: 'Amara Jayasiri', customerPhone: '071 345 6789', serviceName: 'Facial', grossAmount: 6000, discountAmount: 0, netAmount: 6000, paymentMethod: 'Card', branchName: 'Moratuwa' },
-                          { id: '4', createdAt: '03 Sep 2026 09:45 AM', invoiceNo: 'INV-0004', employeeName: 'Chamathka', customerName: 'Sadeepa Rana', customerPhone: '077 567 8912', serviceName: 'Hair Treatment', grossAmount: 5500, discountAmount: 500, netAmount: 5000, paymentMethod: 'Cash', branchName: 'Moratuwa' },
-                          { id: '5', createdAt: '03 Sep 2026 01:10 PM', invoiceNo: 'INV-0005', employeeName: 'Sanduni', customerName: 'Dilini Fernando', customerPhone: '075 456 7890', serviceName: 'Manicure', grossAmount: 3500, discountAmount: 0, netAmount: 3500, paymentMethod: 'Card', branchName: 'Moratuwa' },
-                          { id: '6', createdAt: '04 Sep 2026 11:00 AM', invoiceNo: 'INV-0006', employeeName: 'Tharushi', customerName: 'Ishani Perera', customerPhone: '078 667 8901', serviceName: 'Pedicure', grossAmount: 4000, discountAmount: 200, netAmount: 3800, paymentMethod: 'Online', branchName: 'Moratuwa' },
-                          { id: '7', createdAt: '04 Sep 2026 03:30 PM', invoiceNo: 'INV-0007', employeeName: 'Chamathka', customerName: 'Nirosha Silva', customerPhone: '076 789 0123', serviceName: 'Bridal Make-up', grossAmount: 15000, discountAmount: 1500, netAmount: 13500, paymentMethod: 'Card', branchName: 'Moratuwa' },
-                          { id: '8', createdAt: '05 Sep 2026 12:15 PM', invoiceNo: 'INV-0008', employeeName: 'Sanduni', customerName: 'Hansi Wickrama', customerPhone: '071 234 5678', serviceName: 'Hair Spa', grossAmount: 7000, discountAmount: 0, netAmount: 7000, paymentMethod: 'Cash', branchName: 'Moratuwa' },
-                        ]
-                    ).map((row) => (
-                      <tr key={row.id}>
-                        <td>{row.createdAt}</td>
-                        <td className="font-semibold text-slate-900">{row.invoiceNo}</td>
-                        <td>{row.employeeName}</td>
-                        <td className="font-medium text-slate-800">{row.customerName}</td>
-                        <td>{row.customerPhone}</td>
-                        <td>{row.serviceName}</td>
-                        <td>{formatMoneyAmount(row.grossAmount)}</td>
-                        <td>{formatMoneyAmount(row.discountAmount)}</td>
-                        <td className="font-semibold text-slate-900">{formatMoneyAmount(row.netAmount)}</td>
-                        <td>{row.paymentMethod}</td>
-                        <td>{row.branchName}</td>
+                    {salesData?.serviceTransactions && salesData.serviceTransactions.length > 0 ? (
+                      salesData.serviceTransactions
+                        .slice((servicePage - 1) * servicePerPage, servicePage * servicePerPage)
+                        .map((row) => (
+                          <tr key={row.id}>
+                            <td>{row.createdAt}</td>
+                            <td className="font-semibold text-slate-900">{row.invoiceNo}</td>
+                            <td>{row.employeeName}</td>
+                            <td className="font-medium text-slate-800">{row.customerName}</td>
+                            <td>{row.customerPhone}</td>
+                            <td>{row.serviceName}</td>
+                            <td>{formatMoneyAmount(row.grossAmount)}</td>
+                            <td>{formatMoneyAmount(row.discountAmount)}</td>
+                            <td className="font-semibold text-slate-900">{formatMoneyAmount(row.netAmount)}</td>
+                            <td>{row.paymentMethod}</td>
+                            <td>{row.branchName}</td>
+                          </tr>
+                        ))
+                    ) : (
+                      <tr>
+                        <td colSpan={11} className="text-center py-6 text-xs text-slate-400">
+                          No service sales transactions recorded for this period.
+                        </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -827,7 +813,9 @@ export default function ReportsPage() {
               {/* Pagination */}
               <div className="reports-pagination-bar">
                 <div>
-                  Showing 1 - {servicePerPage} of {salesData?.serviceTransactions?.length || 134} records
+                  Showing {salesData?.serviceTransactions?.length ? (servicePage - 1) * servicePerPage + 1 : 0} -{' '}
+                  {Math.min(servicePage * servicePerPage, salesData?.serviceTransactions?.length || 0)} of{' '}
+                  {salesData?.serviceTransactions?.length || 0} records
                 </div>
                 <div className="reports-pagination-pages">
                   <button
@@ -940,33 +928,31 @@ export default function ReportsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {(salesData?.productTransactions && salesData.productTransactions.length > 0
-                      ? salesData.productTransactions.slice((productPage - 1) * productPerPage, productPage * productPerPage)
-                      : [
-                          { id: '1', createdAt: '01 Sep 2026 10:20 AM', invoiceNo: 'INV-0001', customerName: 'Nimal Perera', customerPhone: '077 123 4567', productName: 'Shampoo (250ml)', quantity: 2, grossAmount: 4000, discountAmount: 0, netAmount: 4000, paymentMethod: 'Cash', branchName: 'Moratuwa' },
-                          { id: '2', createdAt: '01 Sep 2026 11:35 AM', invoiceNo: 'INV-0002', customerName: 'Kavindi Silva', customerPhone: '076 234 5678', productName: 'Hair Serum', quantity: 1, grossAmount: 2500, discountAmount: 250, netAmount: 2250, paymentMethod: 'Card', branchName: 'Moratuwa' },
-                          { id: '3', createdAt: '02 Sep 2026 02:30 PM', invoiceNo: 'INV-0003', customerName: 'Amara Jayasiri', customerPhone: '071 345 6789', productName: 'Conditioner', quantity: 2, grossAmount: 4800, discountAmount: 0, netAmount: 4800, paymentMethod: 'Card', branchName: 'Moratuwa' },
-                          { id: '4', createdAt: '03 Sep 2026 09:50 AM', invoiceNo: 'INV-0004', customerName: 'Sadeepa Rana', customerPhone: '077 567 8912', productName: 'Hair Mask', quantity: 1, grossAmount: 5000, discountAmount: 500, netAmount: 4500, paymentMethod: 'Cash', branchName: 'Moratuwa' },
-                          { id: '5', createdAt: '03 Sep 2026 01:20 PM', invoiceNo: 'INV-0005', customerName: 'Dilini Fernando', customerPhone: '075 456 7890', productName: 'Nail Polish', quantity: 3, grossAmount: 2400, discountAmount: 200, netAmount: 2200, paymentMethod: 'Card', branchName: 'Moratuwa' },
-                          { id: '6', createdAt: '04 Sep 2026 11:10 AM', invoiceNo: 'INV-0006', customerName: 'Ishani Perera', customerPhone: '078 667 8901', productName: 'Face Cream', quantity: 1, grossAmount: 4200, discountAmount: 0, netAmount: 4200, paymentMethod: 'Online', branchName: 'Moratuwa' },
-                          { id: '7', createdAt: '04 Sep 2026 03:40 PM', invoiceNo: 'INV-0007', customerName: 'Nirosha Silva', customerPhone: '076 789 0123', productName: 'Hair Oil', quantity: 2, grossAmount: 3000, discountAmount: 300, netAmount: 2700, paymentMethod: 'Card', branchName: 'Moratuwa' },
-                          { id: '8', createdAt: '05 Sep 2026 12:20 PM', invoiceNo: 'INV-0008', customerName: 'Hansi Wickrama', customerPhone: '071 234 5678', productName: 'Styling Gel', quantity: 1, grossAmount: 2800, discountAmount: 0, netAmount: 2800, paymentMethod: 'Cash', branchName: 'Moratuwa' },
-                        ]
-                    ).map((row) => (
-                      <tr key={row.id}>
-                        <td>{row.createdAt}</td>
-                        <td className="font-semibold text-slate-900">{row.invoiceNo}</td>
-                        <td className="font-medium text-slate-800">{row.customerName}</td>
-                        <td>{row.customerPhone}</td>
-                        <td>{row.productName}</td>
-                        <td>{row.quantity}</td>
-                        <td>{formatMoneyAmount(row.grossAmount)}</td>
-                        <td>{formatMoneyAmount(row.discountAmount)}</td>
-                        <td className="font-semibold text-slate-900">{formatMoneyAmount(row.netAmount)}</td>
-                        <td>{row.paymentMethod}</td>
-                        <td>{row.branchName}</td>
+                    {salesData?.productTransactions && salesData.productTransactions.length > 0 ? (
+                      salesData.productTransactions
+                        .slice((productPage - 1) * productPerPage, productPage * productPerPage)
+                        .map((row) => (
+                          <tr key={row.id}>
+                            <td>{row.createdAt}</td>
+                            <td className="font-semibold text-slate-900">{row.invoiceNo}</td>
+                            <td className="font-medium text-slate-800">{row.customerName}</td>
+                            <td>{row.customerPhone}</td>
+                            <td>{row.productName}</td>
+                            <td>{row.quantity}</td>
+                            <td>{formatMoneyAmount(row.grossAmount)}</td>
+                            <td>{formatMoneyAmount(row.discountAmount)}</td>
+                            <td className="font-semibold text-slate-900">{formatMoneyAmount(row.netAmount)}</td>
+                            <td>{row.paymentMethod}</td>
+                            <td>{row.branchName}</td>
+                          </tr>
+                        ))
+                    ) : (
+                      <tr>
+                        <td colSpan={10} className="text-center py-6 text-xs text-slate-400">
+                          No product sales transactions recorded for this period.
+                        </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -974,7 +960,9 @@ export default function ReportsPage() {
               {/* Pagination */}
               <div className="reports-pagination-bar">
                 <div>
-                  Showing 1 - {productPerPage} of {salesData?.productTransactions?.length || 96} records
+                  Showing {salesData?.productTransactions?.length ? (productPage - 1) * productPerPage + 1 : 0} -{' '}
+                  {Math.min(productPage * productPerPage, salesData?.productTransactions?.length || 0)} of{' '}
+                  {salesData?.productTransactions?.length || 0} records
                 </div>
                 <div className="reports-pagination-pages">
                   <button
@@ -1136,49 +1124,45 @@ export default function ReportsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(employeeData?.employees && employeeData.employees.length > 0
-                    ? employeeData.employees
-                    : [
-                        { id: '1', index: 1, name: 'Chamathka Perera', servicesCompleted: 96, serviceSales: 185000, productSales: 32000, totalSales: 217000, commission: 18500 },
-                        { id: '2', index: 2, name: 'Sanduni Fernando', servicesCompleted: 72, serviceSales: 152000, productSales: 28000, totalSales: 180000, commission: 15200 },
-                        { id: '3', index: 3, name: 'Tharushi Jayasiri', servicesCompleted: 68, serviceSales: 118000, productSales: 25000, totalSales: 143000, commission: 12800 },
-                        { id: '4', index: 4, name: 'Nirosha Silva', servicesCompleted: 54, serviceSales: 85000, productSales: 20000, totalSales: 105000, commission: 8900 },
-                        { id: '5', index: 5, name: 'Dilini Fernando', servicesCompleted: 48, serviceSales: 62000, productSales: 18500, totalSales: 80500, commission: 7200 },
-                        { id: '6', index: 6, name: 'Ishani Perera', servicesCompleted: 42, serviceSales: 58000, productSales: 16000, totalSales: 74000, commission: 6800 },
-                        { id: '7', index: 7, name: 'Kavindi Silva', servicesCompleted: 36, serviceSales: 45000, productSales: 14000, totalSales: 59000, commission: 5700 },
-                        { id: '8', index: 8, name: 'Hansi Wickrama', servicesCompleted: 28, serviceSales: 35000, productSales: 12500, totalSales: 47500, commission: 4400 },
-                      ]
-                  ).map((emp, i) => (
-                    <tr key={emp.id}>
-                      <td>{emp.index || i + 1}</td>
-                      <td>
-                        <div className="reports-emp-cell">
-                          <div
-                            className="reports-emp-avatar"
-                            style={{ backgroundColor: avatarColors[i % avatarColors.length] }}
-                          >
-                            {emp.name.charAt(0)}
+                  {employeeData?.employees && employeeData.employees.length > 0 ? (
+                    employeeData.employees.map((emp, i) => (
+                      <tr key={emp.id}>
+                        <td>{emp.index || i + 1}</td>
+                        <td>
+                          <div className="reports-emp-cell">
+                            <div
+                              className="reports-emp-avatar"
+                              style={{ backgroundColor: avatarColors[i % avatarColors.length] }}
+                            >
+                              {emp.name.charAt(0)}
+                            </div>
+                            <span className="reports-emp-name">{emp.name}</span>
                           </div>
-                          <span className="reports-emp-name">{emp.name}</span>
-                        </div>
+                        </td>
+                        <td>{emp.servicesCompleted}</td>
+                        <td>{formatMoneyAmount(emp.serviceSales)}</td>
+                        <td>{formatMoneyAmount(emp.productSales)}</td>
+                        <td className="font-semibold text-slate-900">{formatMoneyAmount(emp.totalSales)}</td>
+                        <td className="font-medium text-slate-800">{formatMoneyAmount(emp.commission)}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={7} className="text-center py-6 text-xs text-slate-400">
+                        No employee performance records found for this period.
                       </td>
-                      <td>{emp.servicesCompleted}</td>
-                      <td>{formatMoneyAmount(emp.serviceSales)}</td>
-                      <td>{formatMoneyAmount(emp.productSales)}</td>
-                      <td className="font-semibold text-slate-900">{formatMoneyAmount(emp.totalSales)}</td>
-                      <td className="font-medium text-slate-800">{formatMoneyAmount(emp.commission)}</td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
                 <tfoot>
                   <tr className="reports-total-row">
                     <td>Total</td>
                     <td></td>
-                    <td>{employeeData?.summary?.totalServicesCompleted ?? 428}</td>
-                    <td>{formatMoneyAmount(employeeData?.summary?.totalServiceSales ?? 620000)}</td>
-                    <td>{formatMoneyAmount(employeeData?.summary?.totalProductSales ?? 230000)}</td>
-                    <td>{formatMoneyAmount(employeeData?.summary?.totalSales ?? 850000)}</td>
-                    <td>{formatMoneyAmount(employeeData?.summary?.totalCommission ?? 72500)}</td>
+                    <td>{employeeData?.summary?.totalServicesCompleted ?? 0}</td>
+                    <td>{formatMoneyAmount(employeeData?.summary?.totalServiceSales ?? 0)}</td>
+                    <td>{formatMoneyAmount(employeeData?.summary?.totalProductSales ?? 0)}</td>
+                    <td>{formatMoneyAmount(employeeData?.summary?.totalSales ?? 0)}</td>
+                    <td>{formatMoneyAmount(employeeData?.summary?.totalCommission ?? 0)}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -1187,7 +1171,7 @@ export default function ReportsPage() {
             {/* Pagination */}
             <div className="reports-pagination-bar">
               <div>
-                Showing 1 - {employeeData?.employees?.length || 8} of {employeeData?.employees?.length || 8} employees
+                Showing 1 - {employeeData?.employees?.length || 0} of {employeeData?.employees?.length || 0} employees
               </div>
               <div className="reports-pagination-pages">
                 <button
@@ -1320,13 +1304,9 @@ export default function ReportsPage() {
               <div className="reports-stat-content">
                 <span className="reports-stat-label">Total Products</span>
                 <span className="reports-stat-value">
-                  {inventoryData?.summary?.totalProducts ?? 125}
+                  {inventoryData?.summary?.totalProducts ?? 0}
                 </span>
-                <div className="reports-trend-badge reports-trend-up-green">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  <span>8%</span>
-                  <span className="reports-trend-subtext">vs previous period</span>
-                </div>
+                <div className="text-xs text-slate-400 mt-1">Catalog items</div>
               </div>
             </div>
 
@@ -1338,13 +1318,9 @@ export default function ReportsPage() {
               <div className="reports-stat-content">
                 <span className="reports-stat-label">Total Stock Units</span>
                 <span className="reports-stat-value">
-                  {(inventoryData?.summary?.totalStockUnits ?? 1850).toLocaleString()}
+                  {(inventoryData?.summary?.totalStockUnits ?? 0).toLocaleString()}
                 </span>
-                <div className="reports-trend-badge reports-trend-up-green">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  <span>12%</span>
-                  <span className="reports-trend-subtext">vs previous period</span>
-                </div>
+                <div className="text-xs text-slate-400 mt-1">Available units</div>
               </div>
             </div>
 
@@ -1356,13 +1332,9 @@ export default function ReportsPage() {
               <div className="reports-stat-content">
                 <span className="reports-stat-label">Total Stock Value</span>
                 <span className="reports-stat-value">
-                  LKR {formatMoneyAmount(inventoryData?.summary?.totalStockValue ?? 780000)}
+                  LKR {formatMoneyAmount(inventoryData?.summary?.totalStockValue ?? 0)}
                 </span>
-                <div className="reports-trend-badge reports-trend-up-green">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  <span>10%</span>
-                  <span className="reports-trend-subtext">vs previous period</span>
-                </div>
+                <div className="text-xs text-slate-400 mt-1">Asset valuation</div>
               </div>
             </div>
 
@@ -1374,13 +1346,9 @@ export default function ReportsPage() {
               <div className="reports-stat-content">
                 <span className="reports-stat-label">Low Stock Items</span>
                 <span className="reports-stat-value">
-                  {inventoryData?.summary?.lowStockCount ?? 12}
+                  {inventoryData?.summary?.lowStockCount ?? 0}
                 </span>
-                <div className="reports-trend-badge reports-trend-up-red">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  <span>2</span>
-                  <span className="reports-trend-subtext">vs previous period</span>
-                </div>
+                <div className="text-xs text-amber-600 mt-1 font-medium">Needs reorder</div>
               </div>
             </div>
 
@@ -1392,13 +1360,9 @@ export default function ReportsPage() {
               <div className="reports-stat-content">
                 <span className="reports-stat-label">Out of Stock Items</span>
                 <span className="reports-stat-value">
-                  {inventoryData?.summary?.outOfStockCount ?? 5}
+                  {inventoryData?.summary?.outOfStockCount ?? 0}
                 </span>
-                <div className="reports-trend-badge reports-trend-up-red">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  <span>1</span>
-                  <span className="reports-trend-subtext">vs previous period</span>
-                </div>
+                <div className="text-xs text-rose-600 mt-1 font-medium">Unavailable</div>
               </div>
             </div>
           </div>
@@ -1439,56 +1403,52 @@ export default function ReportsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(inventoryData?.products && inventoryData.products.length > 0
-                    ? inventoryData.products.slice((invPage - 1) * invPerPage, invPage * invPerPage)
-                    : [
-                        { id: '1', index: 1, name: 'Shampoo (250ml)', sku: 'SH-001', categoryName: 'Hair Care', imageUrl: null, currentStock: 25, stockValue: 37500, stockIn: 50, stockOut: 25, adjustments: 0, status: 'In Stock' as const },
-                        { id: '2', index: 2, name: 'Hair Serum', sku: 'HS-002', categoryName: 'Hair Care', imageUrl: null, currentStock: 6, stockValue: 9000, stockIn: 20, stockOut: 14, adjustments: 0, status: 'Low Stock' as const },
-                        { id: '3', index: 3, name: 'Conditioner', sku: 'CO-003', categoryName: 'Hair Care', imageUrl: null, currentStock: 0, stockValue: 0, stockIn: 10, stockOut: 10, adjustments: 0, status: 'Out of Stock' as const },
-                        { id: '4', index: 4, name: 'Hair Mask', sku: 'HM-004', categoryName: 'Hair Care', imageUrl: null, currentStock: 15, stockValue: 45000, stockIn: 30, stockOut: 15, adjustments: 0, status: 'In Stock' as const },
-                        { id: '5', index: 5, name: 'Nail Polish', sku: 'NP-005', categoryName: 'Nail Care', imageUrl: null, currentStock: 8, stockValue: 12000, stockIn: 20, stockOut: 12, adjustments: 0, status: 'Low Stock' as const },
-                        { id: '6', index: 6, name: 'Face Cream', sku: 'FC-006', categoryName: 'Skincare', imageUrl: null, currentStock: 18, stockValue: 54000, stockIn: 25, stockOut: 7, adjustments: 1, status: 'In Stock' as const },
-                        { id: '7', index: 7, name: 'Hair Oil', sku: 'HO-007', categoryName: 'Hair Care', imageUrl: null, currentStock: 3, stockValue: 9000, stockIn: 10, stockOut: 7, adjustments: 0, status: 'Low Stock' as const },
-                        { id: '8', index: 8, name: 'Styling Gel', sku: 'SG-008', categoryName: 'Hair Care', imageUrl: null, currentStock: 0, stockValue: 0, stockIn: 5, stockOut: 5, adjustments: 0, status: 'Out of Stock' as const },
-                      ]
-                  ).map((prod, i) => (
-                    <tr key={prod.id}>
-                      <td>{prod.index || i + 1}</td>
-                      <td>
-                        <div className="reports-product-cell">
-                          <div className="reports-product-thumb">
-                            {prod.imageUrl ? (
-                              <img src={prod.imageUrl} alt="" className="h-full w-full object-cover rounded" />
-                            ) : (
-                              <Package className="h-4 w-4" />
-                            )}
+                  {inventoryData?.products && inventoryData.products.length > 0 ? (
+                    inventoryData.products.slice((invPage - 1) * invPerPage, invPage * invPerPage).map((prod, i) => (
+                      <tr key={prod.id}>
+                        <td>{prod.index || i + 1}</td>
+                        <td>
+                          <div className="reports-product-cell">
+                            <div className="reports-product-thumb">
+                              {prod.imageUrl ? (
+                                <img src={prod.imageUrl} alt="" className="h-full w-full object-cover rounded" />
+                              ) : (
+                                <Package className="h-4 w-4" />
+                              )}
+                            </div>
+                            <span className="reports-product-name">{prod.name}</span>
                           </div>
-                          <span className="reports-product-name">{prod.name}</span>
-                        </div>
-                      </td>
-                      <td className="font-mono text-xs text-slate-500">{prod.sku}</td>
-                      <td>{prod.categoryName}</td>
-                      <td className="font-semibold text-slate-800">{prod.currentStock}</td>
-                      <td>{formatMoneyAmount(prod.stockValue)}</td>
-                      <td>{prod.stockIn}</td>
-                      <td>{prod.stockOut}</td>
-                      <td>{prod.adjustments}</td>
-                      <td>
-                        <span
-                          className={`reports-status-pill ${
-                            prod.status === 'In Stock'
-                              ? 'in-stock'
-                              : prod.status === 'Low Stock'
-                              ? 'low-stock'
-                              : 'out-of-stock'
-                          }`}
-                        >
-                          <span className="reports-status-dot" />
-                          <span>{prod.status}</span>
-                        </span>
+                        </td>
+                        <td className="font-mono text-xs text-slate-500">{prod.sku}</td>
+                        <td>{prod.categoryName}</td>
+                        <td className="font-semibold text-slate-800">{prod.currentStock}</td>
+                        <td>{formatMoneyAmount(prod.stockValue)}</td>
+                        <td>{prod.stockIn}</td>
+                        <td>{prod.stockOut}</td>
+                        <td>{prod.adjustments}</td>
+                        <td>
+                          <span
+                            className={`reports-status-pill ${
+                              prod.status === 'In Stock'
+                                ? 'in-stock'
+                                : prod.status === 'Low Stock'
+                                ? 'low-stock'
+                                : 'out-of-stock'
+                            }`}
+                          >
+                            <span className="reports-status-dot" />
+                            <span>{prod.status}</span>
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={10} className="text-center py-6 text-xs text-slate-400">
+                        No product inventory records found.
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
                 <tfoot>
                   <tr className="reports-total-row">
@@ -1496,11 +1456,11 @@ export default function ReportsPage() {
                     <td>-</td>
                     <td>-</td>
                     <td>-</td>
-                    <td>{inventoryData?.summaryTotals?.currentStock ?? 1850}</td>
-                    <td>{formatMoneyAmount(inventoryData?.summaryTotals?.stockValue ?? 780000)}</td>
-                    <td>{inventoryData?.summaryTotals?.stockIn ?? 320}</td>
-                    <td>{inventoryData?.summaryTotals?.stockOut ?? 245}</td>
-                    <td>{inventoryData?.summaryTotals?.adjustments ?? 3}</td>
+                    <td>{inventoryData?.summaryTotals?.currentStock ?? 0}</td>
+                    <td>{formatMoneyAmount(inventoryData?.summaryTotals?.stockValue ?? 0)}</td>
+                    <td>{inventoryData?.summaryTotals?.stockIn ?? 0}</td>
+                    <td>{inventoryData?.summaryTotals?.stockOut ?? 0}</td>
+                    <td>{inventoryData?.summaryTotals?.adjustments ?? 0}</td>
                     <td>-</td>
                   </tr>
                 </tfoot>
@@ -1510,7 +1470,7 @@ export default function ReportsPage() {
             {/* Pagination */}
             <div className="reports-pagination-bar">
               <div>
-                Showing 1 - {invPerPage} of {inventoryData?.products?.length || 125} products
+                Showing 1 - {inventoryData?.products?.length || 0} of {inventoryData?.products?.length || 0} products
               </div>
               <div className="reports-pagination-pages">
                 <button
