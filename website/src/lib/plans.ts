@@ -86,7 +86,7 @@ export function planFeatureNames(plan: PublicPlan): string[] {
 
 export const DEFAULT_FALLBACK_PLANS: PublicPlan[] = [
   {
-    id: '89590cbc-0930-49e8-a536-4e16d6a64e64',
+    id: '5dbad8a3-55c5-4750-95bd-fe8ab1884ae7',
     code: 'SILVER',
     name: 'Silver Plan',
     description: 'Essential tools for small salons getting started',
@@ -99,14 +99,16 @@ export const DEFAULT_FALLBACK_PLANS: PublicPlan[] = [
       { billingCycle: 'YEARLY', price: 50000, currency: 'LKR', trialDays: 14 },
     ],
     features: [
-      { code: 'APPOINTMENTS', name: 'Appointments' },
+      { code: 'ANALYTICS', name: 'Analytics' },
       { code: 'CUSTOMERS', name: 'Customers' },
       { code: 'EMPLOYEES', name: 'Employee Management' },
+      { code: 'EXPENSES', name: 'Expenses' },
+      { code: 'POS', name: 'Point of Sale' },
       { code: 'SERVICES', name: 'Services' },
     ],
   },
   {
-    id: '0f6256eb-c5a8-4be5-ae07-072bf6791a32',
+    id: '0b48d4e0-162d-43fc-94d0-f721ebffb122',
     code: 'GOLD',
     name: 'Gold Plan',
     description: 'Complete salon operations for growing businesses',
@@ -119,19 +121,24 @@ export const DEFAULT_FALLBACK_PLANS: PublicPlan[] = [
       { billingCycle: 'YEARLY', price: 150000, currency: 'LKR', trialDays: 14 },
     ],
     features: [
+      { code: 'ANALYTICS', name: 'Analytics' },
       { code: 'APPOINTMENTS', name: 'Appointments' },
       { code: 'CUSTOMERS', name: 'Customers' },
       { code: 'EMPLOYEES', name: 'Employee Management' },
+      { code: 'EXPENSES', name: 'Expenses' },
       { code: 'INVENTORY', name: 'Inventory' },
+      { code: 'MULTI_BRANCH', name: 'Multi Branch' },
+      { code: 'PAYROLL', name: 'Payroll' },
       { code: 'POS', name: 'Point of Sale' },
       { code: 'QUOTATIONS', name: 'Quotations' },
       { code: 'REPORTS', name: 'Reports' },
       { code: 'SERVICES', name: 'Services' },
+      { code: 'SMS_NOTIFICATIONS', name: 'SMS Notifications' },
       { code: 'STAFF_MANAGEMENT', name: 'Staff Management' },
     ],
   },
   {
-    id: '3c54ef57-dc9f-4ef6-a421-1756548f64a8',
+    id: '0ca456db-5a12-42cf-8c0c-f1216c5624ae',
     code: 'PLATINUM',
     name: 'Platinum Plan',
     description: 'Full platform for multi-branch salons and advanced analytics',

@@ -34,7 +34,32 @@ import { websiteHomeUrl, websitePricingUrl } from '@/config/website-url';
 export default function SignupPage() {
   const { planId } = useParams<{ planId: string }>();
   const { data: plans = [], isLoading } = usePublicPlans();
-  const plan = useMemo(() => plans.find((p) => p.id === planId), [plans, planId]);
+  const plan = useMemo(() => {
+    if (!planId || !plans.length) return undefined;
+    const trimmed = planId.trim();
+    const lower = trimmed.toLowerCase();
+
+    // 1. Direct match by UUID
+    const byId = plans.find((p) => p.id === trimmed);
+    if (byId) return byId;
+
+    // 2. Match by plan code (e.g. SILVER, GOLD, PLATINUM)
+    const byCode = plans.find((p) => p.code?.toLowerCase() === lower);
+    if (byCode) return byCode;
+
+    // 3. Fallback map for legacy placeholder UUIDs
+    const legacyFallbackMap: Record<string, string> = {
+      '89590cbc-0930-49e8-a536-4e16d6a64e64': 'SILVER',
+      '0f6256eb-c5a8-4be5-ae07-072bf6791a32': 'GOLD',
+      '3c54ef57-dc9f-4ef6-a421-1756548f64a8': 'PLATINUM',
+    };
+    const mappedCode = legacyFallbackMap[trimmed];
+    if (mappedCode) {
+      return plans.find((p) => p.code === mappedCode);
+    }
+
+    return undefined;
+  }, [plans, planId]);
 
   // Stepper: 1: Salon details, 2: Admin account, 3: Payment
   const [step, setStep] = useState<1 | 2 | 3>(1);
