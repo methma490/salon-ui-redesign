@@ -11,8 +11,9 @@ export function getApiBaseUrl(): string {
   const publicUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
   if (publicUrl) {
     if (
-      process.env.NODE_ENV === 'production' &&
-      (publicUrl === 'http://localhost:3000/api' || publicUrl === 'http://localhost:3000')
+      publicUrl.includes('salon-main-website') ||
+      (process.env.NODE_ENV === 'production' &&
+        (publicUrl === 'http://localhost:3000/api' || publicUrl === 'http://localhost:3000'))
     ) {
       return 'https://saloon-server.bc.dartcodes.com/api';
     }
@@ -26,8 +27,11 @@ export function getApiBaseUrl(): string {
 }
 
 export function getAppUrl(): string {
-  const envUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '');
-  if (envUrl) return envUrl;
+  let envUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (envUrl) {
+    envUrl = envUrl.replace(/\/(salon\/)?login\/?$/i, '').replace(/\/$/, '');
+    if (envUrl) return envUrl;
+  }
   if (process.env.NODE_ENV === 'production') {
     return 'https://saloon-client.bc.dartcodes.com';
   }
@@ -43,7 +47,7 @@ export function signupUrl(planId: string, billingCycle?: string): string {
 }
 
 export function loginUrl(): string {
-  return `${getAppUrl()}/login`;
+  return `${getAppUrl()}/salon/login`;
 }
 
 export async function fetchPublicPlans(): Promise<PublicPlan[]> {
