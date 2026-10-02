@@ -4,9 +4,9 @@
    ======================================== */
 
 :root {
-  --sa-primary: #0d5c3d;
-  --sa-primary-light: #ecfdf3;
-  --sa-primary-dark: #064e32;
+  --sa-primary: #a44a5c;
+  --sa-primary-light: #f5e8eb;
+  --sa-primary-dark: #8a3d4d;
   --sa-secondary: #0f172a;
   --sa-bg: #f8fafc;
   --sa-surface: #ffffff;
@@ -20,8 +20,8 @@
   --sa-warning-light: #fef3c7;
   --sa-danger: #ef4444;
   --sa-danger-light: #fee2e2;
-  --sa-info: #0d5c3d;
-  --sa-info-light: #ecfdf3;
+  --sa-info: #a44a5c;
+  --sa-info-light: #f5e8eb;
   --sa-radius: 12px;
   --sa-radius-sm: 8px;
   --sa-radius-lg: 16px;
@@ -96,7 +96,7 @@
 .sa-brand-logo {
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, #10b981 0%, #0d5c3d 100%);
+  background: linear-gradient(135deg, #d4af7c 0%, #a44a5c 100%);
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -188,7 +188,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #10b981 0%, #0d5c3d 100%);
+  background: linear-gradient(135deg, #d4af7c 0%, #a44a5c 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -405,7 +405,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #10b981 0%, #0d5c3d 100%);
+  background: linear-gradient(135deg, #d4af7c 0%, #a44a5c 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -891,7 +891,7 @@
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--sa-primary-light) 0%, #d1fae5 100%);
+  background: linear-gradient(135deg, var(--sa-primary-light) 0%, #f3e8d8 100%);
   display: flex;
   align-items: center;
   justify-content: center;

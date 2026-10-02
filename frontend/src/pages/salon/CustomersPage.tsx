@@ -3,22 +3,25 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  Clock3,
   FileText,
   History,
   Loader2,
   Mail,
+  MapPin,
   Pencil,
   Phone,
   Plus,
   RotateCcw,
   Search,
+  Scissors,
   Trash2,
   User,
   Users,
   X,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import Swal from 'sweetalert2';
+import { appAlert } from '@/lib/app-alerts';
 import { tenantApi, type Customer, type CustomerBookingHistoryItem } from '@/api/tenant.api';
 import {
   Dialog,
@@ -153,7 +156,7 @@ function CustomerDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[540px] p-6 sm:p-7 rounded-2xl sm:rounded-3xl border border-slate-100 shadow-xl bg-white max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[calc(100%-1rem)] max-w-[540px] p-4 sm:p-7 rounded-2xl sm:rounded-3xl border border-slate-100 shadow-xl bg-white max-h-[90dvh] overflow-y-auto">
         <DialogHeader className="space-y-1 text-left">
           <DialogTitle className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
             {title}
@@ -353,19 +356,71 @@ function CustomerBookingHistoryDialog({
     enabled: open && !!customer,
   });
 
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const sortedHistory = useMemo(
+    () =>
+      history
+        .filter((item) => statusFilter === 'ALL' || item.status === statusFilter)
+        .sort((a, b) => {
+          const first = `${a.appointmentDate}T${a.startTime}`;
+          const second = `${b.appointmentDate}T${b.startTime}`;
+          return sortOrder === 'newest' ? second.localeCompare(first) : first.localeCompare(second);
+        }),
+    [history, sortOrder, statusFilter],
+  );
+
+  const formatTime = (time: string) => {
+    const [hours, minutes] = time.slice(0, 5).split(':').map(Number);
+    return new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }).format(new Date(2000, 0, 1, hours, minutes));
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-[var(--brand-primary,#0d5c3d)]" />
-            <span>Booking History — {customer?.name}</span>
-            <span className="text-xs font-mono font-normal text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-              {customer?.code}
+      <DialogContent className="gap-0 overflow-hidden rounded-3xl border border-white/70 bg-[#f8fbff] p-0 shadow-2xl sm:max-w-[850px] max-sm:left-0 max-sm:top-0 max-sm:h-[100dvh] max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none max-sm:flex max-sm:flex-col">
+        <DialogHeader className="relative bg-[radial-gradient(circle_at_top_left,_#e4f3ff,_#f8fbff_58%,_#f4f8ff)] px-4 pb-4 pt-5 pr-14 text-left sm:px-8 sm:pr-[370px] sm:pb-4 sm:pt-6">
+          <DialogTitle className="flex items-center gap-3 text-lg font-extrabold tracking-tight text-slate-950 sm:text-2xl">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-blue-600 shadow-sm sm:h-14 sm:w-14">
+              <Calendar className="h-6 w-6 sm:h-7 sm:w-7" />
             </span>
+            <span>Booking History — {customer?.name}</span>
           </DialogTitle>
+          {!isLoading && !isError && (
+            <p className="mt-1.5 text-sm font-semibold text-slate-500">
+              Total {history.length} appointment{history.length === 1 ? '' : 's'} recorded
+            </p>
+          )}
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:absolute sm:right-16 sm:top-6 sm:mt-0 sm:flex">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="h-10 w-full rounded-xl border-slate-200 bg-white text-xs font-bold text-slate-700 shadow-sm sm:w-[142px]">
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Statuses</SelectItem>
+                <SelectItem value="PENDING">Pending</SelectItem>
+                <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                <SelectItem value="COMPLETED">Completed</SelectItem>
+                <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                <SelectItem value="NO_SHOW">No Show</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={sortOrder} onValueChange={(value) => setSortOrder(value as 'newest' | 'oldest')}>
+              <SelectTrigger className="h-10 w-full rounded-xl border-slate-200 bg-white text-xs font-bold text-slate-700 shadow-sm sm:w-[142px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest First</SelectItem>
+                <SelectItem value="oldest">Oldest First</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </DialogHeader>
 
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-8 sm:pb-5">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-[var(--brand-primary,#0d5c3d)]" />
@@ -376,71 +431,109 @@ function CustomerBookingHistoryDialog({
             <p className="text-sm font-medium text-rose-700">Could not load booking history</p>
             <p className="text-xs text-rose-600 mt-0.5">{getErrorMessage(error)}</p>
           </div>
-        ) : history.length === 0 ? (
+        ) : sortedHistory.length === 0 ? (
           <div className="text-center py-10 px-4 border border-dashed border-slate-200 rounded-xl bg-slate-50/50">
             <History className="h-10 w-10 text-slate-300 mx-auto mb-2" />
-            <p className="text-sm font-medium text-slate-700">No booking history</p>
+            <p className="text-sm font-medium text-slate-700">
+              {statusFilter === 'ALL' ? 'No booking history' : 'No appointments found'}
+            </p>
             <p className="text-xs text-slate-400 mt-0.5">
-              This customer hasn&apos;t completed any appointments yet.
+              {statusFilter === 'ALL'
+                ? 'This customer does not have any appointments yet.'
+                : `There are no ${statusFilter.toLowerCase().replace('_', ' ')} appointments for this customer.`}
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            <p className="text-xs text-slate-500 font-medium">
-              Total {history.length} appointment{history.length === 1 ? '' : 's'} recorded
-            </p>
-            <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
-              {history.map((item: CustomerBookingHistoryItem) => (
+          <div className="space-y-3 sm:max-h-[58vh] sm:space-y-2.5 sm:overflow-y-auto sm:pr-2">
+              {sortedHistory.map((item: CustomerBookingHistoryItem) => {
+                const date = new Date(`${item.appointmentDate}T00:00:00`);
+                return (
                 <div
                   key={item.id}
-                  className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-emerald-200 transition-colors"
+                  className="grid gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-[0_5px_16px_rgba(53,87,135,0.07)] transition-colors hover:border-blue-200 sm:grid-cols-[84px_minmax(0,1fr)] sm:p-3.5"
                 >
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-2.5">
-                    <div>
-                      <div className="flex items-center gap-2">
+                  <div className={`hidden min-h-[96px] flex-col items-center justify-center rounded-xl sm:flex ${item.status === 'COMPLETED' ? 'bg-emerald-50' : 'bg-amber-50'}`}>
+                    <span className="text-4xl font-extrabold leading-none tracking-tight text-slate-950">
+                      {String(date.getDate()).padStart(2, '0')}
+                    </span>
+                    <span className="mt-1 text-base font-extrabold uppercase text-slate-900">
+                      {date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                    </span>
+                    <span className="mt-2 text-xs font-bold uppercase text-slate-500">
+                      {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                    </span>
+                  </div>
+
+                  <div className="min-w-0">
+                  <div className="mb-2 flex items-start justify-between gap-2 border-b border-slate-100 pb-2">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span className="text-xs font-mono font-bold text-slate-800">
                           {item.code}
                         </span>
                         <span className="text-xs text-slate-400">•</span>
-                        <span className="text-xs font-semibold text-slate-700">
-                          {item.appointmentDate}
-                        </span>
-                        <span className="text-xs text-slate-500">
-                          ({item.startTime?.slice(0, 5)} - {item.endTime?.slice(0, 5)})
+                        <span className="hidden items-center gap-1.5 text-sm font-semibold text-slate-600 sm:inline-flex">
+                          <Clock3 className="h-4 w-4" />
+                          {formatTime(item.startTime)} – {formatTime(item.endTime)}
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-500 mt-0.5">Branch: {item.branchName}</p>
+                      <div className="mt-1 hidden flex-wrap gap-x-3 gap-y-1 text-xs font-medium text-slate-500 sm:flex">
+                        <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />Branch: {item.branchName}</span>
+                        <span className="inline-flex items-center gap-1"><User className="h-3.5 w-3.5" />Stylist: {item.employeeName || 'Unassigned'}</span>
+                      </div>
                     </div>
-                    <div className="text-right">
+                    <div className="shrink-0 text-right">
                       <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                        className={`inline-flex rounded-full border px-2.5 py-0.5 text-[11px] font-bold ${
                           item.status === 'COMPLETED'
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                             : item.status === 'CONFIRMED'
-                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                              ? 'border-blue-200 bg-blue-50 text-blue-700'
                               : item.status === 'CANCELLED'
-                                ? 'bg-rose-50 text-rose-700 border border-rose-200'
-                                : 'bg-slate-100 text-slate-700 border border-slate-200'
+                                ? 'border-rose-200 bg-rose-50 text-rose-700'
+                                : 'border-slate-200 bg-slate-100 text-slate-600'
                         }`}
                       >
                         {item.status}
                       </span>
-                      <div className="text-xs font-bold text-slate-900 mt-1">
+                      <div className="mt-1 text-base font-extrabold text-slate-950">
                         {formatMoneyAmount(item.totalPrice)}
                       </div>
                     </div>
                   </div>
 
+                  <div className="mb-3 space-y-1.5 text-xs font-medium text-slate-600 sm:hidden">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 shrink-0 text-blue-500" />
+                      <span>{date.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</span>
+                      <span className="text-slate-300">|</span>
+                      <span>{formatTime(item.startTime)} – {formatTime(item.endTime)}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 shrink-0 text-blue-500" />
+                      <span className="truncate">{item.branchName}</span>
+                    </div>
+                    {item.employeeName && (
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{item.employeeName}</span>
+                      </div>
+                    )}
+                  </div>
+
                   {item.services && item.services.length > 0 && (
-                    <div className="space-y-1 bg-slate-50/70 p-2.5 rounded-lg">
-                      <p className="text-[11px] font-semibold text-slate-600 mb-1">Booked Services:</p>
+                    <div className="rounded-xl bg-slate-50 px-3 py-2.5">
+                      <div className="flex items-start gap-2.5">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-fuchsia-100 text-fuchsia-800"><Scissors className="h-5 w-5" /></span>
+                        <div className="min-w-0 flex-1">
+                      <p className="mb-1 text-[11px] font-bold text-slate-600">Booked Services</p>
                       <div className="grid gap-1">
                         {item.services.map((svc) => (
                           <div
                             key={svc.id}
-                            className="flex items-center justify-between text-xs text-slate-700"
+                            className="flex items-center justify-between gap-3 text-sm text-slate-700"
                           >
-                            <span>
+                            <span className="min-w-0 truncate">
                               {svc.name}{' '}
                               {svc.durationMinutes ? (
                                 <span className="text-[11px] text-slate-400">
@@ -448,25 +541,30 @@ function CustomerBookingHistoryDialog({
                                 </span>
                               ) : null}
                             </span>
-                            <span className="font-medium text-slate-900">
+                            <span className="shrink-0 font-semibold text-slate-900">
                               {formatMoneyAmount(svc.price)}
                             </span>
                           </div>
                         ))}
                       </div>
+                        </div>
+                        <ChevronRight className="mt-1.5 h-4 w-4 shrink-0 text-slate-400" />
+                      </div>
                     </div>
                   )}
 
                   {item.notes && (
-                    <p className="text-xs text-slate-500 italic mt-2 border-t border-slate-100 pt-1.5">
+                    <p className="mt-1.5 border-t border-slate-100 pt-1.5 text-xs italic text-slate-500">
                       Note: {item.notes}
                     </p>
                   )}
+                  </div>
                 </div>
-              ))}
-            </div>
+                );
+              })}
           </div>
         )}
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -539,7 +637,7 @@ export default function CustomersPage() {
       setFormError(null);
       setPhoneError(null);
       setCreateOpen(false);
-      Swal.fire({
+      appAlert({
         icon: 'success',
         title: 'Customer Added',
         text: 'Customer has been created successfully.',
@@ -566,7 +664,7 @@ export default function CustomersPage() {
       setEditCustomer(null);
       setFormError(null);
       setPhoneError(null);
-      Swal.fire({
+      appAlert({
         icon: 'success',
         title: 'Customer Updated',
         text: 'Customer details updated successfully.',
@@ -590,7 +688,7 @@ export default function CustomersPage() {
       tenantApi.customers.updateStatus(id, status),
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ['customers'] });
-      Swal.fire({
+      appAlert({
         icon: 'success',
         title: variables.status === 'ACTIVE' ? 'Customer Activated' : 'Customer Deactivated',
         text:
@@ -602,7 +700,7 @@ export default function CustomersPage() {
       });
     },
     onError: (err) => {
-      Swal.fire({
+      appAlert({
         icon: 'error',
         title: 'Status Update Failed',
         text: getErrorMessage(err),
@@ -614,7 +712,7 @@ export default function CustomersPage() {
     mutationFn: (id: string) => tenantApi.customers.delete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['customers'] });
-      Swal.fire({
+      appAlert({
         icon: 'success',
         title: 'Customer Deleted',
         text: 'Customer profile has been removed successfully.',
@@ -623,7 +721,7 @@ export default function CustomersPage() {
       });
     },
     onError: (err) => {
-      Swal.fire({
+      appAlert({
         icon: 'error',
         title: 'Cannot Delete Customer',
         text: getErrorMessage(err),
@@ -633,7 +731,7 @@ export default function CustomersPage() {
 
   const handleToggleStatus = (cust: Customer) => {
     const nextStatus = cust.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-    Swal.fire({
+    appAlert({
       title: nextStatus === 'INACTIVE' ? 'Deactivate Customer?' : 'Activate Customer?',
       text: `Are you sure you want to ${nextStatus === 'INACTIVE' ? 'deactivate' : 'activate'} ${cust.name}?`,
       icon: 'question',
@@ -651,7 +749,7 @@ export default function CustomersPage() {
   };
 
   const handleDeleteCustomer = (cust: Customer) => {
-    Swal.fire({
+    appAlert({
       title: 'Delete Customer?',
       html: `
         <div style="text-align: center;">
@@ -762,7 +860,7 @@ export default function CustomersPage() {
             setForm(emptyForm);
             setCreateOpen(true);
           }}
-          className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[var(--brand-primary,#0d5c3d)] hover:bg-[var(--brand-hover,#0a4a31)] text-[var(--brand-foreground,#ffffff)] text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+          className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 px-4 py-3 sm:py-2.5 rounded-xl bg-[var(--brand-primary,#0d5c3d)] hover:bg-[var(--brand-hover,#0a4a31)] text-[var(--brand-foreground,#ffffff)] text-xs font-semibold shadow-xs transition-colors cursor-pointer"
         >
           <Plus className="h-4 w-4" />
           <span>Add Customer</span>
@@ -1044,11 +1142,11 @@ export default function CustomersPage() {
                     </div>
 
                     {/* Action buttons */}
-                    <div className="grid grid-cols-4 gap-1.5 pt-1">
+                    <div className="grid grid-cols-2 gap-2 pt-1 sm:grid-cols-4">
                       <button
                         type="button"
                         onClick={() => setHistoryCustomer(cust)}
-                        className="h-8 px-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
+                        className="h-10 px-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1 transition-colors sm:h-8 sm:px-1"
                         title="View History"
                       >
                         <History className="h-3.5 w-3.5 text-slate-500 shrink-0" />
@@ -1058,7 +1156,7 @@ export default function CustomersPage() {
                       <button
                         type="button"
                         onClick={() => openEdit(cust)}
-                        className="h-8 px-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
+                        className="h-10 px-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1 transition-colors sm:h-8 sm:px-1"
                         title="Edit Customer"
                       >
                         <Pencil className="h-3.5 w-3.5 text-slate-500 shrink-0" />
@@ -1069,7 +1167,7 @@ export default function CustomersPage() {
                         type="button"
                         disabled={statusMutation.isPending}
                         onClick={() => handleToggleStatus(cust)}
-                        className="h-8 px-1 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-semibold flex items-center justify-center transition-colors"
+                        className="h-10 px-2 rounded-lg border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-semibold flex items-center justify-center transition-colors sm:h-8 sm:px-1"
                         title={isActive ? 'Deactivate Customer' : 'Activate Customer'}
                       >
                         <span className="truncate">{isActive ? 'Deactivate' : 'Activate'}</span>
@@ -1079,7 +1177,7 @@ export default function CustomersPage() {
                         type="button"
                         disabled={deleteMutation.isPending}
                         onClick={() => handleDeleteCustomer(cust)}
-                        className="h-8 px-1 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
+                        className="h-10 px-2 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold flex items-center justify-center gap-1 transition-colors sm:h-8 sm:px-1"
                         title="Delete Customer"
                       >
                         <Trash2 className="h-3.5 w-3.5 shrink-0" />

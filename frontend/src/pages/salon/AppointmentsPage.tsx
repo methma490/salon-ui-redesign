@@ -14,7 +14,8 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import Swal from 'sweetalert2';
+import { appAlert } from '@/lib/app-alerts';
+import { EmployeeProfileAvatar } from '@/components/EmployeeProfileAvatar';
 import {
   tenantApi,
   type Appointment,
@@ -39,7 +40,7 @@ import {
 } from '@/components/ui/select';
 import { useSalonBranch } from '@/contexts/SalonBranchContext';
 import { formatMoneyAmount } from '@/lib/money';
-import { FormError, getErrorMessage, OpsError, OpsLoading } from './salon-ops-ui';
+import { FormError, getErrorMessage, OpsError, OpsLoading, OpsPagination } from './salon-ops-ui';
 import './appointments-page.css';
 import './employees-page.css';
 
@@ -58,6 +59,7 @@ type AppointmentForm = {
 };
 
 const STATUS_OPTIONS = ['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED', 'NO_SHOW'] as const;
+const UNASSIGNED_EMPLOYEE_ID = '__unassigned__';
 
 const emptyForm: AppointmentForm = {
   customerId: '',
@@ -130,13 +132,20 @@ const emptyQuickCustomer: QuickCustomerForm = {
 };
 
 function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function addDaysIso(date: string, days: number): string {
-  const next = new Date(`${date}T00:00:00`);
+  const [year, month, day] = date.split('-').map(Number);
+  const next = new Date(year, month - 1, day);
   next.setDate(next.getDate() + days);
-  return next.toISOString().slice(0, 10);
+  const nextMonth = String(next.getMonth() + 1).padStart(2, '0');
+  const nextDay = String(next.getDate()).padStart(2, '0');
+  return `${next.getFullYear()}-${nextMonth}-${nextDay}`;
 }
 
 function formatDateDisplay(date: string): string {
@@ -217,10 +226,14 @@ function computeEndTime(startTime: string, services: Service[], serviceIds: stri
 
 export default function AppointmentsPage() {
   const qc = useQueryClient();
-  const { branchId: ribbonBranchId, branches } = useSalonBranch();
+  const { branchId: ribbonBranchId, activeBranches } = useSalonBranch();
 
   const [activeTab, setActiveTab] = useState<Tab>('calendar');
   const [selectedDate, setSelectedDate] = useState(todayIso());
+  const [listPage, setListPage] = useState(1);
+  const [listLimit, setListLimit] = useState(10);
+  const [listStatusFilter, setListStatusFilter] = useState('all');
+  const [listEmployeeFilter, setListEmployeeFilter] = useState('all');
   const [interval, setInterval] = useState<'15' | '30' | '60'>('15');
   const [hoverSlot, setHoverSlot] = useState<{
     empId: string;
@@ -229,14 +242,14 @@ export default function AppointmentsPage() {
     label: string;
   } | null>(null);
   const [branchFilter, setBranchFilter] = useState<string>(() =>
-    ribbonBranchId !== 'all' ? ribbonBranchId : branches[0]?.id || '',
+    ribbonBranchId !== 'all' ? ribbonBranchId : activeBranches[0]?.id || '',
   );
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editAppointment, setEditAppointment] = useState<Appointment | null>(null);
   const [form, setForm] = useState<AppointmentForm>(() => ({
     ...emptyForm,
-    branchId: branchFilter || branches[0]?.id || '',
+    branchId: branchFilter || activeBranches[0]?.id || '',
     appointmentDate: selectedDate,
   }));
   const [editForm, setEditForm] = useState<AppointmentForm>(emptyForm);
@@ -252,27 +265,44 @@ export default function AppointmentsPage() {
 
   // Synchronize branch selection
   useEffect(() => {
-    if (ribbonBranchId !== 'all') {
+    if (ribbonBranchId !== 'all' && activeBranches.some((branch) => branch.id === ribbonBranchId)) {
       setBranchFilter(ribbonBranchId);
-    } else if (!branchFilter && branches.length > 0) {
-      setBranchFilter(branches[0].id);
+    } else {
+      setBranchFilter(activeBranches[0]?.id || '');
     }
-  }, [ribbonBranchId, branches]);
+  }, [ribbonBranchId, activeBranches]);
 
-  const activeBranchId = branchFilter || branches[0]?.id || '';
-  const activeBranchObj = branches.find((b) => b.id === activeBranchId);
+  const activeBranchId = branchFilter || activeBranches[0]?.id || '';
+  const activeBranchObj = activeBranches.find((b) => b.id === activeBranchId);
+
+  useEffect(() => {
+    setListPage(1);
+  }, [selectedDate, activeBranchId, listStatusFilter, listEmployeeFilter]);
 
   // Queries
   const { data: customers = [] } = useQuery({
-    queryKey: ['customers'],
-    queryFn: () => tenantApi.customers.list(),
+    queryKey: ['customers', 'appointment-options'],
+    queryFn: () => tenantApi.customers.list({ status: 'ACTIVE' }),
+  });
+
+  const { data: editingCustomer } = useQuery({
+    queryKey: ['customer', editAppointment?.customerId],
+    queryFn: () => tenantApi.customers.get(editAppointment!.customerId),
+    enabled: Boolean(editAppointment?.customerId)
+      && !customers.some((customer) => customer.id === editAppointment?.customerId),
   });
 
   const customerOptions = useMemo(() => {
-    if (!createdCustomer) return customers;
-    if (customers.some((c) => c.id === createdCustomer.id)) return customers;
-    return [createdCustomer, ...customers];
-  }, [customers, createdCustomer]);
+    const activeCustomers = customers.filter((customer) => customer.status === 'ACTIVE');
+    const options = [...activeCustomers];
+    if (createdCustomer?.status === 'ACTIVE' && !options.some((customer) => customer.id === createdCustomer.id)) {
+      options.unshift(createdCustomer);
+    }
+    if (editingCustomer && !options.some((customer) => customer.id === editingCustomer.id)) {
+      options.unshift(editingCustomer);
+    }
+    return options;
+  }, [customers, createdCustomer, editingCustomer]);
 
   const { data: services = [] } = useQuery({
     queryKey: ['services'],
@@ -294,6 +324,11 @@ export default function AppointmentsPage() {
     [employees, activeBranchId],
   );
 
+  const listFilterEmployees = useMemo(
+    () => employees.filter((employee) => employee.branchId === activeBranchId),
+    [employees, activeBranchId],
+  );
+
   const formEmployees = useMemo(() => {
     const branchId = editAppointment ? editForm.branchId : form.branchId;
     return employees.filter((employee) => employee.status === 'ACTIVE' && employee.branchId === branchId);
@@ -308,6 +343,12 @@ export default function AppointmentsPage() {
     return params;
   }, [selectedDate, activeBranchId]);
 
+  const listViewParams = useMemo(() => ({
+    ...listParams,
+    ...(listStatusFilter !== 'all' ? { status: listStatusFilter } : {}),
+    ...(listEmployeeFilter !== 'all' ? { employeeId: listEmployeeFilter } : {}),
+  }), [listParams, listStatusFilter, listEmployeeFilter]);
+
   const {
     data: appointments = [],
     isLoading,
@@ -317,7 +358,21 @@ export default function AppointmentsPage() {
   } = useQuery({
     queryKey: ['appointments', listParams],
     queryFn: () => tenantApi.appointments.list(listParams),
+    enabled: Boolean(activeBranchId),
   });
+
+  const { data: paginatedList, isLoading: isListLoading } = useQuery({
+    queryKey: ['appointments', 'list-view', listViewParams, listPage, listLimit],
+    queryFn: () =>
+      tenantApi.appointments.listPaginated({
+      ...listViewParams,
+        page: String(listPage),
+        limit: String(listLimit),
+      }),
+    enabled: activeTab === 'list' && Boolean(activeBranchId),
+  });
+  const listAppointments = paginatedList?.data ?? [];
+  const listMeta = paginatedList?.meta;
 
   // Create Quick Customer Mutation
   const quickCustomerMutation = useMutation({
@@ -352,6 +407,7 @@ export default function AppointmentsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['appointments'] });
       qc.invalidateQueries({ queryKey: ['appointments-calendar'] });
+      qc.invalidateQueries({ queryKey: ['dashboard-comprehensive'] });
       setForm(emptyForm);
       setFormError(null);
       setCreateOpen(false);
@@ -366,6 +422,7 @@ export default function AppointmentsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['appointments'] });
       qc.invalidateQueries({ queryKey: ['appointments-calendar'] });
+      qc.invalidateQueries({ queryKey: ['dashboard-comprehensive'] });
       setFormError(null);
       setEditAppointment(null);
       toast.success('Appointment details updated.');
@@ -379,7 +436,8 @@ export default function AppointmentsPage() {
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ['appointments'] });
       qc.invalidateQueries({ queryKey: ['appointments-calendar'] });
-      Swal.fire({
+      qc.invalidateQueries({ queryKey: ['dashboard-comprehensive'] });
+      appAlert({
         icon: 'success',
         title: 'Status Updated',
         text: `Appointment marked as ${vars.status}.`,
@@ -388,7 +446,7 @@ export default function AppointmentsPage() {
       });
     },
     onError: (err) => {
-      Swal.fire({
+      appAlert({
         icon: 'error',
         title: 'Cannot Update Status',
         text: getErrorMessage(err),
@@ -401,7 +459,8 @@ export default function AppointmentsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['appointments'] });
       qc.invalidateQueries({ queryKey: ['appointments-calendar'] });
-      Swal.fire({
+      qc.invalidateQueries({ queryKey: ['dashboard-comprehensive'] });
+      appAlert({
         icon: 'success',
         title: 'Appointment Cancelled',
         timer: 1600,
@@ -409,7 +468,7 @@ export default function AppointmentsPage() {
       });
     },
     onError: (err) => {
-      Swal.fire({
+      appAlert({
         icon: 'error',
         title: 'Cannot Cancel',
         text: getErrorMessage(err),
@@ -512,15 +571,12 @@ export default function AppointmentsPage() {
   const employeeAppointmentsMap = useMemo(() => {
     const map = new Map<string, Appointment[]>();
     activeEmployees.forEach((emp) => map.set(emp.id, []));
+    map.set(UNASSIGNED_EMPLOYEE_ID, []);
 
-    appointments.forEach((apt) => {
-      const assignedEmployeeId = activeEmployees.some((emp) => emp.id === apt.employeeId)
+    appointments.filter((apt) => apt.status !== 'CANCELLED').forEach((apt) => {
+      const assignedEmployeeId = apt.employeeId && map.has(apt.employeeId)
         ? apt.employeeId
-        : activeEmployees[
-            [...apt.id].reduce((hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0, 0) %
-              activeEmployees.length
-          ]?.id;
-      if (!assignedEmployeeId) return;
+        : UNASSIGNED_EMPLOYEE_ID;
 
       const list = map.get(assignedEmployeeId) || [];
       list.push(apt);
@@ -529,12 +585,19 @@ export default function AppointmentsPage() {
 
     return map;
   }, [activeEmployees, appointments]);
+  const hasUnassignedAppointments = (employeeAppointmentsMap.get(UNASSIGNED_EMPLOYEE_ID)?.length ?? 0) > 0;
+  const timelineEmployees = [
+    ...activeEmployees,
+    ...(hasUnassignedAppointments
+      ? [{ id: UNASSIGNED_EMPLOYEE_ID, name: 'Unassigned', designation: 'No employee assigned' }]
+      : []),
+  ];
 
   if (isLoading && !appointments.length) return <OpsLoading />;
   if (isError) return <OpsError message={getErrorMessage(error)} onRetry={() => void refetch()} />;
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-[1500px] mx-auto space-y-6">
+    <div className="mx-auto w-full max-w-[1500px] space-y-6">
       {/* Top Header matching screenshot */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
@@ -559,7 +622,7 @@ export default function AppointmentsPage() {
                 <SelectValue placeholder="Select branch" />
               </SelectTrigger>
               <SelectContent>
-                {branches.map((b) => (
+                {activeBranches.map((b) => (
                   <SelectItem key={b.id} value={b.id} className="text-xs font-medium">
                     {b.name}
                   </SelectItem>
@@ -569,13 +632,30 @@ export default function AppointmentsPage() {
           </div>
 
           {/* Date Selector */}
-          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+          <div className="flex shrink-0 items-center gap-2 flex-wrap sm:flex-nowrap">
             <span className="text-xs font-semibold text-slate-500 shrink-0">Date</span>
-            <div className="flex items-center bg-white border border-slate-200 rounded-xl h-10 px-2 gap-1 shadow-xs">
-              <Calendar className="h-4 w-4 text-slate-400 mr-1 shrink-0" />
-              <span className="text-xs font-bold text-slate-800 min-w-[80px] sm:min-w-[92px]">
-                {formatDateDisplay(selectedDate)}
-              </span>
+            <div className="flex h-10 items-center gap-1 rounded-xl border border-slate-200 bg-white px-2 shadow-xs">
+              <label className="relative flex h-full min-w-[142px] cursor-pointer items-center gap-1.5 rounded-lg focus-within:ring-2 focus-within:ring-[var(--brand-ring,#d4af7c)]">
+                <Calendar className="h-4 w-4 shrink-0 text-slate-400" />
+                <span className="pointer-events-none whitespace-nowrap text-xs font-bold text-slate-800">
+                  {formatDateDisplay(selectedDate)}
+                </span>
+                <input
+                  type="date"
+                  aria-label="Choose appointment date"
+                  value={selectedDate}
+                  onClick={(event) => {
+                    const input = event.currentTarget as HTMLInputElement & {
+                      showPicker?: () => void;
+                    };
+                    input.showPicker?.();
+                  }}
+                  onChange={(event) => {
+                    if (event.target.value) setSelectedDate(event.target.value);
+                  }}
+                  className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0"
+                />
+              </label>
               <button
                 type="button"
                 onClick={() => setSelectedDate(addDaysIso(selectedDate, -1))}
@@ -662,41 +742,19 @@ export default function AppointmentsPage() {
               </button>
             </div>
 
-            {/* Date Nav Buttons */}
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setSelectedDate(addDaysIso(selectedDate, -1))}
-                className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedDate(addDaysIso(selectedDate, 1))}
-                className="h-8 w-8 flex items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setSelectedDate(todayIso())}
-                className="h-8 px-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors cursor-pointer"
-              >
-                Today
-              </button>
-            </div>
           </div>
         </div>
 
         {/* Timeline View */}
         {activeTab === 'calendar' ? (
-          <div className="overflow-x-auto relative min-h-[460px]">
+          <div className="apt-timeline-scroll relative">
             <div className="apt-timeline-container">
               {/* Header Row */}
               <div className="apt-timeline-header-row">
                 <div className="apt-timeline-emp-head">
-                  <span>Employees ({activeEmployees.length})</span>
+                  <span>
+                    Employees ({activeEmployees.length}{hasUnassignedAppointments ? ' + unassigned' : ''})
+                  </span>
                 </div>
                 <div className="apt-timeline-time-head">
                   {timeColumns.map((timeLabel) => (
@@ -717,26 +775,43 @@ export default function AppointmentsPage() {
               </div>
 
               {/* Employee Rows */}
-              {activeEmployees.length === 0 ? (
+              {activeEmployees.length === 0 && !hasUnassignedAppointments ? (
                 <div className="text-center py-16 text-slate-400 text-sm">
                   No active employees in {activeBranchObj?.name || 'this branch'}.
                 </div>
               ) : (
-                activeEmployees.map((emp) => {
+                timelineEmployees.map((emp) => {
                   const empApts = employeeAppointmentsMap.get(emp.id) || [];
+                  const laneEnds: number[] = [];
+                  const appointmentLanes = new Map<string, number>();
+                  [...empApts]
+                    .sort((a, b) => a.startTime.localeCompare(b.startTime))
+                    .forEach((apt) => {
+                      const [startHour, startMinute] = apt.startTime.split(':').map(Number);
+                      const [endHour, endMinute] = apt.endTime.split(':').map(Number);
+                      const start = startHour * 60 + startMinute;
+                      const end = endHour * 60 + endMinute;
+                      let lane = laneEnds.findIndex((laneEnd) => laneEnd <= start);
+                      if (lane < 0) lane = laneEnds.length;
+                      laneEnds[lane] = end;
+                      appointmentLanes.set(apt.id, lane);
+                    });
+                  const rowHeight = Math.max(76, laneEnds.length * 58 + 16);
                   return (
-                    <div key={emp.id} className="apt-timeline-row">
+                    <div key={emp.id} className="apt-timeline-row" style={{ height: rowHeight }}>
                       {/* Employee Info Card Left */}
                       <div className="apt-timeline-emp-cell">
                         <div className="relative">
-                          <div className="h-10 w-10 rounded-full bg-[var(--brand-soft,#f0fdf4)] text-[var(--brand-primary,#0d5c3d)] border border-slate-200 flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-                            {emp.name.charAt(0).toUpperCase()}
-                          </div>
+                          <EmployeeProfileAvatar
+                            name={emp.name}
+                            photoUrl={'photoUrl' in emp ? emp.photoUrl : null}
+                            className="h-12 w-12 border border-slate-200 shadow-xs"
+                          />
                           <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
                         </div>
                         <div className="min-w-0">
-                          <div className="text-xs font-bold text-slate-900 truncate">
-                            {emp.name}
+                          <div className="text-xs font-bold text-slate-900 truncate" title={emp.name}>
+                            {emp.name.trim().split(/\s+/)[0] || emp.name}
                           </div>
                           <div className="text-[11px] text-slate-500 truncate">
                             {emp.designation || 'Staff'}
@@ -773,7 +848,10 @@ export default function AppointmentsPage() {
                           const h = TIMELINE_START_HOUR + Math.floor(clickedMin / 60);
                           const m = clickedMin % 60;
                           const startStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-                          openCreate({ employeeId: emp.id, startTime: startStr });
+                          openCreate({
+                            employeeId: emp.id === UNASSIGNED_EMPLOYEE_ID ? undefined : emp.id,
+                            startTime: startStr,
+                          });
                         }}
                       >
                         {hoverSlot?.empId === emp.id && (
@@ -812,7 +890,12 @@ export default function AppointmentsPage() {
                           return (
                             <div
                               key={apt.id}
-                              style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
+                              style={{
+                                left: `${leftPct}%`,
+                                width: `${widthPct}%`,
+                                top: `${8 + (appointmentLanes.get(apt.id) ?? 0) * 58}px`,
+                                height: '52px',
+                              }}
                               className={`apt-appointment-chip ${colorClass}`}
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -829,6 +912,8 @@ export default function AppointmentsPage() {
                                 </span>
                               </div>
                               <div className="text-[11px] text-slate-600 truncate mt-0.5">
+                                <span className="font-semibold">{emp.name}</span>
+                                <span className="text-slate-400"> · </span>
                                 {serviceNames}
                               </div>
                             </div>
@@ -844,9 +929,55 @@ export default function AppointmentsPage() {
         ) : (
           /* List View */
           <div className="divide-y divide-slate-100">
-            {appointments.length === 0 ? (
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 px-3.5 sm:px-4 py-3 bg-slate-50/60">
+              <Select
+                value={listStatusFilter}
+                onValueChange={setListStatusFilter}
+              >
+                <SelectTrigger
+                  aria-label="Filter appointments by status"
+                  className="h-9 w-full sm:w-48 rounded-lg border-slate-200 bg-white text-xs font-medium text-slate-700"
+                >
+                  <SelectValue placeholder="All statuses" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All statuses</SelectItem>
+                  {STATUS_OPTIONS.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {status.replace(/_/g, ' ')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={listEmployeeFilter}
+                onValueChange={setListEmployeeFilter}
+              >
+                <SelectTrigger
+                  aria-label="Filter appointments by employee"
+                  className="h-9 w-full sm:w-56 rounded-lg border-slate-200 bg-white text-xs font-medium text-slate-700"
+                >
+                  <SelectValue placeholder="All employees" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All employees</SelectItem>
+                  {listFilterEmployees.map((employee) => (
+                    <SelectItem key={employee.id} value={employee.id}>
+                      {employee.name}{employee.status !== 'ACTIVE' ? ' (Inactive)' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {listMeta?.total === 0 ? (
               <div className="text-center py-16 text-slate-400 text-sm">
-                No appointments booked for {formatDateDisplay(selectedDate)}.
+                {listStatusFilter !== 'all' || listEmployeeFilter !== 'all'
+                  ? 'No appointments match the selected filters.'
+                  : `No appointments booked for ${formatDateDisplay(selectedDate)}.`}
+              </div>
+            ) : isListLoading && !paginatedList ? (
+              <div className="py-12">
+                <OpsLoading />
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -865,7 +996,7 @@ export default function AppointmentsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {appointments.map((apt) => {
+                    {listAppointments.map((apt) => {
                       const isCompleted = apt.status === 'COMPLETED';
                       return (
                         <tr key={apt.id} className="hover:bg-slate-50/70 transition-colors">
@@ -947,6 +1078,19 @@ export default function AppointmentsPage() {
                     })}
                   </tbody>
                 </table>
+              </div>
+            )}
+            {listMeta && listMeta.total > 0 && (
+              <div className="px-4 py-3">
+                <OpsPagination
+                  page={listMeta.page}
+                  limit={listMeta.limit}
+                  total={listMeta.total}
+                  totalPages={listMeta.totalPages}
+                  onPageChange={setListPage}
+                  onLimitChange={setListLimit}
+                  itemLabel="appointments"
+                />
               </div>
             )}
           </div>
@@ -1094,8 +1238,13 @@ export default function AppointmentsPage() {
               >
                 <option value="">Select customer</option>
                 {customerOptions.map((c) => (
-                  <option key={c.id} value={c.id}>
+                  <option
+                    key={c.id}
+                    value={c.id}
+                    disabled={c.status !== 'ACTIVE' && c.id !== editAppointment?.customerId}
+                  >
                     {c.name}
+                    {c.status !== 'ACTIVE' ? ' (inactive — current appointment)' : ''}
                     {c.phone ? ` (${c.phone})` : ''}
                   </option>
                 ))}
@@ -1118,7 +1267,7 @@ export default function AppointmentsPage() {
                     <SelectValue placeholder="Select branch" />
                   </SelectTrigger>
                   <SelectContent>
-                    {branches.map((b) => (
+                    {activeBranches.map((b) => (
                       <SelectItem key={b.id} value={b.id} className="text-xs">
                         {b.name}
                       </SelectItem>

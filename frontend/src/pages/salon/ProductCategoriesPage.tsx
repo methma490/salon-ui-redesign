@@ -12,7 +12,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { appAlert } from '@/lib/app-alerts';
 import { tenantApi, type ProductCategory } from '@/api/tenant.api';
 import { useDebouncedSearch } from '@/hooks/useDebounce';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -117,7 +117,7 @@ export default function ProductCategoriesPage() {
       setForm(emptyForm);
       setFormError(null);
       setCreateOpen(false);
-      Swal.fire({
+      appAlert({
         icon: 'success',
         title: 'Category Created',
         text: 'Product category created successfully.',
@@ -136,7 +136,7 @@ export default function ProductCategoriesPage() {
       qc.invalidateQueries({ queryKey: ['products'] });
       setEditCategory(null);
       setFormError(null);
-      Swal.fire({
+      appAlert({
         icon: 'success',
         title: 'Changes Saved',
         text: 'Product category updated successfully.',
@@ -154,7 +154,7 @@ export default function ProductCategoriesPage() {
       qc.invalidateQueries({ queryKey: ['product-categories'] });
       qc.invalidateQueries({ queryKey: ['products'] });
       setFormError(null);
-      Swal.fire({
+      appAlert({
         icon: 'success',
         title: variables.status === 'ACTIVE' ? 'Category Activated' : 'Category Deactivated',
         text:
@@ -168,7 +168,7 @@ export default function ProductCategoriesPage() {
     onError: (err) => {
       const msg = getErrorMessage(err);
       setFormError(msg);
-      Swal.fire({
+      appAlert({
         icon: 'error',
         title: 'Error',
         text: msg,
@@ -182,7 +182,7 @@ export default function ProductCategoriesPage() {
       qc.invalidateQueries({ queryKey: ['product-categories'] });
       qc.invalidateQueries({ queryKey: ['products'] });
       setFormError(null);
-      Swal.fire({
+      appAlert({
         icon: 'success',
         title: 'Category Deleted',
         text: 'The product category has been deleted successfully.',
@@ -193,7 +193,7 @@ export default function ProductCategoriesPage() {
     onError: (err) => {
       const msg = getErrorMessage(err);
       setFormError(msg);
-      Swal.fire({
+      appAlert({
         icon: 'error',
         title: 'Cannot Delete Category',
         text: msg,
@@ -213,7 +213,7 @@ export default function ProductCategoriesPage() {
   const handleToggleStatus = (cat: ProductCategory) => {
     setFormError(null);
     if (cat.status === 'ACTIVE') {
-      Swal.fire({
+      appAlert({
         title: 'Deactivate Category?',
         html: `
           <div style="text-align: center; margin-bottom: 14px;">
@@ -239,7 +239,7 @@ export default function ProductCategoriesPage() {
         }
       });
     } else {
-      Swal.fire({
+      appAlert({
         title: 'Activate Category?',
         text: `Do you want to activate "${cat.name}" and all its assigned products?`,
         icon: 'question',
@@ -259,7 +259,7 @@ export default function ProductCategoriesPage() {
 
   const handleDeleteCategory = (cat: ProductCategory) => {
     setFormError(null);
-    Swal.fire({
+    appAlert({
       title: 'Delete Product Category?',
       html: `
         <div style="text-align: center; margin-bottom: 12px;">

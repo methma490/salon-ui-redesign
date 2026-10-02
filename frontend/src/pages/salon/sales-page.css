@@ -107,8 +107,8 @@
 }
 
 .sales-filters {
-  margin-bottom: 1rem;
-  padding: 1rem 1.125rem;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 1rem;
   border: 1px solid var(--sale-border);
   border-radius: var(--sale-radius);
   background: var(--sale-surface);
@@ -116,7 +116,7 @@
 }
 
 .sales-filters-title {
-  margin: 0 0 0.875rem;
+  margin: 0 0 0.625rem;
   font-size: 0.8125rem;
   font-weight: 700;
   color: #334155;
@@ -124,32 +124,54 @@
 
 .sales-filters-grid {
   display: grid;
-  gap: 0.75rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.625rem;
 }
 
 @media (min-width: 768px) {
   .sales-filters-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.sales-date-range {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.sales-date-range span {
+  color: var(--sale-muted);
+  font-size: 0.75rem;
+}
+
+@media (max-width: 767px) {
+  .sales-filters-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sales-filter-date {
+    grid-column: 1 / -1;
   }
 }
 
 .sales-filter-field label {
   display: block;
-  margin-bottom: 0.35rem;
-  font-size: 0.6875rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
   color: var(--sale-muted);
 }
 
 .sales-filter-field input,
 .sales-filter-field button[role='combobox'] {
   width: 100%;
-  border: 2px solid #cbd5e1 !important;
-  border-radius: 10px !important;
+  height: 2.5rem;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 8px !important;
   background: #fff !important;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .sales-filter-field input:focus,
@@ -187,6 +209,69 @@
   margin: 0.2rem 0 0;
   font-size: 0.8125rem;
   color: var(--sale-muted);
+}
+
+.sales-page .ops-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--sale-border);
+}
+
+.sales-page .ops-pagination-info {
+  color: var(--sale-muted);
+  font-size: 0.8rem;
+}
+
+.sales-page .ops-pagination-controls,
+.sales-page .ops-pagination-nav,
+.sales-page .ops-pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.sales-page .ops-pagination-select,
+.sales-page .ops-pagination-btn,
+.sales-page .ops-pagination-page {
+  min-height: 2rem;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid var(--sale-border);
+  border-radius: 7px;
+  background: #fff;
+  color: #334155;
+  font-size: 0.75rem;
+}
+
+.sales-page .ops-pagination-btn,
+.sales-page .ops-pagination-page {
+  cursor: pointer;
+}
+
+.sales-page .ops-pagination-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.sales-page .ops-pagination-page.active {
+  border-color: var(--sale-primary);
+  background: color-mix(in srgb, var(--sale-primary) 9%, #fff);
+  color: var(--sale-primary);
+  font-weight: 700;
+}
+
+@media (max-width: 520px) {
+  .sales-page .ops-pagination {
+    align-items: flex-start;
+  }
+
+  .sales-page .ops-pagination-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
 }
 
 .sales-table-wrap {

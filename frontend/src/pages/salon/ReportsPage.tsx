@@ -53,6 +53,82 @@ import './reports-page.css';
 type ReportTab = 'sales' | 'employee-performance' | 'inventory';
 type QuickFilterType = 'today' | 'this_week' | 'this_month' | 'custom';
 
+function ReportPagination({
+  page, pageSize, total, itemLabel, options, onPageChange, onPageSizeChange,
+}: {
+  page: number;
+  pageSize: number;
+  total: number;
+  itemLabel: string;
+  options: number[];
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (size: number) => void;
+}) {
+  const totalPages = Math.ceil(total / pageSize);
+  const first = total ? (page - 1) * pageSize + 1 : 0;
+  const last = Math.min(page * pageSize, total);
+  const startPage = Math.max(1, Math.min(page - 2, totalPages - 4));
+  const visiblePages = Array.from(
+    { length: Math.max(0, Math.min(totalPages, 5)) },
+    (_, index) => startPage + index,
+  );
+
+  return (
+    <div className="reports-pagination-bar">
+      <div>Showing {first}–{last} of {total} {itemLabel}</div>
+      <div className="reports-pagination-pages">
+        <button
+          type="button"
+          className="reports-page-btn"
+          aria-label="Previous page"
+          disabled={page <= 1 || totalPages === 0}
+          onClick={() => onPageChange(Math.max(1, page - 1))}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        {visiblePages.map((pageNumber) => (
+          <button
+            key={pageNumber}
+            type="button"
+            className={`reports-page-btn ${pageNumber === page ? 'active' : ''}`}
+            aria-current={pageNumber === page ? 'page' : undefined}
+            onClick={() => onPageChange(pageNumber)}
+          >
+            {pageNumber}
+          </button>
+        ))}
+        <button
+          type="button"
+          className="reports-page-btn"
+          aria-label="Next page"
+          disabled={page >= totalPages || totalPages === 0}
+          onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+      <div className="reports-per-page-wrap">
+        <span>Show</span>
+        <Select
+          value={String(pageSize)}
+          onValueChange={(value) => {
+            onPageSizeChange(Number(value));
+            onPageChange(1);
+          }}
+        >
+          <SelectTrigger className="h-7 w-16 text-xs bg-white border-slate-200">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((option) => <SelectItem key={option} value={String(option)}>{option}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <span>per page</span>
+      </div>
+    </div>
+  );
+}
+
 function getTodayStr() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -125,6 +201,19 @@ export default function ReportsPage() {
   const [inventoryStatus, setInventoryStatus] = useState<string>('all');
   const [invPage, setInvPage] = useState(1);
   const [invPerPage, setInvPerPage] = useState(8);
+
+  useEffect(() => {
+    setServicePage(1);
+    setProductPage(1);
+  }, [startDate, endDate, branchId, salesPaymentMethod]);
+
+  useEffect(() => {
+    setEmpPage(1);
+  }, [startDate, endDate, branchId, employeeSearch]);
+
+  useEffect(() => {
+    setInvPage(1);
+  }, [startDate, endDate, branchId, inventorySearch, inventoryCategory, inventoryStatus]);
 
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -810,55 +899,15 @@ export default function ReportsPage() {
                 </table>
               </div>
 
-              {/* Pagination */}
-              <div className="reports-pagination-bar">
-                <div>
-                  Showing {salesData?.serviceTransactions?.length ? (servicePage - 1) * servicePerPage + 1 : 0} -{' '}
-                  {Math.min(servicePage * servicePerPage, salesData?.serviceTransactions?.length || 0)} of{' '}
-                  {salesData?.serviceTransactions?.length || 0} records
-                </div>
-                <div className="reports-pagination-pages">
-                  <button
-                    type="button"
-                    className="reports-page-btn"
-                    disabled={servicePage <= 1}
-                    onClick={() => setServicePage((p) => Math.max(1, p - 1))}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                  <button type="button" className="reports-page-btn active">1</button>
-                  <button type="button" className="reports-page-btn">2</button>
-                  <button type="button" className="reports-page-btn">3</button>
-                  <button type="button" className="reports-page-btn">4</button>
-                  <button type="button" className="reports-page-btn">5</button>
-                  <span className="px-1 text-slate-400">...</span>
-                  <button type="button" className="reports-page-btn">18</button>
-                  <button
-                    type="button"
-                    className="reports-page-btn"
-                    onClick={() => setServicePage((p) => p + 1)}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="reports-per-page-wrap">
-                  <span>Show</span>
-                  <Select
-                    value={String(servicePerPage)}
-                    onValueChange={(v) => setServicePerPage(Number(v))}
-                  >
-                    <SelectTrigger className="h-7 w-16 text-xs bg-white border-slate-200">
-                      <SelectValue placeholder="8" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="8">8</SelectItem>
-                      <SelectItem value="15">15</SelectItem>
-                      <SelectItem value="25">25</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <span>per page</span>
-                </div>
-              </div>
+              <ReportPagination
+                page={servicePage}
+                pageSize={servicePerPage}
+                total={salesData?.serviceTransactions?.length ?? 0}
+                itemLabel="service transactions"
+                options={[8, 15, 25]}
+                onPageChange={setServicePage}
+                onPageSizeChange={setServicePerPage}
+              />
             </div>
           )}
 
@@ -957,55 +1006,15 @@ export default function ReportsPage() {
                 </table>
               </div>
 
-              {/* Pagination */}
-              <div className="reports-pagination-bar">
-                <div>
-                  Showing {salesData?.productTransactions?.length ? (productPage - 1) * productPerPage + 1 : 0} -{' '}
-                  {Math.min(productPage * productPerPage, salesData?.productTransactions?.length || 0)} of{' '}
-                  {salesData?.productTransactions?.length || 0} records
-                </div>
-                <div className="reports-pagination-pages">
-                  <button
-                    type="button"
-                    className="reports-page-btn"
-                    disabled={productPage <= 1}
-                    onClick={() => setProductPage((p) => Math.max(1, p - 1))}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                  <button type="button" className="reports-page-btn active">1</button>
-                  <button type="button" className="reports-page-btn">2</button>
-                  <button type="button" className="reports-page-btn">3</button>
-                  <button type="button" className="reports-page-btn">4</button>
-                  <button type="button" className="reports-page-btn">5</button>
-                  <span className="px-1 text-slate-400">...</span>
-                  <button type="button" className="reports-page-btn">12</button>
-                  <button
-                    type="button"
-                    className="reports-page-btn"
-                    onClick={() => setProductPage((p) => p + 1)}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="reports-per-page-wrap">
-                  <span>Show</span>
-                  <Select
-                    value={String(productPerPage)}
-                    onValueChange={(v) => setProductPerPage(Number(v))}
-                  >
-                    <SelectTrigger className="h-7 w-16 text-xs bg-white border-slate-200">
-                      <SelectValue placeholder="8" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="8">8</SelectItem>
-                      <SelectItem value="15">15</SelectItem>
-                      <SelectItem value="25">25</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <span>per page</span>
-                </div>
-              </div>
+              <ReportPagination
+                page={productPage}
+                pageSize={productPerPage}
+                total={salesData?.productTransactions?.length ?? 0}
+                itemLabel="product transactions"
+                options={[8, 15, 25]}
+                onPageChange={setProductPage}
+                onPageSizeChange={setProductPerPage}
+              />
             </div>
           )}
         </>
@@ -1125,9 +1134,11 @@ export default function ReportsPage() {
                 </thead>
                 <tbody>
                   {employeeData?.employees && employeeData.employees.length > 0 ? (
-                    employeeData.employees.map((emp, i) => (
+                    employeeData.employees
+                      .slice((empPage - 1) * empPerPage, empPage * empPerPage)
+                      .map((emp, i) => (
                       <tr key={emp.id}>
-                        <td>{emp.index || i + 1}</td>
+                        <td>{emp.index || (empPage - 1) * empPerPage + i + 1}</td>
                         <td>
                           <div className="reports-emp-cell">
                             <div
@@ -1168,47 +1179,15 @@ export default function ReportsPage() {
               </table>
             </div>
 
-            {/* Pagination */}
-            <div className="reports-pagination-bar">
-              <div>
-                Showing 1 - {employeeData?.employees?.length || 0} of {employeeData?.employees?.length || 0} employees
-              </div>
-              <div className="reports-pagination-pages">
-                <button
-                  type="button"
-                  className="reports-page-btn"
-                  disabled={empPage <= 1}
-                  onClick={() => setEmpPage((p) => Math.max(1, p - 1))}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <button type="button" className="reports-page-btn active">1</button>
-                <button
-                  type="button"
-                  className="reports-page-btn"
-                  disabled
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="reports-per-page-wrap">
-                <span>Show</span>
-                <Select
-                  value={String(empPerPage)}
-                  onValueChange={(v) => setEmpPerPage(Number(v))}
-                >
-                  <SelectTrigger className="h-7 w-16 text-xs bg-white border-slate-200">
-                    <SelectValue placeholder="10" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="25">25</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                  </SelectContent>
-                </Select>
-                <span>per page</span>
-              </div>
-            </div>
+            <ReportPagination
+              page={empPage}
+              pageSize={empPerPage}
+              total={employeeData?.employees?.length ?? 0}
+              itemLabel="employees"
+              options={[10, 25, 50]}
+              onPageChange={setEmpPage}
+              onPageSizeChange={setEmpPerPage}
+            />
           </div>
         </>
       )}
@@ -1467,53 +1446,15 @@ export default function ReportsPage() {
               </table>
             </div>
 
-            {/* Pagination */}
-            <div className="reports-pagination-bar">
-              <div>
-                Showing 1 - {inventoryData?.products?.length || 0} of {inventoryData?.products?.length || 0} products
-              </div>
-              <div className="reports-pagination-pages">
-                <button
-                  type="button"
-                  className="reports-page-btn"
-                  disabled={invPage <= 1}
-                  onClick={() => setInvPage((p) => Math.max(1, p - 1))}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <button type="button" className="reports-page-btn active">1</button>
-                <button type="button" className="reports-page-btn">2</button>
-                <button type="button" className="reports-page-btn">3</button>
-                <button type="button" className="reports-page-btn">4</button>
-                <button type="button" className="reports-page-btn">5</button>
-                <span className="px-1 text-slate-400">...</span>
-                <button type="button" className="reports-page-btn">16</button>
-                <button
-                  type="button"
-                  className="reports-page-btn"
-                  onClick={() => setInvPage((p) => p + 1)}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="reports-per-page-wrap">
-                <span>Show</span>
-                <Select
-                  value={String(invPerPage)}
-                  onValueChange={(v) => setInvPerPage(Number(v))}
-                >
-                  <SelectTrigger className="h-7 w-16 text-xs bg-white border-slate-200">
-                    <SelectValue placeholder="8" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="8">8</SelectItem>
-                    <SelectItem value="15">15</SelectItem>
-                    <SelectItem value="25">25</SelectItem>
-                  </SelectContent>
-                </Select>
-                <span>per page</span>
-              </div>
-            </div>
+            <ReportPagination
+              page={invPage}
+              pageSize={invPerPage}
+              total={inventoryData?.products?.length ?? 0}
+              itemLabel="products"
+              options={[8, 15, 25]}
+              onPageChange={setInvPage}
+              onPageSizeChange={setInvPerPage}
+            />
           </div>
         </>
       )}

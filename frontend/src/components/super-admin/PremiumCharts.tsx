@@ -16,8 +16,8 @@ import {
 } from 'recharts';
 
 const COLORS = {
-  primary: '#0d5c3d',
-  secondary: '#10b981',
+  primary: '#a44a5c',
+  secondary: '#d4af7c',
   success: '#10b981',
   warning: '#f59e0b',
   danger: '#ef4444',
@@ -28,7 +28,7 @@ const PLAN_COLORS: Record<string, string> = {
   Gold: '#d4a017',
   Silver: '#94a3b8',
   Platinum: '#6366f1',
-  Custom: '#0d5c3d',
+  Custom: '#a44a5c',
 };
 
 interface ChartDataItem {
@@ -230,7 +230,7 @@ export function PaymentStatusChart({ data }: { data: ChartDataItem[] }) {
 }
 
 export function FeatureUsageChart({ data }: { data: ChartDataItem[] }) {
-  const palette = ['#0d5c3d', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0'];
+  const palette = ['#a44a5c', '#d4af7c', '#8a3d4d', '#b88e58', '#f5e8eb'];
   return (
     <ResponsiveContainer width="100%" height={260}>
       <BarChart data={data} layout="vertical" margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>

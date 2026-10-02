@@ -1,6 +1,6 @@
 /** Shared appearance / brand-color helpers (HEX validation + default). */
 
-export const DEFAULT_PRIMARY_COLOR = '#0D5C3D';
+export const DEFAULT_PRIMARY_COLOR = '#A44A5C';
 
 const HEX_COLOR_RE = /^#[0-9A-Fa-f]{6}$/;
 

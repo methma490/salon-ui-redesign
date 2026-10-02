@@ -933,7 +933,7 @@ export default function SettingsPage() {
                     className="settings-input"
                     value={customHex}
                     disabled={!isSalonAdmin}
-                    placeholder="#0D5C3D"
+                    placeholder="#A44A5C"
                     onChange={(e) => {
                       const raw = e.target.value;
                       setCustomHex(raw);
@@ -970,7 +970,7 @@ export default function SettingsPage() {
                     onClick={() => {
                       if (
                         window.confirm(
-                          'Reset brand color to the default forest green?',
+                          'Reset brand color to the website burgundy?',
                         )
                       ) {
                         resetAppearanceMutation.mutate();

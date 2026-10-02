@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Eye,
   FileText,
+  History,
   Plus,
   Printer,
   Scissors,
@@ -241,6 +242,9 @@ export default function PosPage() {
   const [paymentReference, setPaymentReference] = useState('');
   const [cashReceived, setCashReceived] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
+  const [draftSaleId, setDraftSaleId] = useState<string | null>(null);
+  const [draftHistoryOpen, setDraftHistoryOpen] = useState(false);
+  const [loadingDraftId, setLoadingDraftId] = useState<string | null>(null);
   const [pendingServiceId, setPendingServiceId] = useState('');
 
   const { data: settings } = useQuery({
@@ -336,14 +340,65 @@ export default function PosPage() {
     );
   };
   const { data: services = [] } = useQuery({
-    queryKey: ['services'],
-    queryFn: () => tenantApi.services.list(),
+    queryKey: ['services', 'pos-all'],
+    queryFn: async () => {
+      const result = await tenantApi.services.list({ all: true });
+      return Array.isArray(result) ? result : result.data;
+    },
   });
 
   const { data: products = [] } = useQuery({
     queryKey: ['products', branchId],
     queryFn: () => tenantApi.products.list(branchId ? { branchId, all: true } : { all: true }),
   });
+
+  const { data: posDrafts = [], isLoading: draftsLoading } = useQuery({
+    queryKey: ['pos-drafts', branchId],
+    queryFn: () => tenantApi.sales.list({ status: 'PENDING', ...(branchId ? { branchId } : {}) }),
+    enabled: draftHistoryOpen,
+  });
+
+  const loadDraft = async (saleId: string) => {
+    setLoadingDraftId(saleId);
+    setFormError(null);
+    try {
+      const sale = await tenantApi.sales.get(saleId) as any;
+      const itemRows = Array.isArray(sale.items) ? sale.items : [];
+      const serviceItems = itemRows.filter((item: any) => item.itemType?.toLowerCase() === 'service' || item.serviceId);
+      const productItems = itemRows.filter((item: any) => item.itemType?.toLowerCase() === 'product' || item.productId);
+      setBranchId(sale.branchId);
+      setRibbonBranchId(sale.branchId);
+      setCustomerId(sale.customerId || null);
+      setCustomerName(sale.customerName || null);
+      setCustomerPhone(sale.customerPhone || null);
+      setCustomerMode(sale.customerId ? 'registered' : 'walkin');
+      setCustomerSearch(sale.customerName || '');
+      setCartServices(serviceItems.map((item: any) => {
+        const performer = item.employees?.[0];
+        return {
+          key: crypto.randomUUID(), serviceId: item.serviceId, serviceName: item.name,
+          price: Number(item.unitPrice), employeeId: performer?.id || '',
+          employeeName: performer?.name || '', discount: Number(item.discount) || 0,
+        };
+      }));
+      setCartProducts(productItems.map((item: any) => ({
+        key: crypto.randomUUID(), productId: item.productId, productName: item.name,
+        price: Number(item.unitPrice), quantity: Number(item.quantity), discount: Number(item.discount) || 0,
+      })));
+      setDiscountInput(String(Number(sale.discount) || 0));
+      setDiscountMode('amount');
+      setDraftSaleId(sale.id);
+      setPaymentMode('CASH');
+      setPaymentReference('');
+      setCashReceived('');
+      setPaymentLines([{ key: crypto.randomUUID(), method: 'CASH', amount: '', referenceNumber: '' }]);
+      setDraftHistoryOpen(false);
+    } catch (err) {
+      setFormError(getErrorMessage(err));
+    } finally {
+      setLoadingDraftId(null);
+    }
+  };
 
   const activeServices = useMemo(
     () => services.filter((s: Service) => s.status === 'ACTIVE'),
@@ -427,6 +482,7 @@ export default function PosPage() {
       variables: Record<string, unknown>,
     ) => {
       qc.invalidateQueries({ queryKey: ['sales'] });
+      qc.invalidateQueries({ queryKey: ['pos-drafts'] });
       qc.invalidateQueries({ queryKey: ['sales-analytics'] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
       qc.invalidateQueries({ queryKey: ['reports'] });
@@ -493,6 +549,7 @@ export default function PosPage() {
       });
 
       setCompletedModalOpen(true);
+      setDraftHistoryOpen(false);
       clearCart();
     },
     onError: (err) => setFormError(getErrorMessage(err)),
@@ -654,6 +711,7 @@ export default function PosPage() {
       { key: crypto.randomUUID(), method: 'CASH', amount: '', referenceNumber: '' },
     ]);
     setFormError(null);
+    setDraftSaleId(null);
   };
 
   const addPaymentLine = (method: PayMethod = 'CASH') => {
@@ -719,6 +777,7 @@ export default function PosPage() {
           : [];
 
     createSaleMutation.mutate({
+      ...(draftSaleId ? { saleId: draftSaleId } : {}),
       branchId,
       customerId: customerId || undefined,
       status: 'PENDING',
@@ -779,6 +838,7 @@ export default function PosPage() {
           ];
 
     createSaleMutation.mutate({
+      ...(draftSaleId ? { saleId: draftSaleId } : {}),
       branchId,
       customerId: customerId || undefined,
       status: 'COMPLETED',
@@ -916,7 +976,9 @@ export default function PosPage() {
             </div>
           )}
           <div className="pos-mobile-cart-card-bottom">
-            <span className="pos-mobile-cart-price">{formatMoneyAmount(row.price)}</span>
+            {row.kind === 'product' && (
+              <span className="pos-mobile-cart-price">{formatMoneyAmount(row.price)}</span>
+            )}
             {row.onQtyChange ? (
               <div className="pos-qty-stepper">
                 <button
@@ -935,9 +997,9 @@ export default function PosPage() {
                   +
                 </button>
               </div>
-            ) : (
+            ) : row.kind === 'product' ? (
               <span className="pos-mobile-cart-qty">Qty {row.qty}</span>
-            )}
+            ) : null}
             <span className="pos-mobile-cart-line-total">{formatMoneyAmount(row.total)}</span>
           </div>
         </div>
@@ -1384,6 +1446,15 @@ export default function PosPage() {
             </Select>
           </div>
 
+          <button
+            type="button"
+            className="pos-btn-outline"
+            style={{ justifySelf: 'center', whiteSpace: 'nowrap' }}
+            onClick={() => setDraftHistoryOpen(true)}
+          >
+            <History size={15} /> Draft history
+          </button>
+
           <div className="pos-datetime-block">
             <span className="pos-datetime pos-datetime-tablet">{clock.date}</span>
             <span className="pos-datetime pos-datetime-desktop">{clock.full}</span>
@@ -1399,7 +1470,46 @@ export default function PosPage() {
             </div>
           )}
         </div>
+      </header>
 
+      <Dialog open={draftHistoryOpen} onOpenChange={setDraftHistoryOpen}>
+        <DialogContent
+          className="pos-assign-dialog sm:max-w-xl"
+          style={{ maxHeight: '85vh', overflowY: 'auto' }}
+        >
+          <DialogHeader>
+            <DialogTitle>POS draft history</DialogTitle>
+          </DialogHeader>
+          {draftsLoading ? (
+            <p>Loading saved drafts…</p>
+          ) : posDrafts.length === 0 ? (
+            <p>No saved drafts for this branch.</p>
+          ) : (
+            <div style={{ display: 'grid', gap: 10 }}>
+              {posDrafts.map((draft: any) => (
+                <button
+                  key={draft.id}
+                  type="button"
+                  className="pos-btn-outline"
+                  style={{ justifyContent: 'space-between', textAlign: 'left', padding: 12 }}
+                  disabled={loadingDraftId !== null}
+                  onClick={() => void loadDraft(draft.id)}
+                >
+                  <span>
+                    <strong>{draft.saleNumber}</strong>
+                    <span style={{ display: 'block', fontSize: 12, opacity: 0.72 }}>
+                      {draft.customerName || 'Walk-in'} · {draft.branchName}
+                    </span>
+                  </span>
+                  <span>{loadingDraftId === draft.id ? 'Loading…' : formatMoneyLkr(Number(draft.total))}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <section className="pos-customer-panel">
         <div className="pos-toolbar-customer">
           <span className="pos-customer-label">Customer</span>
           <div className="pos-customer-modes">
@@ -1495,7 +1605,7 @@ export default function PosPage() {
         {customerMode === 'registered' && customerSearch.trim().length >= 1 && !customerId && !isCustomerSearching && searchResults.length === 0 && (
           <p className="pos-customer-hint">No customer found — tap + New to create one.</p>
         )}
-      </header>
+      </section>
 
       {hasNoEmployees && catalogTab === 'services' && (
         <div className="pos-alert pos-alert-warn">Select a branch to load your stylist profile.</div>
@@ -1557,6 +1667,13 @@ export default function PosPage() {
             ))}
           </div>
 
+          <div className="pos-catalog-section-head">
+            <h2>{catalogTab === 'services' ? 'Services' : 'Products'}</h2>
+            <span>
+              {catalogTab === 'services' ? filteredServices.length : filteredProducts.length} items
+            </span>
+          </div>
+
           {catalogTab === 'services' ? (
             <div className="pos-item-grid">
               {filteredServices.length === 0 ? (
@@ -1566,7 +1683,7 @@ export default function PosPage() {
                   <button
                     key={s.id}
                     type="button"
-                    className={`pos-item-card ${pendingServiceId === s.id ? 'pos-item-card-selected' : ''}`}
+                    className={`pos-item-card pos-service-card ${pendingServiceId === s.id ? 'pos-item-card-selected' : ''}`}
                     disabled={hasNoEmployees}
                     onClick={() => handleServiceAdd(s.id)}
                   >
@@ -1576,10 +1693,11 @@ export default function PosPage() {
                     <div className="pos-item-thumb">✂️</div>
                     <div className="pos-item-info">
                       <div className="pos-item-name">{s.name}</div>
-                      <div className="pos-item-meta">{s.categoryName || 'Service'}</div>
                       <div className="pos-item-price-row">
                         <span className="pos-item-price">LKR {formatMoneyAmount(s.price)}</span>
-                        <span className="pos-item-stock-tag pos-in-stock">Available</span>
+                        <span className="pos-service-duration">
+                          {s.durationMinutes == null ? '—' : `${s.durationMinutes} min`}
+                        </span>
                       </div>
                     </div>
                   </button>
@@ -1978,7 +2096,7 @@ export default function PosPage() {
                 </div>
                 <div style={{ fontSize: '0.8125rem', fontWeight: 400, opacity: 0.9 }}>
                   {completedSale?.status === 'PENDING'
-                    ? `Sale #${completedSale?.saleNumber} has been saved as a draft ticket. You can view and complete it in Sales history.`
+                    ? `Sale #${completedSale?.saleNumber} has been saved as a draft. Open Draft history in POS to load and complete it.`
                     : `Sale #${completedSale?.saleNumber} has been recorded. You can print the receipt below.`}
                 </div>
               </div>

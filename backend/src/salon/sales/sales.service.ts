@@ -27,15 +27,15 @@ export class SalesService {
     const users = tenantTable(schemaName, 'users');
     const { page, limit, offset } = resolvePagination(query.page, query.limit);
 
-    const conditions: string[] = [`s.status = 'COMPLETED'`];
-    const params: unknown[] = [];
-    let idx = 1;
+    const conditions: string[] = [`s.status::text = $1`];
+    const params: unknown[] = [query.status ?? 'COMPLETED'];
+    let idx = 2;
 
-    if (query.startDate) {
+    if (query.status !== 'PENDING' && query.startDate) {
       conditions.push(`s.created_at >= $${idx++}::date`);
       params.push(query.startDate);
     }
-    if (query.endDate) {
+    if (query.status !== 'PENDING' && query.endDate) {
       conditions.push(`s.created_at < ($${idx++}::date + INTERVAL '1 day')`);
       params.push(query.endDate);
     }

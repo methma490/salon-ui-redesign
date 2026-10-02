@@ -2,6 +2,7 @@ import {
   BarChart3,
   Boxes,
   CalendarDays,
+  ChevronDown,
   Coins,
   CreditCard,
   FileText,
@@ -29,16 +30,9 @@ import { useQuery } from '@tanstack/react-query';
 import { tenantApi } from '@/api/tenant.api';
 import { Button } from '@/components/ui/button';
 import { NotificationBell } from '@/components/salon/NotificationBell';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { SalonBranchProvider, useSalonBranch } from '@/contexts/SalonBranchContext';
+import { SalonBranchProvider } from '@/contexts/SalonBranchContext';
 import { TenantThemeProvider } from '@/contexts/TenantThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { resolveUploadUrl } from '@/lib/upload-url';
@@ -94,7 +88,10 @@ function SalonBrand({
   collapsed?: boolean;
 }) {
   return (
-    <div className={cn('flex min-w-0 items-center', collapsed ? 'justify-center' : 'gap-3')}>
+    <div
+      title={collapsed ? salonName : undefined}
+      className={cn('flex min-w-0 items-center', collapsed ? 'justify-center' : 'gap-3')}
+    >
       <SalonLogo logoUrl={logoUrl} />
       {!collapsed && (
         <div className="salon-brand-text-wrap min-w-0">
@@ -423,14 +420,33 @@ function NavItems({
   permissions,
   onNavigate,
   collapsed = false,
+  onExpandSidebar,
 }: {
   enabledFeatures: string[];
   roles: string[];
   permissions: string[];
   onNavigate?: () => void;
   collapsed?: boolean;
+  onExpandSidebar?: () => void;
 }) {
   const location = useLocation();
+  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+
+  useEffect(() => {
+    const activeGroup = navGroups.find(
+      (group) => group.label && group.children?.some(
+        (item) => {
+          const itemPath = item.to.split('?')[0];
+          return location.pathname === itemPath || location.pathname.startsWith(`${itemPath}/`);
+        },
+      ),
+    );
+    if (activeGroup?.label) {
+      setExpandedGroups((current) =>
+        current.includes(activeGroup.label!) ? current : [...current, activeGroup.label!],
+      );
+    }
+  }, [location.pathname]);
 
   return (
     <nav className="salon-sidebar">
@@ -463,28 +479,73 @@ function NavItems({
         const GroupIcon = group.icon ?? LayoutDashboard;
         const isChildActive = childrenWithAccess.some(
           (entry) =>
-            entry.access === 'allowed' && location.pathname.startsWith(entry.item.to),
+            entry.access === 'allowed' &&
+            location.pathname.startsWith(entry.item.to.split('?')[0]),
         );
+        const canCollapse = childrenWithAccess.length > 1;
+        const isExpanded = !collapsed && (
+          !canCollapse || expandedGroups.includes(group.label ?? '')
+        );
+
+        if (!canCollapse) {
+          const [{ item, access }] = childrenWithAccess;
+          return (
+            <SidebarLink
+              key={group.label}
+              to={item.to}
+              label={group.label ?? item.label}
+              icon={GroupIcon}
+              onNavigate={onNavigate}
+              access={access}
+              collapsed={collapsed}
+            />
+          );
+        }
 
         return (
           <div key={group.label} title={collapsed ? group.label : undefined}>
-            <div className={cn('salon-sidebar-section', isChildActive && 'active')}>
+            <button
+              type="button"
+              className={cn('salon-sidebar-section', isChildActive && 'active')}
+              aria-expanded={isExpanded}
+              onClick={() => {
+                const label = group.label ?? '';
+                if (collapsed) {
+                  onExpandSidebar?.();
+                  setExpandedGroups((current) =>
+                    current.includes(label) ? current : [...current, label],
+                  );
+                  return;
+                }
+                setExpandedGroups((current) =>
+                  current.includes(label)
+                    ? current.filter((entry) => entry !== label)
+                    : [...current, label],
+                );
+              }}
+            >
               <GroupIcon className="salon-sidebar-section-icon" strokeWidth={2.25} />
-              {!collapsed && <span>{group.label}</span>}
-            </div>
-            <div className="salon-sidebar-children">
-              {childrenWithAccess.map(({ item, access }) => (
-                <SidebarLink
-                  key={`${item.to}-${item.label}`}
-                  to={item.to}
-                  label={item.label}
-                  icon={item.icon}
-                  onNavigate={onNavigate}
-                  access={access}
-                  collapsed={collapsed}
-                />
-              ))}
-            </div>
+              <span>{group.label}</span>
+              <ChevronDown
+                className={cn('salon-sidebar-chevron', isExpanded && 'expanded')}
+                aria-hidden="true"
+              />
+            </button>
+            {isExpanded && (
+              <div className="salon-sidebar-children">
+                {childrenWithAccess.map(({ item, access }) => (
+                  <SidebarLink
+                    key={`${item.to}-${item.label}`}
+                    to={item.to}
+                    label={item.label}
+                    icon={item.icon}
+                    onNavigate={onNavigate}
+                    access={access}
+                    collapsed={collapsed}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         );
       })}
@@ -513,7 +574,6 @@ function SalonAdminHeader({
 }) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { branchId, setBranchId, branches, selectedBranch } = useSalonBranch();
   const [profileOpen, setProfileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -608,25 +668,6 @@ function SalonAdminHeader({
               <div className="salon-mobile-sheet-header">
                 <SalonBrand salonName={salonName} logoUrl={salonLogoUrl} />
               </div>
-              <div className="border-b border-border px-4 py-3">
-                <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                  <GitBranch className="h-3.5 w-3.5" />
-                  <span>Active Branch</span>
-                </label>
-                <Select value={branchId} onValueChange={setBranchId}>
-                  <SelectTrigger className="h-9 w-full">
-                    <SelectValue placeholder="All branches" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Branches</SelectItem>
-                    {branches.map((b) => (
-                      <SelectItem key={b.id} value={b.id}>
-                        {b.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
               <div className="salon-mobile-sheet-nav">
                 <NavItems
                   enabledFeatures={enabledFeatures}
@@ -664,52 +705,23 @@ function SalonAdminHeader({
             <SalonLogo logoUrl={salonLogoUrl} size="sm" />
             <div className="min-w-0 text-left">
               <p className="salon-mobile-header-title truncate">{salonName}</p>
-              {selectedBranch && (
-                <p className="truncate text-[10px] text-muted-foreground">{selectedBranch.name}</p>
-              )}
             </div>
           </div>
         </div>
 
-        {/* Desktop: collapse button + branch selector */}
+        {/* Desktop: sidebar toggle */}
         <div className="hidden min-w-0 flex-1 items-center gap-3 md:flex">
           {collapsed && onToggleCollapse && (
             <button
               type="button"
               className="salon-collapse-btn"
-              title="Expand sidebar"
-              aria-label="Expand sidebar"
+              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
               onClick={onToggleCollapse}
             >
-              <PanelLeftOpen className="h-4 w-4" />
+              {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
             </button>
           )}
-          <div className="flex items-center gap-1.5">
-            <Select value={branchId} onValueChange={setBranchId}>
-              <SelectTrigger
-                aria-label="Filter entire admin panel by branch"
-                className={cn(
-                  "h-9 w-[180px] shrink-0 font-medium transition-all",
-                  branchId !== 'all' ? 'border-primary/50 bg-primary/5 text-primary' : ''
-                )}
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <GitBranch className={cn("h-4 w-4 shrink-0", branchId !== 'all' ? 'text-primary' : 'text-muted-foreground')} />
-                  <SelectValue placeholder="All branches" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">
-                  <span className="font-medium">All Branches</span>
-                </SelectItem>
-                {branches.map((b) => (
-                  <SelectItem key={b.id} value={b.id}>
-                    {b.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         </div>
       </div>
 
@@ -725,7 +737,6 @@ function SalonAdminLayoutInner() {
   const navigate = useNavigate();
   const location = useLocation();
   const mainRef = useRef<HTMLElement>(null);
-
   const [collapsed, setCollapsed] = useState(() => {
     try {
       return localStorage.getItem('salon_sidebar_collapsed') === 'true';
@@ -735,15 +746,24 @@ function SalonAdminLayoutInner() {
   });
 
   const toggleCollapsed = () => {
-    setCollapsed((prev) => {
-      const next = !prev;
+    setCollapsed((current) => {
+      const next = !current;
       try {
         localStorage.setItem('salon_sidebar_collapsed', String(next));
       } catch {
-        /* ignore */
+        // Keep the in-memory preference if storage is unavailable.
       }
       return next;
     });
+  };
+
+  const expandSidebar = () => {
+    setCollapsed(false);
+    try {
+      localStorage.setItem('salon_sidebar_collapsed', 'false');
+    } catch {
+      // Keep the in-memory preference if storage is unavailable.
+    }
   };
 
   const { data: features = [] } = useQuery({
@@ -776,14 +796,14 @@ function SalonAdminLayoutInner() {
     <div className="flex h-dvh overflow-hidden bg-background">
       <aside
         className={cn(
-          "salon-sidebar-aside hidden h-dvh shrink-0 flex-col border-r border-border md:flex",
-          collapsed ? "is-collapsed w-[72px]" : "w-[260px]"
+          'salon-sidebar-aside hidden h-dvh shrink-0 flex-col border-r border-border md:flex',
+          collapsed ? 'is-collapsed w-[72px]' : 'w-[260px]',
         )}
       >
         <div
           className={cn(
-            "flex h-16 shrink-0 items-center border-b border-border",
-            collapsed ? "justify-center px-2" : "justify-between px-4"
+            'salon-sidebar-brand flex h-16 shrink-0 items-center border-b border-border',
+            collapsed ? 'justify-center px-2' : 'justify-between px-4',
           )}
         >
           <SalonBrand salonName={salonName} logoUrl={salonLogoUrl} collapsed={collapsed} />
@@ -799,47 +819,46 @@ function SalonAdminLayoutInner() {
             </button>
           )}
         </div>
-        <div className="salon-sidebar-scroll flex min-h-0 flex-1 flex-col justify-between overflow-y-auto p-2 sm:p-3">
+        <div className="salon-sidebar-scroll min-h-0 flex-1 overflow-y-auto p-2 sm:p-3">
           <NavItems
             enabledFeatures={features}
             roles={roles}
             permissions={permissions}
             collapsed={collapsed}
+            onExpandSidebar={expandSidebar}
           />
-          <div className="mt-4 shrink-0">
-            <Separator className="mb-4" />
-            {!collapsed ? (
-              <>
-                <div className="mb-3 px-3">
-                  {roleLabel && (
-                    <div className="truncate text-xs font-medium text-foreground">{roleLabel}</div>
-                  )}
-                  <div className="truncate text-xs text-muted-foreground">{user?.email}</div>
-                </div>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                  onClick={() => void handleLogout()}
-                >
-                  <LogOut className="h-4 w-4" />
-                  Logout
-                </Button>
-              </>
-            ) : (
-              <div className="flex flex-col items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-9 w-9 rounded-lg"
-                  title={`Logout (${user?.email})`}
-                  aria-label="Logout"
-                  onClick={() => void handleLogout()}
-                >
-                  <LogOut className="h-4 w-4 text-muted-foreground" />
-                </Button>
-              </div>
-            )}
-          </div>
+        </div>
+        <div className="salon-sidebar-footer shrink-0 p-2 sm:p-3">
+          <Separator className="salon-sidebar-separator mb-4" />
+          {!collapsed && (
+            <div className="mb-3 px-3">
+              {roleLabel && (
+                <div className="salon-sidebar-user-role truncate text-xs font-medium">{roleLabel}</div>
+              )}
+              <div className="salon-sidebar-user-email truncate text-xs">{user?.email}</div>
+            </div>
+          )}
+          {collapsed ? (
+            <Button
+              variant="outline"
+              size="icon"
+              className="salon-sidebar-logout is-icon mx-auto h-10 w-10"
+              title={`Logout (${user?.email})`}
+              aria-label="Logout"
+              onClick={() => void handleLogout()}
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              className="salon-sidebar-logout w-full justify-start gap-2"
+              onClick={() => void handleLogout()}
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </Button>
+          )}
         </div>
       </aside>
 
@@ -860,7 +879,9 @@ function SalonAdminLayoutInner() {
           className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-[#f8fafc] p-4 md:p-6"
         >
           <SalonPermissionGate>
-            <Outlet />
+            <div className="admin-page-content">
+              <Outlet />
+            </div>
           </SalonPermissionGate>
         </main>
       </div>
