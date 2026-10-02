@@ -16,12 +16,15 @@ import {
 import { cn } from '@/lib/utils';
 import './employees-page.css';
 
-export function getErrorMessage(error: unknown) {
+export function getErrorMessage(
+  error: unknown,
+  fallback = 'Something went wrong. Please try again.',
+) {
   const err = error as { response?: { data?: { message?: string | string[] } } };
   const message = err.response?.data?.message;
   if (Array.isArray(message)) return message.join(', ');
   if (typeof message === 'string') return message;
-  return 'Something went wrong. Please try again.';
+  return fallback;
 }
 
 export function OpsStatusBadge({ status }: { status: string }) {

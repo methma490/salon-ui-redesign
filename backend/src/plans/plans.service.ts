@@ -195,11 +195,28 @@ export class PlansService {
   }
 
   async findById(id: string) {
-    const plan = await this.prisma.plan.findUnique({
-      where: { id },
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
 
-      include: this.planInclude(),
-    });
+    let plan = isUuid
+      ? await this.prisma.plan.findUnique({
+          where: { id },
+          include: this.planInclude(),
+        })
+      : null;
+
+    if (!plan) {
+      const legacyFallbackMap: Record<string, string> = {
+        '89590cbc-0930-49e8-a536-4e16d6a64e64': 'SILVER',
+        '0f6256eb-c5a8-4be5-ae07-072bf6791a32': 'GOLD',
+        '3c54ef57-dc9f-4ef6-a421-1756548f64a8': 'PLATINUM',
+      };
+      const candidateCode = legacyFallbackMap[id] ?? id;
+      plan = await this.prisma.plan.findUnique({
+        where: { code: candidateCode.toUpperCase() },
+        include: this.planInclude(),
+      });
+    }
 
     if (!plan) {
       throw new NotFoundException('Plan not found');

@@ -167,6 +167,7 @@ async function seedPlans() {
         status: PlanStatus.ACTIVE,
       },
       create: {
+        ...(planDef.id ? { id: planDef.id } : {}),
         code: planDef.code,
         name: planDef.name,
         description: planDef.description,

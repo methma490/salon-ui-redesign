@@ -240,7 +240,7 @@ export default function ServicesPage() {
   } = useQuery({
     queryKey: ['services', categoryFilter, statusFilter, debouncedSearchTerm, page, limit],
     queryFn: () =>
-      tenantApi.services.list({
+      tenantApi.services.listPaginated({
         categoryId: categoryFilter === 'all' ? undefined : categoryFilter,
         status: statusFilter === 'all' ? undefined : statusFilter,
         search: debouncedSearchTerm.trim() || undefined,
