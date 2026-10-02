@@ -1473,7 +1473,10 @@ export default function PosPage() {
       </header>
 
       <Dialog open={draftHistoryOpen} onOpenChange={setDraftHistoryOpen}>
-        <DialogContent className="pos-assign-dialog sm:max-w-xl">
+        <DialogContent
+          className="pos-assign-dialog sm:max-w-xl"
+          style={{ maxHeight: '85vh', overflowY: 'auto' }}
+        >
           <DialogHeader>
             <DialogTitle>POS draft history</DialogTitle>
           </DialogHeader>
@@ -1482,7 +1485,7 @@ export default function PosPage() {
           ) : posDrafts.length === 0 ? (
             <p>No saved drafts for this branch.</p>
           ) : (
-            <div style={{ display: 'grid', gap: 10, maxHeight: '60vh', overflowY: 'auto' }}>
+            <div style={{ display: 'grid', gap: 10 }}>
               {posDrafts.map((draft: any) => (
                 <button
                   key={draft.id}
