@@ -188,9 +188,8 @@ export class PosService {
           ? normalizeSaleAssignments(assignmentInputs, total)
           : [];
 
-      const saleNumber = await this.generateSaleNumber(tx, sales);
       let saleId: string;
-      let actualSaleNumber = saleNumber;
+      let actualSaleNumber: string;
       if (dto.saleId) {
         const existing = await tx.$queryRawUnsafe<Array<{ id: string; saleNumber: string }>>(
           `SELECT id, sale_number AS "saleNumber" FROM ${sales}
@@ -216,13 +215,14 @@ export class PosService {
           cashierUserId, saleStatus,
         );
       } else {
+        actualSaleNumber = await this.generateSaleNumber(tx, sales);
         const statusCast = this.tenantEnumCast(schemaName, 'sale_status', 7);
         const saleRows = await tx.$queryRawUnsafe<Array<{ id: string }>>(
           `INSERT INTO ${sales}
              (branch_id, customer_id, sale_number, subtotal, discount, tax, total, status, created_by, cashier_id, refunded_amount)
            VALUES ($1::uuid, $2::uuid, $3, $4, $5, 0, $6, ${statusCast}, $8::uuid, $9::uuid, 0)
            RETURNING id`,
-          dto.branchId, dto.customerId ?? null, saleNumber, subtotal, saleDiscount, total,
+          dto.branchId, dto.customerId ?? null, actualSaleNumber, subtotal, saleDiscount, total,
           saleStatus, cashierUserId, cashierUserId,
         );
         saleId = saleRows[0].id;
@@ -306,7 +306,7 @@ export class PosService {
         entityType: 'sale',
         entityId: saleId,
         details: {
-          saleNumber,
+          saleNumber: actualSaleNumber,
           total,
           employees: normalizedAssignments.map((a) => ({
             employeeId: a.employeeId,
