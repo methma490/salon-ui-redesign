@@ -685,6 +685,9 @@ export class InventoryService {
     const methodCast = `$2::text::"${schemaName}".stock_credit_payment_method`;
 
     return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      const branchIds = [...new Set(dto.branchIds?.length ? dto.branchIds : [dto.branchId])];
+      const results = [];
+      for (const branchId of branchIds) {
       const referenceNo =
         dto.referenceNo?.trim() || (await generateSequentialCode(tx, receipts, 'SIN-'));
       const movementNotes =
@@ -701,7 +704,7 @@ export class InventoryService {
            $6::numeric, ${statusCast}, $7, $8::uuid
          )
          RETURNING id`,
-        dto.branchId,
+        branchId,
         referenceNo,
         purchaseDate,
         money.totalAmount,
@@ -725,7 +728,7 @@ export class InventoryService {
       );
 
       const stockResult = await this.applyStockChangeInTx(tx, schemaName, {
-        branchId: dto.branchId,
+        branchId,
         productId: dto.productId,
         quantityChange: dto.quantity,
         movementType: 'STOCK_IN',
@@ -760,20 +763,25 @@ export class InventoryService {
           totalAmount: money.totalAmount,
           paidAmount: money.paidAmount,
           outstandingAmount: money.outstandingAmount,
+          branchId,
           productId: dto.productId,
           quantity: dto.quantity,
         },
       });
 
-      return {
+      results.push({
         id: receiptId,
+        branchId,
         stockQuantity: stockResult.stockQuantity,
         movementId: stockResult.movementId,
         totalAmount: money.totalAmount,
         paidAmount: money.paidAmount,
         outstandingAmount: money.outstandingAmount,
         paymentStatus: money.paymentStatus,
-      };
+      });
+      }
+
+      return results.length === 1 ? results[0] : { ...results[0], receipts: results };
     });
   }
 

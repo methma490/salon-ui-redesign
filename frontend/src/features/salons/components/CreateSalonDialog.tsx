@@ -185,7 +185,7 @@ export function CreateSalonDialog({ open, onOpenChange }: CreateSalonDialogProps
           <div className="emp-modal-header-text">
             <div className="emp-modal-title-row">
               <span className="emp-modal-icon" aria-hidden>
-                <Store className="h-6 w-6 text-[#0d5c3d]" />
+                <Store className="h-6 w-6 text-[#a44a5c]" />
               </span>
               <div>
                 <h2 id="create-salon-title">Create New Salon</h2>

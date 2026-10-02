@@ -2,10 +2,10 @@
 /* Brand accents use --s360-brand* so Salon Admin can remap via .salon-theme-root */
 
 :root {
-  --s360-brand: #0d5c3d;
-  --s360-brand-hover: #064e32;
-  --s360-brand-soft: #ecfdf3;
-  --s360-brand-dot: #10b981;
+  --s360-brand: #a44a5c;
+  --s360-brand-hover: #8a3d4d;
+  --s360-brand-soft: #f5e8eb;
+  --s360-brand-dot: #d4af7c;
 }
 
 .s360-dash {
@@ -62,7 +62,7 @@
   gap: 8px;
   padding: 10px 18px;
   border-radius: 10px;
-  background: var(--s360-brand, #0d5c3d);
+  background: var(--s360-brand, #a44a5c);
   color: #fff;
   font-size: 13px;
   font-weight: 600;
@@ -72,7 +72,7 @@
 }
 
 .s360-btn-primary:hover {
-  background: var(--s360-brand-hover, #064e32);
+  background: var(--s360-brand-hover, #8a3d4d);
 }
 
 .s360-period-filter {
@@ -94,8 +94,8 @@
 }
 
 .s360-period-btn.active {
-  background: var(--s360-brand, #0d5c3d);
-  border-color: var(--s360-brand, #0d5c3d);
+  background: var(--s360-brand, #a44a5c);
+  border-color: var(--s360-brand, #a44a5c);
   color: #fff;
 }
 
@@ -163,7 +163,7 @@
 }
 
 .s360-kpi-value.green {
-  color: var(--s360-brand, #0d5c3d);
+  color: var(--s360-brand, #a44a5c);
 }
 
 .s360-kpi-spark {
@@ -198,7 +198,7 @@
   border-radius: 50%;
 }
 
-.s360-dot.green { background: var(--s360-brand-dot, #10b981); }
+.s360-dot.green { background: var(--s360-brand-dot, #d4af7c); }
 .s360-dot.amber { background: #f59e0b; }
 .s360-dot.blue { background: #3b82f6; }
 
@@ -355,7 +355,7 @@
 .s360-pay-total {
   padding: 12px 14px;
   border-radius: 10px;
-  background: var(--s360-brand-soft, #ecfdf3);
+  background: var(--s360-brand-soft, #f5e8eb);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -369,7 +369,7 @@
 .s360-pay-total-value {
   font-size: 16px;
   font-weight: 800;
-  color: var(--s360-brand, #0d5c3d);
+  color: var(--s360-brand, #a44a5c);
 }
 
 .s360-alert-list {
@@ -389,7 +389,7 @@
 }
 
 .s360-alert:hover {
-  background: var(--s360-brand-soft, #ecfdf3);
+  background: var(--s360-brand-soft, #f5e8eb);
 }
 
 .s360-alert-icon {
@@ -404,7 +404,7 @@
 
 .s360-alert-icon.warn { background: #fef3c7; color: #d97706; }
 .s360-alert-icon.danger { background: #fee2e2; color: #dc2626; }
-.s360-alert-icon.info { background: var(--s360-brand-soft, #ecfdf3); color: var(--s360-brand, #0d5c3d); }
+.s360-alert-icon.info { background: var(--s360-brand-soft, #f5e8eb); color: var(--s360-brand, #a44a5c); }
 
 .s360-alert-text {
   flex: 1;
@@ -451,8 +451,8 @@
   width: 34px;
   height: 34px;
   border-radius: 8px;
-  background: var(--s360-brand-soft, #ecfdf3);
-  color: var(--s360-brand, #0d5c3d);
+  background: var(--s360-brand-soft, #f5e8eb);
+  color: var(--s360-brand, #a44a5c);
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -474,8 +474,8 @@
   border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
-  background: var(--s360-brand-soft, #ecfdf3);
-  color: var(--s360-brand, #0d5c3d);
+  background: var(--s360-brand-soft, #f5e8eb);
+  color: var(--s360-brand, #a44a5c);
 }
 
 .s360-status {
@@ -504,7 +504,7 @@
 }
 
 .s360-timeline-icon.success { background: #d1fae5; color: #059669; }
-.s360-timeline-icon.info { background: var(--s360-brand-soft, #ecfdf3); color: var(--s360-brand, #0d5c3d); }
+.s360-timeline-icon.info { background: var(--s360-brand-soft, #f5e8eb); color: var(--s360-brand, #a44a5c); }
 .s360-timeline-icon.payment { background: #dbeafe; color: #2563eb; }
 
 .s360-timeline-text {
@@ -522,7 +522,7 @@
   border-radius: 16px;
   overflow: hidden;
   min-height: 320px;
-  background: linear-gradient(135deg, var(--s360-brand-hover, #064e32) 0%, var(--s360-brand, #0d5c3d) 50%, var(--s360-brand-dot, #10b981) 100%);
+  background: linear-gradient(135deg, var(--s360-brand-hover, #8a3d4d) 0%, var(--s360-brand, #a44a5c) 50%, var(--s360-brand-dot, #d4af7c) 100%);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;

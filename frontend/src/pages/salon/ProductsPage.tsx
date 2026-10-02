@@ -26,7 +26,7 @@ import {
   Upload,
   X,
 } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { appAlert } from '@/lib/app-alerts';
 import { tenantApi, type Product, type ProductCategory } from '@/api/tenant.api';
 import { useDebouncedSearch } from '@/hooks/useDebounce';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -99,7 +99,7 @@ function ProductImageUploader({
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      Swal.fire({
+      appAlert({
         icon: 'error',
         title: 'Invalid File',
         text: 'Please choose an image file (PNG, JPG, WebP).',
@@ -108,7 +108,7 @@ function ProductImageUploader({
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      Swal.fire({
+      appAlert({
         icon: 'error',
         title: 'File Too Large',
         text: 'Image file size must be less than 5MB.',
@@ -121,7 +121,7 @@ function ProductImageUploader({
       const res = await tenantApi.products.uploadImage(file);
       onChange(res.imageUrl);
     } catch (err) {
-      Swal.fire({
+      appAlert({
         icon: 'error',
         title: 'Upload Failed',
         text: getErrorMessage(err),
@@ -569,6 +569,7 @@ function ProductActionMenu({
 export default function ProductsPage() {
   const qc = useQueryClient();
   const { branchId, branches } = useSalonBranch();
+  const [productBranchFilter, setProductBranchFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'ACTIVE' | 'INACTIVE'>('all');
   const [sortBy, setSortBy] = useState<'name-asc' | 'name-desc' | 'price-asc' | 'price-desc'>('name-asc');
@@ -585,7 +586,7 @@ export default function ProductsPage() {
   // Stock In Modal State
   const [stockInProduct, setStockInProduct] = useState<Product | null>(null);
   const [stockInForm, setStockInForm] = useState({
-    branchId: branchId !== 'all' ? branchId : '',
+    branchIds: branchId !== 'all' ? [branchId] : [],
     quantity: '',
     unitCost: '',
     paymentType: 'PAID' as 'PAID' | 'PARTIAL' | 'CREDIT',
@@ -617,9 +618,10 @@ export default function ProductsPage() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['products', categoryFilter, statusFilter, debouncedSearchTerm, page, limit],
+    queryKey: ['products', productBranchFilter, categoryFilter, statusFilter, debouncedSearchTerm, page, limit],
     queryFn: () =>
       tenantApi.products.list({
+        branchId: productBranchFilter === 'all' ? undefined : productBranchFilter,
         categoryId: categoryFilter === 'all' ? undefined : categoryFilter,
         status: statusFilter === 'all' ? undefined : statusFilter,
         search: debouncedSearchTerm.trim() || undefined,
@@ -649,7 +651,7 @@ export default function ProductsPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [categoryFilter, statusFilter, searchTerm, sortBy]);
+  }, [productBranchFilter, categoryFilter, statusFilter, searchTerm, sortBy]);
 
   const paginatedProducts = useMemo(() => {
     let list = [...products];
@@ -676,7 +678,7 @@ export default function ProductsPage() {
       setForm(emptyForm);
       setFormError(null);
       setCreateOpen(false);
-      Swal.fire({
+      appAlert({
         icon: 'success',
         title: 'Product Created',
         text: 'Product has been created successfully.',
@@ -695,7 +697,7 @@ export default function ProductsPage() {
       qc.invalidateQueries({ queryKey: ['product-categories'] });
       setEditProduct(null);
       setFormError(null);
-      Swal.fire({
+      appAlert({
         icon: 'success',
         title: 'Changes Saved',
         text: 'Product details updated successfully.',
@@ -715,7 +717,7 @@ export default function ProductsPage() {
     },
     onError: (err) => {
       const msg = getErrorMessage(err);
-      Swal.fire({
+      appAlert({
         icon: 'error',
         title: 'Action Failed',
         text: msg,
@@ -728,7 +730,7 @@ export default function ProductsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['products'] });
       qc.invalidateQueries({ queryKey: ['product-categories'] });
-      Swal.fire({
+      appAlert({
         icon: 'success',
         title: 'Deleted!',
         text: 'Product has been deleted successfully.',
@@ -738,7 +740,7 @@ export default function ProductsPage() {
     },
     onError: (err) => {
       const msg = getErrorMessage(err);
-      Swal.fire({
+      appAlert({
         icon: 'error',
         title: 'Cannot Delete Product',
         text: msg,
@@ -755,7 +757,7 @@ export default function ProductsPage() {
       qc.invalidateQueries({ queryKey: ['stock-credits'] });
       setStockInProduct(null);
       setFormError(null);
-      Swal.fire({
+      appAlert({
         icon: 'success',
         title: 'Stock Received',
         text: 'Stock has been added successfully.',
@@ -774,7 +776,7 @@ export default function ProductsPage() {
       qc.invalidateQueries({ queryKey: ['stock-movements'] });
       setAdjustProduct(null);
       setFormError(null);
-      Swal.fire({
+      appAlert({
         icon: 'success',
         title: 'Adjustment Applied',
         text: 'Stock adjustment recorded successfully.',
@@ -787,10 +789,10 @@ export default function ProductsPage() {
 
   const handleOpenStockIn = (prod: Product) => {
     setFormError(null);
-    const initialBranch = branchId !== 'all' ? branchId : branches[0]?.id || '';
+    const initialBranches = branchId !== 'all' ? [branchId] : [];
     setStockInProduct(prod);
     setStockInForm({
-      branchId: initialBranch,
+      branchIds: initialBranches,
       quantity: '',
       unitCost: prod.costPrice ? String(prod.costPrice) : String(prod.sellingPrice || ''),
       paymentType: 'PAID',
@@ -819,7 +821,7 @@ export default function ProductsPage() {
       const parentCat = categories.find((c) => c.id === prod.categoryId);
       const isCategoryInactive = prod.categoryIsActive === false || parentCat?.status === 'INACTIVE';
       if (isCategoryInactive) {
-        Swal.fire({
+        appAlert({
           icon: 'warning',
           title: 'Category Is Inactive',
           html: `
@@ -846,7 +848,7 @@ export default function ProductsPage() {
   };
 
   const handleDeleteProduct = (prod: Product) => {
-    Swal.fire({
+    appAlert({
       title: 'Delete Product?',
       html: `
         <div style="text-align: center;">
@@ -951,6 +953,21 @@ export default function ProductsPage() {
           </div>
 
           <div className="grid grid-cols-2 sm:flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+            {/* Branch Dropdown Filter */}
+            <select
+              value={productBranchFilter}
+              onChange={(e) => setProductBranchFilter(e.target.value)}
+              className="catalog-filter-select text-xs"
+              aria-label="Filter products by branch"
+            >
+              <option value="all">All branches</option>
+              {branches.map((branch) => (
+                <option key={branch.id} value={branch.id}>
+                  {branch.name}
+                </option>
+              ))}
+            </select>
+
             {/* Categories Dropdown Filter */}
             <select
               value={categoryFilter}
@@ -998,7 +1015,7 @@ export default function ProductsPage() {
       <div className="catalog-table-wrap">
         {paginatedProducts.length === 0 ? (
           <div className="py-12 text-center text-sm text-slate-500">
-            {searchTerm || categoryFilter !== 'all' || statusFilter !== 'all' ? (
+            {searchTerm || productBranchFilter !== 'all' || categoryFilter !== 'all' || statusFilter !== 'all' ? (
               <>
                 No products match the selected filters.
                 <div className="mt-2">
@@ -1007,6 +1024,7 @@ export default function ProductsPage() {
                     className="emp-btn emp-btn-secondary text-xs"
                     onClick={() => {
                       setSearchTerm('');
+                      setProductBranchFilter('all');
                       setCategoryFilter('all');
                       setStatusFilter('all');
                     }}
@@ -1656,7 +1674,7 @@ export default function ProductsPage() {
             <div>
               <h2 className="text-lg font-bold text-slate-900 leading-tight">Stock In</h2>
               <p className="text-xs text-slate-500 mt-1">
-                Receive new stock for <strong className="text-slate-800">{stockInProduct?.name}</strong> ({stockInProduct?.code}).
+                Receive the same quantity for <strong className="text-slate-800">{stockInProduct?.name}</strong> at each selected branch.
               </p>
             </div>
           </div>
@@ -1675,6 +1693,10 @@ export default function ProductsPage() {
                 setFormError('Unit cost cannot be negative.');
                 return;
               }
+              if (stockInForm.branchIds.length === 0) {
+                setFormError('Select at least one branch to receive stock.');
+                return;
+              }
               const totalAmount = Math.round((qty * unitCost + Number.EPSILON) * 100) / 100;
               if (stockInForm.paymentType === 'PARTIAL') {
                 const paid = Number(stockInForm.paidAmount);
@@ -1685,7 +1707,8 @@ export default function ProductsPage() {
               }
               setFormError(null);
               stockInMutation.mutate({
-                branchId: stockInForm.branchId,
+                branchId: stockInForm.branchIds[0],
+                branchIds: stockInForm.branchIds,
                 productId: stockInProduct.id,
                 quantity: qty,
                 unitCost,
@@ -1705,32 +1728,62 @@ export default function ProductsPage() {
 
             {/* Branch Selection */}
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-800">
-                Branch <span className="text-rose-500">*</span>
-              </Label>
-              <div className="input-icon-field">
-                <Building2 className="field-icon h-4 w-4" />
-                <select
-                  value={stockInForm.branchId}
-                  onChange={(e) => setStockInForm({ ...stockInForm, branchId: e.target.value })}
-                  required
-                  className="catalog-search-input"
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                  <Building2 className="h-3.5 w-3.5 text-slate-400" />
+                  Branches <span className="text-rose-500">*</span>
+                </Label>
+                <button
+                  type="button"
+                  className="text-[11px] text-[var(--brand-primary,#0d5c3d)] hover:underline font-semibold"
+                  onClick={() => setStockInForm({
+                    ...stockInForm,
+                    branchIds: stockInForm.branchIds.length === branches.length
+                      ? []
+                      : branches.map((branch) => branch.id),
+                  })}
                 >
-                  <option value="" disabled>Select branch</option>
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
+                  {stockInForm.branchIds.length === branches.length ? 'Clear all' : 'Select all'}
+                </button>
               </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-32 overflow-y-auto rounded-lg border border-slate-200 p-2 bg-slate-50/50">
+                {branches.map((branch) => {
+                  const selected = stockInForm.branchIds.includes(branch.id);
+                  return (
+                    <label
+                      key={branch.id}
+                      className={`flex items-center gap-2 p-1.5 rounded-md border text-xs cursor-pointer transition-colors ${
+                        selected
+                          ? 'border-[var(--brand-border,#bbf7d0)] bg-[var(--brand-soft,#f0fdf4)] text-[var(--brand-primary,#0d5c3d)] font-medium'
+                          : 'border-slate-200 bg-white text-slate-700'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        onChange={(event) => setStockInForm({
+                          ...stockInForm,
+                          branchIds: event.target.checked
+                            ? [...stockInForm.branchIds, branch.id]
+                            : stockInForm.branchIds.filter((id) => id !== branch.id),
+                        })}
+                        className="h-3.5 w-3.5 rounded text-[var(--brand-primary,#0d5c3d)]"
+                      />
+                      <span className="truncate">{branch.name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              {stockInForm.branchIds.length === 0 && (
+                <p className="text-[11px] text-rose-500 font-medium">Select at least one branch.</p>
+              )}
             </div>
 
             {/* Quantity & Unit Cost Row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-slate-800">
-                  Quantity <span className="text-rose-500">*</span>
+                  Quantity per branch <span className="text-rose-500">*</span>
                 </Label>
                 <div className="input-icon-field">
                   <Package className="field-icon h-4 w-4" />
@@ -1770,9 +1823,11 @@ export default function ProductsPage() {
             {/* Total Calculation Display */}
             {Number(stockInForm.quantity) > 0 && Number(stockInForm.unitCost) >= 0 && (
               <div className="rounded-lg bg-slate-50 border border-slate-200 p-2.5 flex items-center justify-between text-xs">
-                <span className="text-slate-600 font-medium">Total Purchase Value:</span>
+                <span className="text-slate-600 font-medium">
+                  Total Purchase Value ({stockInForm.branchIds.length} branches):
+                </span>
                 <span className="font-bold text-slate-900">
-                  LKR {((Number(stockInForm.quantity) || 0) * (Number(stockInForm.unitCost) || 0)).toLocaleString('en-LK', { minimumFractionDigits: 2 })}
+                  LKR {((Number(stockInForm.quantity) || 0) * (Number(stockInForm.unitCost) || 0) * stockInForm.branchIds.length).toLocaleString('en-LK', { minimumFractionDigits: 2 })}
                 </span>
               </div>
             )}
@@ -1820,7 +1875,7 @@ export default function ProductsPage() {
             {stockInForm.paymentType === 'PARTIAL' && (
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-slate-800">
-                  Paid Amount (LKR) <span className="text-rose-500">*</span>
+                  Paid Amount per branch (LKR) <span className="text-rose-500">*</span>
                 </Label>
                 <div className="input-icon-field">
                   <CircleDollarSign className="field-icon h-4 w-4" />
@@ -1879,7 +1934,7 @@ export default function ProductsPage() {
               </button>
               <button
                 type="submit"
-                disabled={stockInMutation.isPending || !stockInForm.branchId}
+                  disabled={stockInMutation.isPending || stockInForm.branchIds.length === 0}
                 className="dialog-action-submit"
               >
                 <ArrowDownLeft className="h-4 w-4" /> Record Stock In

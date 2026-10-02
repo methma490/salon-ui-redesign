@@ -970,7 +970,7 @@ export class QuotationsService {
     return `<!doctype html><html><head><meta charset="utf-8"/><title>${escapeHtml(detail.quotationNo)}</title>
 <style>
 body{font-family:Segoe UI,Arial,sans-serif;color:#0f172a;padding:24px}
-h1{margin:0 0 4px;font-size:22px;color:${detail.salon.primaryColor || '#0d5c3d'}}
+h1{margin:0 0 4px;font-size:22px;color:${detail.salon.primaryColor || '#a44a5c'}}
 .muted{color:#64748b;font-size:13px}
 table{width:100%;border-collapse:collapse;margin-top:18px}
 th,td{border-bottom:1px solid #e2e8f0;padding:8px;font-size:13px;text-align:left}

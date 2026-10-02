@@ -12,7 +12,7 @@ import {
 } from 'recharts';
 
 export const DASH_CHART_COLORS = [
-  '#0d5c3d',
+  '#a44a5c',
   '#16a34a',
   '#22c55e',
   '#4ade80',
@@ -50,7 +50,7 @@ function ChartTooltip({
   return (
     <div className="rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-xs shadow-md">
       <p className="font-semibold text-[#0f172a]">{label ?? item.name}</p>
-      <p className="mt-0.5 text-[#0d5c3d]">
+      <p className="mt-0.5 text-[#a44a5c]">
         {valuePrefix}
         {value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
       </p>

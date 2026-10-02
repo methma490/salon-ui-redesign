@@ -203,7 +203,7 @@ export default function PublicEbillPage() {
   const customerName = ebill.customer?.name || ebill.customerName || 'Walk-in Customer';
   const customerPhone =
     ebill.customer?.phone || ebill.customerPhone || ebill.customer?.maskedPhone;
-  const brandColor = ebill.salon?.primaryColor || '#0D5C3D';
+  const brandColor = ebill.salon?.primaryColor || '#A44A5C';
   const palette = buildBrandPalette(brandColor);
   const taxAmount = Number(ebill.tax || 0);
 

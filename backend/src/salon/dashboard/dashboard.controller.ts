@@ -1,5 +1,4 @@
-import { CacheTTL } from '@nestjs/cache-manager';
-import { Controller, Get, Query, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentTenant } from '../../tenant/decorators/current-tenant.decorator';
 import { RequireFeature } from '../../tenant/decorators/require-feature.decorator';
@@ -8,7 +7,6 @@ import { FeatureGuard } from '../../tenant/guards/feature.guard';
 import { PermissionGuard } from '../../tenant/guards/permission.guard';
 import { TenantContextGuard } from '../../tenant/guards/tenant-context.guard';
 import { TenantContext } from '../../tenant/interfaces/tenant-context.interface';
-import { DashboardCacheInterceptor } from './dashboard-cache.interceptor';
 import { SalonDashboardQueryDto } from './dto/dashboard-query.dto';
 import { DashboardService } from './dashboard.service';
 
@@ -18,8 +16,6 @@ export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get()
-  @UseInterceptors(DashboardCacheInterceptor)
-  @CacheTTL(300_000)
   @RequirePermission('SALE_VIEW')
   getDashboard(@CurrentTenant() tenant: TenantContext, @Query() query: SalonDashboardQueryDto) {
     return this.dashboardService.getDashboard(

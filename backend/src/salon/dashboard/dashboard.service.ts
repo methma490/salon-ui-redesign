@@ -142,6 +142,7 @@ export class DashboardService {
         recentLoans,
         loansOverview,
         recentOrdersRows,
+        financialComparisonRows,
       ] = await Promise.all([
         tx.$queryRawUnsafe<Array<{ total: string; count: bigint }>>(
           `SELECT COALESCE(SUM(total), 0)::text AS total, COUNT(*)::bigint AS count
@@ -440,6 +441,46 @@ export class DashboardService {
            ORDER BY s.created_at DESC LIMIT 5`,
           ...branchParams,
         ).catch(() => []),
+        tx.$queryRawUnsafe<Array<{
+          label: string;
+          revenue: number;
+          expenses: number;
+          salaries: number;
+        }>>(
+          `WITH days AS (
+             SELECT generate_series($1::date, $2::date, INTERVAL '1 day')::date AS day
+           ), daily_sales AS (
+             SELECT s.created_at::date AS day, SUM(s.total) AS amount
+             FROM ${sales} s
+             WHERE s.status = 'COMPLETED'
+               AND s.created_at >= $1::date
+               AND s.created_at < ($2::date + INTERVAL '1 day')
+               ${periodBranchCond}
+             GROUP BY s.created_at::date
+           ), daily_expenses AS (
+             SELECT expense_date AS day, SUM(amount) AS amount
+             FROM ${expensesTable}
+             WHERE expense_date >= $1::date AND expense_date <= $2::date
+               ${branchId ? 'AND branch_id = $3::uuid' : ''}
+             GROUP BY expense_date
+           ), daily_salaries AS (
+             SELECT created_at::date AS day, SUM(total_net) AS amount
+             FROM ${payrollRunsTable}
+             WHERE created_at >= $1::date
+               AND created_at < ($2::date + INTERVAL '1 day')
+             GROUP BY created_at::date
+           )
+           SELECT TO_CHAR(days.day, 'Mon DD') AS label,
+                  COALESCE(daily_sales.amount, 0)::float AS revenue,
+                  COALESCE(daily_expenses.amount, 0)::float AS expenses,
+                  COALESCE(daily_salaries.amount, 0)::float AS salaries
+           FROM days
+           LEFT JOIN daily_sales USING (day)
+           LEFT JOIN daily_expenses USING (day)
+           LEFT JOIN daily_salaries USING (day)
+           ORDER BY days.day`,
+          ...periodParams,
+        ),
       ]);
 
       const growthBuckets: Array<{ name: string; key: string }> = [];
@@ -461,27 +502,26 @@ export class DashboardService {
       // Financials calculations
       const revenue = Number(periodSales[0]?.total ?? 0);
       const prevRevenue = Number(prevPeriodSales[0]?.total ?? 0);
-      const revenueGrowth = prevRevenue > 0 ? Math.round(((revenue - prevRevenue) / prevRevenue) * 100) : 12;
+      const revenueGrowth = prevRevenue > 0 ? Math.round(((revenue - prevRevenue) / prevRevenue) * 100) : 0;
 
       const expenses = Number(periodExpenses[0]?.total ?? 0);
       const prevExpenses = Number(prevPeriodExpenses[0]?.total ?? 0);
-      const expensesGrowth = prevExpenses > 0 ? Math.round(((expenses - prevExpenses) / prevExpenses) * 100) : 8;
+      const expensesGrowth = prevExpenses > 0 ? Math.round(((expenses - prevExpenses) / prevExpenses) * 100) : 0;
 
       const salaries = Number(periodSalaries[0]?.total ?? 0);
       const prevSalaries = Number(prevPeriodSalaries[0]?.total ?? 0);
-      const salariesGrowth = prevSalaries > 0 ? Math.round(((salaries - prevSalaries) / prevSalaries) * 100) : 5;
+      const salariesGrowth = prevSalaries > 0 ? Math.round(((salaries - prevSalaries) / prevSalaries) * 100) : 0;
 
       const netProfit = revenue - expenses - salaries;
       const prevProfit = prevRevenue - prevExpenses - prevSalaries;
-      const profitGrowth = prevProfit !== 0 ? Math.round(((netProfit - prevProfit) / Math.abs(prevProfit)) * 100) : 16;
+      const profitGrowth = prevProfit !== 0 ? Math.round(((netProfit - prevProfit) / Math.abs(prevProfit)) * 100) : 0;
 
-      // Grouped Weekly Financials (Week 1, Week 2, Week 3, Week 4)
-      const weeklyComparison = [
-        { week: 'Week 1', revenue: Math.round(revenue * 0.22) || 120000, expenses: Math.round(expenses * 0.24) || 65000, salaries: Math.round(salaries * 0.25) || 20000 },
-        { week: 'Week 2', revenue: Math.round(revenue * 0.26) || 145000, expenses: Math.round(expenses * 0.25) || 72000, salaries: Math.round(salaries * 0.25) || 20000 },
-        { week: 'Week 3', revenue: Math.round(revenue * 0.28) || 165000, expenses: Math.round(expenses * 0.27) || 80000, salaries: Math.round(salaries * 0.25) || 20000 },
-        { week: 'Week 4', revenue: Math.round(revenue * 0.24) || 135000, expenses: Math.round(expenses * 0.24) || 68000, salaries: Math.round(salaries * 0.25) || 20000 },
-      ];
+      const weeklyComparison = financialComparisonRows.map((row) => ({
+        week: row.label,
+        revenue: Number(row.revenue),
+        expenses: Number(row.expenses),
+        salaries: Number(row.salaries),
+      }));
 
       // Appointments breakdown
       const apptCompleted = Number(appointmentBreakdown[0]?.completed ?? 0);
@@ -490,9 +530,9 @@ export class DashboardService {
       const apptNoShow = Number(appointmentBreakdown[0]?.noShow ?? 0);
       const totalAppts = apptCompleted + apptPending + apptCancelled + apptNoShow || Number(periodAppointments[0]?.count ?? 0);
 
-      const completedPct = totalAppts > 0 ? Math.round((apptCompleted / totalAppts) * 100) : 84;
-      const pendingPct = totalAppts > 0 ? Math.round((apptPending / totalAppts) * 100) : 12;
-      const cancelledPct = totalAppts > 0 ? Math.round((apptCancelled / totalAppts) * 100) : 4;
+      const completedPct = totalAppts > 0 ? Math.round((apptCompleted / totalAppts) * 100) : 0;
+      const pendingPct = totalAppts > 0 ? Math.round((apptPending / totalAppts) * 100) : 0;
+      const cancelledPct = totalAppts > 0 ? Math.round((apptCancelled / totalAppts) * 100) : 0;
       const noShowPct = totalAppts > 0 ? Math.round((apptNoShow / totalAppts) * 100) : 0;
 
       // Top employees
@@ -521,9 +561,9 @@ export class DashboardService {
       const outOfStockQty = Number(inventoryOverview[0]?.out ?? 0);
       const totalStockSum = inStockQty + lowStockQty + outOfStockQty || totalProductsCount || 1;
 
-      const inStockPct = Math.round((inStockQty / totalStockSum) * 100) || 76;
-      const lowStockPct = Math.round((lowStockQty / totalStockSum) * 100) || 11;
-      const outOfStockPct = Math.round((outOfStockQty / totalStockSum) * 100) || 5;
+      const inStockPct = Math.round((inStockQty / totalStockSum) * 100);
+      const lowStockPct = Math.round((lowStockQty / totalStockSum) * 100);
+      const outOfStockPct = Math.round((outOfStockQty / totalStockSum) * 100);
 
       // Employee Loans
       const activeLoansCount = Number(loansOverview[0]?.activeCount ?? 0);
@@ -630,19 +670,19 @@ export class DashboardService {
             completed: Number(row.completed),
             pending: Number(row.pending),
             cancelled: Number(row.cancelled),
-            noShow: 0,
+            noShow: Number(row.noShow ?? 0),
           })),
         },
         topEmployees: topEmployeesData,
         inventoryOverview: {
-          totalProducts: totalProductsCount || 320,
-          inStock: inStockQty || 245,
+          totalProducts: totalProductsCount,
+          inStock: inStockQty,
           inStockPct,
-          lowStock: lowStockQty || 35,
+          lowStock: lowStockQty,
           lowStockPct,
-          outOfStock: outOfStockQty || 15,
+          outOfStock: outOfStockQty,
           outOfStockPct,
-          stockValue: Number(inventoryTotals[0]?.stockValue ?? 0) || 250000,
+          stockValue: Number(inventoryTotals[0]?.stockValue ?? 0),
         },
         employeeLoans: {
           activeCount: activeLoansCount,

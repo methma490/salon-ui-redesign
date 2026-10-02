@@ -6,7 +6,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import sharp from 'sharp';
 import { buildPaginatedResponse, resolvePagination } from '../../common/dto/pagination.dto';
+import { StorageService } from '../../common/storage/storage.service';
 import { SubscriptionsService } from '../../subscriptions/subscriptions.service';
 import { TenantSchemaService } from '../../tenant/services/tenant-schema.service';
 import { tenantTable } from '../../tenant/utils/schema-name.util';
@@ -44,6 +46,7 @@ export interface EmployeeRecord {
   maxAdvancePercentage: number;
   createdAt: Date;
   updatedAt: Date;
+  photoUrl: string | null;
 }
 
 export interface AssignableRoleOption {
@@ -63,7 +66,33 @@ export class EmployeesService {
   constructor(
     private readonly tenantSchemaService: TenantSchemaService,
     private readonly subscriptionsService: SubscriptionsService,
+    private readonly storageService: StorageService,
   ) {}
+
+  async saveEmployeePhoto(file: Express.Multer.File | undefined): Promise<{ photoUrl: string }> {
+    if (!file) throw new BadRequestException('Profile image file is required');
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
+      throw new BadRequestException('Profile image must be JPG, PNG, or WEBP');
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      throw new BadRequestException('Profile image must be 2MB or smaller');
+    }
+
+    let buffer: Buffer;
+    try {
+      buffer = await sharp(file.buffer)
+        .rotate()
+        .resize(512, 512, { fit: 'cover', withoutEnlargement: true })
+        .webp({ quality: 84 })
+        .toBuffer();
+    } catch {
+      throw new BadRequestException('Could not process the profile image. Please choose a valid image.');
+    }
+
+    const filename = `employee_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.webp`;
+    const photoUrl = await this.storageService.uploadFile(buffer, 'employees', filename, 'image/webp');
+    return { photoUrl };
+  }
 
   private employeeSelectSql(employees: string, branches: string, schemaName: string): string {
     const userRolesTable = tenantTable(schemaName, 'user_roles');
@@ -80,6 +109,7 @@ export class EmployeesService {
                      ARRAY[]::text[]
                    ) AS "systemRoles",
                    e.status::text AS status,
+                   e.photo_url AS "photoUrl",
                    COALESCE(e.basic_salary, 0)::float AS "basicSalary",
                    COALESCE(e.commission_rate, 0)::float AS "commissionRate",
                    COALESCE(e.commission_type, 'PERCENTAGE_OF_INVOICE_SALES') AS "commissionType",
@@ -412,8 +442,8 @@ export class EmployeesService {
 
       const rows = (await tx.$queryRawUnsafe(
         `INSERT INTO ${employees}
-           (branch_id, user_id, code, name, email, phone, designation, status, basic_salary, commission_rate, epf_enabled, etf_enabled, max_advance_percentage)
-         VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, 'ACTIVE', $8::numeric, $9::numeric, $10::boolean, $11::boolean, $12::numeric)
+           (branch_id, user_id, code, name, email, phone, designation, status, basic_salary, commission_rate, epf_enabled, etf_enabled, max_advance_percentage, photo_url)
+         VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, 'ACTIVE', $8::numeric, $9::numeric, $10::boolean, $11::boolean, $12::numeric, $13)
          RETURNING id`,
         dto.branchId,
         linkedUserId,
@@ -427,6 +457,7 @@ export class EmployeesService {
         dto.epfEnabled ?? true,
         dto.etfEnabled ?? true,
         dto.maxAdvancePercentage ?? 100,
+        dto.photoUrl ?? null,
       )) as Array<{ id: string }>;
 
       await logAudit(tx, schemaName, {
@@ -542,6 +573,7 @@ export class EmployeesService {
              epf_enabled = COALESCE($10::boolean, epf_enabled),
              etf_enabled = COALESCE($11::boolean, etf_enabled),
              max_advance_percentage = COALESCE($12::numeric, max_advance_percentage),
+             photo_url = COALESCE($13, photo_url),
              updated_at = NOW()
          WHERE id = $1::uuid`,
         id,
@@ -556,6 +588,7 @@ export class EmployeesService {
         dto.epfEnabled ?? null,
         dto.etfEnabled ?? null,
         dto.maxAdvancePercentage ?? null,
+        dto.photoUrl ?? null,
       );
 
       await logAudit(tx, schemaName, {

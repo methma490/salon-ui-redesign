@@ -188,26 +188,45 @@ export class PosService {
           ? normalizeSaleAssignments(assignmentInputs, total)
           : [];
 
-      const saleNumber = await this.generateSaleNumber(tx, sales);
-
-      const statusCast = this.tenantEnumCast(schemaName, 'sale_status', 7);
-      const saleRows = await tx.$queryRawUnsafe<Array<{ id: string }>>(
-        `INSERT INTO ${sales}
-           (branch_id, customer_id, sale_number, subtotal, discount, tax, total, status, created_by, cashier_id, refunded_amount)
-         VALUES ($1::uuid, $2::uuid, $3, $4, $5, 0, $6, ${statusCast}, $8::uuid, $9::uuid, 0)
-         RETURNING id`,
-        dto.branchId,
-        dto.customerId ?? null,
-        saleNumber,
-        subtotal,
-        saleDiscount,
-        total,
-        saleStatus,
-        cashierUserId,
-        cashierUserId,
-      );
-
-      const saleId = saleRows[0].id;
+      let saleId: string;
+      let actualSaleNumber: string;
+      if (dto.saleId) {
+        const existing = await tx.$queryRawUnsafe<Array<{ id: string; saleNumber: string }>>(
+          `SELECT id, sale_number AS "saleNumber" FROM ${sales}
+           WHERE id = $1::uuid AND status::text = 'PENDING' FOR UPDATE`,
+          dto.saleId,
+        );
+        if (!existing.length) throw new NotFoundException('POS draft not found or already completed');
+        saleId = existing[0].id;
+        actualSaleNumber = existing[0].saleNumber;
+        await tx.$executeRawUnsafe(
+          `DELETE FROM ${saleItemEmployees} WHERE sale_item_id IN
+             (SELECT id FROM ${saleItems} WHERE sale_id = $1::uuid)`, saleId,
+        );
+        await tx.$executeRawUnsafe(`DELETE FROM ${saleItems} WHERE sale_id = $1::uuid`, saleId);
+        await tx.$executeRawUnsafe(`DELETE FROM ${saleEmployees} WHERE sale_id = $1::uuid`, saleId);
+        await tx.$executeRawUnsafe(`DELETE FROM ${payments} WHERE sale_id = $1::uuid`, saleId);
+        const statusCast = this.tenantEnumCast(schemaName, 'sale_status', 8);
+        await tx.$executeRawUnsafe(
+          `UPDATE ${sales} SET branch_id = $2::uuid, customer_id = $3::uuid,
+             subtotal = $4, discount = $5, total = $6, status = ${statusCast}, cashier_id = $7::uuid
+           WHERE id = $1::uuid`,
+          saleId, dto.branchId, dto.customerId ?? null, subtotal, saleDiscount, total,
+          cashierUserId, saleStatus,
+        );
+      } else {
+        actualSaleNumber = await this.generateSaleNumber(tx, sales);
+        const statusCast = this.tenantEnumCast(schemaName, 'sale_status', 7);
+        const saleRows = await tx.$queryRawUnsafe<Array<{ id: string }>>(
+          `INSERT INTO ${sales}
+             (branch_id, customer_id, sale_number, subtotal, discount, tax, total, status, created_by, cashier_id, refunded_amount)
+           VALUES ($1::uuid, $2::uuid, $3, $4, $5, 0, $6, ${statusCast}, $8::uuid, $9::uuid, 0)
+           RETURNING id`,
+          dto.branchId, dto.customerId ?? null, actualSaleNumber, subtotal, saleDiscount, total,
+          saleStatus, cashierUserId, cashierUserId,
+        );
+        saleId = saleRows[0].id;
+      }
 
       const assignmentTypeCast = this.tenantEnumCast(schemaName, 'sale_assignment_type', 3);
       for (const assignment of normalizedAssignments) {
@@ -287,7 +306,7 @@ export class PosService {
         entityType: 'sale',
         entityId: saleId,
         details: {
-          saleNumber,
+          saleNumber: actualSaleNumber,
           total,
           employees: normalizedAssignments.map((a) => ({
             employeeId: a.employeeId,
@@ -300,7 +319,7 @@ export class PosService {
 
       return {
         id: saleId,
-        saleNumber,
+        saleNumber: actualSaleNumber,
         subtotal,
         discount: saleDiscount,
         total,

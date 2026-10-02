@@ -118,6 +118,7 @@ export default function StockPage() {
   const qc = useQueryClient();
   const { branchId, setBranchId, branches } = useSalonBranch();
   const [tab, setTab] = useState<Tab>('movements');
+  const [chartBranchId, setChartBranchId] = useState('all');
   const [formError, setFormError] = useState<string | null>(null);
 
   // Search & Filters for Movements
@@ -182,6 +183,13 @@ export default function StockPage() {
   } = useQuery({
     queryKey: ['stock-movements', branchId],
     queryFn: () => tenantApi.stock.movements(branchId === 'all' ? undefined : { branchId }),
+    enabled: tab === 'movements',
+  });
+
+  const { data: chartMovements = [] } = useQuery({
+    queryKey: ['stock-movement-chart', chartBranchId],
+    queryFn: () =>
+      tenantApi.stock.movements(chartBranchId === 'all' ? undefined : { branchId: chartBranchId }),
     enabled: tab === 'movements',
   });
 
@@ -326,7 +334,7 @@ export default function StockPage() {
   // Movement Breakdown for Chart (by product or recent 10 entries)
   const movementChartData = useMemo(() => {
     const map = new Map<string, { name: string; stockIn: number; sales: number; adjustment: number }>();
-    const recent = filteredMovements.slice(0, 10).reverse();
+    const recent = chartMovements.slice(0, 10).reverse();
 
     recent.forEach((m) => {
       const label = m.productName.length > 14 ? m.productName.slice(0, 12) + '…' : m.productName;
@@ -343,7 +351,7 @@ export default function StockPage() {
     });
 
     return Array.from(map.values());
-  }, [filteredMovements]);
+  }, [chartMovements]);
 
   const tabsList: { id: Tab; label: string; icon: any }[] = [
     { id: 'movements', label: 'Movement Chart & History', icon: History },
@@ -467,6 +475,19 @@ export default function StockPage() {
                   <p className="emp-panel-desc text-xs sm:text-sm">Visual comparison of incoming vs sales vs adjustment activity</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3 text-xs font-semibold">
+                  <Select value={chartBranchId} onValueChange={setChartBranchId}>
+                    <SelectTrigger aria-label="Filter chart by branch" className="h-8 w-[170px] bg-white text-xs">
+                      <SelectValue placeholder="All branches" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All branches</SelectItem>
+                      {branches.map((branch) => (
+                        <SelectItem key={branch.id} value={branch.id}>
+                          {branch.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <span className="flex items-center gap-1.5 text-emerald-700">
                     <span className="w-2.5 h-2.5 rounded bg-emerald-600 inline-block" /> Stock In
                   </span>

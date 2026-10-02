@@ -1,4 +1,18 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../../auth/interfaces/auth.interface';
@@ -34,6 +48,30 @@ export class EmployeesController {
   @RequirePermission('EMPLOYEE_VIEW')
   getAssignableRoles(@CurrentTenant() tenant: TenantContext) {
     return this.employeesService.getAssignableRoles(tenant.tenantId, tenant.schemaName);
+  }
+
+  @Post('upload-photo')
+  @RequirePermission('EMPLOYEE_CREATE')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: memoryStorage(),
+      limits: { fileSize: 2 * 1024 * 1024 },
+    }),
+  )
+  uploadNewEmployeePhoto(@UploadedFile() file: Express.Multer.File | undefined) {
+    return this.employeesService.saveEmployeePhoto(file);
+  }
+
+  @Post(':id/upload-photo')
+  @RequirePermission('EMPLOYEE_UPDATE')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: memoryStorage(),
+      limits: { fileSize: 2 * 1024 * 1024 },
+    }),
+  )
+  uploadExistingEmployeePhoto(@UploadedFile() file: Express.Multer.File | undefined) {
+    return this.employeesService.saveEmployeePhoto(file);
   }
 
   @Get(':id')

@@ -12,7 +12,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import Swal from 'sweetalert2';
+import { appAlert } from '@/lib/app-alerts';
 import { tenantApi, type ServiceCategory } from '@/api/tenant.api';
 import { useDebouncedSearch } from '@/hooks/useDebounce';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -146,7 +146,7 @@ export default function ServiceCategoriesPage() {
       qc.invalidateQueries({ queryKey: ['service-categories'] });
       qc.invalidateQueries({ queryKey: ['services'] });
       setFormError(null);
-      Swal.fire({
+      appAlert({
         icon: 'success',
         title: variables.status === 'ACTIVE' ? 'Category Activated' : 'Category Deactivated',
         text:
@@ -160,7 +160,7 @@ export default function ServiceCategoriesPage() {
     onError: (err) => {
       const msg = getErrorMessage(err);
       setFormError(msg);
-      Swal.fire({
+      appAlert({
         icon: 'error',
         title: 'Error',
         text: msg,
@@ -174,7 +174,7 @@ export default function ServiceCategoriesPage() {
       qc.invalidateQueries({ queryKey: ['service-categories'] });
       qc.invalidateQueries({ queryKey: ['services'] });
       setFormError(null);
-      Swal.fire({
+      appAlert({
         icon: 'success',
         title: 'Category Deleted',
         text: 'The service category has been deleted successfully.',
@@ -185,7 +185,7 @@ export default function ServiceCategoriesPage() {
     onError: (err) => {
       const msg = getErrorMessage(err);
       setFormError(msg);
-      Swal.fire({
+      appAlert({
         icon: 'error',
         title: 'Cannot Delete Category',
         text: msg,
@@ -206,7 +206,7 @@ export default function ServiceCategoriesPage() {
   const handleToggleStatus = (cat: ServiceCategory) => {
     setFormError(null);
     if (cat.status === 'ACTIVE') {
-      Swal.fire({
+      appAlert({
         title: 'Deactivate Category?',
         html: `
           <div style="text-align: center; margin-bottom: 14px;">
@@ -232,7 +232,7 @@ export default function ServiceCategoriesPage() {
         }
       });
     } else {
-      Swal.fire({
+      appAlert({
         title: 'Activate Category?',
         text: `Do you want to activate "${cat.name}" and all its assigned services?`,
         icon: 'question',
@@ -252,7 +252,7 @@ export default function ServiceCategoriesPage() {
 
   const handleDeleteCategory = (cat: ServiceCategory) => {
     setFormError(null);
-    Swal.fire({
+    appAlert({
       title: 'Delete Service Category?',
       html: `
         <div style="text-align: center; margin-bottom: 12px;">

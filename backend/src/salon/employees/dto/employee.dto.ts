@@ -44,6 +44,11 @@ export class CreateEmployeeDto {
   branchId!: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  photoUrl?: string;
+
+  @IsOptional()
   @IsUUID()
   userId?: string;
 
@@ -114,6 +119,11 @@ export class UpdateEmployeeDto {
   @IsOptional()
   @IsUUID()
   branchId?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  photoUrl?: string;
 
   @IsOptional()
   @IsUUID()

@@ -57,7 +57,7 @@ function planColorClass(planName?: string | null) {
   if (key.includes('gold')) return '#d4a017';
   if (key.includes('platinum')) return '#6366f1';
   if (key.includes('silver')) return '#94a3b8';
-  return '#0d5c3d';
+  return '#a44a5c';
 }
 
 export default function PremiumDashboardPage() {
@@ -116,7 +116,7 @@ export default function PremiumDashboardPage() {
           </div>
           <div className="s360-kpi-value">{tenants.total.toLocaleString()}</div>
           <div className="s360-kpi-spark">
-            <SparklineChart data={charts.sparklines.salons} color="#0d5c3d" />
+            <SparklineChart data={charts.sparklines.salons} color="#a44a5c" />
           </div>
           <div className="s360-kpi-foot">
             <span className="s360-kpi-stat"><span className="s360-dot green" /> Active <strong>{tenants.active}</strong></span>
@@ -131,7 +131,7 @@ export default function PremiumDashboardPage() {
           </div>
           <div className="s360-kpi-value green">{formatMoney(revenue.mrr, revenue.currency)}</div>
           <div className="s360-kpi-spark">
-            <SparklineChart data={charts.sparklines.revenue} color="#10b981" />
+            <SparklineChart data={charts.sparklines.revenue} color="#d4af7c" />
           </div>
           <div className="s360-kpi-foot">
             <span className="s360-kpi-stat">ARR <strong>{formatMoney(revenue.arr, revenue.currency)}</strong></span>
@@ -145,7 +145,7 @@ export default function PremiumDashboardPage() {
           </div>
           <div className="s360-kpi-value">{subscriptions.total.toLocaleString()}</div>
           <div className="s360-kpi-spark">
-            <SparklineChart data={charts.sparklines.subscriptions} color="#0d5c3d" />
+            <SparklineChart data={charts.sparklines.subscriptions} color="#a44a5c" />
           </div>
           <div className="s360-kpi-foot">
             {subscriptions.byPlan.slice(0, 3).map((plan) => (
@@ -192,7 +192,7 @@ export default function PremiumDashboardPage() {
             )}
           </div>
           <div className="s360-legend">
-            <span className="s360-legend-item"><span className="s360-legend-dot" style={{ background: '#0d5c3d' }} /> New Salons</span>
+            <span className="s360-legend-item"><span className="s360-legend-dot" style={{ background: '#a44a5c' }} /> New Salons</span>
             <span className="s360-legend-item"><span className="s360-legend-dot" style={{ background: '#ef4444' }} /> Cancelled Salons</span>
           </div>
         </div>

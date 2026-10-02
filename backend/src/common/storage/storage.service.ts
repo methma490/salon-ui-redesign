@@ -23,6 +23,7 @@ export class StorageService {
       .replace(/^\/+|\/+$/g, '');
 
     const endpointEnv = this.configService.get<string>('DO_SPACES_ENDPOINT')?.trim();
+    const usePathStyle = this.bucket.includes('.');
 
     if (key && secret) {
       // S3 client endpoint for DigitalOcean Spaces
@@ -34,11 +35,13 @@ export class StorageService {
           accessKeyId: key,
           secretAccessKey: secret,
         },
-        forcePathStyle: false,
+        forcePathStyle: usePathStyle,
       });
 
       // Public URL base
-      if (endpointEnv && endpointEnv.includes(this.bucket)) {
+      if (usePathStyle) {
+        this.publicBaseUrl = `${s3Endpoint}/${this.bucket}`;
+      } else if (endpointEnv && endpointEnv.includes(this.bucket)) {
         this.publicBaseUrl = endpointEnv.replace(/\/+$/, '');
       } else {
         this.publicBaseUrl = `https://${this.bucket}.${this.region}.digitaloceanspaces.com`;

@@ -149,7 +149,7 @@ export default function DashboardPage() {
         <DashboardPanel title="New signups" description="Salons created per month">
           {signupBars.length > 0 ? (
             <div className="dash-chart-wrap">
-              <DashboardBarChart data={signupBars} color="#0d5c3d" valuePrefix="" />
+              <DashboardBarChart data={signupBars} color="#a44a5c" valuePrefix="" />
             </div>
           ) : (
             <DashboardEmpty message="No signup trend data yet." />

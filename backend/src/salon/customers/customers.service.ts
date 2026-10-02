@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { buildPaginatedResponse, resolvePagination } from '../../common/dto/pagination.dto';
 import { TenantSchemaService } from '../../tenant/services/tenant-schema.service';
-import { tenantTable } from '../../tenant/utils/schema-name.util';
+import { tenantTable, tenantType } from '../../tenant/utils/schema-name.util';
 import { logAudit } from '../utils/audit.util';
 import { generateSequentialCode } from '../utils/code-generator.util';
 import {
@@ -85,7 +85,7 @@ export class CustomersService {
     }
 
     if (query.status) {
-      conditions.push(`status = $${idx++}::customer_status`);
+      conditions.push(`status = $${idx++}::${tenantType(schemaName, 'customer_status')}`);
       params.push(query.status);
     }
 
@@ -261,7 +261,7 @@ export class CustomersService {
 
     await this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
       await tx.$queryRawUnsafe(
-        `UPDATE ${table} SET status = $2::customer_status, updated_at = NOW() WHERE id = $1::uuid`,
+        `UPDATE ${table} SET status = $2::${tenantType(schemaName, 'customer_status')}, updated_at = NOW() WHERE id = $1::uuid`,
         id,
         dto.status,
       );
@@ -330,6 +330,7 @@ export class CustomersService {
     const appointments = tenantTable(schemaName, 'appointments');
     const appointmentServices = tenantTable(schemaName, 'appointment_services');
     const branches = tenantTable(schemaName, 'branches');
+    const employees = tenantTable(schemaName, 'employees');
 
     await this.findById(schemaName, customerId);
 
@@ -344,6 +345,7 @@ export class CustomersService {
           status: string;
           notes: string | null;
           branchName: string;
+          employeeName: string | null;
           totalPrice: number;
           services: Array<{
             id: string;
@@ -360,6 +362,7 @@ export class CustomersService {
                 a.status::text AS status,
                 a.notes,
                 b.name AS "branchName",
+                e.name AS "employeeName",
                 COALESCE(
                   (SELECT SUM(aps.price)::float FROM ${appointmentServices} aps WHERE aps.appointment_id = a.id),
                   0
@@ -368,8 +371,8 @@ export class CustomersService {
                   (
                     SELECT json_agg(
                       json_build_object(
-                        'id', aps.id,
-                        'name', aps.name,
+                        'id', aps.service_id,
+                        'name', aps.service_name,
                         'price', aps.price::float,
                         'durationMinutes', aps.duration_minutes
                       )
@@ -381,6 +384,7 @@ export class CustomersService {
                 ) AS services
          FROM ${appointments} a
          INNER JOIN ${branches} b ON b.id = a.branch_id
+         LEFT JOIN ${employees} e ON e.id = a.employee_id
          WHERE a.customer_id = $1::uuid
          ORDER BY a.appointment_date DESC, a.start_time DESC`,
         customerId,

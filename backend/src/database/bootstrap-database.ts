@@ -32,7 +32,14 @@ function runPrismaCommand(command: string, backendRoot: string): void {
  */
 export async function bootstrapDatabase(): Promise<void> {
   if (process.env.DATABASE_AUTO_SETUP === 'false') {
-    logger.log('Skipping auto database setup (DATABASE_AUTO_SETUP=false)');
+    logger.log('Skipping general auto database setup (DATABASE_AUTO_SETUP=false)');
+    const prisma = new PrismaClient();
+    try {
+      await prisma.$connect();
+      await syncEmployeePhotoColumns(prisma);
+    } finally {
+      await prisma.$disconnect();
+    }
     return;
   }
 
@@ -71,6 +78,27 @@ export async function bootstrapDatabase(): Promise<void> {
     await syncAllTenantSchemas(prisma);
   } finally {
     await prisma.$disconnect();
+  }
+}
+
+async function syncEmployeePhotoColumns(prisma: PrismaClient): Promise<void> {
+  const schemaRows = await prisma.$queryRaw<Array<{ schema_name: string }>>`
+    SELECT schema_name FROM information_schema.schemata WHERE schema_name ~ '^tenant_'
+  `;
+  const tenantRows = await prisma.$queryRaw<Array<{ schemaName: string }>>`
+    SELECT "schemaName" FROM tenants WHERE "schemaName" IS NOT NULL
+  `;
+  const schemas = new Set([
+    ...schemaRows.map((row) => row.schema_name),
+    ...tenantRows.map((row) => row.schemaName),
+  ]);
+
+  for (const schema of schemas) {
+    if (!schema) continue;
+    const quotedSchema = `"${schema.replace(/"/g, '""')}"`;
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE IF EXISTS ${quotedSchema}.employees ADD COLUMN IF NOT EXISTS photo_url TEXT`,
+    );
   }
 }
 
@@ -153,6 +181,9 @@ async function syncAllTenantSchemas(prisma: PrismaClient): Promise<void> {
         );
         await prisma.$executeRawUnsafe(
           `ALTER TABLE "${schema}".employees ADD COLUMN IF NOT EXISTS max_advance_percentage NUMERIC(5,2) NOT NULL DEFAULT 100.00`,
+        );
+        await prisma.$executeRawUnsafe(
+          `ALTER TABLE "${schema}".employees ADD COLUMN IF NOT EXISTS photo_url TEXT`,
         );
         await prisma.$executeRawUnsafe(
           `ALTER TABLE "${schema}".payroll_settings ADD COLUMN IF NOT EXISTS max_salary_advance_percentage NUMERIC(5,2) NOT NULL DEFAULT 50.00`,

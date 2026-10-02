@@ -1,6 +1,6 @@
 .plans-page {
-  --plans-primary: #0d5c3d;
-  --plans-primary-soft: #ecfdf3;
+  --plans-primary: #a44a5c;
+  --plans-primary-soft: #f5e8eb;
   --plans-border: #e5ebe8;
   --plans-muted: #64748b;
   --plans-surface: #ffffff;
@@ -59,7 +59,7 @@
 }
 
 .plans-btn-primary:hover {
-  background: #0a4a31;
+  background: #8a3d4d;
 }
 
 .plans-btn-secondary {
@@ -219,8 +219,8 @@
 }
 
 .plans-badge-popular {
-  background: #ecfdf3;
-  color: #0d5c3d;
+  background: #f5e8eb;
+  color: #a44a5c;
 }
 
 .plans-pricing {

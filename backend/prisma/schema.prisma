@@ -156,7 +156,7 @@ model Tenant {
   email      String?
   phone      String?
   logoUrl    String?
-  primaryColor String?  // Salon brand accent (#RRGGBB); null = default forest green
+  primaryColor String?  // Salon brand accent (#RRGGBB); null = public website burgundy
   status     TenantStatus @default(PROVISIONING)
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt

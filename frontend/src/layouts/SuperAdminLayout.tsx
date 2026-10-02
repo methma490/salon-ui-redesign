@@ -159,7 +159,9 @@ export default function SuperAdminLayout() {
           ref={mainRef}
           className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-6"
         >
-          <Outlet />
+          <div className="admin-page-content">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

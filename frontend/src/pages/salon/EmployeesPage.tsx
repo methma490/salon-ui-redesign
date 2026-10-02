@@ -35,10 +35,13 @@ import {
   Wallet,
   X,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { Link } from 'react-router-dom';
-import Swal from 'sweetalert2';
+import { createPortal } from 'react-dom';
+import { appAlert } from '@/lib/app-alerts';
 import { tenantApi, type Employee } from '@/api/tenant.api';
+import { EmployeeProfileAvatar } from '@/components/EmployeeProfileAvatar';
+import { resolveUploadUrl } from '@/lib/upload-url';
 import { useDebouncedSearch } from '@/hooks/useDebounce';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -122,6 +125,7 @@ function toCreatePayload(form: EmployeeForm) {
   };
   const phone = form.phone.trim();
   const email = form.email.trim();
+  if (form.photoUrl) payload.photoUrl = form.photoUrl;
   if (phone) payload.phone = phone;
   if (form.roleCode) {
     payload.roleCode = form.roleCode;
@@ -144,6 +148,7 @@ function toEditPayload(form: EmployeeForm, hasLogin: boolean) {
   };
   const phone = form.phone.trim();
   const email = form.email.trim();
+  if (form.photoUrl) payload.photoUrl = form.photoUrl;
   if (phone) payload.phone = phone;
   if (email) payload.email = email;
   if (form.roleCode) {
@@ -178,16 +183,14 @@ function getAvatarColor(name: string): string {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
-function EmployeeAvatar({ name }: { name: string }) {
-  const initial = name.trim().charAt(0).toUpperCase() || 'U';
-  const colorClass = getAvatarColor(name);
-
+function EmployeeAvatar({ employee }: { employee: Employee }) {
   return (
-    <div
-      className={`h-9 w-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0 shadow-sm ${colorClass}`}
-    >
-      {initial}
-    </div>
+    <EmployeeProfileAvatar
+      name={employee.name}
+      photoUrl={employee.photoUrl}
+      className="h-9 w-9 shadow-sm"
+      fallbackClassName={getAvatarColor(employee.name)}
+    />
   );
 }
 
@@ -282,27 +285,55 @@ function EmployeeActionMenu({
   onAdvance: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuContentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (!menuRef.current?.contains(target) && !menuContentRef.current?.contains(target)) {
         setOpen(false);
       }
     }
+    const closeOnScroll = () => setOpen(false);
     if (open) {
       document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', closeOnScroll, true);
+      window.addEventListener('resize', closeOnScroll);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', closeOnScroll, true);
+      window.removeEventListener('resize', closeOnScroll);
     };
   }, [open]);
+
+  const toggleMenu = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const menuWidth = 176;
+    const menuHeight = payrollEnabled && employee.status === 'ACTIVE' ? 126 : 92;
+    const opensUp = window.innerHeight - rect.bottom < menuHeight + 8 && rect.top > menuHeight + 8;
+    setMenuPosition({
+      top: Math.max(8, Math.min(
+        window.innerHeight - menuHeight - 8,
+        opensUp ? rect.top - menuHeight - 4 : rect.bottom + 4,
+      )),
+      left: Math.max(8, Math.min(window.innerWidth - menuWidth - 8, rect.right - menuWidth)),
+    });
+    setOpen(true);
+  };
 
   return (
     <div className="relative inline-block text-left" ref={menuRef}>
       <button
         type="button"
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={toggleMenu}
         className="h-8 w-8 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-colors flex items-center justify-center shadow-xs"
         title="More actions"
         aria-label="More actions"
@@ -310,8 +341,17 @@ function EmployeeActionMenu({
         <MoreVertical className="h-4 w-4" />
       </button>
 
-      {open && (
-        <div className="absolute right-0 top-full z-50 mt-1 w-44 rounded-xl border border-slate-200 bg-white py-1.5 shadow-xl animate-in fade-in-0 zoom-in-95">
+      {open && createPortal(
+        <div
+          ref={menuContentRef}
+          style={{
+            position: 'fixed',
+            top: menuPosition.top,
+            left: menuPosition.left,
+            zIndex: 1000,
+          }}
+          className="w-44 rounded-xl border border-slate-200 bg-white py-1.5 shadow-xl animate-in fade-in-0 zoom-in-95"
+        >
           <button
             type="button"
             onClick={() => {
@@ -351,7 +391,8 @@ function EmployeeActionMenu({
               <span>Advance</span>
             </button>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
@@ -396,6 +437,8 @@ export default function EmployeesPage() {
   const [formError, setFormError] = useState<string | null>(null);
 
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [failedPhotoPreview, setFailedPhotoPreview] = useState<string | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -496,7 +539,7 @@ export default function EmployeesPage() {
       setPhotoPreview(null);
       setFormError(null);
       setCreateOpen(false);
-      Swal.fire({
+      appAlert({
         icon: 'success',
         title: 'Employee Created',
         text: 'New team member has been added successfully.',
@@ -515,7 +558,7 @@ export default function EmployeesPage() {
       setEditEmployee(null);
       setPhotoPreview(null);
       setFormError(null);
-      Swal.fire({
+      appAlert({
         icon: 'success',
         title: 'Changes Saved',
         text: 'Employee details updated successfully.',
@@ -531,7 +574,7 @@ export default function EmployeesPage() {
       tenantApi.employees.updateStatus(id, status),
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ['employees'] });
-      Swal.fire({
+      appAlert({
         icon: 'success',
         title: variables.status === 'ACTIVE' ? 'Employee Activated' : 'Employee Deactivated',
         text:
@@ -543,7 +586,7 @@ export default function EmployeesPage() {
       });
     },
     onError: (err) => {
-      Swal.fire({
+      appAlert({
         icon: 'error',
         title: 'Action Failed',
         text: getErrorMessage(err),
@@ -555,7 +598,7 @@ export default function EmployeesPage() {
     mutationFn: (id: string) => tenantApi.employees.delete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['employees'] });
-      Swal.fire({
+      appAlert({
         icon: 'success',
         title: 'Employee Deleted',
         text: 'Employee record has been deleted.',
@@ -564,7 +607,7 @@ export default function EmployeesPage() {
       });
     },
     onError: (err) => {
-      Swal.fire({
+      appAlert({
         icon: 'error',
         title: 'Cannot Delete Employee',
         text: getErrorMessage(err),
@@ -574,7 +617,7 @@ export default function EmployeesPage() {
 
   const handleToggleStatus = (emp: Employee) => {
     if (isOwner(emp) && emp.status === 'ACTIVE') {
-      Swal.fire({
+      appAlert({
         icon: 'warning',
         title: 'Cannot Deactivate Owner',
         text: 'The salon owner account cannot be deactivated.',
@@ -584,7 +627,7 @@ export default function EmployeesPage() {
     }
 
     const nextStatus = emp.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-    Swal.fire({
+    appAlert({
       title: nextStatus === 'INACTIVE' ? 'Deactivate Employee?' : 'Activate Employee?',
       text: `Are you sure you want to ${nextStatus === 'INACTIVE' ? 'deactivate' : 'activate'} ${emp.name}?`,
       icon: 'question',
@@ -603,7 +646,7 @@ export default function EmployeesPage() {
 
   const handleDeleteEmployee = (emp: Employee) => {
     if (isOwner(emp)) {
-      Swal.fire({
+      appAlert({
         icon: 'warning',
         title: 'Cannot Delete Owner',
         text: 'The salon owner account cannot be deleted.',
@@ -612,7 +655,7 @@ export default function EmployeesPage() {
       return;
     }
 
-    Swal.fire({
+    appAlert({
       title: 'Delete Employee?',
       html: `
         <div style="text-align: center;">
@@ -646,7 +689,7 @@ export default function EmployeesPage() {
       setAdvanceEmployee(null);
       setAdvanceForm(emptyAdvanceForm());
       setFormError(null);
-      Swal.fire({
+      appAlert({
         icon: 'success',
         title: 'Advance Recorded',
         text: 'Salary advance has been recorded successfully.',
@@ -659,7 +702,7 @@ export default function EmployeesPage() {
 
   const openEdit = (emp: Employee) => {
     if (isOwner(emp)) {
-      Swal.fire({
+      appAlert({
         icon: 'warning',
         title: 'Cannot Edit Salon Admin',
         text: 'The Salon Admin profile details cannot be modified from the staff management page. Please use Settings to update account details.',
@@ -668,7 +711,7 @@ export default function EmployeesPage() {
       return;
     }
     setFormError(null);
-    setPhotoPreview(null);
+    setPhotoPreview(resolveUploadUrl(emp.photoUrl));
     setEditEmployee(emp);
     setEditForm({
       name: emp.name,
@@ -683,25 +726,42 @@ export default function EmployeesPage() {
       epfEnabled: emp.epfEnabled ?? true,
       etfEnabled: emp.etfEnabled ?? true,
       maxAdvancePercentage: String(emp.maxAdvancePercentage ?? 100),
+      photoUrl: emp.photoUrl ?? '',
     });
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        Swal.fire({
-          icon: 'error',
-          title: 'File Too Large',
-          text: 'Please select an image smaller than 2MB.',
-        });
-        return;
+    e.currentTarget.value = '';
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      appAlert({
+        icon: 'error',
+        title: 'File Too Large',
+        text: 'Please select an image smaller than 2MB.',
+      });
+      return;
+    }
+
+    setPhotoUploading(true);
+    setFormError(null);
+    const reader = new FileReader();
+    reader.onloadend = () => setPhotoPreview(reader.result as string);
+    reader.readAsDataURL(file);
+
+    try {
+      const { photoUrl } = await tenantApi.employees.uploadPhoto(file, editEmployee?.id);
+      if (editEmployee) {
+        setEditForm((current) => ({ ...current, photoUrl }));
+      } else {
+        setForm((current) => ({ ...current, photoUrl }));
       }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      setPhotoPreview(resolveUploadUrl(photoUrl));
+    } catch (uploadError) {
+      setPhotoPreview(editEmployee ? resolveUploadUrl(editEmployee.photoUrl) : null);
+      setFormError(getErrorMessage(uploadError));
+    } finally {
+      setPhotoUploading(false);
     }
   };
 
@@ -933,7 +993,7 @@ export default function EmployeesPage() {
                       {/* Employee Avatar + Name + Phone */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
-                          <EmployeeAvatar name={emp.name} />
+                          <EmployeeAvatar employee={emp} />
                           <div>
                             <div className="font-bold text-slate-900 leading-tight">
                               {emp.name}
@@ -1076,7 +1136,7 @@ export default function EmployeesPage() {
                 <div key={emp.id} className="p-4 space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
-                      <EmployeeAvatar name={emp.name} />
+                      <EmployeeAvatar employee={emp} />
                       <div className="min-w-0">
                         <div className="font-bold text-slate-900 text-sm truncate">
                           {emp.name}
@@ -1311,11 +1371,12 @@ export default function EmployeesPage() {
               <div className="flex items-center gap-4">
                 <div className="relative shrink-0">
                   <div className="h-16 w-16 rounded-full bg-slate-100 flex items-center justify-center border-2 border-slate-200 overflow-hidden">
-                    {photoPreview ? (
+                    {photoPreview && failedPhotoPreview !== photoPreview ? (
                       <img
                         src={photoPreview}
                         alt="Preview"
                         className="h-full w-full object-cover"
+                        onError={() => setFailedPhotoPreview(photoPreview)}
                       />
                     ) : (
                       <User className="h-8 w-8 text-slate-400" />
@@ -1324,7 +1385,8 @@ export default function EmployeesPage() {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-[var(--brand-primary,#0d5c3d)] hover:bg-[var(--brand-hover,#0a4a31)] text-[var(--brand-foreground,#ffffff)] flex items-center justify-center shadow-sm transition-colors cursor-pointer"
+                    disabled={photoUploading}
+                    className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-[var(--brand-primary,#0d5c3d)] hover:bg-[var(--brand-hover,#0a4a31)] text-[var(--brand-foreground,#ffffff)] flex items-center justify-center shadow-sm transition-colors cursor-pointer disabled:opacity-60"
                   >
                     <Camera className="h-3.5 w-3.5" />
                   </button>
@@ -1334,6 +1396,7 @@ export default function EmployeesPage() {
                     accept="image/jpeg,image/png,image/webp"
                     className="hidden"
                     onChange={handleImageChange}
+                    disabled={photoUploading}
                   />
                 </div>
                 <div>
@@ -1344,10 +1407,11 @@ export default function EmployeesPage() {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-[var(--brand-soft,#f0fdf4)] text-[var(--brand-primary,#0d5c3d)] text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                    disabled={photoUploading}
+                    className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-[var(--brand-soft,#f0fdf4)] text-[var(--brand-primary,#0d5c3d)] text-xs font-semibold shadow-xs transition-colors cursor-pointer disabled:opacity-60"
                   >
-                    <Upload className="h-3.5 w-3.5" />
-                    <span>Choose Image</span>
+                    {photoUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                    <span>{photoUploading ? 'Uploading...' : 'Choose Image'}</span>
                   </button>
                   <p className="text-[10px] text-slate-400 mt-1">
                     JPG, PNG or WEBP (Max 2MB)
@@ -1797,7 +1861,7 @@ export default function EmployeesPage() {
               </button>
               <button
                 type="submit"
-                disabled={createMutation.isPending || updateMutation.isPending}
+                disabled={createMutation.isPending || updateMutation.isPending || photoUploading}
                 className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[var(--brand-primary,#0d5c3d)] hover:bg-[var(--brand-hover,#0a4a31)] disabled:opacity-50 text-[var(--brand-foreground,#ffffff)] text-xs font-semibold shadow-xs transition-colors cursor-pointer"
               >
                 <UserPlus className="h-4 w-4" />
