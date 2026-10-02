@@ -27,7 +27,9 @@ import {
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { tenantApi, type Branch } from '@/api/tenant.api';
+import { useSalonBranch } from '@/contexts/SalonBranchContext';
 import { formatMoneyAmount } from '@/lib/money';
 import {
   FormError,
@@ -849,6 +851,7 @@ function BranchDetailsDrawer({
 
 export default function BranchesPage() {
   const qc = useQueryClient();
+  const { branchId, setBranchId } = useSalonBranch();
   const {
     data: branches = [],
     isLoading,
@@ -923,11 +926,18 @@ export default function BranchesPage() {
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       tenantApi.branches.updateStatus(id, status),
     onSuccess: (updated) => {
+      qc.setQueryData<Branch[]>(['branches'], (current = []) =>
+        current.map((branch) => (branch.id === updated.id ? updated : branch)),
+      );
       qc.invalidateQueries({ queryKey: ['branches'] });
+      if (updated.status === 'INACTIVE' && branchId === updated.id) {
+        setBranchId('all');
+      }
       if (drawerBranch?.id === updated.id) {
         setDrawerBranch(updated);
       }
     },
+    onError: (err) => toast.error(getErrorMessage(err, 'Could not update branch status.')),
   });
 
   const openEdit = (branch: Branch) => {

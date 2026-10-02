@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import {
   IsArray,
   IsEnum,
+  IsIn,
   IsNumber,
   IsOptional,
   IsUUID,
@@ -67,6 +68,10 @@ export class SaleEmployeeDto {
 }
 
 export class CreateSaleDto {
+  @IsOptional()
+  @IsUUID()
+  saleId?: string;
+
   @IsUUID()
   branchId!: string;
 
@@ -108,6 +113,10 @@ export class CreateSaleDto {
 }
 
 export class ListSalesQueryDto extends PaginationQueryDto {
+  @IsOptional()
+  @IsIn(['COMPLETED', 'PENDING'])
+  status?: 'COMPLETED' | 'PENDING';
+
   @IsOptional()
   startDate?: string;
 

@@ -384,9 +384,13 @@ export class AppointmentsService {
     schemaName: string,
     query: ListAppointmentsQueryDto | CalendarAppointmentsQueryDto,
     pagination?: { limit: number; offset: number },
+    activeBranchesOnly = false,
   ): Promise<AppointmentRecord[]> {
     const params: unknown[] = [];
     const conditions = this.buildListConditions(schemaName, query, params);
+    if (activeBranchesOnly) {
+      conditions.push(`b.status = 'ACTIVE'`);
+    }
     let idx = params.length + 1;
     const paginationClause = pagination ? ` LIMIT $${idx++} OFFSET $${idx++}` : '';
     const paginationParams = pagination ? [pagination.limit, pagination.offset] : [];
@@ -448,7 +452,7 @@ export class AppointmentsService {
     schemaName: string,
     query: CalendarAppointmentsQueryDto,
   ): Promise<Array<{ date: string; appointments: AppointmentRecord[] }>> {
-    const appointments = await this.fetchAppointments(schemaName, query);
+    const appointments = await this.fetchAppointments(schemaName, query, undefined, true);
     const grouped = new Map<string, AppointmentRecord[]>();
 
     for (const appointment of appointments) {

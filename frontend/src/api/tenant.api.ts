@@ -1010,7 +1010,12 @@ export const tenantApi = {
       const queryParams = typeof params === 'string' ? { categoryId: params } : params;
       return api
         .get<PaginatedResponse<Service> | Service[]>('/tenant/services', { params: queryParams })
-        .then((r) => unwrapPaginatedList(r.data));
+        .then((r) => {
+          if (queryParams && ('page' in queryParams || 'limit' in queryParams)) {
+            return r.data;
+          }
+          return unwrapPaginatedList(r.data);
+        });
     },
     create: (data: Record<string, unknown>) =>
       api.post('/tenant/services', data).then((r) => r.data),

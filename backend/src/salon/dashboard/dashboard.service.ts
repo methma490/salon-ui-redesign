@@ -142,6 +142,7 @@ export class DashboardService {
         recentLoans,
         loansOverview,
         recentOrdersRows,
+        financialComparisonRows,
       ] = await Promise.all([
         tx.$queryRawUnsafe<Array<{ total: string; count: bigint }>>(
           `SELECT COALESCE(SUM(total), 0)::text AS total, COUNT(*)::bigint AS count
@@ -440,6 +441,46 @@ export class DashboardService {
            ORDER BY s.created_at DESC LIMIT 5`,
           ...branchParams,
         ).catch(() => []),
+        tx.$queryRawUnsafe<Array<{
+          label: string;
+          revenue: number;
+          expenses: number;
+          salaries: number;
+        }>>(
+          `WITH days AS (
+             SELECT generate_series($1::date, $2::date, INTERVAL '1 day')::date AS day
+           ), daily_sales AS (
+             SELECT s.created_at::date AS day, SUM(s.total) AS amount
+             FROM ${sales} s
+             WHERE s.status = 'COMPLETED'
+               AND s.created_at >= $1::date
+               AND s.created_at < ($2::date + INTERVAL '1 day')
+               ${periodBranchCond}
+             GROUP BY s.created_at::date
+           ), daily_expenses AS (
+             SELECT expense_date AS day, SUM(amount) AS amount
+             FROM ${expensesTable}
+             WHERE expense_date >= $1::date AND expense_date <= $2::date
+               ${branchId ? 'AND branch_id = $3::uuid' : ''}
+             GROUP BY expense_date
+           ), daily_salaries AS (
+             SELECT created_at::date AS day, SUM(total_net) AS amount
+             FROM ${payrollRunsTable}
+             WHERE created_at >= $1::date
+               AND created_at < ($2::date + INTERVAL '1 day')
+             GROUP BY created_at::date
+           )
+           SELECT TO_CHAR(days.day, 'Mon DD') AS label,
+                  COALESCE(daily_sales.amount, 0)::float AS revenue,
+                  COALESCE(daily_expenses.amount, 0)::float AS expenses,
+                  COALESCE(daily_salaries.amount, 0)::float AS salaries
+           FROM days
+           LEFT JOIN daily_sales USING (day)
+           LEFT JOIN daily_expenses USING (day)
+           LEFT JOIN daily_salaries USING (day)
+           ORDER BY days.day`,
+          ...periodParams,
+        ),
       ]);
 
       const growthBuckets: Array<{ name: string; key: string }> = [];
@@ -475,13 +516,12 @@ export class DashboardService {
       const prevProfit = prevRevenue - prevExpenses - prevSalaries;
       const profitGrowth = prevProfit !== 0 ? Math.round(((netProfit - prevProfit) / Math.abs(prevProfit)) * 100) : 0;
 
-      // This chart currently has no weekly financial query, so show no points instead of sample values.
-      const weeklyComparison: Array<{
-        week: string;
-        revenue: number;
-        expenses: number;
-        salaries: number;
-      }> = [];
+      const weeklyComparison = financialComparisonRows.map((row) => ({
+        week: row.label,
+        revenue: Number(row.revenue),
+        expenses: Number(row.expenses),
+        salaries: Number(row.salaries),
+      }));
 
       // Appointments breakdown
       const apptCompleted = Number(appointmentBreakdown[0]?.completed ?? 0);

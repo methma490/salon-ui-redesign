@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { TenantSchemaService } from '../../tenant/services/tenant-schema.service';
-import { tenantTable } from '../../tenant/utils/schema-name.util';
+import { tenantTable, tenantType } from '../../tenant/utils/schema-name.util';
 import { logAudit } from '../utils/audit.util';
 import { CreateBranchDto, UpdateBranchDto, UpdateBranchStatusDto } from './dto/branch.dto';
 
@@ -198,11 +198,12 @@ export class BranchesService {
     }
 
     const table = tenantTable(schemaName, 'branches');
+    const branchStatusType = tenantType(schemaName, 'branch_status');
 
     return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
       const rows = await tx.$queryRawUnsafe<BranchRecord[]>(
         `UPDATE ${table}
-         SET status = $2::branch_status, updated_at = NOW()
+         SET status = $2::text::${branchStatusType}, updated_at = NOW()
          WHERE id = $1::uuid
          RETURNING id, code, name, phone, email, address, latitude, longitude,
                    is_main AS "isMain", status::text AS status,

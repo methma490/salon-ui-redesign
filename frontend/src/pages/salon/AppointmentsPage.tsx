@@ -226,7 +226,7 @@ function computeEndTime(startTime: string, services: Service[], serviceIds: stri
 
 export default function AppointmentsPage() {
   const qc = useQueryClient();
-  const { branchId: ribbonBranchId, branches } = useSalonBranch();
+  const { branchId: ribbonBranchId, activeBranches } = useSalonBranch();
 
   const [activeTab, setActiveTab] = useState<Tab>('calendar');
   const [selectedDate, setSelectedDate] = useState(todayIso());
@@ -242,14 +242,14 @@ export default function AppointmentsPage() {
     label: string;
   } | null>(null);
   const [branchFilter, setBranchFilter] = useState<string>(() =>
-    ribbonBranchId !== 'all' ? ribbonBranchId : branches[0]?.id || '',
+    ribbonBranchId !== 'all' ? ribbonBranchId : activeBranches[0]?.id || '',
   );
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editAppointment, setEditAppointment] = useState<Appointment | null>(null);
   const [form, setForm] = useState<AppointmentForm>(() => ({
     ...emptyForm,
-    branchId: branchFilter || branches[0]?.id || '',
+    branchId: branchFilter || activeBranches[0]?.id || '',
     appointmentDate: selectedDate,
   }));
   const [editForm, setEditForm] = useState<AppointmentForm>(emptyForm);
@@ -265,15 +265,15 @@ export default function AppointmentsPage() {
 
   // Synchronize branch selection
   useEffect(() => {
-    if (ribbonBranchId !== 'all') {
+    if (ribbonBranchId !== 'all' && activeBranches.some((branch) => branch.id === ribbonBranchId)) {
       setBranchFilter(ribbonBranchId);
-    } else if (!branchFilter && branches.length > 0) {
-      setBranchFilter(branches[0].id);
+    } else {
+      setBranchFilter(activeBranches[0]?.id || '');
     }
-  }, [ribbonBranchId, branches]);
+  }, [ribbonBranchId, activeBranches]);
 
-  const activeBranchId = branchFilter || branches[0]?.id || '';
-  const activeBranchObj = branches.find((b) => b.id === activeBranchId);
+  const activeBranchId = branchFilter || activeBranches[0]?.id || '';
+  const activeBranchObj = activeBranches.find((b) => b.id === activeBranchId);
 
   useEffect(() => {
     setListPage(1);
@@ -358,17 +358,18 @@ export default function AppointmentsPage() {
   } = useQuery({
     queryKey: ['appointments', listParams],
     queryFn: () => tenantApi.appointments.list(listParams),
+    enabled: Boolean(activeBranchId),
   });
 
   const { data: paginatedList, isLoading: isListLoading } = useQuery({
     queryKey: ['appointments', 'list-view', listViewParams, listPage, listLimit],
     queryFn: () =>
       tenantApi.appointments.listPaginated({
-        ...listViewParams,
+      ...listViewParams,
         page: String(listPage),
         limit: String(listLimit),
       }),
-    enabled: activeTab === 'list',
+    enabled: activeTab === 'list' && Boolean(activeBranchId),
   });
   const listAppointments = paginatedList?.data ?? [];
   const listMeta = paginatedList?.meta;
@@ -621,7 +622,7 @@ export default function AppointmentsPage() {
                 <SelectValue placeholder="Select branch" />
               </SelectTrigger>
               <SelectContent>
-                {branches.map((b) => (
+                {activeBranches.map((b) => (
                   <SelectItem key={b.id} value={b.id} className="text-xs font-medium">
                     {b.name}
                   </SelectItem>
@@ -1266,7 +1267,7 @@ export default function AppointmentsPage() {
                     <SelectValue placeholder="Select branch" />
                   </SelectTrigger>
                   <SelectContent>
-                    {branches.map((b) => (
+                    {activeBranches.map((b) => (
                       <SelectItem key={b.id} value={b.id} className="text-xs">
                         {b.name}
                       </SelectItem>

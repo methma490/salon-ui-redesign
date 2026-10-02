@@ -49,6 +49,7 @@ export default function SalesPage() {
   const { branchId, setBranchId, branches } = useSalonBranch();
   const [startDate, setStartDate] = useState(monthStartStr());
   const [endDate, setEndDate] = useState(todayStr());
+  const [saleStatus, setSaleStatus] = useState<'COMPLETED' | 'PENDING'>('COMPLETED');
   const [ebillModalSale, setEbillModalSale] = useState<{
     id: string;
     customerName?: string | null;
@@ -61,11 +62,12 @@ export default function SalesPage() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['sales', startDate, endDate, branchId],
+    queryKey: ['sales', startDate, endDate, branchId, saleStatus],
     queryFn: () =>
       tenantApi.sales.list({
         startDate,
         endDate,
+        status: saleStatus,
         ...(branchId !== 'all' ? { branchId } : {}),
       }),
   });
@@ -82,8 +84,8 @@ export default function SalesPage() {
   return (
     <div className="sales-page emp-page">
       <OpsPageHeader
-        title="Sales History"
-        subtitle="Browse completed sales, receipts, and customer details"
+        title={saleStatus === 'PENDING' ? 'POS Drafts' : 'Sales History'}
+        subtitle={saleStatus === 'PENDING' ? 'View saved POS drafts from any page' : 'Browse completed sales, receipts, and customer details'}
       />
 
       <div className="sales-stats">
@@ -148,6 +150,18 @@ export default function SalesPage() {
               min={startDate}
               onChange={(e) => setEndDate(e.target.value)}
             />
+          </div>
+          <div className="sales-filter-field">
+            <Label>Type</Label>
+            <Select value={saleStatus} onValueChange={(value) => setSaleStatus(value as 'COMPLETED' | 'PENDING')}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="COMPLETED">Completed sales</SelectItem>
+                <SelectItem value="PENDING">POS drafts</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="sales-filter-field">
             <Label>Branch</Label>
