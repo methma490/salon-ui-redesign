@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Banknote, Eye, Receipt, Smartphone, Users } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { tenantApi } from '@/api/tenant.api';
 import SendEbillModal from './SendEbillModal';
@@ -18,6 +18,7 @@ import {
   getErrorMessage,
   OpsError,
   OpsLoading,
+  OpsPagination,
   OpsPageHeader,
 } from './salon-ops-ui';
 import './sales-page.css';
@@ -50,27 +51,39 @@ export default function SalesPage() {
   const [startDate, setStartDate] = useState(monthStartStr());
   const [endDate, setEndDate] = useState(todayStr());
   const [saleStatus, setSaleStatus] = useState<'COMPLETED' | 'PENDING'>('COMPLETED');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [ebillModalSale, setEbillModalSale] = useState<{
     id: string;
     customerName?: string | null;
   } | null>(null);
 
   const {
-    data: sales = [],
+    data: salesResponse,
     isLoading,
     isError,
     error,
     refetch,
   } = useQuery({
-    queryKey: ['sales', startDate, endDate, branchId, saleStatus],
+    queryKey: ['sales', startDate, endDate, branchId, saleStatus, search, page, limit],
     queryFn: () =>
-      tenantApi.sales.list({
-        startDate,
-        endDate,
+      tenantApi.sales.listPaginated({
+        ...(saleStatus === 'PENDING' ? {} : { startDate, endDate }),
         status: saleStatus,
         ...(branchId !== 'all' ? { branchId } : {}),
+        ...(search.trim() ? { search: search.trim() } : {}),
+        page: String(page),
+        limit: String(limit),
       }),
   });
+
+  const sales = salesResponse?.data ?? [];
+  const pagination = salesResponse?.meta ?? { page, limit, total: 0, totalPages: 0 };
+
+  useEffect(() => {
+    setPage(1);
+  }, [startDate, endDate, branchId, saleStatus, search]);
 
   const stats = useMemo(() => {
     const revenue = sales.reduce((sum, s) => sum + s.total, 0);
@@ -95,7 +108,7 @@ export default function SalesPage() {
           </span>
           <div>
             <div className="sales-stat-value">{stats.count}</div>
-            <div className="sales-stat-label">Sales</div>
+            <div className="sales-stat-label">On this page</div>
           </div>
         </div>
         <div className="sales-stat-card">
@@ -109,7 +122,7 @@ export default function SalesPage() {
                 maximumFractionDigits: 2,
               })}
             </div>
-            <div className="sales-stat-label">Revenue (LKR)</div>
+            <div className="sales-stat-label">Page revenue (LKR)</div>
           </div>
         </div>
         <div className="sales-stat-card">
@@ -118,44 +131,54 @@ export default function SalesPage() {
           </span>
           <div>
             <div className="sales-stat-value">{stats.walkIns}</div>
-            <div className="sales-stat-label">Walk-ins</div>
+            <div className="sales-stat-label">Walk-ins on page</div>
           </div>
         </div>
       </div>
 
       <section className="sales-filters">
-        <h2 className="sales-filters-title">Filters</h2>
+        <h2 className="sales-filters-title">Find transactions</h2>
         <div className="sales-filters-grid">
           <div className="sales-filter-field">
-            <label htmlFor="sales-start">Start date</label>
+            <label htmlFor="sales-search">Search</label>
             <Input
-              id="sales-start"
-              type="date"
-              value={startDate}
-              onChange={(e) => {
-                const newStart = e.target.value;
-                setStartDate(newStart);
-                if (endDate && newStart && endDate < newStart) {
-                  setEndDate(newStart);
-                }
-              }}
+              id="sales-search"
+              type="search"
+              placeholder="Invoice # or customer"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <div className="sales-filter-field">
-            <label htmlFor="sales-end">End date</label>
-            <Input
-              id="sales-end"
-              type="date"
-              value={endDate}
-              min={startDate}
-              onChange={(e) => setEndDate(e.target.value)}
-            />
-          </div>
+          {saleStatus === 'COMPLETED' && <div className="sales-filter-field sales-filter-date">
+            <label htmlFor="sales-start">Date range</label>
+            <div className="sales-date-range">
+              <Input
+                id="sales-start"
+                aria-label="Start date"
+                type="date"
+                value={startDate}
+                onChange={(e) => {
+                  const newStart = e.target.value;
+                  setStartDate(newStart);
+                  if (endDate && newStart && endDate < newStart) setEndDate(newStart);
+                }}
+              />
+              <span>to</span>
+              <Input
+                id="sales-end"
+                aria-label="End date"
+                type="date"
+                value={endDate}
+                min={startDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </div>
+          </div>}
           <div className="sales-filter-field">
             <Label>Type</Label>
             <Select value={saleStatus} onValueChange={(value) => setSaleStatus(value as 'COMPLETED' | 'PENDING')}>
-              <SelectTrigger>
-                <SelectValue />
+              <SelectTrigger aria-label="Transaction type">
+                <SelectValue placeholder="All transactions" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="COMPLETED">Completed sales</SelectItem>
@@ -166,7 +189,7 @@ export default function SalesPage() {
           <div className="sales-filter-field">
             <Label>Branch</Label>
             <Select value={branchId} onValueChange={setBranchId}>
-              <SelectTrigger>
+              <SelectTrigger aria-label="Branch">
                 <SelectValue placeholder="All branches" />
               </SelectTrigger>
               <SelectContent>
@@ -185,15 +208,15 @@ export default function SalesPage() {
       <section className="sales-panel">
         <div className="sales-panel-head">
           <div>
-            <h2>All Sales</h2>
+            <h2>{saleStatus === 'PENDING' ? 'POS Drafts' : 'Transactions'}</h2>
             <p>
-              {sales.length} sale{sales.length === 1 ? '' : 's'} in selected period
+              {pagination.total} result{pagination.total === 1 ? '' : 's'}
             </p>
           </div>
         </div>
 
         {sales.length === 0 ? (
-          <div className="sales-empty">No sales found for the selected filters.</div>
+          <div className="sales-empty">No transactions found. Try changing your search or filters.</div>
         ) : (
           <>
             <div className="sales-cards">
@@ -219,7 +242,7 @@ export default function SalesPage() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                    <button
+                    {saleStatus === 'COMPLETED' && <button
                       type="button"
                       className="sales-view-btn"
                       style={{
@@ -235,7 +258,7 @@ export default function SalesPage() {
                     >
                       <Smartphone size={14} />
                       eBill SMS
-                    </button>
+                    </button>}
                     <Link
                       to={`/salon/sales/${sale.id}`}
                       className="sales-view-btn"
@@ -275,7 +298,7 @@ export default function SalesPage() {
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
-                          <button
+                          {saleStatus === 'COMPLETED' && <button
                             type="button"
                             className="sales-view-btn"
                             title="Send or Resend eBill SMS"
@@ -290,7 +313,7 @@ export default function SalesPage() {
                           >
                             <Smartphone size={14} />
                             eBill SMS
-                          </button>
+                          </button>}
                           <Link to={`/salon/sales/${sale.id}`} className="sales-view-btn">
                             <Eye size={14} />
                             View
@@ -304,6 +327,15 @@ export default function SalesPage() {
             </div>
           </>
         )}
+        <OpsPagination
+          page={pagination.page || page}
+          limit={pagination.limit || limit}
+          total={pagination.total}
+          totalPages={pagination.totalPages}
+          onPageChange={setPage}
+          onLimitChange={setLimit}
+          itemLabel="transactions"
+        />
       </section>
 
       {ebillModalSale && (

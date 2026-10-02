@@ -1137,6 +1137,18 @@ export const tenantApi = {
       api
         .get<PaginatedResponse<SaleListItem> | SaleListItem[]>('/tenant/sales', { params })
         .then((r) => unwrapPaginatedList(r.data)),
+    listPaginated: (params?: Record<string, string>) =>
+      api
+        .get<PaginatedResponse<SaleListItem> | SaleListItem[]>('/tenant/sales', { params })
+        .then((r) => {
+          const payload = r.data;
+          if (!Array.isArray(payload) && payload?.meta) return payload;
+          const rows = unwrapPaginatedList(payload);
+          return {
+            data: rows,
+            meta: { page: 1, limit: rows.length || 1, total: rows.length, totalPages: rows.length ? 1 : 0 },
+          };
+        }),
     get: (id: string) => api.get(`/tenant/sales/${id}`).then((r) => r.data),
     sendEbillSms: (id: string, phone?: string) =>
       api
