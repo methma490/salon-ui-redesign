@@ -70,6 +70,21 @@
   line-height: 1.25;
 }
 
+.dash-sample-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.24rem 0.5rem;
+  border: 1px solid #f5d58a;
+  border-radius: 999px;
+  background: #fff8e6;
+  color: #8a5a00;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
 @media (min-width: 768px) {
   .dash-greeting-wrap h1 {
     justify-content: flex-start;
@@ -214,12 +229,12 @@
 }
 
 /* ------------------------------------------------------------------------- */
-/* SUMMARY KPI CARDS (ROW 1 - 2x2 ON MOBILE & TABLET, 4 COLUMNS ON DESKTOP)  */
+/* SUMMARY KPI CARDS (ROW 1)                                                */
 /* ------------------------------------------------------------------------- */
 .dash-kpi-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
+  gap: 0.875rem;
 }
 
 @media (min-width: 640px) {
@@ -233,20 +248,53 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 1.125rem;
   }
+
+  .dash-kpi-grid-with-live-balance {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
 }
 
 .dash-kpi-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.75rem;
-  padding: 0.875rem 0.75rem;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: linear-gradient(145deg, #ffffff 0%, var(--brand-soft, #fcfaff) 100%);
+  border: 1px solid var(--brand-border, #eee8f7);
+  border-radius: 0.9rem;
+  padding: 0.9rem 0.75rem;
   display: flex;
   align-items: flex-start;
-  gap: 0.625rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  gap: 0.65rem;
+  box-shadow: 0 5px 18px color-mix(in srgb, var(--brand-primary, #a44a5c) 8%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
   box-sizing: border-box;
   min-width: 0;
+}
+
+.dash-kpi-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.dash-kpi-watermark {
+  position: absolute;
+  right: 0.35rem;
+  bottom: -0.6rem;
+  z-index: 0;
+  color: var(--brand-primary, #a44a5c);
+  opacity: 0.095;
+  pointer-events: none;
+}
+
+.dash-kpi-watermark svg {
+  display: block;
+  width: 4.75rem;
+  height: 4.75rem;
+  stroke-width: 1.35;
+}
+
+.dash-kpi-watermark-expenses {
+  color: var(--brand-primary, #a44a5c);
 }
 
 @media (min-width: 640px) {
@@ -265,7 +313,95 @@
 }
 
 .dash-kpi-card:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+  border-color: var(--brand-primary, #a44a5c);
+  box-shadow: 0 12px 26px color-mix(in srgb, var(--brand-primary, #a44a5c) 16%, transparent);
+}
+
+.dash-kpi-card-live-balance {
+  border: 1px solid color-mix(in srgb, var(--brand-primary, #a44a5c) 35%, white);
+  background: radial-gradient(ellipse at 92% 0%, color-mix(in srgb, var(--brand-primary, #a44a5c) 68%, white), transparent 43%),
+    linear-gradient(135deg, color-mix(in srgb, var(--brand-primary, #a44a5c) 92%, black) 0%, var(--brand-primary, #a44a5c) 54%, color-mix(in srgb, var(--brand-primary, #a44a5c) 78%, black) 100%);
+  backdrop-filter: blur(14px) saturate(145%);
+  -webkit-backdrop-filter: blur(14px) saturate(145%);
+  box-shadow: 0 12px 26px color-mix(in srgb, var(--brand-primary, #a44a5c) 32%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.dash-kpi-card-live-balance::before {
+  content: '';
+  position: absolute;
+  top: -38px;
+  right: 10px;
+  z-index: 0;
+  width: 105px;
+  height: 105px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  filter: blur(18px);
+  pointer-events: none;
+}
+
+.dash-kpi-watermark-live {
+  color: #ffffff;
+  opacity: 0.13;
+}
+
+.dash-kpi-card-live-balance .dash-kpi-label {
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 650;
+}
+
+.dash-kpi-card-live-balance .dash-kpi-num {
+  color: #ffffff;
+  font-size: 1.35rem;
+  letter-spacing: -0.04em;
+}
+
+.dash-kpi-live-profit {
+  display: block;
+  width: fit-content;
+  margin-top: 0.4rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.dash-kpi-card-live-balance .dash-kpi-icon-live {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.dash-kpi-card-revenue {
+  border-top-color: var(--brand-border, #ddd0f2);
+}
+
+.dash-kpi-card-expenses {
+  border-top-color: var(--brand-border, #f6d5e0);
+}
+
+.dash-kpi-card-salaries {
+  border-top-color: var(--brand-border, #e7d8f6);
+}
+
+.dash-kpi-card-opening {
+  border-top-color: var(--brand-border, #ddd0f2);
+}
+
+.dash-kpi-card-revenue .dash-kpi-icon-wrap,
+.dash-kpi-card-salaries .dash-kpi-icon-wrap,
+.dash-kpi-card-opening .dash-kpi-icon-wrap {
+  background: var(--brand-soft, #f2eaff);
+  color: var(--brand-primary, #7c3aed);
+}
+
+.dash-kpi-card-expenses .dash-kpi-icon-wrap {
+  background: var(--brand-soft, #fff0f3);
+  color: var(--brand-primary, #fb4565);
 }
 
 .dash-kpi-icon-wrap {
@@ -299,13 +435,13 @@
 }
 
 .dash-kpi-icon-red {
-  background-color: #fef2f2;
-  color: #ef4444;
+  background-color: var(--brand-soft, #fef2f2);
+  color: var(--brand-primary, #ef4444);
 }
 
 .dash-kpi-icon-amber {
-  background-color: #fffbeb;
-  color: #f59e0b;
+  background-color: var(--brand-soft, #fffbeb);
+  color: var(--brand-primary, #f59e0b);
 }
 
 .dash-kpi-icon-green {
@@ -415,6 +551,98 @@
   display: inline;
 }
 
+@media (max-width: 639px) {
+  .dash-kpi-grid {
+    gap: 0.7rem;
+  }
+
+  .dash-kpi-card {
+    min-height: 7.1rem;
+    padding: 0.75rem 0.65rem;
+    gap: 0.5rem;
+    border-radius: 0.85rem;
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--brand-primary, #a44a5c) 7%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  }
+
+  .dash-kpi-icon-wrap {
+    width: 30px;
+    height: 30px;
+    border-radius: 0.55rem;
+  }
+
+  .dash-kpi-icon-wrap svg {
+    width: 0.9rem;
+    height: 0.9rem;
+  }
+
+  .dash-kpi-content {
+    overflow: visible;
+  }
+
+  .dash-kpi-label {
+    min-height: 1.8em;
+    margin-bottom: 0.15rem;
+    font-size: 0.68rem;
+    line-height: 1.25;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    text-overflow: clip;
+  }
+
+  .dash-kpi-num {
+    font-size: 0.98rem;
+    letter-spacing: -0.035em;
+  }
+
+  .dash-kpi-trend {
+    gap: 0.15rem;
+    font-size: 0.6rem;
+  }
+
+  .dash-kpi-trend svg {
+    width: 0.7rem;
+    height: 0.7rem;
+  }
+
+  .dash-kpi-trend .dash-trend-subtext {
+    margin-left: 0.05rem;
+  }
+
+  .dash-kpi-watermark svg {
+    width: 3.75rem;
+    height: 3.75rem;
+  }
+
+  .dash-kpi-watermark {
+    right: 0.2rem;
+    bottom: -0.45rem;
+    opacity: 0.055;
+  }
+
+  .dash-kpi-card-live-balance .dash-kpi-num {
+    font-size: 1.08rem;
+  }
+
+  .dash-kpi-live-profit {
+    max-width: 100%;
+    margin-top: 0.3rem;
+    padding: 0.2rem 0.35rem;
+    font-size: 0.63rem;
+    line-height: 1.25;
+    white-space: normal;
+  }
+
+  .dash-kpi-card-opening .dash-kpi-num {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.2;
+  }
+}
+
 /* ------------------------------------------------------------------------- */
 /* ROW 2: REVENUE/EXPENSES/SALARIES (60%) & APPOINTMENT OVERVIEW (40%)      */
 /* ------------------------------------------------------------------------- */
@@ -438,10 +666,10 @@
 
 .dash-card {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.875rem;
+  border: 1px solid color-mix(in srgb, var(--brand-primary, #a44a5c) 16%, #e2e8f0);
+  border-radius: 0.9rem;
   padding: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--brand-primary, #a44a5c) 5%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -481,7 +709,7 @@
 .dash-card-title-group h3 {
   font-size: 0.975rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #111827;
   margin: 0 0 0.2rem 0;
   letter-spacing: -0.01em;
 }
@@ -498,6 +726,204 @@
   font-size: 0.75rem;
   color: #64748b;
   margin: 0;
+}
+
+.dash-payment-method-card {
+  position: relative;
+  z-index: 2;
+  padding: 1rem 1.25rem;
+}
+
+.dash-payment-method-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.dash-payment-method-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.7rem 1.25rem;
+  margin: -0.2rem 0 1rem;
+}
+
+.dash-payment-method-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.32rem 0.65rem;
+  border: 1px solid #e8eaf0;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.dash-payment-method-legend-swatch {
+  width: 0.7rem;
+  height: 0.7rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 3px #e7e9ef;
+}
+
+.dash-payment-method-panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.dash-payment-method-panel {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid #e8eaf0;
+  border-radius: 0.9rem;
+  background: #ffffff;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.035);
+}
+
+.dash-payment-method-panel h3 {
+  margin: 0;
+  color: #334155;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.dash-payment-method-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 11rem;
+  padding: 0.35rem;
+}
+
+.dash-payment-method-donut-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.dash-payment-method-donut {
+  position: relative;
+  display: block;
+  width: 11rem;
+  height: 11rem;
+  border-radius: 50%;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+}
+
+.dash-payment-method-donut > .recharts-responsive-container {
+  position: absolute !important;
+  inset: 0;
+  z-index: 3;
+}
+
+.dash-payment-method-donut::before {
+  position: absolute;
+  z-index: 0;
+  inset: 5.5%;
+  border-radius: 50%;
+  background: #e9eaf0;
+  content: '';
+}
+
+.dash-payment-method-donut-center {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  width: 68%;
+  height: 68%;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand-primary, #7137aa) 9%, #e2e8f0);
+  pointer-events: none;
+  text-align: center;
+}
+
+.dash-payment-method-tooltip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--brand-border, #e2e8f0);
+  border-radius: 0.6rem;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.16);
+  color: #475569;
+  font-size: 0.72rem;
+}
+
+.dash-payment-method-tooltip strong {
+  color: var(--brand-primary, #7137aa);
+  font-size: 0.75rem;
+}
+
+.dash-payment-method-donut-center strong {
+  max-width: 90%;
+  overflow: hidden;
+  color: #111827;
+  font-size: 0.9rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dash-payment-method-donut-center span {
+  margin-top: 0.1rem;
+  color: #64748b;
+  font-size: 0.56rem;
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  .dash-payment-method-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dash-payment-method-panels {
+    gap: 0.65rem;
+  }
+
+  .dash-payment-method-content {
+    min-height: 10rem;
+  }
+
+  .dash-payment-method-donut {
+    width: 8rem;
+    height: 8rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .dash-payment-method-card {
+    padding: 0.9rem;
+  }
+
+  .dash-payment-method-panels {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-payment-method-content {
+    min-height: 9rem;
+  }
+
+  .dash-payment-method-donut {
+    width: 7.5rem;
+    height: 7.5rem;
+  }
 }
 
 @media (min-width: 640px) {
@@ -611,10 +1037,10 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  background: #f8fafc;
+  background: linear-gradient(145deg, #ffffff 0%, var(--brand-soft, #f8fafc) 100%);
   padding: 0.45rem 0.5rem;
   border-radius: 0.5rem;
-  border: 1px solid #f1f5f9;
+  border: 1px solid color-mix(in srgb, var(--brand-primary, #a44a5c) 12%, #f1f5f9);
   min-width: 0;
 }
 
@@ -989,8 +1415,9 @@
   align-items: center;
   text-align: center;
   padding: 0.45rem 0.25rem;
-  background: #f8fafc;
-  border-radius: 0.5rem;
+  background: linear-gradient(145deg, #ffffff 0%, var(--brand-soft, #f8fafc) 100%);
+  border: 1px solid color-mix(in srgb, var(--brand-primary, #a44a5c) 10%, #f1f5f9);
+  border-radius: 0.625rem;
 }
 
 .dash-inv-tile-icon {
@@ -1313,4 +1740,309 @@
 
 .dash-header-view-all:hover {
   text-decoration: underline;
+}
+
+/* Branch admin dashboard visual refresh */
+.dash-container {
+  color: #111827;
+  gap: 0.875rem;
+}
+
+@media (min-width: 768px) {
+  .dash-container {
+    gap: 1rem;
+  }
+}
+
+.dash-top-header {
+  align-items: center;
+  text-align: left;
+  gap: 0.75rem;
+}
+
+.dash-greeting-wrap {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.dash-greeting-wrap h1 {
+  font-size: clamp(1.35rem, 1.7vw, 1.75rem);
+  color: #10152e;
+  margin-bottom: 0.1rem;
+}
+
+.dash-greeting-wrap p {
+  color: #64759b;
+  text-align: left;
+}
+
+.dash-top-actions {
+  gap: 0.5rem;
+}
+
+.dash-quick-pills {
+  border-color: #e2e8f0;
+  border-radius: 0.65rem;
+  padding: 0.2rem;
+  box-shadow: 0 2px 8px rgba(31, 41, 85, 0.04);
+}
+
+.dash-pill-btn {
+  padding: 0.45rem 0.75rem;
+  color: #52658e;
+}
+
+.dash-pill-btn.active {
+  background: linear-gradient(135deg, var(--brand-primary, #7c3aed), var(--brand-hover, #5b21b6));
+  color: var(--brand-foreground, #fff);
+  box-shadow: 0 3px 8px color-mix(in srgb, var(--brand-primary, #5b21b6) 22%, transparent);
+}
+
+.dash-kpi-grid {
+  gap: 0.75rem;
+}
+
+@media (min-width: 1180px) {
+  .dash-kpi-grid,
+  .dash-kpi-grid-with-live-balance {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+}
+
+.dash-kpi-card {
+  border-color: color-mix(in srgb, var(--brand-primary, #6d28d9) 14%, #e6e5f3);
+  border-radius: 0.8rem;
+  background: linear-gradient(145deg, #fff 0%, color-mix(in srgb, var(--brand-primary, #6d28d9) 3%, #fff) 100%);
+  box-shadow: 0 4px 13px color-mix(in srgb, var(--brand-primary, #493682) 7%, transparent);
+}
+
+.dash-kpi-card:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--brand-primary, #6d28d9) 38%, #fff);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--brand-primary, #493682) 12%, transparent);
+}
+
+.dash-kpi-card-live-balance {
+  border-color: color-mix(in srgb, var(--brand-primary, #6950db) 72%, #fff);
+  background: linear-gradient(
+    115deg,
+    color-mix(in srgb, var(--brand-primary, #5423a9) 88%, #170812) 0%,
+    color-mix(in srgb, var(--brand-primary, #6335d0) 76%, #170812) 58%,
+    color-mix(in srgb, var(--brand-primary, #3b82f6) 64%, #170812) 100%
+  );
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--brand-primary, #5637b7) 22%, transparent);
+}
+
+.dash-kpi-card-live-balance .dash-kpi-num {
+  font-size: clamp(1.05rem, 1.25vw, 1.45rem);
+}
+
+.dash-card {
+  border-color: color-mix(in srgb, var(--brand-primary, #6d28d9) 12%, #e4e8f2);
+  border-radius: 0.8rem;
+  padding: 1rem;
+  box-shadow: 0 3px 12px rgba(43, 56, 105, 0.045);
+}
+
+@media (min-width: 640px) {
+  .dash-card {
+    padding: 1rem;
+  }
+}
+
+.dash-card-title-group h2,
+.dash-card-title-group h3 {
+  color: #121831;
+}
+
+.dash-card-title-group p,
+.dash-kpi-trend .dash-trend-subtext {
+  color: #65779d;
+}
+
+.dash-appt-stat-tile,
+.dash-payment-method-panel,
+.dash-loans-summary-box {
+  border-color: #e6eaf3;
+  border-radius: 0.65rem;
+}
+
+.dash-payment-method-panel {
+  background: linear-gradient(145deg, #fff, #fcfbff);
+  box-shadow: none;
+}
+
+.dash-table th {
+  background: #f7f8fc;
+  color: #52658e;
+}
+
+.dash-header-view-all,
+.dash-card-footer-link {
+  color: var(--brand-primary, #6d28d9);
+}
+
+@media (max-width: 767px) {
+  .dash-top-header,
+  .dash-greeting-wrap {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .dash-top-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (min-width: 1280px) {
+  .dash-container {
+    display: grid;
+    grid-template-columns: minmax(0, 1.65fr) minmax(340px, 1fr);
+    align-items: start;
+    column-gap: 0.75rem;
+    row-gap: 0.75rem;
+  }
+
+  .dash-top-header,
+  .dash-kpi-grid {
+    grid-column: 1 / -1;
+  }
+
+  .dash-row-2,
+  .dash-row-3,
+  .dash-row-4 {
+    display: contents;
+  }
+
+  .dash-row-2 > .dash-card:first-child {
+    grid-column: 1;
+    grid-row: 3;
+    min-height: 13.75rem;
+  }
+
+  .dash-row-2 > .dash-card:last-child {
+    grid-column: 2;
+    grid-row: 3;
+    min-height: 13.75rem;
+  }
+
+  .dash-payment-method-card {
+    grid-column: 1;
+    grid-row: 4;
+  }
+
+  .dash-row-3 > .dash-card:has(a[href="/salon/products"]) {
+    grid-column: 1;
+    grid-row: 5;
+  }
+
+  .dash-row-3 > .dash-card:has(a[href="/salon/payroll/loans"]) {
+    grid-column: 1;
+    grid-row: 6;
+  }
+
+  .dash-row-4 > .dash-recent-appointments {
+    grid-column: 2;
+    grid-row: 4;
+  }
+
+  .dash-row-4 > .dash-card:last-child {
+    grid-column: 2;
+    grid-row: 5;
+  }
+}
+
+.dash-kpi-card-appointments .dash-kpi-icon-wrap {
+  background: var(--brand-soft, #f2edff);
+  color: var(--brand-primary, #6d28d9);
+}
+
+.dash-kpi-card-appointments .dash-kpi-watermark {
+  color: var(--brand-primary, #6d28d9);
+}
+
+/* Keep the summary row balanced while giving the bank card more room. */
+@media (min-width: 1180px) {
+  .dash-kpi-grid,
+  .dash-kpi-grid-with-live-balance {
+    grid-template-columns: 1.35fr repeat(3, minmax(0, 1fr));
+    gap: 0.9rem;
+  }
+}
+
+.dash-kpi-card-live-balance {
+  min-height: 9rem;
+  padding: 1.1rem;
+}
+
+.dash-kpi-card-live-balance .dash-kpi-content {
+  gap: 0.15rem;
+}
+
+.dash-kpi-balance-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.45rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.dash-kpi-balance-details > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.dash-kpi-balance-details > div + div {
+  padding-left: 0.75rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.dash-kpi-balance-details span {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.68rem;
+  line-height: 1.2;
+}
+
+.dash-kpi-balance-details strong {
+  overflow: hidden;
+  color: #fff;
+  font-size: 0.83rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 639px) {
+  .dash-kpi-grid,
+  .dash-kpi-grid-with-live-balance {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.dash-recent-appointments .dash-table {
+  min-width: 500px;
+}
+
+.dash-recent-appointments .dash-table th,
+.dash-recent-appointments .dash-table td {
+  padding: 0.55rem 0.625rem;
+}
+
+.dash-empty-state {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.dash-empty-state svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: #647da8;
 }

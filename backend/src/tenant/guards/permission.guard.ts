@@ -32,6 +32,12 @@ export class PermissionGuard implements CanActivate {
       throw new ForbiddenException('Tenant context required');
     }
 
+    // Salon Admin is the tenant owner role and retains full access to the
+    // features included in the salon's subscription.
+    if (request.user?.roles?.includes('SALON_ADMIN')) {
+      return true;
+    }
+
     const cachedPermissions = request.user?.permissions;
 
     for (const permissionCode of requiredPermissions) {

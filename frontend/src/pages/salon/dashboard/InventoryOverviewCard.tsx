@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { ChevronRight, Package, AlertTriangle, Ban, Layers } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { useTenantTheme } from '@/contexts/TenantThemeContext';
+import { getDashboardChartColors } from './chart-colors';
 
 interface InventoryOverviewData {
   totalProducts: number;
@@ -21,6 +22,7 @@ interface InventoryOverviewCardProps {
 export function InventoryOverviewCard({ data }: InventoryOverviewCardProps) {
   const theme = useTenantTheme();
   const primaryColor = theme?.palette?.primary ?? '#2563eb';
+  const chartColors = getDashboardChartColors(primaryColor);
 
   const totalProducts = data?.totalProducts || 0;
   const inStock = data?.inStock || 0;
@@ -35,10 +37,10 @@ export function InventoryOverviewCard({ data }: InventoryOverviewCardProps) {
   const stockToAddPct = Math.max(0, 100 - (inStockPct + lowStockPct + outOfStockPct));
 
   const chartData = [
-    { name: 'In Stock', value: inStock, color: primaryColor },
-    { name: 'Low Stock', value: lowStock, color: '#f59e0b' },
-    { name: 'Out of Stock', value: outOfStock, color: '#ef4444' },
-    { name: 'Stock to Add', value: stockToAdd, color: '#6366f1' },
+    { name: 'In Stock', value: inStock, color: chartColors[0] },
+    { name: 'Low Stock', value: lowStock, color: chartColors[1] },
+    { name: 'Out of Stock', value: outOfStock, color: chartColors[2] },
+    { name: 'Stock to Add', value: stockToAdd, color: chartColors[3] },
   ].filter((d) => d.value > 0);
 
   return (
@@ -76,7 +78,7 @@ export function InventoryOverviewCard({ data }: InventoryOverviewCardProps) {
         <div className="dash-donut-legend-list">
           <div className="dash-donut-legend-row">
             <div className="dash-donut-legend-label">
-              <span className="dash-legend-dot blue" style={{ backgroundColor: primaryColor }} />
+              <span className="dash-legend-dot" style={{ backgroundColor: chartColors[0] }} />
               <span>In Stock</span>
             </div>
             <div>
@@ -87,7 +89,7 @@ export function InventoryOverviewCard({ data }: InventoryOverviewCardProps) {
 
           <div className="dash-donut-legend-row">
             <div className="dash-donut-legend-label">
-              <span className="dash-legend-dot amber" />
+              <span className="dash-legend-dot" style={{ backgroundColor: chartColors[1] }} />
               <span>Low Stock</span>
             </div>
             <div>
@@ -98,7 +100,7 @@ export function InventoryOverviewCard({ data }: InventoryOverviewCardProps) {
 
           <div className="dash-donut-legend-row">
             <div className="dash-donut-legend-label">
-              <span className="dash-legend-dot red" />
+              <span className="dash-legend-dot" style={{ backgroundColor: chartColors[2] }} />
               <span>Out of Stock</span>
             </div>
             <div>
@@ -109,7 +111,7 @@ export function InventoryOverviewCard({ data }: InventoryOverviewCardProps) {
 
           <div className="dash-donut-legend-row">
             <div className="dash-donut-legend-label">
-              <span className="dash-legend-dot" style={{ backgroundColor: '#6366f1' }} />
+              <span className="dash-legend-dot" style={{ backgroundColor: chartColors[3] }} />
               <span>Stock to Add</span>
             </div>
             <div>

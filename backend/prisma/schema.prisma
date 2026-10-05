@@ -157,6 +157,7 @@ model Tenant {
   phone      String?
   logoUrl    String?
   primaryColor String?  // Salon brand accent (#RRGGBB); null = public website burgundy
+  openingBankBalance Decimal? @map("opening_bank_balance") @db.Decimal(10, 2)
   status     TenantStatus @default(PROVISIONING)
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt

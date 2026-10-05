@@ -289,13 +289,13 @@ const navGroups: NavGroup[] = [
   {
     label: 'Employees',
     icon: UserSquare2,
-    module: 'CORE',
+    feature: 'EMPLOYEES',
     children: [
       {
         to: '/salon/employees',
         label: 'Staff Management',
         icon: UserSquare2,
-        module: 'CORE',
+        feature: 'EMPLOYEES',
       },
     ],
   },
@@ -876,7 +876,7 @@ function SalonAdminLayoutInner() {
 
         <main
           ref={mainRef}
-          className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-[#f8fafc] p-4 md:p-6"
+          className="salon-admin-main min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-[#f8fafc] p-4 md:p-6"
         >
           <SalonPermissionGate>
             <div className="admin-page-content">

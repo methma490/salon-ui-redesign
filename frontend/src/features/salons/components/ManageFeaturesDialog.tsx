@@ -24,6 +24,17 @@ interface ManageFeaturesDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+function featureUpdateErrorMessage(error: unknown): string {
+  const message = (
+    error as { response?: { data?: { message?: string | string[] } } }
+  )?.response?.data?.message;
+
+  if (Array.isArray(message)) return message.join(', ');
+  if (typeof message === 'string') return message;
+  if (error instanceof Error && error.message) return error.message;
+  return 'Failed to update features.';
+}
+
 export function ManageFeaturesDialog({ salon, open, onOpenChange }: ManageFeaturesDialogProps) {
   const { data: features, isLoading } = useFeatures();
   const updateFeatures = useUpdateSalonFeatures(salon.id);
@@ -57,8 +68,8 @@ export function ManageFeaturesDialog({ salon, open, onOpenChange }: ManageFeatur
     try {
       await updateFeatures.mutateAsync(selected);
       onOpenChange(false);
-    } catch {
-      setError('Failed to update features.');
+    } catch (error) {
+      setError(featureUpdateErrorMessage(error));
     }
   };
 

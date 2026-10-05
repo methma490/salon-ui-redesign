@@ -17,13 +17,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useTenantTheme } from '@/contexts/TenantThemeContext';
+import { getDashboardChartColors } from './chart-colors';
 
 interface AppointmentOverviewData {
   total: number;
   completed: number;
   completedPct: number;
-  pending: number;
-  pendingPct: number;
+  confirmed: number;
+  confirmedPct: number;
   cancelled: number;
   cancelledPct: number;
   noShow?: number;
@@ -31,7 +32,7 @@ interface AppointmentOverviewData {
   trend?: Array<{
     date: string;
     completed: number;
-    pending: number;
+    confirmed: number;
     cancelled: number;
     noShow?: number;
   }>;
@@ -44,11 +45,12 @@ interface AppointmentOverviewCardProps {
 export function AppointmentOverviewCard({ data }: AppointmentOverviewCardProps) {
   const theme = useTenantTheme();
   const primaryColor = theme?.palette?.primary ?? '#2563eb';
+  const chartColors = getDashboardChartColors(primaryColor);
   const [timeframe, setTimeframe] = useState('month');
 
   const total = data?.total || 0;
   const completed = data?.completed ?? 0;
-  const pending = data?.pending ?? 0;
+  const confirmed = data?.confirmed ?? 0;
   const cancelled = data?.cancelled ?? 0;
 
   const trendData = data?.trend && data.trend.length > 0 ? data.trend : [];
@@ -100,8 +102,8 @@ export function AppointmentOverviewCard({ data }: AppointmentOverviewCardProps) 
             <Clock className="h-4 w-4" />
           </div>
           <div className="dash-appt-stat-info">
-            <span className="dash-appt-stat-val">{pending}</span>
-            <span className="dash-appt-stat-lbl">Pending</span>
+            <span className="dash-appt-stat-val">{confirmed}</span>
+            <span className="dash-appt-stat-lbl">Confirmed</span>
           </div>
         </div>
 
@@ -119,19 +121,19 @@ export function AppointmentOverviewCard({ data }: AppointmentOverviewCardProps) 
       {/* Legend */}
       <div className="flex items-center gap-4 mb-3 flex-wrap">
         <div className="dash-legend-item">
-          <span className="dash-legend-dot blue" style={{ backgroundColor: primaryColor }} />
+          <span className="dash-legend-dot" style={{ backgroundColor: chartColors[0] }} />
           <span>Completed</span>
         </div>
         <div className="dash-legend-item">
-          <span className="dash-legend-dot amber" />
-          <span>Pending</span>
+          <span className="dash-legend-dot" style={{ backgroundColor: chartColors[1] }} />
+          <span>Confirmed</span>
         </div>
         <div className="dash-legend-item">
-          <span className="dash-legend-dot red" />
+          <span className="dash-legend-dot" style={{ backgroundColor: chartColors[2] }} />
           <span>Cancelled</span>
         </div>
         <div className="dash-legend-item">
-          <span className="dash-legend-dot gray" />
+          <span className="dash-legend-dot" style={{ backgroundColor: chartColors[3] }} />
           <span>No Show</span>
         </div>
       </div>
@@ -166,31 +168,31 @@ export function AppointmentOverviewCard({ data }: AppointmentOverviewCardProps) 
               <Line
                 type="monotone"
                 dataKey="completed"
-                stroke={primaryColor}
+                stroke={chartColors[0]}
                 strokeWidth={2}
-                dot={{ r: 3, fill: primaryColor }}
+                dot={{ r: 3, fill: chartColors[0] }}
                 activeDot={{ r: 5 }}
               />
               <Line
                 type="monotone"
-                dataKey="pending"
-                stroke="#fb923c"
+                dataKey="confirmed"
+                stroke={chartColors[1]}
                 strokeWidth={2}
-                dot={{ r: 3, fill: '#fb923c' }}
+                dot={{ r: 3, fill: chartColors[1] }}
                 activeDot={{ r: 5 }}
               />
               <Line
                 type="monotone"
                 dataKey="cancelled"
-                stroke="#f43f5e"
+                stroke={chartColors[2]}
                 strokeWidth={2}
-                dot={{ r: 3, fill: '#f43f5e' }}
+                dot={{ r: 3, fill: chartColors[2] }}
                 activeDot={{ r: 5 }}
               />
               <Line
                 type="monotone"
                 dataKey="noShow"
-                stroke="#94a3b8"
+                stroke={chartColors[3]}
                 strokeWidth={1.5}
                 strokeDasharray="3 3"
                 dot={false}

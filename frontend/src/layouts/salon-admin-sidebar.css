@@ -370,3 +370,82 @@
   flex-shrink: 0;
 }
 
+/* Branch admin shell styling to match the dashboard reference */
+.salon-sidebar-aside,
+.salon-mobile-sheet,
+.salon-mobile-sheet-header,
+.salon-mobile-sheet-footer {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--brand-primary, #3f1d5b) 72%, #170812) 0%,
+    color-mix(in srgb, var(--brand-primary, #34164f) 62%, #170812) 100%
+  ) !important;
+}
+
+.salon-sidebar-aside {
+  border-color: color-mix(in srgb, var(--brand-primary, #32164a) 62%, #170812) !important;
+}
+
+.salon-sidebar-aside .salon-sidebar-brand,
+.salon-sidebar-footer,
+.salon-mobile-sheet-header,
+.salon-mobile-sheet-footer {
+  border-color: rgb(255 255 255 / 10%) !important;
+}
+
+.salon-sidebar-aside > .salon-sidebar-brand .bg-muted {
+  background: var(--brand-soft, #f4efff);
+  border-color: rgb(255 255 255 / 20%);
+}
+
+.salon-sidebar-section.active,
+.salon-sidebar-section:hover,
+.salon-sidebar-link:hover {
+  background: rgb(255 255 255 / 10%);
+}
+
+.salon-sidebar-link.active {
+  color: color-mix(in srgb, var(--brand-primary, #51229a) 62%, #32164a);
+  background: #fff;
+  box-shadow: inset 3px 0 0 var(--brand-primary, #8b5cf6), 0 3px 10px rgb(20 10 38 / 18%);
+}
+
+.salon-sidebar-link.active .salon-sidebar-link-icon {
+  color: color-mix(in srgb, var(--brand-primary, #6d28d9) 62%, #32164a);
+}
+
+.salon-sidebar-children {
+  border-left-color: rgb(255 255 255 / 16%);
+}
+
+.salon-collapse-btn,
+.salon-sidebar-logout {
+  background: rgb(255 255 255 / 5%) !important;
+  border-color: rgb(255 255 255 / 30%) !important;
+}
+
+.salon-collapse-btn:hover,
+.salon-sidebar-logout:hover {
+  background: rgb(255 255 255 / 12%) !important;
+}
+
+.salon-app-header {
+  background: #fff;
+  border-color: #e5e8f0;
+  box-shadow: 0 1px 0 rgb(15 23 42 / 2%);
+}
+
+.salon-mobile-header-title {
+  color: #121831;
+}
+
+.salon-admin-main {
+  background: #f7f8fc;
+}
+
+.salon-admin-main > .admin-page-content {
+  width: 100%;
+  max-width: 1600px;
+  margin-inline: auto;
+}
+

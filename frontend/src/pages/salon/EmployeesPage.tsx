@@ -55,7 +55,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useSalonBranch } from '@/contexts/SalonBranchContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { formatMoneyAmount } from '@/lib/money';
 import { FormError, getErrorMessage, SimpleForm } from './salon-ops-ui';
 import './employees-page.css';
@@ -400,13 +399,6 @@ function EmployeeActionMenu({
 
 export default function EmployeesPage() {
   const qc = useQueryClient();
-  const { user } = useAuth();
-  const permissions = user?.permissions ?? [];
-  const isSalonAdminUser = user?.roles?.includes('SALON_ADMIN') ?? false;
-  const canManageEmployees =
-    isSalonAdminUser ||
-    permissions.includes('EMPLOYEE_CREATE') ||
-    permissions.includes('EMPLOYEE_UPDATE');
 
   const {
     branchId: ribbonBranchId,
@@ -459,6 +451,9 @@ export default function EmployeesPage() {
     queryFn: tenantApi.features,
   });
 
+  // Employee CRUD is licensed by the EMPLOYEES feature. Staff role permissions
+  // only control login accounts and must not hide employee management on Basic.
+  const canManageEmployees = tenantFeatures.includes('EMPLOYEES');
   const roleManagementEnabled =
     tenantFeatures.includes('STAFF_MANAGEMENT') ||
     tenantFeatures.includes('ROLE_MANAGEMENT');
@@ -494,6 +489,7 @@ export default function EmployeesPage() {
   const { data: payrollSettings } = useQuery({
     queryKey: ['payroll-settings'],
     queryFn: tenantApi.payroll.getSettings,
+    enabled: payrollEnabled,
     staleTime: 60_000,
   });
 

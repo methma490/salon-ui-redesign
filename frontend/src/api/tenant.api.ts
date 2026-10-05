@@ -212,6 +212,7 @@ export interface TenantSettings {
     phone: string | null;
     logoUrl: string | null;
     primaryColor?: string;
+    openingBankBalance: number | null;
     status: string;
     createdAt: string;
   };
@@ -744,6 +745,10 @@ export type SalonDashboardPeriod = 'today' | 'week' | 'month' | 'year';
 
 export interface DashboardData {
   period: SalonDashboardPeriod;
+  paymentMethodBreakdown?: {
+    sales: Array<{ paymentMethod: string; amount: number }>;
+    expenses: Array<{ paymentMethod: string; amount: number }>;
+  };
   kpis: {
     periodRevenue: number;
     periodSalesCount: number;
@@ -774,6 +779,7 @@ export interface DashboardData {
     salariesGrowth: number;
     netProfit: number;
     profitGrowth: number;
+    openingBankBalance?: number | null;
     weeklyComparison: Array<{
       week: string;
       revenue: number;
@@ -785,8 +791,8 @@ export interface DashboardData {
     total: number;
     completed: number;
     completedPct: number;
-    pending: number;
-    pendingPct: number;
+    confirmed: number;
+    confirmedPct: number;
     cancelled: number;
     cancelledPct: number;
     noShow: number;
@@ -795,7 +801,7 @@ export interface DashboardData {
       name?: string;
       date: string;
       completed: number;
-      pending: number;
+      confirmed: number;
       cancelled: number;
       noShow: number;
     }>;
@@ -858,7 +864,7 @@ export interface DashboardData {
     appointmentAnalytics: Array<{
       name: string;
       completed: number;
-      pending: number;
+      confirmed: number;
       cancelled: number;
     }>;
     inventoryOverview: { available: number; low: number; outOfStock: number };
@@ -1339,12 +1345,18 @@ export const tenantApi = {
   },
 
   dashboard: {
-    get: (branchId?: string, period?: SalonDashboardPeriod) =>
+    get: (
+      branchId?: string,
+      period?: SalonDashboardPeriod,
+      startDate?: string,
+      endDate?: string,
+    ) =>
       api
         .get<DashboardData>('/tenant/dashboard', {
           params: {
             ...(branchId && branchId !== 'all' ? { branchId } : {}),
             ...(period ? { period } : {}),
+            ...(startDate && endDate ? { startDate, endDate } : {}),
           },
         })
         .then((r) => r.data),
@@ -1362,7 +1374,12 @@ export const tenantApi = {
       api
         .post<AppearanceSettings>('/tenant/settings/appearance/reset')
         .then((r) => r.data),
-    updateSalon: (data: { name?: string; email?: string; phone?: string }) =>
+    updateSalon: (data: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      openingBankBalance?: number | null;
+    }) =>
       api.patch('/tenant/settings/salon', data).then((r) => r.data),
     uploadLogo: (file: File) => {
       const form = new FormData();

@@ -325,6 +325,9 @@ export class EmployeesService {
   async list(schemaName: string, query: ListEmployeesQueryDto) {
     const employees = tenantTable(schemaName, 'employees');
     const branches = tenantTable(schemaName, 'branches');
+    const users = tenantTable(schemaName, 'users');
+    const userRoles = tenantTable(schemaName, 'user_roles');
+    const roles = tenantTable(schemaName, 'roles');
     const { page, limit, offset } = resolvePagination(query.page, query.limit);
 
     const conditions: string[] = ['1=1'];
@@ -351,6 +354,42 @@ export class EmployeesService {
     const baseSql = `${this.employeeSelectSql(employees, branches, schemaName)} WHERE ${whereClause}`;
 
     return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      // Salon admins are tenant users, but older tenants never got a matching
+      // employee row unless they opened POS. Backfill that profile on listing.
+      const adminsWithoutEmployee = (await tx.$queryRawUnsafe(
+        `SELECT u.id, u.name, u.email, u.phone,
+                (SELECT b.id FROM ${branches} b
+                 WHERE b.status = 'ACTIVE' ORDER BY b.is_main DESC, b.created_at ASC LIMIT 1) AS branch_id
+         FROM ${users} u
+         INNER JOIN ${userRoles} ur ON ur.user_id = u.id
+         INNER JOIN ${roles} r ON r.id = ur.role_id AND r.code = 'SALON_ADMIN'
+         WHERE u.status = 'ACTIVE'
+           AND NOT EXISTS (SELECT 1 FROM ${employees} e WHERE e.user_id = u.id)`,
+      )) as Array<{
+        id: string;
+        name: string;
+        email: string;
+        phone: string | null;
+        branch_id: string | null;
+      }>;
+
+      for (const admin of adminsWithoutEmployee) {
+        if (!admin.branch_id) continue;
+        const code = await generateSequentialCode(tx, employees, 'EMP-');
+        await tx.$queryRawUnsafe(
+          `INSERT INTO ${employees}
+             (branch_id, user_id, code, name, email, phone, designation, status)
+           SELECT $1::uuid, $2::uuid, $3, $4, $5, $6, 'Owner', 'ACTIVE'
+           WHERE NOT EXISTS (SELECT 1 FROM ${employees} WHERE user_id = $2::uuid)`,
+          admin.branch_id,
+          admin.id,
+          code,
+          admin.name,
+          admin.email,
+          admin.phone,
+        );
+      }
+
       const countRows = await tx.$queryRawUnsafe<Array<{ count: bigint }>>(
         `SELECT COUNT(*)::bigint AS count FROM ${employees} e WHERE ${whereClause}`,
         ...params,

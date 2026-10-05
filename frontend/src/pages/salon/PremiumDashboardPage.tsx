@@ -9,12 +9,12 @@ import { useSalonBranch } from '@/contexts/SalonBranchContext';
 import { OpsLoading, OpsError } from './salon-ops-ui';
 import { DashboardHeader, type QuickFilterType } from './dashboard/DashboardHeader';
 import { SummaryKpiCards } from './dashboard/SummaryKpiCards';
+import { PaymentMethodBreakdownCard } from './dashboard/PaymentMethodBreakdownCard';
 import { FinancialOverviewChart } from './dashboard/FinancialOverviewChart';
 import { AppointmentOverviewCard } from './dashboard/AppointmentOverviewCard';
-import { TopEmployeesCard } from './dashboard/TopEmployeesCard';
 import { InventoryOverviewCard } from './dashboard/InventoryOverviewCard';
 import { EmployeeLoansCard } from './dashboard/EmployeeLoansCard';
-import { RecentOrdersCard } from './dashboard/RecentOrdersCard';
+import { RecentAppointmentsCard } from './dashboard/RecentAppointmentsCard';
 import { RecentTransactionsCard } from './dashboard/RecentTransactionsCard';
 import './dashboard/salon-admin-dashboard.css';
 
@@ -63,6 +63,11 @@ export default function PremiumDashboardPage() {
     }
   };
 
+  const handleStartDateChange = (nextStartDate: string) => {
+    setStartDate(nextStartDate);
+    if (endDate < nextStartDate) setEndDate(nextStartDate);
+  };
+
   // Fetch tenant enabled features to check if LOANS / PAYROLL is enabled
   const { data: enabledFeatures = [] } = useQuery({
     queryKey: ['tenant-features-list'],
@@ -88,8 +93,19 @@ export default function PremiumDashboardPage() {
     isError,
     refetch,
   } = useQuery<DashboardData>({
-    queryKey: ['dashboard-comprehensive', branchId, period],
-    queryFn: () => tenantApi.dashboard.get(branchId === 'all' ? undefined : branchId, period),
+    queryKey: [
+      'dashboard-comprehensive',
+      branchId,
+      period,
+      ...(quickFilter === 'custom' ? [startDate, endDate] : []),
+    ],
+    queryFn: () =>
+      tenantApi.dashboard.get(
+        branchId === 'all' ? undefined : branchId,
+        period,
+        quickFilter === 'custom' ? startDate : undefined,
+        quickFilter === 'custom' ? endDate : undefined,
+      ),
     staleTime: 30_000,
     retry: 1,
     refetchOnWindowFocus: false,
@@ -108,14 +124,13 @@ export default function PremiumDashboardPage() {
     );
   }
 
-  const kpis = data?.kpis;
-  const financials = data?.financials;
-  const appointmentOverview = data?.appointmentOverview;
-  const topEmployees = data?.topEmployees;
-  const inventoryOverview = data?.inventoryOverview;
-  const employeeLoans = data?.employeeLoans;
-  const recentOrders = data?.recentOrders;
-  const recentTransactions = data?.recentTransactions;
+  const dashboardData = data;
+  const kpis = dashboardData?.kpis;
+  const financials = dashboardData?.financials;
+  const appointmentOverview = dashboardData?.appointmentOverview;
+  const inventoryOverview = dashboardData?.inventoryOverview;
+  const employeeLoans = dashboardData?.employeeLoans;
+  const recentTransactions = dashboardData?.recentTransactions;
 
   // Extract KPI values with 0 fallback
   const revenue = financials?.revenue ?? kpis?.periodRevenue ?? 0;
@@ -125,7 +140,9 @@ export default function PremiumDashboardPage() {
   const salaries = financials?.salaries ?? kpis?.salaries ?? 0;
   const salariesGrowth = financials?.salariesGrowth ?? kpis?.salariesGrowth ?? 0;
   const netProfit = financials?.netProfit ?? kpis?.netProfit ?? 0;
-  const profitGrowth = financials?.profitGrowth ?? kpis?.profitGrowth ?? 0;
+  const openingBankBalance = financials?.openingBankBalance ?? null;
+  const liveBankBalance =
+    openingBankBalance === null || branchId !== 'all' ? null : openingBankBalance + netProfit;
 
   return (
     <div className="dash-container">
@@ -135,11 +152,11 @@ export default function PremiumDashboardPage() {
         onQuickFilterChange={handleQuickFilterChange}
         startDate={startDate}
         endDate={endDate}
-        onStartDateChange={setStartDate}
+        onStartDateChange={handleStartDateChange}
         onEndDateChange={setEndDate}
       />
 
-      {/* Row 1: Summary 4 KPI Cards */}
+      {/* Row 1: Summary KPI cards */}
       <SummaryKpiCards
         revenue={revenue}
         revenueGrowth={revenueGrowth}
@@ -148,7 +165,8 @@ export default function PremiumDashboardPage() {
         salaries={salaries}
         salariesGrowth={salariesGrowth}
         netProfit={netProfit}
-        profitGrowth={profitGrowth}
+        openingBankBalance={openingBankBalance}
+        liveBankBalance={liveBankBalance}
       />
 
       {/* Row 2: Revenue/Expenses/Salaries (60%) & Appointment Overview (40%) */}
@@ -157,16 +175,20 @@ export default function PremiumDashboardPage() {
         <AppointmentOverviewCard data={appointmentOverview} />
       </div>
 
-      {/* Row 3: 3 Cards (Top Performing Employees, Inventory Overview, Employee Loans) */}
+      <PaymentMethodBreakdownCard
+        sales={dashboardData?.paymentMethodBreakdown?.sales}
+        expenses={dashboardData?.paymentMethodBreakdown?.expenses}
+      />
+
+      {/* Row 3: Inventory and employee loans */}
       <div className="dash-row-3">
-        <TopEmployeesCard employees={topEmployees} />
         <InventoryOverviewCard data={inventoryOverview} />
         {isLoansFeatureEnabled && <EmployeeLoansCard data={employeeLoans} />}
       </div>
 
-      {/* Row 4: 2 Cards (Recent Orders & Recent Transactions) */}
+      {/* Row 4: Recent appointments and transactions */}
       <div className="dash-row-4">
-        <RecentOrdersCard orders={recentOrders} />
+        <RecentAppointmentsCard appointments={dashboardData?.upcomingAppointments} />
         <RecentTransactionsCard transactions={recentTransactions} />
       </div>
     </div>

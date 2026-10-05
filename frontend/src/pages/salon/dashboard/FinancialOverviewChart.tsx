@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useTenantTheme } from '@/contexts/TenantThemeContext';
+import { getDashboardChartColors } from './chart-colors';
 
 interface WeeklyFinancialItem {
   week: string;
@@ -31,6 +32,7 @@ interface FinancialOverviewChartProps {
 export function FinancialOverviewChart({ data }: FinancialOverviewChartProps) {
   const theme = useTenantTheme();
   const primaryColor = theme?.palette?.primary ?? '#2563eb';
+  const chartColors = getDashboardChartColors(primaryColor);
   const [timeframe, setTimeframe] = useState('month');
 
   const chartData = data && data.length > 0 ? data : [];
@@ -46,15 +48,15 @@ export function FinancialOverviewChart({ data }: FinancialOverviewChartProps) {
         <div className="dash-card-actions">
           <div className="dash-legend-wrap">
             <div className="dash-legend-item">
-              <span className="dash-legend-dot blue" style={{ backgroundColor: primaryColor }} />
+              <span className="dash-legend-dot" style={{ backgroundColor: chartColors[0] }} />
               <span>Revenue</span>
             </div>
             <div className="dash-legend-item">
-              <span className="dash-legend-dot red" />
+              <span className="dash-legend-dot" style={{ backgroundColor: chartColors[1] }} />
               <span>Expenses</span>
             </div>
             <div className="dash-legend-item">
-              <span className="dash-legend-dot amber" />
+              <span className="dash-legend-dot" style={{ backgroundColor: chartColors[2] }} />
               <span>Salaries</span>
             </div>
           </div>
@@ -107,9 +109,9 @@ export function FinancialOverviewChart({ data }: FinancialOverviewChartProps) {
                 }}
                 formatter={(value: any) => [`LKR ${Number(value).toLocaleString()}`, '']}
               />
-              <Bar dataKey="revenue" name="Revenue" fill={primaryColor} radius={[4, 4, 0, 0]} maxBarSize={32} />
-              <Bar dataKey="expenses" name="Expenses" fill="#f87171" radius={[4, 4, 0, 0]} maxBarSize={32} />
-              <Bar dataKey="salaries" name="Salaries" fill="#fb923c" radius={[4, 4, 0, 0]} maxBarSize={32} />
+              <Bar dataKey="revenue" name="Revenue" fill={chartColors[0]} radius={[4, 4, 0, 0]} maxBarSize={32} />
+              <Bar dataKey="expenses" name="Expenses" fill={chartColors[1]} radius={[4, 4, 0, 0]} maxBarSize={32} />
+              <Bar dataKey="salaries" name="Salaries" fill={chartColors[2]} radius={[4, 4, 0, 0]} maxBarSize={32} />
             </BarChart>
           </ResponsiveContainer>
         ) : (

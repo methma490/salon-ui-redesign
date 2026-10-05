@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../../database/prisma.service';
 import { TenantSchemaService } from '../../tenant/services/tenant-schema.service';
 import { tenantTable } from '../../tenant/utils/schema-name.util';
 import type { SalonDashboardPeriod } from './dto/dashboard-query.dto';
@@ -27,59 +28,38 @@ function periodDates(period: SalonDashboardPeriod): { start: string; end: string
   return { start: startDate.toISOString().slice(0, 10), end };
 }
 
-function appointmentPeriodDates(period: SalonDashboardPeriod): { start: string; end: string } {
-  const now = new Date();
-  let startDate: Date;
-  let endDate: Date;
-
-  switch (period) {
-    case 'week': {
-      startDate = new Date(now);
-      startDate.setDate(startDate.getDate() - 3);
-      endDate = new Date(now);
-      endDate.setDate(endDate.getDate() + 3);
-      break;
-    }
-    case 'month': {
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      break;
-    }
-    case 'year': {
-      startDate = new Date(now.getFullYear(), 0, 1);
-      endDate = new Date(now.getFullYear(), 11, 31);
-      break;
-    }
-    default: {
-      startDate = new Date(now);
-      startDate.setDate(startDate.getDate() - 3);
-      endDate = new Date(now);
-      endDate.setDate(endDate.getDate() + 3);
-      break;
-    }
-  }
-
-  return {
-    start: startDate.toISOString().slice(0, 10),
-    end: endDate.toISOString().slice(0, 10),
-  };
-}
-
 function monthKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
 @Injectable()
 export class DashboardService {
-  constructor(private readonly tenantSchemaService: TenantSchemaService) {}
+  constructor(
+    private readonly tenantSchemaService: TenantSchemaService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async getDashboard(
+    tenantId: string,
     schemaName: string,
     branchId?: string,
     period: SalonDashboardPeriod = 'today',
+    customStartDate?: string,
+    customEndDate?: string,
   ) {
-    const { start, end } = periodDates(period);
-    const { start: apptStart, end: apptEnd } = appointmentPeriodDates(period);
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { openingBankBalance: true },
+    });
+    const openingBankBalance = branchId
+      ? null
+      : (tenant?.openingBankBalance?.toNumber() ?? null);
+
+    const { start, end } = customStartDate && customEndDate
+      ? { start: customStartDate, end: customEndDate }
+      : periodDates(period);
+    const apptStart = start;
+    const apptEnd = end;
     const sales = tenantTable(schemaName, 'sales');
     const customers = tenantTable(schemaName, 'customers');
     const branchStock = tenantTable(schemaName, 'branch_stock');
@@ -117,6 +97,8 @@ export class DashboardService {
         todaySales,
         monthlySales,
         periodExpenses,
+        salesPaymentMethods,
+        expensePaymentMethods,
         prevPeriodExpenses,
         periodSalaries,
         prevPeriodSalaries,
@@ -187,6 +169,27 @@ export class DashboardService {
              ${expBranchCond}`,
           ...periodParams,
         ).catch(() => [{ total: '0' }]),
+        tx.$queryRawUnsafe<Array<{ paymentMethod: string; amount: string }>>(
+          `SELECT COALESCE(p.method::text, 'CASH') AS "paymentMethod",
+                  COALESCE(SUM(CASE WHEN p.id IS NULL THEN s.total ELSE p.amount END), 0)::text AS amount
+           FROM ${sales} s
+           LEFT JOIN ${payments} p ON p.sale_id = s.id AND p.status::text = 'COMPLETED'
+           WHERE s.status = 'COMPLETED'
+             AND s.created_at >= $1::date
+             AND s.created_at < ($2::date + INTERVAL '1 day')
+             ${periodBranchCond}
+           GROUP BY COALESCE(p.method::text, 'CASH')`,
+          ...periodParams,
+        ),
+        tx.$queryRawUnsafe<Array<{ paymentMethod: string; amount: string }>>(
+          `SELECT payment_method AS "paymentMethod", COALESCE(SUM(amount), 0)::text AS amount
+           FROM ${expensesTable}
+           WHERE expense_date >= $1::date
+             AND expense_date <= $2::date
+             ${expBranchCond}
+           GROUP BY payment_method`,
+          ...periodParams,
+        ).catch(() => []),
         tx.$queryRawUnsafe<Array<{ total: string }>>(
           `SELECT COALESCE(SUM(amount), 0)::text AS total
            FROM ${expensesTable}
@@ -277,17 +280,17 @@ export class DashboardService {
              ${apptPeriodBranchCond}`,
           ...apptPeriodParams,
         ),
-        tx.$queryRawUnsafe<Array<{ completed: bigint; pending: bigint; cancelled: bigint; noShow: bigint }>>(
+        tx.$queryRawUnsafe<Array<{ completed: bigint; confirmed: bigint; cancelled: bigint; noShow: bigint }>>(
           `SELECT
              COUNT(*) FILTER (WHERE a.status::text = 'COMPLETED')::bigint AS completed,
-             COUNT(*) FILTER (WHERE a.status::text IN ('PENDING', 'CONFIRMED'))::bigint AS pending,
+             COUNT(*) FILTER (WHERE a.status::text = 'CONFIRMED')::bigint AS confirmed,
              COUNT(*) FILTER (WHERE a.status::text = 'CANCELLED')::bigint AS cancelled,
              COUNT(*) FILTER (WHERE a.status::text = 'NO_SHOW')::bigint AS "noShow"
            FROM ${appointments} a
            WHERE a.appointment_date >= $1::date AND a.appointment_date <= $2::date
              ${apptPeriodBranchCond}`,
           ...apptPeriodParams,
-        ).catch(() => [{ completed: BigInt(0), pending: BigInt(0), cancelled: BigInt(0), noShow: BigInt(0) }]),
+        ).catch(() => [{ completed: BigInt(0), confirmed: BigInt(0), cancelled: BigInt(0), noShow: BigInt(0) }]),
         tx.$queryRawUnsafe(
           `SELECT sv.id, sv.name, COUNT(*)::bigint AS "saleCount", SUM(si.total)::text AS revenue
            FROM ${saleItems} si
@@ -349,12 +352,12 @@ export class DashboardService {
            ORDER BY month ASC`,
         ),
         tx.$queryRawUnsafe<
-          Array<{ label: string; completed: bigint; pending: bigint; cancelled: bigint; noShow: bigint }>
+          Array<{ label: string; completed: bigint; confirmed: bigint; cancelled: bigint; noShow: bigint }>
         >(
           period === 'year'
             ? `SELECT TO_CHAR(DATE_TRUNC('month', a.appointment_date), 'Mon') AS label,
                       COUNT(*) FILTER (WHERE a.status::text = 'COMPLETED')::bigint AS completed,
-                      COUNT(*) FILTER (WHERE a.status::text IN ('PENDING', 'CONFIRMED'))::bigint AS pending,
+                      COUNT(*) FILTER (WHERE a.status::text = 'CONFIRMED')::bigint AS confirmed,
                       COUNT(*) FILTER (WHERE a.status::text = 'CANCELLED')::bigint AS cancelled,
                       COUNT(*) FILTER (WHERE a.status::text = 'NO_SHOW')::bigint AS "noShow"
                FROM ${appointments} a
@@ -363,7 +366,7 @@ export class DashboardService {
                ORDER BY DATE_TRUNC('month', a.appointment_date)`
             : `SELECT TO_CHAR(a.appointment_date, 'Mon DD') AS label,
                       COUNT(*) FILTER (WHERE a.status::text = 'COMPLETED')::bigint AS completed,
-                      COUNT(*) FILTER (WHERE a.status::text IN ('PENDING', 'CONFIRMED'))::bigint AS pending,
+                      COUNT(*) FILTER (WHERE a.status::text = 'CONFIRMED')::bigint AS confirmed,
                       COUNT(*) FILTER (WHERE a.status::text = 'CANCELLED')::bigint AS cancelled,
                       COUNT(*) FILTER (WHERE a.status::text = 'NO_SHOW')::bigint AS "noShow"
                FROM ${appointments} a
@@ -393,11 +396,12 @@ export class DashboardService {
         ),
         tx.$queryRawUnsafe(
           `SELECT a.id, a.start_time AS "startTime", a.appointment_date AS "appointmentDate",
-                  c.name AS "customerName",
+                  c.name AS "customerName", e.name AS "employeeName",
                   (SELECT service_name FROM ${appointmentServices}
                    WHERE appointment_id = a.id LIMIT 1) AS "serviceName"
            FROM ${appointments} a
            INNER JOIN ${customers} c ON a.customer_id = c.id
+           LEFT JOIN ${employees} e ON a.employee_id = e.id
            WHERE a.appointment_date >= CURRENT_DATE
              AND a.status IN ('PENDING', 'CONFIRMED')
              ${apptBranchCond}
@@ -525,13 +529,13 @@ export class DashboardService {
 
       // Appointments breakdown
       const apptCompleted = Number(appointmentBreakdown[0]?.completed ?? 0);
-      const apptPending = Number(appointmentBreakdown[0]?.pending ?? 0);
+      const apptConfirmed = Number(appointmentBreakdown[0]?.confirmed ?? 0);
       const apptCancelled = Number(appointmentBreakdown[0]?.cancelled ?? 0);
       const apptNoShow = Number(appointmentBreakdown[0]?.noShow ?? 0);
-      const totalAppts = apptCompleted + apptPending + apptCancelled + apptNoShow || Number(periodAppointments[0]?.count ?? 0);
+      const totalAppts = apptCompleted + apptConfirmed + apptCancelled + apptNoShow || Number(periodAppointments[0]?.count ?? 0);
 
       const completedPct = totalAppts > 0 ? Math.round((apptCompleted / totalAppts) * 100) : 0;
-      const pendingPct = totalAppts > 0 ? Math.round((apptPending / totalAppts) * 100) : 0;
+      const confirmedPct = totalAppts > 0 ? Math.round((apptConfirmed / totalAppts) * 100) : 0;
       const cancelledPct = totalAppts > 0 ? Math.round((apptCancelled / totalAppts) * 100) : 0;
       const noShowPct = totalAppts > 0 ? Math.round((apptNoShow / totalAppts) * 100) : 0;
 
@@ -652,14 +656,25 @@ export class DashboardService {
           salariesGrowth,
           netProfit,
           profitGrowth,
+          openingBankBalance,
           weeklyComparison,
+        },
+        paymentMethodBreakdown: {
+          sales: salesPaymentMethods.map((row) => ({
+            paymentMethod: row.paymentMethod,
+            amount: Number(row.amount),
+          })),
+          expenses: expensePaymentMethods.map((row) => ({
+            paymentMethod: row.paymentMethod,
+            amount: Number(row.amount),
+          })),
         },
         appointmentOverview: {
           total: totalAppts,
           completed: apptCompleted,
           completedPct,
-          pending: apptPending,
-          pendingPct,
+          confirmed: apptConfirmed,
+          confirmedPct,
           cancelled: apptCancelled,
           cancelledPct,
           noShow: apptNoShow,
@@ -668,7 +683,7 @@ export class DashboardService {
             name: row.label,
             date: row.label,
             completed: Number(row.completed),
-            pending: Number(row.pending),
+            confirmed: Number(row.confirmed),
             cancelled: Number(row.cancelled),
             noShow: Number(row.noShow ?? 0),
           })),
@@ -744,7 +759,7 @@ export class DashboardService {
           appointmentAnalytics: appointmentAnalytics.map((row) => ({
             name: row.label,
             completed: Number(row.completed),
-            pending: Number(row.pending),
+            confirmed: Number(row.confirmed),
             cancelled: Number(row.cancelled),
           })),
           inventoryOverview: {
@@ -764,6 +779,7 @@ export class DashboardService {
             startTime: string;
             appointmentDate: Date;
             customerName: string;
+            employeeName: string | null;
             serviceName: string | null;
           }>
         ).map((a) => ({
@@ -775,7 +791,7 @@ export class DashboardService {
             : String(a.appointmentDate),
           customer: a.customerName,
           service: a.serviceName,
-          employee: null as string | null,
+          employee: a.employeeName,
         })),
       };
       },

@@ -19,9 +19,12 @@ export class DashboardController {
   @RequirePermission('SALE_VIEW')
   getDashboard(@CurrentTenant() tenant: TenantContext, @Query() query: SalonDashboardQueryDto) {
     return this.dashboardService.getDashboard(
+      tenant.tenantId,
       tenant.schemaName,
       query.branchId,
       query.period ?? 'today',
+      query.startDate,
+      query.endDate,
     );
   }
 }

@@ -107,16 +107,6 @@ api.interceptors.response.use(
     const originalRequest = error.config as typeof error.config & { _retry?: boolean };
 
     const status = error.response?.status;
-    const path = typeof window !== 'undefined' ? window.location.pathname : '';
-
-    if (
-      status === 403 &&
-      path.startsWith('/salon') &&
-      !path.startsWith('/salon/login')
-    ) {
-      forceLogout(getErrorMessage(error));
-      return Promise.reject(error);
-    }
 
     if (status !== 401 || originalRequest._retry) {
       return Promise.reject(error);
