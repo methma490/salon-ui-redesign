@@ -3,6 +3,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { TenantSchemaService } from '../../tenant/services/tenant-schema.service';
 import { tenantTable } from '../../tenant/utils/schema-name.util';
 import type { SalonDashboardPeriod } from './dto/dashboard-query.dto';
+import { calculateCommissionAmount } from '../payroll/payroll-calculation.service';
 
 function periodDates(period: SalonDashboardPeriod): { start: string; end: string } {
   const now = new Date();
@@ -1175,12 +1176,16 @@ export class DashboardService {
     const saleItems = tenantTable(schemaName, 'sale_items');
     const sales = tenantTable(schemaName, 'sales');
     const employees = tenantTable(schemaName, 'employees');
+    const appointments = tenantTable(schemaName, 'appointments');
+    const appointmentServices = tenantTable(schemaName, 'appointment_services');
 
     const params: unknown[] = [startDate, endDate];
     let idx = 3;
     let branchCond = '';
+    let appointmentBranchCond = '';
     if (branchId && branchId !== 'all') {
       branchCond = `AND s.branch_id = $${idx++}::uuid`;
+      appointmentBranchCond = `AND a.branch_id = $${idx - 1}::uuid`;
       params.push(branchId);
     }
     let searchCond = '';
@@ -1196,6 +1201,7 @@ export class DashboardService {
           name: string;
           code: string;
           designation: string | null;
+          commissionRate: number;
           servicesCompleted: bigint;
           serviceSales: string;
           productSales: string;
@@ -1206,9 +1212,34 @@ export class DashboardService {
            e.name,
            e.code,
            e.designation,
-           COUNT(DISTINCT CASE WHEN si.item_type = 'service' THEN si.id END)::bigint AS "servicesCompleted",
-           COALESCE(SUM(CASE WHEN si.item_type = 'service' THEN si.total ELSE 0 END), 0)::text AS "serviceSales",
-           COALESCE(SUM(CASE WHEN si.item_type = 'product' THEN si.total ELSE 0 END), 0)::text AS "productSales"
+           COALESCE(e.commission_rate, 0)::float AS "commissionRate",
+           (
+             COUNT(DISTINCT CASE WHEN s.id IS NOT NULL AND si.item_type = 'service' THEN si.id END) +
+             COALESCE((
+               SELECT COUNT(*)
+               FROM ${appointments} a
+               INNER JOIN ${appointmentServices} aps ON aps.appointment_id = a.id
+               WHERE a.employee_id = e.id
+                 AND a.status::text = 'COMPLETED'
+                 AND a.appointment_date >= $1::date
+                 AND a.appointment_date <= $2::date
+                 ${appointmentBranchCond}
+             ), 0)
+           )::bigint AS "servicesCompleted",
+           (
+             COALESCE(SUM(CASE WHEN s.id IS NOT NULL AND si.item_type = 'service' THEN si.total ELSE 0 END), 0) +
+             COALESCE((
+               SELECT SUM(aps.price)
+               FROM ${appointments} a
+               INNER JOIN ${appointmentServices} aps ON aps.appointment_id = a.id
+               WHERE a.employee_id = e.id
+                 AND a.status::text = 'COMPLETED'
+                 AND a.appointment_date >= $1::date
+                 AND a.appointment_date <= $2::date
+                 ${appointmentBranchCond}
+             ), 0)
+           )::text AS "serviceSales",
+           COALESCE(SUM(CASE WHEN s.id IS NOT NULL AND si.item_type = 'product' THEN si.total ELSE 0 END), 0)::text AS "productSales"
          FROM ${employees} e
          LEFT JOIN ${saleItemEmployees} sie ON sie.employee_id = e.id
          LEFT JOIN ${saleItems} si ON sie.sale_item_id = si.id
@@ -1218,8 +1249,8 @@ export class DashboardService {
            ${branchCond}
          WHERE e.status = 'ACTIVE'
            ${searchCond}
-         GROUP BY e.id, e.name, e.code, e.designation
-         ORDER BY COALESCE(SUM(CASE WHEN si.item_type = 'service' THEN si.total ELSE 0 END), 0) DESC, e.name ASC`,
+         GROUP BY e.id, e.name, e.code, e.designation, e.commission_rate
+         ORDER BY COALESCE(SUM(CASE WHEN s.id IS NOT NULL AND si.item_type = 'service' THEN si.total ELSE 0 END), 0) DESC, e.name ASC`,
         ...params,
       );
 
@@ -1227,7 +1258,7 @@ export class DashboardService {
         const serviceSales = Number(r.serviceSales);
         const productSales = Number(r.productSales);
         const totalSales = serviceSales + productSales;
-        const commission = Math.round(serviceSales * 0.1);
+        const commission = calculateCommissionAmount(serviceSales, Number(r.commissionRate ?? 0));
         return {
           id: r.id,
           index: i + 1,

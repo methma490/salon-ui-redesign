@@ -39,6 +39,7 @@ import {
 } from '@/api/tenant.api';
 import { useSalonBranch } from '@/contexts/SalonBranchContext';
 import { useTenantTheme } from '@/contexts/TenantThemeContext';
+import { useDebounce } from '@/hooks/useDebounce';
 import { formatMoneyAmount } from '@/lib/money';
 import {
   Select,
@@ -192,6 +193,7 @@ export default function ReportsPage() {
 
   // Employee Performance Report Specific State
   const [employeeSearch, setEmployeeSearch] = useState('');
+  const debouncedEmployeeSearch = useDebounce(employeeSearch, 400);
   const [empPage, setEmpPage] = useState(1);
   const [empPerPage, setEmpPerPage] = useState(10);
 
@@ -209,7 +211,7 @@ export default function ReportsPage() {
 
   useEffect(() => {
     setEmpPage(1);
-  }, [startDate, endDate, branchId, employeeSearch]);
+  }, [startDate, endDate, branchId, debouncedEmployeeSearch]);
 
   useEffect(() => {
     setInvPage(1);
@@ -262,13 +264,13 @@ export default function ReportsPage() {
     error: empQueryError,
     refetch: refetchEmployees,
   } = useQuery<EmployeePerformanceReportResponse>({
-    queryKey: ['report-employee-performance', startDate, endDate, branchId, employeeSearch],
+    queryKey: ['report-employee-performance', startDate, endDate, branchId, debouncedEmployeeSearch],
     queryFn: () =>
       tenantApi.reports.employeePerformance({
         startDate,
         endDate,
         ...(branchId !== 'all' ? { branchId } : {}),
-        ...(employeeSearch.trim() ? { search: employeeSearch.trim() } : {}),
+        ...(debouncedEmployeeSearch.trim() ? { search: debouncedEmployeeSearch.trim() } : {}),
       }),
     enabled: activeTab === 'employee-performance',
     staleTime: 30_000,
@@ -1036,14 +1038,6 @@ export default function ReportsPage() {
           {/* Filter Bar */}
           <div className="reports-filter-bar">
             <div className="reports-filter-group">
-              <span className="reports-filter-label">Date Range</span>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 rounded-md bg-white text-xs font-medium text-slate-700">
-                <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                <span>{formatDateDisplay(startDate)} - {formatDateDisplay(endDate)}</span>
-              </div>
-            </div>
-
-            <div className="reports-filter-group">
               <span className="reports-filter-label">Branch</span>
               <div className="reports-select-wrapper">
                 <Select value={branchId} onValueChange={setBranchId}>
@@ -1098,6 +1092,30 @@ export default function ReportsPage() {
                 </button>
               </div>
             </div>
+            {quickFilter === 'custom' && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  aria-label="Start date"
+                  className="px-2.5 py-1 text-xs border border-slate-300 rounded-md bg-white text-slate-700 outline-none"
+                  value={startDate}
+                  onChange={(e) => {
+                    const nextStartDate = e.target.value;
+                    setStartDate(nextStartDate);
+                    if (endDate < nextStartDate) setEndDate(nextStartDate);
+                  }}
+                />
+                <span className="text-xs text-slate-400">to</span>
+                <input
+                  type="date"
+                  aria-label="End date"
+                  className="px-2.5 py-1 text-xs border border-slate-300 rounded-md bg-white text-slate-700 outline-none"
+                  value={endDate}
+                  min={startDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
+              </div>
+            )}
           </div>
 
           {/* Details Table Card */}

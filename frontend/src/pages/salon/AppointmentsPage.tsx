@@ -437,6 +437,7 @@ export default function AppointmentsPage() {
       qc.invalidateQueries({ queryKey: ['appointments'] });
       qc.invalidateQueries({ queryKey: ['appointments-calendar'] });
       qc.invalidateQueries({ queryKey: ['dashboard-comprehensive'] });
+      qc.invalidateQueries({ queryKey: ['report-employee-performance'] });
       appAlert({
         icon: 'success',
         title: 'Status Updated',
