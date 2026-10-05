@@ -341,10 +341,7 @@ export default function PosPage() {
   };
   const { data: services = [] } = useQuery({
     queryKey: ['services', 'pos-all'],
-    queryFn: async () => {
-      const result = await tenantApi.services.list({ all: true });
-      return Array.isArray(result) ? result : result.data;
-    },
+    queryFn: () => tenantApi.services.list({ all: true }),
   });
 
   const { data: products = [] } = useQuery({

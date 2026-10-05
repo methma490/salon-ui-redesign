@@ -7,6 +7,7 @@ export interface PlanPriceSeed {
 }
 
 export interface PlanSeedDefinition {
+  id?: string;
   code: string;
   name: string;
   description: string;
@@ -90,6 +91,7 @@ export const LEGACY_FEATURE_CATALOG = [
  */
 export const PLAN_SEED_DEFINITIONS: PlanSeedDefinition[] = [
   {
+    id: '5dbad8a3-55c5-4750-95bd-fe8ab1884ae7',
     code: 'SILVER',
     name: 'Silver Plan',
     description: 'Essential tools for small salons getting started',
@@ -98,6 +100,7 @@ export const PLAN_SEED_DEFINITIONS: PlanSeedDefinition[] = [
     prices: readPlanPrices('SEED_SILVER', { monthly: 5000, yearly: 50000, trial: 14 }),
   },
   {
+    id: '0b48d4e0-162d-43fc-94d0-f721ebffb122',
     code: 'GOLD',
     name: 'Gold Plan',
     description: 'Complete salon operations for growing businesses',
@@ -116,6 +119,7 @@ export const PLAN_SEED_DEFINITIONS: PlanSeedDefinition[] = [
     prices: readPlanPrices('SEED_GOLD', { monthly: 15000, yearly: 150000, trial: 14 }),
   },
   {
+    id: '0ca456db-5a12-42cf-8c0c-f1216c5624ae',
     code: 'PLATINUM',
     name: 'Platinum Plan',
     description: 'Full platform for multi-branch salons and advanced analytics',

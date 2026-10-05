@@ -2,15 +2,40 @@ import { DEFAULT_FALLBACK_PLANS } from '@/lib/plans';
 import type { PublicPlan } from '@/types/plans';
 
 export function getApiBaseUrl(): string {
-  const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
-  if (!base) {
-    return 'http://localhost:3000/api';
+  const internal = process.env.INTERNAL_API_URL?.replace(/\/$/, '');
+  if (internal) return internal;
+
+  const serverApi = process.env.API_URL?.replace(/\/$/, '');
+  if (serverApi) return serverApi;
+
+  const publicUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '');
+  if (publicUrl) {
+    if (
+      publicUrl.includes('salon-main-website') ||
+      (process.env.NODE_ENV === 'production' &&
+        (publicUrl === 'http://localhost:3000/api' || publicUrl === 'http://localhost:3000'))
+    ) {
+      return 'https://saloon-server.bc.dartcodes.com/api';
+    }
+    return publicUrl;
   }
-  return base;
+
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://saloon-server.bc.dartcodes.com/api';
+  }
+  return 'http://localhost:3000/api';
 }
 
 export function getAppUrl(): string {
-  return (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:5173').replace(/\/$/, '');
+  let envUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (envUrl) {
+    envUrl = envUrl.replace(/\/(salon\/)?login\/?$/i, '').replace(/\/$/, '');
+    if (envUrl) return envUrl;
+  }
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://saloon-client.bc.dartcodes.com';
+  }
+  return 'http://localhost:5173';
 }
 
 export function signupUrl(planId: string, billingCycle?: string): string {
@@ -22,14 +47,15 @@ export function signupUrl(planId: string, billingCycle?: string): string {
 }
 
 export function loginUrl(): string {
-  return `${getAppUrl()}/login`;
+  return `${getAppUrl()}/salon/login`;
 }
 
 export async function fetchPublicPlans(): Promise<PublicPlan[]> {
-  const url = `${getApiBaseUrl()}/plans`;
+  const baseUrl = getApiBaseUrl();
+  const url = `${baseUrl}/plans`;
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000);
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
     const res = await fetch(url, {
       next: { revalidate: 60 },
@@ -43,7 +69,7 @@ export async function fetchPublicPlans(): Promise<PublicPlan[]> {
     clearTimeout(timeoutId);
 
     if (!res.ok) {
-      console.warn(`[Plans API] Backend responded with ${res.status} ${res.statusText}. Using fallback plans.`);
+      console.warn(`[Plans API] Backend responded with ${res.status} ${res.statusText} from ${url}. Using fallback plans.`);
       return DEFAULT_FALLBACK_PLANS;
     }
 
@@ -54,7 +80,7 @@ export async function fetchPublicPlans(): Promise<PublicPlan[]> {
 
     return DEFAULT_FALLBACK_PLANS;
   } catch (error) {
-    console.warn('[Plans API] Backend fetch error, falling back to local plans catalogue:', error);
+    console.warn(`[Plans API] Backend fetch error from ${url}, falling back to local plans catalogue:`, error);
     return DEFAULT_FALLBACK_PLANS;
   }
 }

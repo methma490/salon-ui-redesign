@@ -19,11 +19,14 @@ export function resolveUploadUrl(path?: string | null): string | null {
     ? 'http://localhost:3000/api'
     : 'https://saloon-server.bc.dartcodes.com/api';
 
-  const rawApiBase = import.meta.env.VITE_API_BASE_URL;
-  const apiBase = (
-    rawApiBase && rawApiBase.trim() !== '' && rawApiBase.trim() !== '/api'
+  const rawApiBase = import.meta.env.VITE_API_BASE_URL?.trim();
+  let apiBase = (
+    rawApiBase && rawApiBase !== '' && rawApiBase !== '/api'
       ? rawApiBase
       : defaultApiBase
   ).replace(/\/$/, '');
+  if (!apiBase.endsWith('/api')) {
+    apiBase = `${apiBase}/api`;
+  }
   return `${apiBase}${path.startsWith('/') ? path : `/${path}`}`;
 }
