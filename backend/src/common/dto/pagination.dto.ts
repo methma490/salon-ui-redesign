@@ -50,14 +50,19 @@ export function buildPaginatedResponse<T>(
   total: number,
   page: number,
   limit: number,
-): PaginatedResponse<T> {
+): PaginatedResponse<T> & { total: number; page: number; limit: number; totalPages: number } {
+  const totalPages = Math.ceil(total / limit) || 0;
   return {
     data,
+    total,
+    page,
+    limit,
+    totalPages,
     meta: {
       page,
       limit,
       total,
-      totalPages: Math.ceil(total / limit) || 0,
+      totalPages,
     },
   };
 }

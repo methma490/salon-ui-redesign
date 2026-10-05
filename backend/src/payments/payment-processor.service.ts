@@ -14,6 +14,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import { SubscriptionAddonsService } from '../subscriptions/subscription-addons.service';
 import { PaymentPurpose } from './dto/create-payment-order.dto';
 import { InvoicesService } from '../invoices/invoices.service';
 import { NotificationQueueService } from '../notifications/notification-queue.service';
@@ -36,6 +37,8 @@ export class PaymentProcessorService {
     private readonly gatewayRegistry: PaymentGatewayRegistry,
     @Inject(forwardRef(() => SubscriptionsService))
     private readonly subscriptionsService: SubscriptionsService,
+    @Inject(forwardRef(() => SubscriptionAddonsService))
+    private readonly subscriptionAddonsService: SubscriptionAddonsService,
     private readonly invoicesService: InvoicesService,
     private readonly notificationQueue: NotificationQueueService,
   ) {}
@@ -103,6 +106,56 @@ export class PaymentProcessorService {
     if (verification.status !== 'paid') {
       return { success: true, status: verification.status, orderReference: order.reference };
     }
+
+    return this.completePaidOrder(order, verification);
+  }
+
+  async confirmReturnOrder(
+    orderReference: string,
+    tenantId?: string,
+  ): Promise<WebhookProcessResult> {
+    const order = await this.prisma.paymentOrder.findUnique({
+      where: { reference: orderReference },
+      include: { subscription: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Payment order not found');
+    }
+
+    if (tenantId && order.tenantId !== tenantId) {
+      throw new BadRequestException('Payment order does not belong to this tenant');
+    }
+
+    if (order.status === PaymentOrderStatus.PAID) {
+      return {
+        success: true,
+        status: 'paid',
+        orderReference: order.reference,
+        alreadyProcessed: true,
+      };
+    }
+
+    if (order.status !== PaymentOrderStatus.PENDING) {
+      return {
+        success: false,
+        status: order.status.toLowerCase(),
+        orderReference: order.reference,
+      };
+    }
+
+    const verification: GatewayVerificationResult = {
+      valid: true,
+      status: 'paid',
+      orderReference: order.reference,
+      transactionId: `RETURN-${order.reference}`,
+      amount: Number(order.amount),
+      currency: order.currency,
+      rawPayload: {
+        source: 'return_url',
+        confirmedAt: new Date().toISOString(),
+      },
+    };
 
     return this.completePaidOrder(order, verification);
   }
@@ -178,19 +231,35 @@ export class PaymentProcessorService {
     await this.fulfillOrder(order, transactionId);
 
     if (paymentId) {
-      const invoice = await this.invoicesService
-        .generateFromPayment({
-          paymentOrderId: order.id,
+      const existingInvoice = this.prisma.invoice?.findFirst
+        ? await this.prisma.invoice.findFirst({
+            where: { paymentOrderId: order.id },
+          })
+        : null;
+
+      let invoice: any = null;
+      if (existingInvoice) {
+        invoice = await this.invoicesService.markInvoicePaid(existingInvoice.id, {
           paymentId,
-          transactionId,
           paidAt,
-        })
-        .catch((error) => {
-          this.logger.error(
-            `Invoice generation failed for order ${order.reference}: ${error instanceof Error ? error.message : String(error)}`,
-          );
-          return null;
+          paymentMethod: order.gateway,
+          paymentReference: transactionId,
         });
+      } else {
+        invoice = await this.invoicesService
+          .generateFromPayment({
+            paymentOrderId: order.id,
+            paymentId,
+            transactionId,
+            paidAt,
+          })
+          .catch((error) => {
+            this.logger.error(
+              `Invoice generation failed for order ${order.reference}: ${error instanceof Error ? error.message : String(error)}`,
+            );
+            return null;
+          });
+      }
 
       if (invoice) {
         await this.invoicesService.sendInvoiceEmail(invoice.id).catch((error) => {
@@ -305,6 +374,16 @@ export class PaymentProcessorService {
         );
         return;
       }
+
+      case PaymentPurpose.SUBSCRIPTION_ADDON_ACTIVATE:
+        await this.subscriptionAddonsService.activatePaidAddOn({
+          paymentOrderId: order.id,
+          subscriptionAddOnId: (order as any).subscriptionAddOnId,
+          transactionId,
+          paymentMethod: order.gateway,
+          paidAt: new Date(),
+        });
+        return;
 
       default:
         throw new BadRequestException(`Unsupported payment purpose: ${purpose}`);

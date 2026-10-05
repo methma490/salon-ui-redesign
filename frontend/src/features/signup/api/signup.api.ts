@@ -65,9 +65,49 @@ export interface SignupOrderStatus {
   subscription: { status: string; startDate: string | null; endDate: string | null };
 }
 
+export interface TrialSignupPayload {
+  planId: string;
+  planPriceId?: string;
+  billingCycle?: 'MONTHLY' | 'YEARLY';
+  salon: {
+    name: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+  };
+  admin: {
+    name: string;
+    email: string;
+    phone?: string;
+    password: string;
+  };
+}
+
+export interface TrialSignupResponse {
+  tenantId: string;
+  subscriptionId: string;
+  plan: {
+    id: string;
+    code: string;
+    name: string;
+  };
+  subscription: {
+    status: string;
+    trialStart: string;
+    trialEnd: string;
+    endDate: string;
+  };
+  adminEmail: string;
+  canLogin: boolean;
+  loginUrl: string;
+}
+
 export const signupApi = {
   checkout: (payload: SignupPayload) =>
     api.post<SignupCheckoutResponse>('/public/signup', payload).then((r) => r.data),
+  trialSignup: (payload: TrialSignupPayload) =>
+    api.post<TrialSignupResponse>('/public/signup/trial', payload).then((r) => r.data),
   getStatus: (orderId: string) =>
     api.get<SignupOrderStatus>(`/public/signup/orders/${orderId}/status`).then((r) => r.data),
   confirmReturn: (orderId: string) =>

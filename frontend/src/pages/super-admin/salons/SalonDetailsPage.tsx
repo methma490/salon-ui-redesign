@@ -8,6 +8,7 @@ import { StatusChangeDialog } from '@/features/salons/components/StatusChangeDia
 import { useSalon } from '@/features/salons/hooks/useSalons';
 import type { SalonStatus } from '@/features/salons/types/salon.types';
 import { ManageSubscriptionDialog } from '@/features/subscriptions/components/ManageSubscriptionDialog';
+import { ManageSubscriptionAddonsDialog } from '@/features/subscriptions/components/ManageSubscriptionAddonsDialog';
 import { formatPrice } from '@/features/plans/lib/plan-utils';
 import { formatSriLankaDate, formatSriLankaDateTime } from '@/lib/sri-lanka-time';
 import { OpsError, OpsLoading } from '@/pages/salon/salon-ops-ui';
@@ -38,6 +39,7 @@ export default function SalonDetailsPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [featuresOpen, setFeaturesOpen] = useState(false);
   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
+  const [addonsOpen, setAddonsOpen] = useState(false);
   const [statusTarget, setStatusTarget] = useState<SalonStatus | null>(null);
 
   if (isLoading) return <OpsLoading />;
@@ -230,6 +232,15 @@ export default function SalonDetailsPage() {
                 >
                   {salon.subscription ? 'Change Plan' : 'Assign Plan'}
                 </button>
+                {salon.subscription && (
+                  <button
+                    type="button"
+                    className="sd-btn sd-btn-secondary"
+                    onClick={() => setAddonsOpen(true)}
+                  >
+                    Manage Paid Add-ons
+                  </button>
+                )}
 
                 <div className="sd-action-divider" />
 
@@ -304,6 +315,15 @@ export default function SalonDetailsPage() {
         open={subscriptionOpen}
         onOpenChange={setSubscriptionOpen}
       />
+      {salon.subscription && (
+        <ManageSubscriptionAddonsDialog
+          subscriptionId={salon.subscription.id}
+          salonName={salon.name}
+          open={addonsOpen}
+          onOpenChange={setAddonsOpen}
+          onSuccess={() => void refetch()}
+        />
+      )}
       {statusTarget && (
         <StatusChangeDialog
           salonId={salon.id}

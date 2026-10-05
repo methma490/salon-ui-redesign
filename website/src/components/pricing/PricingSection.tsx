@@ -17,16 +17,15 @@ export function PricingSection({ plans: initialPlans = [], compact = false }: Pr
   useEffect(() => {
     if (initialPlans && initialPlans.length > 0) {
       setPlans(initialPlans);
-    } else {
-      fetch('/api/plans')
-        .then((res) => (res.ok ? res.json() : []))
-        .then((data) => {
-          if (Array.isArray(data) && data.length > 0) {
-            setPlans(data);
-          }
-        })
-        .catch((err) => console.warn('Could not load live plans client-side:', err));
     }
+    fetch('/api/plans', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setPlans(data);
+        }
+      })
+      .catch((err) => console.warn('Could not load live plans client-side:', err));
   }, [initialPlans]);
 
   const sortedPlans = useMemo(

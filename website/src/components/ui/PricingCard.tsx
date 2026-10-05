@@ -61,7 +61,7 @@ export function PricingCard({ plan, billingCycle }: PricingCardProps) {
       ) : null}
 
       <ul className={`mt-6 flex-1 space-y-3 text-sm ${popular ? 'text-white/90' : 'text-black/80'}`}>
-        {features.slice(0, 10).map((feature) => (
+        {features.map((feature) => (
           <li key={feature} className="flex items-start gap-2">
             <Check className={`mt-0.5 h-4 w-4 shrink-0 ${checkColor}`} strokeWidth={2} aria-hidden />
             <span>{feature}</span>

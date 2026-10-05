@@ -15,6 +15,7 @@ import { PaymentOrdersService } from './payment-orders.service';
 import { PaymentProcessorService } from './payment-processor.service';
 import { PaymentsController } from './payments.controller';
 import { SuperAdminPaymentsController } from './super-admin-payments.controller';
+import { PublicAddonPaymentsController } from './public-addon-payments.controller';
 
 @Module({
   imports: [
@@ -25,7 +26,7 @@ import { SuperAdminPaymentsController } from './super-admin-payments.controller'
     NotificationsModule,
     forwardRef(() => SubscriptionsModule),
   ],
-  controllers: [PaymentsController, SuperAdminPaymentsController],
+  controllers: [PaymentsController, SuperAdminPaymentsController, PublicAddonPaymentsController],
   providers: [
     PayHereService,
     PayHereGateway,

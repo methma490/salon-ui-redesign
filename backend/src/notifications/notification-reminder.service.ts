@@ -177,6 +177,14 @@ export class NotificationReminderService {
           });
 
           // 3. Construct Notification Payload
+          const isTrial = sub.status === SubscriptionStatus.TRIAL;
+          const trialMessage =
+            isTrial && rule.type === SubscriptionReminderType.SEVEN_DAYS_BEFORE
+              ? 'Your free trial ends in 7 days.'
+              : isTrial && rule.type === SubscriptionReminderType.ONE_DAY_BEFORE
+                ? 'Your free trial ends tomorrow.'
+                : undefined;
+
           const idempotencyKey = `sub-reminder:${sub.id}:${rule.type}:${colomboDateStr}`;
           const payload: DeliverNotificationPayload = {
             idempotencyKey,
@@ -199,6 +207,9 @@ export class NotificationReminderService {
               amount: Number(sub.price).toFixed(2),
               currency: sub.currency,
               actionUrl: this.getActionUrl('/salon/subscription'),
+              isTrial: isTrial ? 'true' : 'false',
+              trialMessage: trialMessage ?? '',
+              trialSubject: trialMessage ? trialMessage.replace(/\.$/, '') : '',
             },
             metadata: {
               subscriptionId: sub.id,
@@ -206,8 +217,9 @@ export class NotificationReminderService {
               reminderType: rule.type,
               targetDate: colomboDateStr,
               actionUrl: '/salon/subscription',
-              action: 'RENEW_NOW',
-              label: 'Renew Now',
+              action: isTrial ? 'UPGRADE_NOW' : 'RENEW_NOW',
+              label: isTrial ? 'Upgrade Now' : 'Renew Now',
+              trialMessage,
             },
           };
 

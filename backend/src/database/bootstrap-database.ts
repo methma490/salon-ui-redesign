@@ -54,6 +54,7 @@ export async function bootstrapDatabase(): Promise<void> {
     await prisma.$connect();
 
     await prisma.$executeRawUnsafe(`CREATE EXTENSION IF NOT EXISTS pg_trgm SCHEMA public`);
+    await ensurePublicPaymentsTable(prisma);
 
     const planCount = await prisma.plan.count();
 
@@ -194,6 +195,81 @@ async function syncAllTenantSchemas(prisma: PrismaClient): Promise<void> {
     }
   } catch (err) {
     logger.warn(`Could not query tenant schemas for sync: ${err}`);
+  }
+}
+
+async function ensurePublicPaymentsTable(prisma: PrismaClient): Promise<void> {
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "public"."payments" (
+        "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+        "payment_order_id" UUID NOT NULL,
+        "transaction_id" TEXT,
+        "status" "PaymentRecordStatus" NOT NULL DEFAULT 'PENDING',
+        "paid_at" TIMESTAMP(3),
+        "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+        CONSTRAINT "payments_pkey" PRIMARY KEY ("id")
+      );
+    `);
+
+    await prisma.$executeRawUnsafe(
+      `CREATE UNIQUE INDEX IF NOT EXISTS "payments_transaction_id_key" ON "public"."payments"("transaction_id");`,
+    );
+    await prisma.$executeRawUnsafe(
+      `CREATE INDEX IF NOT EXISTS "payments_payment_order_id_idx" ON "public"."payments"("payment_order_id");`,
+    );
+    await prisma.$executeRawUnsafe(
+      `CREATE INDEX IF NOT EXISTS "payments_status_idx" ON "public"."payments"("status");`,
+    );
+
+    await prisma.$executeRawUnsafe(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'payments_payment_order_id_fkey'
+        ) THEN
+          ALTER TABLE "public"."payments"
+            ADD CONSTRAINT "payments_payment_order_id_fkey"
+            FOREIGN KEY ("payment_order_id") REFERENCES "public"."payment_orders"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+        END IF;
+      END $$;
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'payment_transactions_payment_id_fkey'
+        ) THEN
+          ALTER TABLE "public"."payment_transactions"
+            ADD CONSTRAINT "payment_transactions_payment_id_fkey"
+            FOREIGN KEY ("payment_id") REFERENCES "public"."payments"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+        END IF;
+      END $$;
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      UPDATE "public"."invoices"
+      SET payment_id = NULL
+      WHERE payment_id IS NOT NULL AND payment_id NOT IN (SELECT id FROM "public"."payments");
+    `);
+
+    await prisma.$executeRawUnsafe(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint WHERE conname = 'invoices_payment_id_fkey'
+        ) THEN
+          ALTER TABLE "public"."invoices"
+            ADD CONSTRAINT "invoices_payment_id_fkey"
+            FOREIGN KEY ("payment_id") REFERENCES "public"."payments"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+        END IF;
+      END $$;
+    `);
+  } catch (err) {
+    logger.warn(`Could not verify public.payments table: ${err}`);
   }
 }
 

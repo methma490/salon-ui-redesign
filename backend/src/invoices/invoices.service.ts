@@ -226,6 +226,107 @@ export class InvoicesService implements OnModuleInit {
     }
   }
 
+  /**
+   * Create an initial ISSUED invoice for an add-on prior to payment.
+   */
+  async createAddonInvoice(input: {
+    tenantId: string;
+    subscriptionId: string;
+    subscriptionAddOnId: string;
+    paymentOrderId: string;
+    amount: number | Prisma.Decimal;
+    currency: string;
+    salonName: string;
+    salonEmail?: string | null;
+    salonPhone?: string | null;
+    customerName: string;
+    customerEmail: string;
+    customerPhone?: string | null;
+    featureName: string;
+    featureCode: string;
+    billingCycle: string;
+    periodStart: Date;
+    periodEnd: Date;
+    metadata?: Prisma.InputJsonValue;
+  }) {
+    const existing = await this.prisma.invoice.findFirst({
+      where: {
+        paymentOrderId: input.paymentOrderId,
+      },
+      include: { items: true },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    const invoiceNumber = await this.nextInvoiceNumber();
+    const periodStartStr = input.periodStart.toISOString().split('T')[0];
+    const periodEndStr = input.periodEnd.toISOString().split('T')[0];
+    const lineDescription = `${input.featureName} Add-on — Prorated Charge (${periodStartStr} – ${periodEndStr})`;
+
+    return this.prisma.invoice.create({
+      data: {
+        invoiceNumber,
+        tenantId: input.tenantId,
+        subscriptionId: input.subscriptionId,
+        paymentOrderId: input.paymentOrderId,
+        subscriptionAddOnId: input.subscriptionAddOnId,
+        status: InvoiceStatus.ISSUED,
+        currency: input.currency,
+        subtotal: input.amount as any,
+        total: input.amount as any,
+        salonName: input.salonName,
+        salonEmail: input.salonEmail,
+        salonPhone: input.salonPhone,
+        customerName: input.customerName,
+        customerEmail: input.customerEmail,
+        customerPhone: input.customerPhone,
+        planName: `${input.featureName} Add-on`,
+        planCode: input.featureCode,
+        billingCycle: input.billingCycle as any,
+        metadata: input.metadata,
+        items: {
+          create: [
+            {
+              description: lineDescription,
+              quantity: 1,
+              unitPrice: input.amount as any,
+              amount: input.amount as any,
+              sortOrder: 0,
+            },
+          ],
+        },
+      },
+      include: { items: true },
+    });
+  }
+
+  /**
+   * Transition an ISSUED invoice to PAID upon verified payment.
+   */
+  async markInvoicePaid(
+    invoiceId: string,
+    params: {
+      paymentId: string;
+      paidAt?: Date;
+      paymentMethod?: string;
+      paymentReference?: string;
+    },
+  ) {
+    return this.prisma.invoice.update({
+      where: { id: invoiceId },
+      data: {
+        status: InvoiceStatus.PAID,
+        paymentId: params.paymentId,
+        paidAt: params.paidAt ?? new Date(),
+        paymentMethod: params.paymentMethod,
+        paymentReference: params.paymentReference,
+      },
+      include: { items: true },
+    });
+  }
+
   async listForTenant(tenantId: string, query: InvoiceQueryDto) {
     await this.backfillMissingInvoices().catch(() => {});
     const { page, limit, offset } = resolvePagination(query.page, query.limit);

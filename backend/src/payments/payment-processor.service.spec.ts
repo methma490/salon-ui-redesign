@@ -54,11 +54,15 @@ describe('PaymentProcessorService', () => {
       enqueuePaymentSuccess: jest.fn().mockResolvedValue(undefined),
       enqueuePaymentFailed: jest.fn().mockResolvedValue(undefined),
     };
+    const subscriptionAddonsService = {
+      activatePaidAddOn: jest.fn(),
+    };
 
     service = new PaymentProcessorService(
       prisma as never,
       gatewayRegistry as unknown as PaymentGatewayRegistry,
       subscriptionsService as unknown as SubscriptionsService,
+      subscriptionAddonsService as never,
       invoicesService as never,
       notificationQueue as never,
     );

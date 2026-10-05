@@ -18,6 +18,7 @@ import {
   PlanPrice,
   Prisma,
   Subscription,
+  SubscriptionAddOnStatus,
   SubscriptionHistoryAction,
   SubscriptionStatus,
 } from '@prisma/client';
@@ -35,6 +36,7 @@ import {
   ActivateSubscriptionDto,
   CreateCustomSubscriptionDto,
   CreateTrialSubscriptionDto,
+  ExtendTrialDto,
   RenewSubscriptionDto,
   ScheduleDowngradeDto,
   UpgradeSubscriptionDto,
@@ -43,7 +45,9 @@ import { SubscriptionListQueryDto } from './dto/subscription-list-query.dto';
 import { SubscriptionFeatureService } from './subscription-feature.service';
 import { InvoicesService } from '../invoices/invoices.service';
 import {
+  MANDATORY_TRIAL_DAYS,
   addTrialDays,
+  calculateSubscriptionRecurringTotals,
   comparePlanTier,
   extendBillingPeriod,
   isPastDate,
@@ -65,28 +69,7 @@ export class SubscriptionsService {
   ) {}
 
   async createSubscription(tenantId: string, planId: string) {
-    await this.ensureTenantExists(tenantId);
-    await this.assertNoBlockingSubscription(tenantId);
-
-    const plan = await this.plansService.findById(planId);
-    if (!isPlanActive(plan)) {
-      throw new BadRequestException('Plan is not active');
-    }
-
-    const planPrice = this.plansService.getDefaultPlanPrice(plan);
-
-    return this.prisma.subscription.create({
-      data: {
-        tenantId,
-        planId: plan.id,
-        planPriceId: planPrice.id,
-        status: SubscriptionStatus.PENDING,
-        billingCycle: planPrice.billingCycle,
-        price: planPrice.price,
-        currency: planPrice.currency,
-      },
-      include: this.subscriptionInclude(),
-    });
+    return this.createTrialSubscription(tenantId, { planId });
   }
 
   async createTrialSubscription(tenantId: string, dto: CreateTrialSubscriptionDto) {
@@ -99,12 +82,10 @@ export class SubscriptionsService {
     }
 
     const planPrice = await this.resolvePlanPrice(plan.id, dto.planPriceId, dto.billingCycle);
-    if (planPrice.trialDays <= 0) {
-      throw new BadRequestException('Selected plan price does not include a free trial');
-    }
 
+    const trialDays = MANDATORY_TRIAL_DAYS; // Exactly 21-day trial
     const trialStart = new Date();
-    const trialEnd = addTrialDays(trialStart, planPrice.trialDays);
+    const trialEnd = addTrialDays(trialStart, trialDays);
 
     const subscription = await this.prisma.$transaction(async (tx) => {
       const created = await tx.subscription.create({
@@ -132,7 +113,7 @@ export class SubscriptionsService {
         toPlanId: plan.id,
         toPlanPriceId: planPrice.id,
         toStatus: SubscriptionStatus.TRIAL,
-        metadata: { trialDays: planPrice.trialDays },
+        metadata: { trialDays },
       });
 
       return created;
@@ -140,9 +121,82 @@ export class SubscriptionsService {
 
     await this.syncTenantFeaturesFromSubscription(subscription.id, tenantId);
     this.logger.log(
-      `Trial subscription created: tenant=${tenantId}, subscription=${subscription.id}`,
+      `Trial subscription created: tenant=${tenantId}, subscription=${subscription.id}, days=${trialDays}`,
     );
     return this.findById(subscription.id, tenantId);
+  }
+
+  async extendTrial(
+    subscriptionId: string,
+    tenantId: string,
+    dto: ExtendTrialDto,
+    performedBy?: string,
+  ) {
+    const subscription = await this.findTenantSubscriptionOrThrow(subscriptionId, tenantId, {
+      plan: true,
+    });
+
+    if (
+      subscription.status !== SubscriptionStatus.TRIAL &&
+      subscription.status !== SubscriptionStatus.SUSPENDED
+    ) {
+      throw new BadRequestException('Only trial or suspended subscriptions can be extended');
+    }
+
+    const currentEnd = subscription.trialEnd ?? subscription.endDate ?? new Date();
+    let newTrialEnd: Date;
+
+    if (dto.extraDays) {
+      const base = currentEnd.getTime() > Date.now() ? currentEnd : new Date();
+      newTrialEnd = addTrialDays(base, dto.extraDays);
+    } else if (dto.newTrialEnd) {
+      newTrialEnd = new Date(dto.newTrialEnd);
+      if (isNaN(newTrialEnd.getTime()) || newTrialEnd.getTime() <= Date.now()) {
+        throw new BadRequestException('newTrialEnd must be a valid future date');
+      }
+    } else {
+      throw new BadRequestException('Either extraDays or newTrialEnd is required');
+    }
+
+    const fromStatus = subscription.status;
+    const previousTrialEnd = subscription.trialEnd;
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const res = await tx.subscription.update({
+        where: { id: subscriptionId },
+        data: {
+          status: SubscriptionStatus.TRIAL,
+          trialEnd: newTrialEnd,
+          endDate: newTrialEnd,
+          nextBillingDate: newTrialEnd,
+        },
+        include: this.subscriptionInclude(),
+      });
+
+      await this.recordHistory(tx, {
+        subscriptionId,
+        action: SubscriptionHistoryAction.STATUS_CHANGED,
+        fromStatus,
+        toStatus: SubscriptionStatus.TRIAL,
+        performedBy: performedBy ?? null,
+        metadata: {
+          action: 'TRIAL_EXTENDED',
+          previousTrialEnd,
+          newTrialEnd,
+          reason: dto.reason,
+          extendedBy: performedBy ?? 'SUPER_ADMIN',
+        },
+      });
+
+      return res;
+    });
+
+    await this.syncTenantFeaturesFromSubscription(subscriptionId, tenantId);
+    this.logger.log(
+      `Trial extended for tenant=${tenantId}, subscription=${subscriptionId}, newTrialEnd=${newTrialEnd.toISOString()}`,
+    );
+
+    return updated;
   }
 
   async activateSubscription(
@@ -157,9 +211,10 @@ export class SubscriptionsService {
 
     if (
       subscription.status !== SubscriptionStatus.PENDING &&
-      subscription.status !== SubscriptionStatus.TRIAL
+      subscription.status !== SubscriptionStatus.TRIAL &&
+      subscription.status !== SubscriptionStatus.SUSPENDED
     ) {
-      throw new BadRequestException('Only pending or trial subscriptions can be activated');
+      throw new BadRequestException('Only pending, trial, or suspended subscriptions can be activated');
     }
 
     if (!options?.fromPaymentProcessor) {
@@ -178,12 +233,8 @@ export class SubscriptionsService {
 
     const paidAt = new Date();
     const fromStatus = subscription.status;
-    const anchorEnd = subscription.endDate ?? paidAt;
-    const endDate = extendBillingPeriod(anchorEnd, subscription.billingCycle);
-    const startDate =
-      subscription.status === SubscriptionStatus.TRIAL && subscription.startDate
-        ? subscription.startDate
-        : paidAt;
+    const startDate = paidAt;
+    const endDate = extendBillingPeriod(paidAt, subscription.billingCycle);
 
     const { subscription: updated, recordedPayment } = await this.prisma.$transaction(async (tx) => {
       let paymentInfo: {
@@ -270,12 +321,16 @@ export class SubscriptionsService {
 
     if (
       subscription.status !== SubscriptionStatus.ACTIVE &&
-      subscription.status !== SubscriptionStatus.EXPIRED
+      subscription.status !== SubscriptionStatus.EXPIRED &&
+      subscription.status !== SubscriptionStatus.SUSPENDED &&
+      subscription.status !== SubscriptionStatus.PAST_DUE
     ) {
-      throw new BadRequestException('Only active or expired subscriptions can be renewed');
+      throw new BadRequestException(
+        'Only active, expired, past due, or suspended subscriptions can be renewed',
+      );
     }
 
-    if (!subscription.endDate) {
+    if (!subscription.endDate && subscription.status !== SubscriptionStatus.SUSPENDED) {
       throw new BadRequestException('Subscription has no billing period end date');
     }
 
@@ -288,8 +343,11 @@ export class SubscriptionsService {
     }
 
     const paidAt = new Date();
-    const previousEnd = subscription.endDate;
-    const anchorEnd = isPastDate(previousEnd) ? paidAt : previousEnd;
+    const previousEnd = subscription.endDate ?? paidAt;
+    const anchorEnd =
+      subscription.status === SubscriptionStatus.SUSPENDED || isPastDate(previousEnd)
+        ? paidAt
+        : previousEnd;
     const newEndDate = extendBillingPeriod(anchorEnd, subscription.billingCycle);
 
     const { subscription: updated, recordedPayment } = await this.prisma.$transaction(async (tx) => {
@@ -299,10 +357,38 @@ export class SubscriptionsService {
       } | null = null;
 
       if (!options?.fromPaymentProcessor) {
+        const activeAddons = tx.subscriptionAddOn?.findMany
+          ? await tx.subscriptionAddOn.findMany({
+              where: {
+                subscriptionId,
+                status: SubscriptionAddOnStatus.ACTIVE,
+                cancelAtPeriodEnd: false,
+              },
+            })
+          : [];
+        const planFeatures = (tx.subscriptionFeature?.findMany
+          ? await tx.subscriptionFeature.findMany({
+              where: { subscriptionId, enabled: true },
+              select: { featureId: true },
+            })
+          : []) ?? [];
+        const planFeatureIds = new Set((planFeatures ?? []).map((f: any) => f.featureId));
+        const totals = calculateSubscriptionRecurringTotals(
+          subscription.price,
+          (activeAddons ?? []).map((a) => ({
+            featureId: a.featureId,
+            status: a.status,
+            recurringAmount: a.recurringAmount,
+            currency: a.currency,
+          })),
+          subscription.currency,
+          planFeatureIds,
+        );
+
         paymentInfo = await this.recordSubscriptionPayment(tx, {
           tenantId,
           subscriptionId,
-          amount: subscription.price,
+          amount: totals.nextRenewalTotal,
           currency: subscription.currency,
           purpose: PaymentPurpose.SUBSCRIPTION_RENEW,
           paymentMethod: dto.paymentMethod ?? 'MANUAL',
@@ -368,8 +454,11 @@ export class SubscriptionsService {
     }
 
     const paidAt = new Date();
-    const previousEnd = subscription.endDate!;
-    const anchorEnd = isPastDate(previousEnd) ? paidAt : previousEnd;
+    const previousEnd = subscription.endDate ?? subscription.trialEnd ?? paidAt;
+    const anchorEnd =
+      subscription.status === SubscriptionStatus.SUSPENDED || isPastDate(previousEnd)
+        ? paidAt
+        : previousEnd;
     const newEndDate = extendBillingPeriod(anchorEnd, pendingPrice.billingCycle);
     const fromPlanId = subscription.planId;
     const fromPlanPriceId = subscription.planPriceId;
@@ -697,7 +786,85 @@ export class SubscriptionsService {
     });
   }
 
+  async finalizeDueAddonCancellations(asOf: Date = new Date()) {
+    if (!this.prisma.subscriptionAddOn?.findMany) {
+      return [];
+    }
+
+    const dueAddons = await this.prisma.subscriptionAddOn.findMany({
+      where: {
+        status: SubscriptionAddOnStatus.CANCEL_AT_PERIOD_END,
+        OR: [
+          { cancellationEffectiveAt: { lte: asOf } },
+          {
+            cancellationEffectiveAt: null,
+            subscription: { endDate: { lte: asOf } },
+          },
+        ],
+      },
+      include: {
+        subscription: true,
+        feature: true,
+      },
+    });
+
+    const results = [];
+    for (const addOn of dueAddons) {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.subscriptionAddOn.update({
+          where: { id: addOn.id },
+          data: {
+            status: SubscriptionAddOnStatus.CANCELLED,
+            cancelAtPeriodEnd: false,
+            cancelledAt: asOf,
+          },
+        });
+
+        await tx.subscriptionHistory.create({
+          data: {
+            subscriptionId: addOn.subscriptionId,
+            action: SubscriptionHistoryAction.STATUS_CHANGED,
+            metadata: {
+              action: 'ADDON_CANCELLED',
+              addOnId: addOn.id,
+              featureId: addOn.featureId,
+              featureCode: addOn.feature?.code,
+              featureName: addOn.feature?.name,
+              cancellationEffectiveAt: addOn.cancellationEffectiveAt,
+              processedAt: asOf,
+              source: 'SCHEDULER',
+            },
+          },
+        });
+      });
+
+      if (addOn.subscription?.tenantId) {
+        await this.syncTenantFeaturesFromSubscription(
+          addOn.subscriptionId,
+          addOn.subscription.tenantId,
+        );
+      }
+
+      this.logger.log(
+        `Finalized cancellation of add-on ${addOn.id} (${addOn.feature?.code ?? 'ADDON'}) on subscription ${addOn.subscriptionId} as of ${asOf.toISOString()}`,
+      );
+
+      results.push({
+        addOnId: addOn.id,
+        subscriptionId: addOn.subscriptionId,
+        action: 'addon_cancelled',
+        effectiveAt: addOn.cancellationEffectiveAt,
+      });
+    }
+
+    return results;
+  }
+
   async processDueSubscriptions(asOf: Date = new Date()) {
+    // 1. Finalize scheduled add-on cancellations whose effective period cutoff has passed
+    const cancelledAddons = await this.finalizeDueAddonCancellations(asOf);
+
+    // 2. Process subscriptions reaching period end
     const due = await this.prisma.subscription.findMany({
       where: {
         endDate: { lte: asOf },
@@ -710,7 +877,7 @@ export class SubscriptionsService {
       results.push(await this.processSubscriptionPeriodEnd(subscription.id, asOf));
     }
 
-    return results;
+    return [...results, ...cancelledAddons];
   }
 
   async processSubscriptionPeriodEnd(subscriptionId: string, asOf: Date = new Date()) {
@@ -731,15 +898,15 @@ export class SubscriptionsService {
     }
 
     if (subscription.status === SubscriptionStatus.TRIAL) {
-      return this.expireSubscription(subscription, SubscriptionHistoryAction.EXPIRED);
+      return this.suspendSubscription(subscription, 'TRIAL_EXPIRED_SUSPENDED');
     }
 
     if (subscription.cancelAtPeriodEnd) {
       return this.finalizeCancellation(subscription);
     }
 
-    // Scheduled downgrades require payment at renewal — expire and keep pending plan for checkout
-    return this.expireSubscription(subscription, SubscriptionHistoryAction.EXPIRED);
+    // Period ended without renewal — transition to SUSPENDED read-only mode
+    return this.suspendSubscription(subscription, 'SUBSCRIPTION_EXPIRED_SUSPENDED');
   }
 
   async updateSubscriptionFeatures(
@@ -962,6 +1129,27 @@ export class SubscriptionsService {
             currency: subscription.currency,
             billingCycle: subscription.billingCycle,
             features,
+            addOns: (subscription.addOns ?? []).map((a: any) => ({
+              id: a.id,
+              featureId: a.featureId,
+              name: a.feature?.name ?? a.featureId,
+              featureCode: a.feature?.code ?? '',
+              status: a.status,
+              recurringAmount: a.recurringAmount,
+              cancelAtPeriodEnd: a.cancelAtPeriodEnd,
+              cancellationEffectiveAt: a.cancellationEffectiveAt,
+              cancelledAt: a.cancelledAt,
+            })),
+            totals: calculateSubscriptionRecurringTotals(
+              subscription.price,
+              (subscription.addOns ?? []).map((a: any) => ({
+                featureId: a.featureId,
+                status: a.status,
+                recurringAmount: a.recurringAmount,
+                cancelAtPeriodEnd: a.cancelAtPeriodEnd,
+              })),
+              subscription.currency,
+            ),
           }
         : null,
       features,
@@ -1049,6 +1237,31 @@ export class SubscriptionsService {
     return { subscriptionId: subscription.id, action: 'expired', fromStatus };
   }
 
+  private async suspendSubscription(subscription: Subscription, reason: string) {
+    const fromStatus = subscription.status;
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.subscription.update({
+        where: { id: subscription.id },
+        data: { status: SubscriptionStatus.SUSPENDED },
+      });
+
+      await this.recordHistory(tx, {
+        subscriptionId: subscription.id,
+        action: SubscriptionHistoryAction.STATUS_CHANGED,
+        fromStatus,
+        toStatus: SubscriptionStatus.SUSPENDED,
+        metadata: { reason },
+      });
+    });
+
+    this.logger.log(
+      `Subscription suspended: id=${subscription.id}, tenant=${subscription.tenantId}, from=${fromStatus}, reason=${reason}`,
+    );
+
+    return { subscriptionId: subscription.id, action: 'suspended', fromStatus };
+  }
+
   private async finalizeCancellation(subscription: Subscription) {
     await this.prisma.$transaction(async (tx) => {
       await tx.subscription.update({
@@ -1130,6 +1343,46 @@ export class SubscriptionsService {
     await tx.subscriptionFeature.deleteMany({ where: { subscriptionId } });
     await this.snapshotPlanFeatures(tx, subscriptionId, planId);
 
+    // Find the new plan's enabled features
+    const newPlanFeatures = await tx.planFeature.findMany({
+      where: { planId, enabled: true },
+      select: { featureId: true },
+    });
+    const newFeatureIds = newPlanFeatures.map((pf) => pf.featureId);
+
+    // Retire any add-ons whose feature is now included in the new plan so it's not double charged
+    if (newFeatureIds.length > 0) {
+      await tx.subscriptionAddOn.updateMany({
+        where: {
+          subscriptionId,
+          featureId: { in: newFeatureIds },
+          status: {
+            in: [
+              SubscriptionAddOnStatus.ACTIVE,
+              SubscriptionAddOnStatus.PENDING_PAYMENT,
+              SubscriptionAddOnStatus.CANCEL_AT_PERIOD_END,
+            ],
+          },
+        },
+        data: {
+          status: SubscriptionAddOnStatus.CANCELLED,
+          cancelledAt: new Date(),
+          customReason: 'Feature is now included in base plan',
+        },
+      });
+    }
+
+    // For any remaining active or pending add-ons, sync billingCycle to match new planPrice
+    await tx.subscriptionAddOn.updateMany({
+      where: {
+        subscriptionId,
+        status: { in: [SubscriptionAddOnStatus.ACTIVE, SubscriptionAddOnStatus.PENDING_PAYMENT] },
+      },
+      data: {
+        billingCycle: planPrice.billingCycle,
+      },
+    });
+
     await tx.subscription.update({
       where: { id: subscriptionId },
       data: {
@@ -1182,6 +1435,8 @@ export class SubscriptionsService {
           in: [
             SubscriptionStatus.ACTIVE,
             SubscriptionStatus.TRIAL,
+            SubscriptionStatus.SUSPENDED,
+            SubscriptionStatus.PAST_DUE,
             SubscriptionStatus.PENDING,
             SubscriptionStatus.EXPIRED,
           ],
@@ -1194,16 +1449,46 @@ export class SubscriptionsService {
         pendingPlanPrice: {
           select: { id: true, price: true, currency: true, billingCycle: true },
         },
+        addOns: {
+          include: {
+            feature: { select: { id: true, code: true, name: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        },
       },
     });
   }
 
   private async assertNoBlockingSubscription(tenantId: string) {
+    const existingPaidOrSuspended = await this.prisma.subscription.findFirst({
+      where: {
+        tenantId,
+        OR: [
+          {
+            status: {
+              in: [
+                SubscriptionStatus.ACTIVE,
+                SubscriptionStatus.PAST_DUE,
+                SubscriptionStatus.SUSPENDED,
+              ],
+            },
+          },
+          { paymentOrders: { some: { status: PaymentOrderStatus.PAID } } },
+        ],
+      },
+    });
+
+    if (existingPaidOrSuspended) {
+      throw new ConflictException(
+        'Tenant with an existing, suspended, or previous paid subscription cannot receive a trial',
+      );
+    }
+
     const existing = await this.prisma.subscription.findFirst({
       where: {
         tenantId,
         status: {
-          in: [SubscriptionStatus.PENDING, SubscriptionStatus.TRIAL, SubscriptionStatus.ACTIVE],
+          in: [SubscriptionStatus.PENDING, SubscriptionStatus.TRIAL],
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -1211,13 +1496,6 @@ export class SubscriptionsService {
 
     if (!existing) {
       return;
-    }
-
-    if (
-      existing.status === SubscriptionStatus.ACTIVE &&
-      this.subscriptionFeatureService.isSubscriptionValid(existing)
-    ) {
-      throw new ConflictException('Tenant already has an active subscription');
     }
 
     if (existing.status === SubscriptionStatus.TRIAL && !isPastDate(existing.endDate)) {
@@ -1251,6 +1529,14 @@ export class SubscriptionsService {
       where: { id: subscriptionId, tenantId },
       include: {
         subscriptionFeatures: { where: { enabled: true }, select: { featureId: true } },
+        addOns: {
+          where: {
+            status: {
+              in: [SubscriptionAddOnStatus.ACTIVE, SubscriptionAddOnStatus.CANCEL_AT_PERIOD_END],
+            },
+          },
+          select: { featureId: true },
+        },
       },
     });
 
@@ -1258,7 +1544,10 @@ export class SubscriptionsService {
       return;
     }
 
-    const featureIds = (subscription.subscriptionFeatures ?? []).map((sf) => sf.featureId);
+    const baseFeatureIds = (subscription.subscriptionFeatures ?? []).map((sf) => sf.featureId);
+    const addonFeatureIds = (subscription.addOns ?? []).map((a) => a.featureId);
+    const featureIds = Array.from(new Set([...baseFeatureIds, ...addonFeatureIds]));
+
     await this.prisma.$transaction(async (tx) => {
       await syncTenantFeatures(tx, tenantId, featureIds);
     });

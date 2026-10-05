@@ -39,9 +39,11 @@ export class TenantProvisioningService {
   private getMigrationsPath(): string {
     const candidates = [
       path.join(__dirname, 'tenant-migrations'),
+      path.join(__dirname, 'tenant-migrations', 'database', 'tenant-migrations'),
       path.join(__dirname, '..', 'database', 'tenant-migrations'),
       path.join(__dirname, '..', 'src', 'database', 'tenant-migrations'),
       path.join(process.cwd(), 'src', 'database', 'tenant-migrations'),
+      path.join(process.cwd(), 'backend', 'src', 'database', 'tenant-migrations'),
       path.join(process.cwd(), 'dist', 'src', 'database', 'tenant-migrations'),
       path.join(process.cwd(), 'dist', 'database', 'tenant-migrations'),
       path.join(process.cwd(), 'database', 'tenant-migrations'),
@@ -49,12 +51,19 @@ export class TenantProvisioningService {
 
     for (const candidate of candidates) {
       if (fs.existsSync(candidate)) {
-        return candidate;
+        try {
+          const sqlFiles = fs.readdirSync(candidate).filter((f) => f.endsWith('.sql'));
+          if (sqlFiles.length > 0) {
+            return candidate;
+          }
+        } catch {
+          // ignore directory read errors
+        }
       }
     }
 
     this.logger.error(
-      `Could not locate tenant-migrations directory. Checked: ${candidates.join(', ')}`,
+      `Could not locate tenant-migrations directory containing .sql files. Checked: ${candidates.join(', ')}`,
     );
     return path.join(process.cwd(), 'src', 'database', 'tenant-migrations');
   }
@@ -69,7 +78,7 @@ export class TenantProvisioningService {
       DECLARE
         tenant_tables TEXT[] := ARRAY[
           'user_roles', 'role_permissions', 'appointment_services', 'sale_items',
-          'quotation_items', 'payroll_items', 'stock_movements', 'payments',
+          'quotation_items', 'payroll_items', 'stock_movements',
           'sales', 'appointments', 'stock', 'products', 'product_categories',
           'services', 'service_categories', 'customers', 'employees',
           'expenses', 'expense_categories', 'payroll_runs', 'employee_loans',

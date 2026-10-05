@@ -469,10 +469,22 @@ export default function SubscriptionPage() {
 
   useEffect(() => {
     const payment = searchParams.get('payment');
+    const orderRef = searchParams.get('orderRef') || searchParams.get('order_id');
+
     if (payment === 'success') {
-      toast.success('Payment received. Your subscription will update shortly.');
-      setSearchParams({}, { replace: true });
-      void refetch();
+      const confirmPayment = async () => {
+        if (orderRef) {
+          try {
+            await tenantSubscriptionsApi.confirmReturnOrder(orderRef);
+          } catch (e) {
+            console.warn('Confirm payment error:', e);
+          }
+        }
+        toast.success('Payment completed! Your subscription has been renewed successfully.');
+        setSearchParams({}, { replace: true });
+        void refetch();
+      };
+      void confirmPayment();
     } else if (payment === 'cancel') {
       toast.error('Payment was cancelled.');
       setSearchParams({}, { replace: true });
@@ -614,13 +626,12 @@ export default function SubscriptionPage() {
 
 
   const canRenew =
-
     isSalonAdmin &&
-
     subscription &&
-
-    (subscription.status === 'ACTIVE' || subscription.status === 'EXPIRED') &&
-
+    (subscription.status === 'ACTIVE' ||
+      subscription.status === 'EXPIRED' ||
+      subscription.status === 'SUSPENDED' ||
+      subscription.status === 'PAST_DUE') &&
     !subscription.cancelAtPeriodEnd;
 
 
@@ -705,6 +716,35 @@ export default function SubscriptionPage() {
         </div>
       )}
 
+      {subscription?.status === 'SUSPENDED' && (
+        <div
+          className="sub-alert sub-alert-warning"
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '0.75rem',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '1.5rem',
+          }}
+        >
+          <span>
+            Your free trial has expired. Your account is currently read-only. Renew your subscription to continue making changes.
+          </span>
+          {isSalonAdmin && (
+            <button
+              type="button"
+              className="sub-btn sub-btn-primary sub-btn-sm"
+              style={{ padding: '0.4rem 0.9rem', fontSize: '0.875rem' }}
+              disabled={checkoutLoading}
+              onClick={() => void handlePayHereCheckout('SUBSCRIPTION_RENEW')}
+            >
+              {checkoutLoading ? 'Redirecting…' : 'Pay Now / Renew'}
+            </button>
+          )}
+        </div>
+      )}
+
       {subscription?.pendingPlan &&
         (subscription.status === 'ACTIVE' || subscription.status === 'EXPIRED') && (
         <div
@@ -749,203 +789,202 @@ export default function SubscriptionPage() {
       )}
 
       <section className="sub-stats" aria-label="Subscription summary">
-
         <article className="sub-stat-card">
-
           <div className="sub-stat-icon">
-
             <ShieldCheck className="h-5 w-5" />
-
           </div>
-
           <div className="sub-stat-body">
-
             <div className="sub-stat-label">Current Plan</div>
-
             <div className="sub-stat-value">{subscription?.plan ?? '—'}</div>
-
           </div>
-
         </article>
 
-
-
         <article className="sub-stat-card">
-
           <div className="sub-stat-icon">
-
             <CreditCard className="h-5 w-5" />
-
           </div>
-
           <div className="sub-stat-body">
-
             <div className="sub-stat-label">Status</div>
-
             <div className="sub-stat-value">
-
               {subscription ? (
-
                 <span className={subscriptionStatusBadgeClass(subscription.status)}>
-
                   {subscription.status}
-
                 </span>
-
               ) : (
-
                 'NONE'
-
               )}
-
             </div>
-
           </div>
-
         </article>
-
-
 
         <article className="sub-stat-card">
-
           <div className="sub-stat-icon">
-
             <CalendarDays className="h-5 w-5" />
-
           </div>
-
           <div className="sub-stat-body">
-
             <div className="sub-stat-label">
-
-              {subscription?.status === 'TRIAL' ? 'Trial Ends' : 'Expires'}
-
+              {subscription?.status === 'TRIAL'
+                ? 'Trial Ends'
+                : subscription?.status === 'SUSPENDED' || subscription?.status === 'EXPIRED'
+                  ? 'Expired On'
+                  : 'Expires'}
             </div>
-
             <div className="sub-stat-value">{formatDate(expiryDate)}</div>
-
           </div>
-
         </article>
-
       </section>
 
-
-
       <div className="sub-layout">
-
         <section className="sub-panel">
-
           <div className="sub-panel-head">
-
             <h2 className="sub-panel-title">Current Subscription</h2>
-
             <p className="sub-panel-desc">{context.tenant.name}</p>
-
           </div>
 
-
-
           <div className="sub-panel-body">
-
             {!subscription ? (
-
               <div className="sub-empty">No subscription found for this salon.</div>
-
             ) : (
-
               <dl className="sub-detail-list">
-
                 <div className="sub-detail-item">
-
                   <dt>Plan</dt>
-
                   <dd>
-
                     <div className="sub-plan-name">{subscription.plan}</div>
-
                     <div className="sub-plan-code">{subscription.planCode}</div>
-
                   </dd>
-
                 </div>
 
-
-
                 <div className="sub-detail-item">
-
                   <dt>Status</dt>
-
                   <dd>
-
                     <span className={subscriptionStatusBadgeClass(subscription.status)}>
-
                       {subscription.status}
-
                     </span>
-
                     {subscription.cancelAtPeriodEnd && (
-
                       <span className="emp-badge emp-type-out" style={{ marginLeft: 8 }}>
-
                         Cancels at period end
-
                       </span>
-
                     )}
-
                   </dd>
-
                 </div>
 
-
+                <div className="sub-detail-item">
+                  <dt>Billing Cycle</dt>
+                  <dd>{billingCycleLabel(subscription.billingCycle)}</dd>
+                </div>
 
                 <div className="sub-detail-item">
-
-                  <dt>Amount</dt>
-
+                  <dt>Subscription Price</dt>
                   <dd>
-
                     {formatAmount(subscription.price, subscription.currency)} /{' '}
-
                     {billingCycleLabel(subscription.billingCycle)}
-
                   </dd>
-
                 </div>
 
-
+                {subscription.trialStart && (
+                  <div className="sub-detail-item">
+                    <dt>Trial Period</dt>
+                    <dd>
+                      {formatDate(subscription.trialStart)} – {formatDate(subscription.trialEnd)}
+                    </dd>
+                  </div>
+                )}
 
                 <div className="sub-detail-item">
-
-                  <dt>Start Date</dt>
-
+                  <dt>{subscription.trialStart && !subscription.startDate ? 'Trial Started' : 'Start Date'}</dt>
                   <dd>{formatDate(subscription.startDate ?? subscription.trialStart)}</dd>
-
                 </div>
 
-
-
                 <div className="sub-detail-item">
-
-                  <dt>Expiry Date</dt>
-
+                  <dt>
+                    {subscription.status === 'SUSPENDED' || subscription.status === 'EXPIRED'
+                      ? 'Last Period Ended'
+                      : 'Expiry Date'}
+                  </dt>
                   <dd>{formatDate(expiryDate)}</dd>
-
                 </div>
 
-
-
-                <div className="sub-detail-item">
-
-                  <dt>Next Billing Date</dt>
-
-                  <dd>{formatDate(subscription.nextBillingDate ?? subscription.endDate)}</dd>
-
-                </div>
-
+                {subscription.status !== 'SUSPENDED' && subscription.status !== 'EXPIRED' && (
+                  <div className="sub-detail-item">
+                    <dt>Next Billing Date</dt>
+                    <dd>{formatDate(subscription.nextBillingDate ?? subscription.endDate)}</dd>
+                  </div>
+                )}
               </dl>
+            )}
 
+            {subscription?.addOns && subscription.addOns.length > 0 && (
+              <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border, #e2e8f0)' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.75rem' }}>Subscription Add-ons</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {subscription.addOns.map((addon) => {
+                    const isCancelling = addon.status === 'CANCEL_AT_PERIOD_END' || (addon.cancelAtPeriodEnd && addon.status === 'ACTIVE');
+                    return (
+                      <div
+                        key={addon.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '0.75rem',
+                          borderRadius: '0.375rem',
+                          backgroundColor: 'var(--muted, #f8fafc)',
+                          border: '1px solid var(--border, #e2e8f0)',
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: 500, fontSize: '0.9375rem' }}>{addon.name}</div>
+                          <div style={{ fontSize: '0.8125rem', color: 'var(--muted-foreground, #64748b)' }}>
+                            {formatAmount(addon.recurringAmount, subscription.currency)} / {billingCycleLabel(subscription.billingCycle)}
+                          </div>
+                          {isCancelling && (
+                            <div style={{ fontSize: '0.75rem', color: '#b45309', marginTop: '0.25rem' }}>
+                              Feature remains active until {formatDate(addon.cancellationEffectiveAt ?? subscription.endDate)}. Excluded from next renewal.
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          {isCancelling ? (
+                            <span className="emp-badge emp-type-out" style={{ backgroundColor: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}>
+                              Cancels on {formatDate(addon.cancellationEffectiveAt ?? subscription.endDate)}
+                            </span>
+                          ) : addon.status === 'ACTIVE' ? (
+                            <span className="emp-badge emp-type-in" style={{ backgroundColor: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' }}>
+                              Active
+                            </span>
+                          ) : addon.status === 'PENDING_PAYMENT' ? (
+                            <span className="emp-badge" style={{ backgroundColor: '#e0f2fe', color: '#0369a1', border: '1px solid #bae6fd' }}>
+                              Pending Payment
+                            </span>
+                          ) : (
+                            <span className="emp-badge" style={{ backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' }}>
+                              Cancelled
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {subscription.totals && (
+                  <div style={{ marginTop: '1rem', padding: '0.75rem', borderRadius: '0.375rem', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
+                      <span>Current Services Value:</span>
+                      <strong>{formatAmount(subscription.totals.currentServiceTotal, subscription.currency)}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9375rem', color: '#166534', fontWeight: 600 }}>
+                      <span>Next Renewal Total:</span>
+                      <strong>{formatAmount(subscription.totals.nextRenewalTotal, subscription.currency)}</strong>
+                    </div>
+                    {subscription.totals.scheduledCancellationAddonsTotal > 0 && (
+                      <div style={{ fontSize: '0.75rem', color: '#15803d', marginTop: '0.25rem' }}>
+                        * Next renewal excludes {formatAmount(subscription.totals.scheduledCancellationAddonsTotal, subscription.currency)} of add-ons scheduled for cancellation.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
 
           </div>
@@ -1004,9 +1043,11 @@ export default function SubscriptionPage() {
 
                   {checkoutLoading
                     ? 'Redirecting…'
-                    : subscription.pendingPlanPrice
-                      ? `Renew (${formatAmount(subscription.pendingPlanPrice.price, subscription.pendingPlanPrice.currency)})`
-                      : 'Renew Subscription'}
+                    : subscription.status === 'SUSPENDED' || subscription.status === 'EXPIRED'
+                      ? 'Pay Now / Renew'
+                      : subscription.pendingPlanPrice
+                        ? `Renew (${formatAmount(subscription.pendingPlanPrice.price, subscription.pendingPlanPrice.currency)})`
+                        : 'Renew Subscription'}
 
                 </button>
 

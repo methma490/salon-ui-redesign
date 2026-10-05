@@ -31,6 +31,29 @@ export interface TenantSubscription {
   currency: string;
   billingCycle: string;
   features?: string[];
+  addOns?: Array<{
+    id: string;
+    featureId: string;
+    name: string;
+    featureCode: string;
+    status: string;
+    recurringAmount: number | string;
+    cancelAtPeriodEnd: boolean;
+    cancellationEffectiveAt: string | null;
+    cancelledAt: string | null;
+  }>;
+  totals?: {
+    basePlanPrice: number;
+    activeAddonsTotal: number;
+    activeRenewingAddonsTotal: number;
+    scheduledCancellationAddonsTotal: number;
+    pendingAddonsTotal: number;
+    currentRecurringTotal: number;
+    currentServiceTotal: number;
+    nextRenewalTotal: number;
+    projectedRenewalTotal: number;
+    projectedRecurringTotal: number;
+  };
 }
 
 export interface TenantSubscriptionContext {
@@ -89,6 +112,9 @@ export const tenantSubscriptionsApi = {
         checkout: PayHereCheckout;
       }>('/payments/checkout', data)
       .then((r) => r.data),
+
+  confirmReturnOrder: (orderRef: string) =>
+    api.post(`/payments/orders/${orderRef}/confirm-return`).then((r) => r.data),
 
   paymentHistory: (params?: { page?: number; limit?: number; filter?: 'SUCCESS' | 'FAILED' }) =>
     api.get<PaginatedPayments>('/payments/history', { params }).then((r) => r.data),

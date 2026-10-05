@@ -58,7 +58,7 @@ export async function fetchPublicPlans(): Promise<PublicPlan[]> {
     const timeoutId = setTimeout(() => controller.abort(), 10000);
 
     const res = await fetch(url, {
-      next: { revalidate: 60 },
+      cache: 'no-store',
       signal: controller.signal,
       headers: {
         Accept: 'application/json',

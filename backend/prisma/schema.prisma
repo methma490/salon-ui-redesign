@@ -50,6 +50,18 @@ enum SubscriptionStatus {
   EXPIRED
 }
 
+enum SubscriptionAddOnStatus {
+  PENDING_PAYMENT
+  ACTIVE
+  CANCEL_AT_PERIOD_END
+  CANCELLED
+}
+
+enum AddOnPriceSource {
+  DEFAULT
+  CUSTOM
+}
+
 enum SubscriptionHistoryAction {
   CREATED
   ACTIVATED
@@ -84,6 +96,13 @@ enum PaymentRecordStatus {
   PAID
   FAILED
   REFUNDED
+}
+
+enum BulkOperationStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }
 
 enum PasswordResetAccountType {
@@ -186,6 +205,9 @@ model Feature {
   tenantFeatures       TenantFeature[]
   planFeatures         PlanFeature[]
   subscriptionFeatures SubscriptionFeature[]
+  addonPrices          FeatureAddonPrice[]
+  subscriptionAddOns   SubscriptionAddOn[]
+  bulkAddonOperations  BulkAddonOperation[]
 
   @@map("features")
 }
@@ -324,6 +346,7 @@ model Subscription {
   pendingPlan          Plan?                 @relation("PendingPlan", fields: [pendingPlanId], references: [id], onDelete: SetNull)
   pendingPlanPrice     PlanPrice?            @relation("PendingPlanPrice", fields: [pendingPlanPriceId], references: [id], onDelete: SetNull)
   subscriptionFeatures SubscriptionFeature[]
+  addOns               SubscriptionAddOn[]
   history              SubscriptionHistory[]
   paymentOrders        PaymentOrder[]
   invoices             Invoice[]
@@ -378,29 +401,90 @@ model SubscriptionFeature {
   @@map("subscription_features")
 }
 
+// Default add-on pricing per feature and billing cycle (independent from base plans)
+model FeatureAddonPrice {
+  id           String       @id @default(uuid()) @db.Uuid
+  featureId    String       @map("feature_id") @db.Uuid
+  billingCycle BillingCycle @map("billing_cycle")
+  price        Decimal      @db.Decimal(10, 2)
+  currency     String       @default("LKR")
+  isActive     Boolean      @default(true) @map("is_active")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  feature            Feature             @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  subscriptionAddOns SubscriptionAddOn[]
+
+  @@unique([featureId, billingCycle, currency])
+  @@index([featureId])
+  @@index([isActive])
+  @@map("feature_addon_prices")
+}
+
+// Salon-specific add-ons attached to a subscription
+model SubscriptionAddOn {
+  id                String                  @id @default(uuid()) @db.Uuid
+  subscriptionId    String                  @map("subscription_id") @db.Uuid
+  featureId         String                  @map("feature_id") @db.Uuid
+  status            SubscriptionAddOnStatus @default(PENDING_PAYMENT)
+  billingCycle      BillingCycle            @map("billing_cycle")
+  recurringAmount   Decimal                 @map("recurring_amount") @db.Decimal(10, 2)
+  currency          String                  @default("LKR")
+  addonPriceId      String?                 @map("addon_price_id") @db.Uuid
+  priceSource       AddOnPriceSource        @default(DEFAULT) @map("price_source")
+  customReason      String?                 @map("custom_reason")
+  effectiveFrom     DateTime                @default(now()) @map("effective_from")
+  activatedAt       DateTime?               @map("activated_at")
+  cancelAtPeriodEnd Boolean                 @default(false) @map("cancel_at_period_end")
+  cancellationEffectiveAt DateTime?       @map("cancellation_effective_at")
+  cancelReason      String?                 @map("cancel_reason")
+  cancelledAt       DateTime?               @map("cancelled_at")
+  createdBy         String?                 @map("created_by") @db.Uuid
+  createdAt         DateTime                @default(now()) @map("created_at")
+  updatedAt         DateTime                @updatedAt @map("updated_at")
+
+  subscription Subscription       @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  feature      Feature            @relation(fields: [featureId], references: [id], onDelete: Restrict)
+  addonPrice   FeatureAddonPrice? @relation(fields: [addonPriceId], references: [id], onDelete: SetNull)
+  paymentOrders PaymentOrder[]
+  invoices      Invoice[]
+
+  @@index([subscriptionId])
+  @@index([featureId])
+  @@index([status])
+  @@map("subscription_addons")
+}
+
 // Gateway-agnostic payment orders (Phase 4)
 model PaymentOrder {
-  id             String                 @id @default(uuid()) @db.Uuid
-  tenantId       String                 @map("tenant_id") @db.Uuid
-  subscriptionId String                 @map("subscription_id") @db.Uuid
-  amount         Decimal                @db.Decimal(10, 2)
-  currency       String
-  status         PaymentOrderStatus     @default(PENDING)
-  gateway        PaymentGatewayProvider
-  reference      String                 @unique
-  purpose        String                 @default("SUBSCRIPTION")
-  metadata       Json?
-  createdAt      DateTime               @default(now()) @map("created_at")
-  updatedAt      DateTime               @updatedAt @map("updated_at")
+  id                  String                 @id @default(uuid()) @db.Uuid
+  tenantId            String                 @map("tenant_id") @db.Uuid
+  subscriptionId      String                 @map("subscription_id") @db.Uuid
+  subscriptionAddOnId String?                @map("subscription_add_on_id") @db.Uuid
+  amount              Decimal                @db.Decimal(10, 2)
+  currency            String
+  status              PaymentOrderStatus     @default(PENDING)
+  gateway             PaymentGatewayProvider
+  reference           String                 @unique
+  purpose             String                 @default("SUBSCRIPTION")
+  paymentToken        String?                @unique @map("payment_token")
+  paymentTokenHash    String?                @unique @map("payment_token_hash")
+  tokenExpiresAt      DateTime?              @map("token_expires_at")
+  tokenUsedAt         DateTime?              @map("token_used_at")
+  metadata            Json?
+  createdAt           DateTime               @default(now()) @map("created_at")
+  updatedAt           DateTime               @updatedAt @map("updated_at")
 
   tenant               Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   subscription         Subscription         @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  subscriptionAddOn   SubscriptionAddOn?   @relation(fields: [subscriptionAddOnId], references: [id], onDelete: SetNull)
   payments             Payment[]
   paymentTransactions  PaymentTransaction[]
   invoices             Invoice[]
 
   @@index([tenantId])
   @@index([subscriptionId])
+  @@index([subscriptionAddOnId])
   @@index([status])
   @@index([gateway])
   @@map("payment_orders")
@@ -452,6 +536,7 @@ model Invoice {
   subscriptionId   String        @map("subscription_id") @db.Uuid
   paymentId        String?       @unique @map("payment_id") @db.Uuid
   paymentOrderId   String?       @map("payment_order_id") @db.Uuid
+  subscriptionAddOnId String?    @map("subscription_add_on_id") @db.Uuid
   status           InvoiceStatus @default(PAID)
   currency         String
   subtotal         Decimal       @db.Decimal(10, 2)
@@ -469,17 +554,20 @@ model Invoice {
   billingCycle     BillingCycle  @map("billing_cycle")
   paymentMethod    String?       @map("payment_method")
   paymentReference String?       @map("payment_reference")
+  metadata         Json?
   createdAt        DateTime      @default(now()) @map("created_at")
   updatedAt        DateTime      @updatedAt @map("updated_at")
 
-  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  payment      Payment?     @relation(fields: [paymentId], references: [id], onDelete: SetNull)
-  paymentOrder PaymentOrder? @relation(fields: [paymentOrderId], references: [id], onDelete: SetNull)
-  items        InvoiceItem[]
+  tenant              Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subscription        Subscription        @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  subscriptionAddOn  SubscriptionAddOn?  @relation(fields: [subscriptionAddOnId], references: [id], onDelete: SetNull)
+  payment             Payment?            @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  paymentOrder        PaymentOrder?       @relation(fields: [paymentOrderId], references: [id], onDelete: SetNull)
+  items               InvoiceItem[]
 
   @@index([tenantId])
   @@index([subscriptionId])
+  @@index([subscriptionAddOnId])
   @@index([status])
   @@index([issueDate])
   @@map("invoices")
@@ -635,6 +723,50 @@ model InvoiceLink {
   @@index([saleId])
   @@index([smsStatus])
   @@map("invoice_links")
+}
+
+model BulkAddonOperation {
+  id            String              @id @default(uuid()) @db.Uuid
+  featureId     String              @map("feature_id") @db.Uuid
+  status        BulkOperationStatus @default(PENDING)
+  selectedCount Int                 @default(0) @map("selected_count")
+  successCount  Int                 @default(0) @map("success_count")
+  skippedCount  Int                 @default(0) @map("skipped_count")
+  failedCount   Int                 @default(0) @map("failed_count")
+  createdBy     String?             @map("created_by") @db.Uuid
+  createdAt     DateTime            @default(now()) @map("created_at")
+  completedAt   DateTime?           @map("completed_at")
+  metadata      Json?
+
+  feature Feature                  @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  items   BulkAddonOperationItem[]
+
+  @@index([featureId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("bulk_addon_operations")
+}
+
+model BulkAddonOperationItem {
+  id             String    @id @default(uuid()) @db.Uuid
+  operationId    String    @map("operation_id") @db.Uuid
+  tenantId       String    @map("tenant_id") @db.Uuid
+  subscriptionId String    @map("subscription_id") @db.Uuid
+  addonId        String?   @map("addon_id") @db.Uuid
+  invoiceId      String?   @map("invoice_id") @db.Uuid
+  paymentOrderId String?   @map("payment_order_id") @db.Uuid
+  result         String    // SUCCESS, SKIPPED, FAILED
+  reason         String?
+  amount         Decimal?  @db.Decimal(10, 2)
+  currency       String?
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  operation BulkAddonOperation @relation(fields: [operationId], references: [id], onDelete: Cascade)
+
+  @@index([operationId])
+  @@index([tenantId])
+  @@index([subscriptionId])
+  @@map("bulk_addon_operation_items")
 }
 
 // NOTE: Tenant-specific data (users, roles, branches, etc.)

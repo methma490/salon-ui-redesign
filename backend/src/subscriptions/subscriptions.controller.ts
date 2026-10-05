@@ -11,6 +11,8 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { AuthenticatedUser } from '../auth/interfaces/auth.interface';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -25,6 +27,14 @@ import {
   CreateSubscriptionForTenantDto,
   CreateTrialSubscriptionDto,
   CreateTrialSubscriptionForTenantDto,
+  ExtendTrialDto,
+  CreateSubscriptionAddOnDto,
+  RemoveSubscriptionAddonDto,
+  GetAddonQuoteDto,
+  ConfirmManualAddonPaymentDto,
+  CancelAddonAtPeriodEndDto,
+  UndoAddonCancellationDto,
+  CancelPendingAddonDto,
   RenewSubscriptionDto,
   RenewSubscriptionForTenantDto,
   ScheduleDowngradeDto,
@@ -35,6 +45,8 @@ import {
 } from './dto/subscription.dto';
 import { SubscriptionListQueryDto } from './dto/subscription-list-query.dto';
 import { SubscriptionsService } from './subscriptions.service';
+import { SubscriptionAddonsService } from './subscription-addons.service';
+import { SubscriptionFeatureService } from './subscription-feature.service';
 
 @Controller('subscriptions')
 export class SubscriptionsController {
@@ -125,7 +137,11 @@ export class SubscriptionsController {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('SUPER_ADMIN')
 export class SuperAdminSubscriptionsController {
-  constructor(private readonly subscriptionsService: SubscriptionsService) {}
+  constructor(
+    private readonly subscriptionsService: SubscriptionsService,
+    private readonly subscriptionAddonsService: SubscriptionAddonsService,
+    private readonly subscriptionFeatureService: SubscriptionFeatureService,
+  ) {}
 
   @Get()
   list(@Query() query: SubscriptionListQueryDto) {
@@ -214,4 +230,144 @@ export class SuperAdminSubscriptionsController {
   ) {
     return this.subscriptionsService.updateSubscriptionFeatures(id, dto.tenantId, dto.features);
   }
+
+  @Post(':id/extend-trial')
+  extendTrial(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ExtendTrialDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.subscriptionsService.extendTrial(id, dto.tenantId, dto, user?.id);
+  }
+
+  @Get(':id/add-ons')
+  getSubscriptionAddOns(@Param('id', ParseUUIDPipe) id: string) {
+    return this.subscriptionAddonsService.getSubscriptionAddOns(id);
+  }
+
+  @Get(':id/eligible-add-ons')
+  getEligibleAddonFeatures(@Param('id', ParseUUIDPipe) id: string) {
+    return this.subscriptionAddonsService.getEligibleAddonFeatures(id);
+  }
+
+  @Post(':id/add-ons')
+  createSubscriptionAddOn(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreateSubscriptionAddOnDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.subscriptionAddonsService.createSubscriptionAddOn(id, dto, user?.id);
+  }
+
+  @Get(':id/entitlements')
+  async getDetailedEntitlements(@Param('id', ParseUUIDPipe) id: string) {
+    const details = await this.subscriptionAddonsService.getSubscriptionAddOns(id);
+    return this.subscriptionFeatureService.getDetailedEntitlements(details.tenantId);
+  }
+
+  @Post(':id/add-ons/:addonId/quote')
+  getAddonQuote(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('addonId', ParseUUIDPipe) addonId: string,
+    @Body() dto: GetAddonQuoteDto,
+  ) {
+    const effective = dto.effectiveDate ? new Date(dto.effectiveDate) : undefined;
+    return this.subscriptionAddonsService.getAddonProrationQuote(id, addonId, effective);
+  }
+
+  @Post(':id/add-ons/:addonId/payment-order')
+  createAddonPaymentOrder(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('addonId', ParseUUIDPipe) addonId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.subscriptionAddonsService.createOrGetAddonPaymentOrder(id, addonId, user?.id);
+  }
+
+  @Get(':id/add-ons/:addonId/payment')
+  getAddonPaymentDetails(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('addonId', ParseUUIDPipe) addonId: string,
+  ) {
+    return this.subscriptionAddonsService.getAddonPaymentDetails(id, addonId);
+  }
+
+  @Post(':id/add-ons/:addonId/confirm-manual-payment')
+  confirmManualPayment(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('addonId', ParseUUIDPipe) addonId: string,
+    @Body() dto: ConfirmManualAddonPaymentDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.subscriptionAddonsService.confirmManualPayment(id, addonId, {
+      ...dto,
+      performedBy: user?.id,
+    });
+  }
+
+  @Delete(':id/add-ons/:addonId')
+  deleteSubscriptionAddOn(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('addonId', ParseUUIDPipe) addonId: string,
+    @Body() dto: RemoveSubscriptionAddonDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.subscriptionAddonsService.removeSubscriptionAddOn(id, addonId, {
+      ...dto,
+      performedBy: user?.id,
+    });
+  }
+
+  @Post(':id/add-ons/:addonId/remove')
+  removeSubscriptionAddOn(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('addonId', ParseUUIDPipe) addonId: string,
+    @Body() dto: RemoveSubscriptionAddonDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.subscriptionAddonsService.removeSubscriptionAddOn(id, addonId, {
+      ...dto,
+      performedBy: user?.id,
+    });
+  }
+
+  @Post(':id/add-ons/:addonId/cancel-at-period-end')
+  cancelAddonAtPeriodEnd(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('addonId', ParseUUIDPipe) addonId: string,
+    @Body() dto: CancelAddonAtPeriodEndDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.subscriptionAddonsService.removeSubscriptionAddOn(id, addonId, {
+      ...dto,
+      performedBy: user?.id,
+    });
+  }
+
+  @Post(':id/add-ons/:addonId/undo-cancellation')
+  undoAddonCancellation(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('addonId', ParseUUIDPipe) addonId: string,
+    @Body() dto: UndoAddonCancellationDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.subscriptionAddonsService.undoAddonCancellation(id, addonId, {
+      ...dto,
+      performedBy: user?.id,
+    });
+  }
+
+  @Post(':id/add-ons/:addonId/cancel-pending-payment')
+  cancelPendingAddonPayment(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('addonId', ParseUUIDPipe) addonId: string,
+    @Body() dto: CancelPendingAddonDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.subscriptionAddonsService.cancelPendingAddonPayment(id, addonId, {
+      ...dto,
+      performedBy: user?.id,
+    });
+  }
 }
+

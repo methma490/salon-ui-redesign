@@ -18,7 +18,7 @@ export const FEATURE_LABELS: Record<string, string> = {
 };
 
 export function featureLabel(code: string, fallbackName?: string): string {
-  return FEATURE_LABELS[code] ?? fallbackName ?? code;
+  return fallbackName || FEATURE_LABELS[code] || code;
 }
 
 export function parseMoneyAmount(value: unknown): number {
@@ -99,11 +99,9 @@ export const DEFAULT_FALLBACK_PLANS: PublicPlan[] = [
       { billingCycle: 'YEARLY', price: 50000, currency: 'LKR', trialDays: 14 },
     ],
     features: [
-      { code: 'ANALYTICS', name: 'Analytics' },
+      { code: 'APPOINTMENTS', name: 'Appointments' },
       { code: 'CUSTOMERS', name: 'Customers' },
       { code: 'EMPLOYEES', name: 'Employee Management' },
-      { code: 'EXPENSES', name: 'Expenses' },
-      { code: 'POS', name: 'Point of Sale' },
       { code: 'SERVICES', name: 'Services' },
     ],
   },
@@ -121,19 +119,14 @@ export const DEFAULT_FALLBACK_PLANS: PublicPlan[] = [
       { billingCycle: 'YEARLY', price: 150000, currency: 'LKR', trialDays: 14 },
     ],
     features: [
-      { code: 'ANALYTICS', name: 'Analytics' },
       { code: 'APPOINTMENTS', name: 'Appointments' },
       { code: 'CUSTOMERS', name: 'Customers' },
       { code: 'EMPLOYEES', name: 'Employee Management' },
-      { code: 'EXPENSES', name: 'Expenses' },
       { code: 'INVENTORY', name: 'Inventory' },
-      { code: 'MULTI_BRANCH', name: 'Multi Branch' },
-      { code: 'PAYROLL', name: 'Payroll' },
       { code: 'POS', name: 'Point of Sale' },
       { code: 'QUOTATIONS', name: 'Quotations' },
       { code: 'REPORTS', name: 'Reports' },
       { code: 'SERVICES', name: 'Services' },
-      { code: 'SMS_NOTIFICATIONS', name: 'SMS Notifications' },
       { code: 'STAFF_MANAGEMENT', name: 'Staff Management' },
     ],
   },
