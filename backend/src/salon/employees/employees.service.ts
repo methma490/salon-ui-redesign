@@ -11,7 +11,7 @@ import { buildPaginatedResponse, resolvePagination } from '../../common/dto/pagi
 import { StorageService } from '../../common/storage/storage.service';
 import { SubscriptionsService } from '../../subscriptions/subscriptions.service';
 import { TenantSchemaService } from '../../tenant/services/tenant-schema.service';
-import { tenantTable } from '../../tenant/utils/schema-name.util';
+import { tenantTable, tenantType } from '../../tenant/utils/schema-name.util';
 import { logAudit } from '../utils/audit.util';
 import { generateSequentialCode } from '../utils/code-generator.util';
 import {
@@ -649,6 +649,7 @@ export class EmployeesService {
     userId: string,
   ): Promise<EmployeeRecord> {
     const employees = tenantTable(schemaName, 'employees');
+    const employeeStatusType = tenantType(schemaName, 'employee_status');
     const emp = await this.findById(schemaName, id);
 
     if (dto.status !== 'ACTIVE') {
@@ -662,7 +663,7 @@ export class EmployeesService {
 
     await this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
       await tx.$queryRawUnsafe(
-        `UPDATE ${employees} SET status = $2, updated_at = NOW() WHERE id = $1::uuid`,
+        `UPDATE ${employees} SET status = $2::text::${employeeStatusType}, updated_at = NOW() WHERE id = $1::uuid`,
         id,
         dto.status,
       );
