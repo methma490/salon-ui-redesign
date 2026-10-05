@@ -1564,6 +1564,7 @@ export interface EmployeePerformanceReportResponse {
     name: string;
     code: string;
     designation: string;
+    branchName: string;
     servicesCompleted: number;
     serviceSales: number;
     productSales: number;

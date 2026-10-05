@@ -1176,6 +1176,7 @@ export class DashboardService {
     const saleItems = tenantTable(schemaName, 'sale_items');
     const sales = tenantTable(schemaName, 'sales');
     const employees = tenantTable(schemaName, 'employees');
+    const branches = tenantTable(schemaName, 'branches');
     const appointments = tenantTable(schemaName, 'appointments');
     const appointmentServices = tenantTable(schemaName, 'appointment_services');
 
@@ -1201,6 +1202,7 @@ export class DashboardService {
           name: string;
           code: string;
           designation: string | null;
+          branchName: string | null;
           commissionRate: number;
           servicesCompleted: bigint;
           serviceSales: string;
@@ -1212,6 +1214,7 @@ export class DashboardService {
            e.name,
            e.code,
            e.designation,
+           b.name AS "branchName",
            COALESCE(e.commission_rate, 0)::float AS "commissionRate",
            (
              COUNT(DISTINCT CASE WHEN s.id IS NOT NULL AND si.item_type = 'service' THEN si.id END) +
@@ -1241,6 +1244,7 @@ export class DashboardService {
            )::text AS "serviceSales",
            COALESCE(SUM(CASE WHEN s.id IS NOT NULL AND si.item_type = 'product' THEN si.total ELSE 0 END), 0)::text AS "productSales"
          FROM ${employees} e
+         LEFT JOIN ${branches} b ON b.id = e.branch_id
          LEFT JOIN ${saleItemEmployees} sie ON sie.employee_id = e.id
          LEFT JOIN ${saleItems} si ON sie.sale_item_id = si.id
          LEFT JOIN ${sales} s ON si.sale_id = s.id AND s.status = 'COMPLETED'
@@ -1249,7 +1253,7 @@ export class DashboardService {
            ${branchCond}
          WHERE e.status = 'ACTIVE'
            ${searchCond}
-         GROUP BY e.id, e.name, e.code, e.designation, e.commission_rate
+         GROUP BY e.id, e.name, e.code, e.designation, b.name, e.commission_rate
          ORDER BY COALESCE(SUM(CASE WHEN s.id IS NOT NULL AND si.item_type = 'service' THEN si.total ELSE 0 END), 0) DESC, e.name ASC`,
         ...params,
       );
@@ -1265,6 +1269,7 @@ export class DashboardService {
           name: r.name,
           code: r.code,
           designation: r.designation ?? 'Stylist',
+          branchName: r.branchName ?? '—',
           servicesCompleted: Number(r.servicesCompleted),
           serviceSales,
           productSales,
