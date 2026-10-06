@@ -85,6 +85,30 @@
   --color-secondary-foreground: var(--brand-primary);
 }
 
+.salon-theme-root .bg-primary,
+.salon-theme-root button.bg-primary,
+.salon-theme-root a.bg-primary,
+.salon-theme-root [data-slot='button'].bg-primary {
+  background-color: var(--brand-primary) !important;
+  color: var(--brand-foreground, #ffffff) !important;
+}
+
+.salon-theme-root .bg-primary:hover:not(:disabled),
+.salon-theme-root button.bg-primary:hover:not(:disabled),
+.salon-theme-root a.bg-primary:hover,
+.salon-theme-root [data-slot='button'].bg-primary:hover:not(:disabled) {
+  background-color: var(--brand-hover, var(--brand-primary)) !important;
+  color: var(--brand-foreground, #ffffff) !important;
+}
+
+.salon-theme-root .text-primary {
+  color: var(--brand-primary) !important;
+}
+
+.salon-theme-root .border-primary {
+  border-color: var(--brand-primary) !important;
+}
+
 /* Keep primary page titles consistent across both admin workspaces. */
 body:has(.salon-theme-root) main h1,
 body:has(.admin-panel-root) main h1 {

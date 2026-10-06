@@ -3,7 +3,6 @@ import {
   ArrowRight,
   Building2,
   Check,
-  CreditCard,
   Eye,
   EyeOff,
   Loader2,
@@ -16,14 +15,14 @@ import {
   User,
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { CitySelect } from '@/components/common/CitySelect';
 import { AddressAutocompleteInput } from '@/components/common/AddressAutocompleteInput';
 import { signupApi } from '@/features/signup/api/signup.api';
-import { getErrorMessage, redirectToPayHereCheckout } from '@/features/signup/lib/payhere';
+import { getErrorMessage } from '@/features/signup/lib/payhere';
 import {
   billingCycleLabel,
   formatPrice,
@@ -32,6 +31,7 @@ import { usePublicPlans } from '@/features/plans/hooks/usePlans';
 import { websiteHomeUrl, websitePricingUrl } from '@/config/website-url';
 
 export default function SignupPage() {
+  const navigate = useNavigate();
   const { planId } = useParams<{ planId: string }>();
   const { data: plans = [], isLoading } = usePublicPlans();
   const plan = useMemo(() => {
@@ -192,8 +192,9 @@ export default function SignupPage() {
     setSubmitting(true);
 
     try {
-      const result = await signupApi.checkout({
+      const result = await signupApi.trialSignup({
         planId: plan.id,
+        billingCycle: plan.billingCycle as 'MONTHLY' | 'YEARLY',
         salon: {
           name: salonName.trim(),
           email: salonEmail.trim() || undefined,
@@ -209,7 +210,14 @@ export default function SignupPage() {
         },
       });
 
-      redirectToPayHereCheckout(result.checkout);
+      toast.success('Your 21-day free trial has been activated!');
+      navigate(
+        `/signup/success?trial=1&salon=${encodeURIComponent(salonName.trim())}&adminEmail=${encodeURIComponent(
+          adminEmail.trim()
+        )}&plan=${encodeURIComponent(result.plan?.name || plan.name)}&trialEnd=${encodeURIComponent(
+          result.subscription?.trialEnd || ''
+        )}`
+      );
     } catch (err: unknown) {
       toast.error(getErrorMessage(err, 'Signup failed. Please try again.'));
       setSubmitting(false);
@@ -397,8 +405,8 @@ export default function SignupPage() {
                   3
                 </div>
                 <div>
-                  <p className="text-xs font-bold leading-tight text-slate-900 sm:text-sm">Payment</p>
-                  <p className="text-[11px] text-slate-500">Complete and activate</p>
+                  <p className="text-xs font-bold leading-tight text-slate-900 sm:text-sm">Trial Activation</p>
+                  <p className="text-[11px] text-slate-500">21 days free access</p>
                 </div>
               </div>
             </div>
@@ -714,24 +722,24 @@ export default function SignupPage() {
                       type="submit"
                       className="h-11 w-full rounded-xl bg-[#064e3b] px-6 font-semibold text-white shadow-sm hover:bg-[#047857] sm:w-auto"
                     >
-                      Continue to payment
+                      Continue to review
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </div>
                 </form>
               )}
 
-              {/* Step 3: Payment & Summary Confirmation */}
+              {/* Step 3: Trial Activation & Summary Confirmation */}
               {step === 3 && (
                 <div className="space-y-6">
                   <div className="flex items-center gap-3.5">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
-                      <CreditCard className="h-6 w-6" />
+                      <Sparkles className="h-6 w-6" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-slate-900">Payment & Activation</h2>
+                      <h2 className="text-lg font-bold text-slate-900">Review & Start Free Trial</h2>
                       <p className="text-xs text-slate-500">
-                        Review your order details and proceed to PayHere secure checkout.
+                        Review your salon details and start your 21-day free trial. No credit card required.
                       </p>
                     </div>
                   </div>
@@ -751,18 +759,27 @@ export default function SignupPage() {
                       </div>
                     </div>
 
-                    <div className="border-t border-slate-200/80 pt-3">
+                    <div className="space-y-2 border-t border-slate-200/80 pt-3">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-semibold text-slate-700">Selected Plan</span>
                         <span className="text-sm font-bold text-slate-900">{plan.name}</span>
                       </div>
-                      <div className="mt-1 flex items-center justify-between">
-                        <span className="text-sm font-semibold text-slate-700">Total Payable</span>
-                        <span className="text-lg font-extrabold text-[#064e3b]">
-                          {formatPrice(plan.price, plan.currency)}{' '}
-                          <span className="text-xs font-normal text-slate-500">
-                            / {billingCycleLabel(plan.billingCycle)}
-                          </span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-slate-700">Trial Period</span>
+                        <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                          21 Days Free (Full Access)
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-slate-700">Payable Today</span>
+                        <span className="text-base font-extrabold text-emerald-700">
+                          Rs. 0 (Free Trial)
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between pt-1 text-xs text-slate-500">
+                        <span>Price after trial</span>
+                        <span>
+                          {formatPrice(plan.price, plan.currency)} / {billingCycleLabel(plan.billingCycle)}
                         </span>
                       </div>
                     </div>
@@ -772,7 +789,7 @@ export default function SignupPage() {
                   <div className="flex items-center gap-2.5 rounded-xl border border-emerald-200/60 bg-emerald-50/50 p-3 text-xs text-emerald-900">
                     <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />
                     <span>
-                      You will be redirected to the secure PayHere payment gateway to complete the transaction.
+                      Instant activation. No credit card or upfront payment required. You can subscribe or pay anytime during your 21-day trial.
                     </span>
                   </div>
 
@@ -798,11 +815,11 @@ export default function SignupPage() {
                       {submitting ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Redirecting to PayHere...
+                          Activating your trial...
                         </>
                       ) : (
                         <>
-                          Pay {formatPrice(plan.price, plan.currency)} with PayHere
+                          Start 21-Day Free Trial
                           <ArrowRight className="ml-2 h-4 w-4" />
                         </>
                       )}

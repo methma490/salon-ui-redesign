@@ -33,7 +33,7 @@ export default function FeaturesPage() {
       </section>
       <SystemUIShowcase />
       <Features />
-      <section className="section-container pb-16">
+      {/* <section className="section-container pb-16">
         <div className="rounded-2xl border border-border bg-white p-8">
           <h2 className="font-serif text-2xl text-black">Module overview</h2>
           <ul className="mt-4 grid gap-3 text-sm text-muted sm:grid-cols-2">
@@ -47,7 +47,7 @@ export default function FeaturesPage() {
             <li id="reports">Reports — dashboards and operational analytics</li>
           </ul>
         </div>
-      </section>
+      </section> */}
       <FinalCTA />
     </MarketingShell>
   );

@@ -89,9 +89,10 @@ describe('SubscriptionsService', () => {
   });
 
   describe('createTrialSubscription', () => {
-    it('creates a TRIAL subscription with trial dates and feature snapshot', async () => {
+    it('creates a 21-day MANDATORY TRIAL subscription with trial dates and feature snapshot', async () => {
       prisma.tenant.findUnique.mockResolvedValue({ id: tenantAId });
       prisma.subscription.findFirst
+        .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce({
           id: subscriptionId,
@@ -119,7 +120,7 @@ describe('SubscriptionsService', () => {
         billingCycle: BillingCycle.MONTHLY,
         price: 5000,
         currency: 'LKR',
-        trialDays: 14,
+        trialDays: 21,
         isActive: true,
       });
 
@@ -156,19 +157,11 @@ describe('SubscriptionsService', () => {
       expect(result.status).toBe(SubscriptionStatus.TRIAL);
     });
 
-    it('rejects when trial days are zero', async () => {
+    it('rejects when tenant already has an active or paid subscription', async () => {
       prisma.tenant.findUnique.mockResolvedValue({ id: tenantAId });
-      prisma.subscription.findFirst.mockResolvedValue(null);
-      plansService.findById.mockResolvedValue({
-        id: planSilverId,
-        active: true,
-        status: 'ACTIVE',
-        code: 'SILVER',
-      } as never);
-      prisma.planPrice.findFirst.mockResolvedValue({
-        id: planPriceMonthlyId,
-        trialDays: 0,
-        isActive: true,
+      prisma.subscription.findFirst.mockResolvedValue({
+        id: 'existing-paid-sub',
+        status: SubscriptionStatus.ACTIVE,
       });
 
       await expect(
@@ -176,7 +169,7 @@ describe('SubscriptionsService', () => {
           planId: planSilverId,
           billingCycle: 'MONTHLY',
         }),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(ConflictException);
     });
   });
 
@@ -248,8 +241,13 @@ describe('SubscriptionsService', () => {
 
   describe('renewSubscription', () => {
     it('extends end date from existing end date without resetting start date', async () => {
-      const startDate = new Date('2026-09-01T00:00:00.000Z');
-      const endDate = new Date('2026-09-30T00:00:00.000Z');
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 15);
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + 15);
+      const expectedEnd = new Date(endDate);
+      expectedEnd.setMonth(expectedEnd.getMonth() + 1);
+
       const subscription = {
         id: subscriptionId,
         tenantId: tenantAId,
@@ -284,7 +282,7 @@ describe('SubscriptionsService', () => {
 
       const result = await service.renewSubscription(subscriptionId, tenantAId, {});
 
-      expect(result.endDate!.getUTCMonth()).toBe(9);
+      expect(result.endDate!.getMonth()).toBe(expectedEnd.getMonth());
       expect(result.startDate).toEqual(startDate);
     });
   });
@@ -430,7 +428,7 @@ describe('SubscriptionsService', () => {
         new Date('2026-01-01T00:00:00.000Z'),
       );
 
-      expect(result.action).toBe('expired');
+      expect(result.action).toBe('suspended');
     });
 
     it('cancels subscriptions scheduled for cancellation at period end', async () => {
@@ -511,9 +509,23 @@ describe('SubscriptionFeatureService', () => {
     await expect(service.hasFeature(tenantAId, 'INVENTORY')).resolves.toBe(false);
   });
 
+  it('allows read feature entitlement during SUSPENDED subscription', async () => {
+    prisma.subscription.findFirst.mockResolvedValue({
+      status: SubscriptionStatus.SUSPENDED,
+      subscriptionFeatures: [
+        {
+          enabled: true,
+          feature: { code: 'POS', status: FeatureStatus.ACTIVE },
+        },
+      ],
+    });
+
+    await expect(service.hasFeature(tenantAId, 'POS')).resolves.toBe(true);
+  });
+
   it('denies access for expired subscription', async () => {
     prisma.subscription.findFirst.mockResolvedValue({
-      status: SubscriptionStatus.ACTIVE,
+      status: SubscriptionStatus.EXPIRED,
       endDate: new Date(Date.now() - 86400000),
       subscriptionFeatures: [
         {

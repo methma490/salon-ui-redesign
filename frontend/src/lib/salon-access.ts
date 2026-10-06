@@ -118,7 +118,11 @@ export const SALON_ROUTE_ACCESS: Array<{
     match: (p) =>
       p.startsWith('/salon/products') ||
       p.startsWith('/salon/stock') ||
-      p.startsWith('/salon/product-categories'),
+      p.startsWith('/salon/product-categories') ||
+      p.startsWith('/salon/suppliers') ||
+      p.startsWith('/salon/grns') ||
+      p.startsWith('/salon/supplier-payments') ||
+      p.startsWith('/salon/supplier-outstanding'),
     feature: 'INVENTORY',
     module: 'INVENTORY',
   },

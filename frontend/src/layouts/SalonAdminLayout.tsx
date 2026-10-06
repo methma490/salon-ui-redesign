@@ -18,6 +18,7 @@ import {
   Settings,
   ShoppingCart,
   Sparkles,
+  Truck,
   User,
   Users,
   UserSquare2,
@@ -40,6 +41,7 @@ import { cn } from '@/lib/utils';
 import { resolveNavAccess, type NavAccessState } from '@/lib/salon-access';
 import SalonPermissionGate from '@/routes/SalonPermissionGate';
 import { formatRoleLabel } from '@/pages/salon/settings-feature-modules';
+import { SubscriptionBanner } from '@/components/salon/SubscriptionBanner';
 import { APP_NAME } from '@/config/brand';
 import './salon-admin-sidebar.css';
 import './salon-brand-overrides.css';
@@ -223,6 +225,42 @@ const navGroups: NavGroup[] = [
         to: '/salon/product-categories',
         label: 'Categories',
         icon: Sparkles,
+        feature: 'INVENTORY',
+        module: 'INVENTORY',
+      },
+    ],
+  },
+  {
+    label: 'Suppliers & GRN',
+    icon: Truck,
+    feature: 'INVENTORY',
+    module: 'INVENTORY',
+    children: [
+      {
+        to: '/salon/suppliers',
+        label: 'Suppliers',
+        icon: Truck,
+        feature: 'INVENTORY',
+        module: 'INVENTORY',
+      },
+      {
+        to: '/salon/grns',
+        label: 'GRN / Purchases',
+        icon: FileText,
+        feature: 'INVENTORY',
+        module: 'INVENTORY',
+      },
+      {
+        to: '/salon/supplier-payments',
+        label: 'Supplier Payments',
+        icon: CreditCard,
+        feature: 'INVENTORY',
+        module: 'INVENTORY',
+      },
+      {
+        to: '/salon/supplier-outstanding',
+        label: 'Outstanding / Credit',
+        icon: Coins,
         feature: 'INVENTORY',
         module: 'INVENTORY',
       },
@@ -863,6 +901,7 @@ function SalonAdminLayoutInner() {
       </aside>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <SubscriptionBanner />
         <SalonAdminHeader
           salonName={salonName}
           salonLogoUrl={salonLogoUrl}

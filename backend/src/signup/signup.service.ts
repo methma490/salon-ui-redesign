@@ -372,13 +372,7 @@ export class SignupService {
   }
 
   async confirmReturn(orderId: string) {
-    const allowReturnConfirm = this.configService.get<boolean>('payhere.allowReturnConfirm', false);
-
-    if (!allowReturnConfirm) {
-      return this.getOrderStatus(orderId);
-    }
-
-    return this.finalizePaidSignup(orderId, `RETURN-${orderId}`);
+    return this.getOrderStatus(orderId);
   }
 
   async getOrderStatus(orderId: string) {

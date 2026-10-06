@@ -1,12 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { ConfigService } from '@nestjs/config';
 import { config } from 'dotenv';
 import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { bootstrapDatabase } from './database/bootstrap-database';
 
@@ -17,20 +19,47 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  const configService = app.get(ConfigService);
+  const isProduction = configService.get<string>('NODE_ENV') === 'production';
+
+  // 1. HTTP Security Headers (Helmet)
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
+          connectSrc: ["'self'", 'https:', 'wss:'],
+          fontSrc: ["'self'", 'https:', 'data:'],
+          objectSrc: ["'none'"],
+          frameAncestors: ["'none'"],
+        },
+      },
+      hsts: isProduction
+        ? {
+            maxAge: 31536000,
+            includeSubDomains: true,
+            preload: true,
+          }
+        : false,
+      frameguard: { action: 'deny' },
+      noSniff: true,
+      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    }),
+  );
+
   app.use(cookieParser());
 
+  // Ensure upload directory structure exists
   const uploadsRoot = join(process.cwd(), 'uploads');
   if (!existsSync(uploadsRoot)) {
     mkdirSync(uploadsRoot, { recursive: true });
   }
-  app.useStaticAssets(uploadsRoot, {
-    prefix: '/api/uploads',
-    maxAge: '7d',
-    etag: true,
-    lastModified: true,
-  });
 
-  const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 3000);
 
   app.setGlobalPrefix('api');
@@ -47,48 +76,70 @@ async function bootstrap() {
   );
 
   app.useGlobalInterceptors(new TransformInterceptor());
+  app.useGlobalFilters(new AllExceptionsFilter());
+
+  // 2. Hardened CORS Configuration
+  const configuredFrontendUrl = configService.get<string>('FRONTEND_URL', '');
+  const configuredAllowedOrigins = configService.get<string>('ALLOWED_ORIGINS', '');
+
+  const trustedOrigins = [
+    ...configuredFrontendUrl.split(','),
+    ...configuredAllowedOrigins.split(','),
+  ]
+    .map((s) => s.trim().toLowerCase().replace(/\/+$/, ''))
+    .filter(Boolean);
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Allow non-browser requests (mobile apps, Postman, curl, server-to-server)
+      // Allow non-browser requests (mobile apps, server-to-server, PayHere IPN webhooks)
       if (!origin) {
         return callback(null, true);
       }
 
-      const configuredFrontendUrl = configService.get<string>('FRONTEND_URL', '');
-      const configuredOrigins = configuredFrontendUrl
-        .split(',')
-        .map((s) => s.trim().toLowerCase())
-        .filter(Boolean);
+      const normalizedOrigin = origin.trim().toLowerCase().replace(/\/+$/, '');
 
-      const normalizedOrigin = origin.trim().toLowerCase();
-
-      // Explicitly configured origins (or wildcard)
-      if (
-        configuredOrigins.includes(normalizedOrigin) ||
-        configuredOrigins.includes('*') ||
-        configuredOrigins.length === 0
-      ) {
+      // Check against explicit whitelist
+      if (trustedOrigins.includes(normalizedOrigin)) {
         return callback(null, true);
       }
 
-      // Check for dartcodes.com subdomains and local development origins
+      // Check trusted domain patterns
       try {
         const url = new URL(origin);
+        const hostname = url.hostname.toLowerCase();
+
         if (
-          url.hostname === 'dartcodes.com' ||
-          url.hostname.endsWith('.dartcodes.com') ||
-          url.hostname === 'localhost' ||
-          url.hostname === '127.0.0.1'
+          hostname === 'dartcodes.com' ||
+          hostname.endsWith('.dartcodes.com')
         ) {
           return callback(null, true);
         }
+
+        // Local development origins allowed only in non-production
+        if (!isProduction) {
+          if (
+            hostname === 'localhost' ||
+            hostname === '127.0.0.1' ||
+            hostname.endsWith('.localhost')
+          ) {
+            return callback(null, true);
+          }
+        }
       } catch {
-        // Fallback for non-standard origins
+        // Fall through to rejection
       }
 
-      // Allow and reflect requesting origin so browser CORS checks pass
-      return callback(null, true);
+      // Reject unknown origins in production (no origin reflection)
+      if (isProduction) {
+        return callback(new Error('Origin not allowed by CORS policy'), false);
+      }
+
+      // In development, log and allow only if no whitelist is configured
+      if (trustedOrigins.length === 0) {
+        return callback(null, true);
+      }
+
+      return callback(new Error('Origin not allowed by CORS policy'), false);
     },
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],

@@ -17,16 +17,15 @@ export function PricingSection({ plans: initialPlans = [], compact = false }: Pr
   useEffect(() => {
     if (initialPlans && initialPlans.length > 0) {
       setPlans(initialPlans);
-    } else {
-      fetch('/api/plans')
-        .then((res) => (res.ok ? res.json() : []))
-        .then((data) => {
-          if (Array.isArray(data) && data.length > 0) {
-            setPlans(data);
-          }
-        })
-        .catch((err) => console.warn('Could not load live plans client-side:', err));
     }
+    fetch('/api/plans', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setPlans(data);
+        }
+      })
+      .catch((err) => console.warn('Could not load live plans client-side:', err));
   }, [initialPlans]);
 
   const sortedPlans = useMemo(
@@ -58,8 +57,8 @@ export function PricingSection({ plans: initialPlans = [], compact = false }: Pr
           >
             <button
               type="button"
-              className={`rounded-full px-4 py-1.5 font-medium transition ${
-                billingCycle === 'MONTHLY' ? 'bg-burgundy text-white' : 'text-muted'
+              className={`rounded-full px-4 py-1.5 font-semibold transition ${
+                billingCycle === 'MONTHLY' ? 'bg-[#0b6842] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
               onClick={() => setBillingCycle('MONTHLY')}
             >
@@ -67,15 +66,15 @@ export function PricingSection({ plans: initialPlans = [], compact = false }: Pr
             </button>
             <button
               type="button"
-              className={`rounded-full px-4 py-1.5 font-medium transition ${
-                billingCycle === 'YEARLY' ? 'bg-burgundy text-white' : 'text-muted'
+              className={`rounded-full px-4 py-1.5 font-semibold transition ${
+                billingCycle === 'YEARLY' ? 'bg-[#0b6842] text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
               onClick={() => setBillingCycle('YEARLY')}
             >
               Yearly
             </button>
-            <span className="ml-2 hidden rounded-full bg-gold-soft px-2 py-0.5 text-xs font-semibold text-black sm:inline">
-              Save with yearly
+            <span className="ml-2 hidden rounded-full bg-[#e8f6f0] px-2.5 py-0.5 text-xs font-bold text-[#0b6842] sm:inline">
+              Save 20% with yearly
             </span>
           </div>
         </div>

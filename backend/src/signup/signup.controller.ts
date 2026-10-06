@@ -10,8 +10,8 @@ export class SignupController {
 
   @Post()
   @SkipThrottle()
-  createCheckout(@Body() dto: PublicSignupDto) {
-    return this.signupService.createSignupCheckout(dto);
+  createSignup(@Body() dto: PublicTrialSignupDto) {
+    return this.signupService.createTrialSignup(dto);
   }
 
   @Post('trial')

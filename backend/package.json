@@ -31,7 +31,7 @@
     "db:quotations:tenants": "ts-node scripts/apply-quotations.ts"
   },
   "prisma": {
-    "seed": "node -e \"const fs=require('fs'); if(fs.existsSync('./dist/prisma/seed.js')){require('./dist/prisma/seed.js');}else{require('child_process').execSync('npx ts-node --transpile-only prisma/seed.ts',{stdio:'inherit',env:process.env});}\""
+    "seed": "node prisma/seed-runner.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1141.0",
@@ -52,10 +52,13 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "cookie-parser": "^1.4.7",
+    "helmet": "^8.3.0",
     "ioredis": "^6.0.0",
     "nodemailer": "^10.0.1",
+    "otplib": "^13.5.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "qrcode": "^1.5.4",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "sharp": "^0.35.4"
@@ -73,6 +76,7 @@
     "@types/node": "^22.13.10",
     "@types/nodemailer": "^8.0.1",
     "@types/passport-jwt": "^4.0.1",
+    "@types/qrcode": "^1.5.6",
     "@types/supertest": "^6.0.2",
     "eslint": "^9.22.0",
     "eslint-config-prettier": "^10.1.1",
@@ -101,6 +105,9 @@
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
+    "transformIgnorePatterns": [
+      "node_modules/(?!(@nestjs|@scure|otplib)/)"
+    ],
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],

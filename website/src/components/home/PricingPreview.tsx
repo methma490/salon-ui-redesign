@@ -12,10 +12,10 @@ export async function PricingPreview() {
       <div className="section-container -mt-2 pb-16 text-center">
         <Link
           href="/pricing"
-          className="inline-flex items-center gap-1 text-sm font-medium text-burgundy hover:underline"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#0b6842] hover:text-[#085435] hover:underline"
         >
           View full pricing details
-          <ArrowRight className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+          <ArrowRight className="h-4 w-4" strokeWidth={2} aria-hidden />
         </Link>
       </div>
     </div>

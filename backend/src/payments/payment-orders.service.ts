@@ -4,6 +4,7 @@ import {
   PaymentGatewayProvider,
   PaymentOrderStatus,
   Prisma,
+  SubscriptionAddOnStatus,
   SubscriptionStatus,
 } from '@prisma/client';
 import { buildPaginatedResponse, resolvePagination } from '../common/dto/pagination.dto';
@@ -16,6 +17,7 @@ import { PaymentGatewayRegistry } from './payment-gateway.registry';
 import { CheckoutCustomerInfo, CreateCheckoutInput } from './interfaces/payment-gateway.interface';
 import {
   calculateProratedUpgradeAmount,
+  calculateSubscriptionRecurringTotals,
   comparePlanTier,
   getCurrentPeriodStart,
 } from '../subscriptions/utils/subscription-billing.util';
@@ -67,11 +69,16 @@ export class PaymentOrdersService {
       throw new NotFoundException('Subscription not found for tenant');
     }
 
-    if (
-      subscription.status !== SubscriptionStatus.PENDING &&
-      subscription.status !== SubscriptionStatus.TRIAL &&
-      subscription.status !== SubscriptionStatus.ACTIVE
-    ) {
+    const payableStatuses: SubscriptionStatus[] = [
+      SubscriptionStatus.PENDING,
+      SubscriptionStatus.TRIAL,
+      SubscriptionStatus.ACTIVE,
+      SubscriptionStatus.SUSPENDED,
+      SubscriptionStatus.EXPIRED,
+      SubscriptionStatus.PAST_DUE,
+    ];
+
+    if (!payableStatuses.includes(subscription.status)) {
       throw new BadRequestException('Subscription is not eligible for payment');
     }
 
@@ -118,6 +125,9 @@ export class PaymentOrdersService {
     }
 
     if (purpose === PaymentPurpose.SUBSCRIPTION_RENEW) {
+      let basePrice = Number(subscription.price);
+      let currency = subscription.currency;
+
       if (subscription.pendingPlanPriceId) {
         const pendingPrice = await this.prisma.planPrice.findUnique({
           where: { id: subscription.pendingPlanPriceId },
@@ -127,18 +137,55 @@ export class PaymentOrdersService {
           throw new NotFoundException('Pending plan price not found');
         }
 
-        return {
-          amount: Number(pendingPrice.price),
-          currency: pendingPrice.currency,
-          metadata: {
-            ...(typeof metadata === 'object' && metadata !== null && !Array.isArray(metadata)
-              ? metadata
-              : {}),
-            pendingPlanId: subscription.pendingPlanId,
-            pendingPlanPriceId: subscription.pendingPlanPriceId,
-          },
-        };
+        basePrice = Number(pendingPrice.price);
+        currency = pendingPrice.currency;
       }
+
+      // Include strictly renewing ACTIVE add-ons in renewal recurring total (explicitly excluding CANCEL_AT_PERIOD_END)
+      const activeAddOns = await this.prisma.subscriptionAddOn.findMany({
+        where: {
+          subscriptionId: subscription.id,
+          status: SubscriptionAddOnStatus.ACTIVE,
+          cancelAtPeriodEnd: false,
+        },
+      });
+
+      const planFeatures = await this.prisma.subscriptionFeature.findMany({
+        where: { subscriptionId: subscription.id, enabled: true },
+        select: { featureId: true },
+      });
+      const planFeatureIds = new Set((planFeatures ?? []).map((f) => f.featureId));
+
+      const totals = calculateSubscriptionRecurringTotals(
+        basePrice,
+        (activeAddOns ?? []).map((a) => ({
+          featureId: a.featureId,
+          status: a.status,
+          recurringAmount: a.recurringAmount,
+          currency: a.currency,
+        })),
+        currency,
+        planFeatureIds,
+      );
+
+      return {
+        amount: totals.nextRenewalTotal,
+        currency,
+        metadata: {
+          ...(typeof metadata === 'object' && metadata !== null && !Array.isArray(metadata)
+            ? metadata
+            : {}),
+          ...(subscription.pendingPlanPriceId
+            ? {
+                pendingPlanId: subscription.pendingPlanId,
+                pendingPlanPriceId: subscription.pendingPlanPriceId,
+              }
+            : {}),
+          basePlanPrice: totals.basePlanPrice,
+          activeAddonsTotal: totals.activeRenewingAddonsTotal,
+          nextRenewalTotal: totals.nextRenewalTotal,
+        },
+      };
     }
 
     return {
@@ -304,6 +351,7 @@ export class PaymentOrdersService {
         include: {
           tenant: { select: { id: true, name: true, code: true } },
           subscription: { include: { plan: { select: { code: true, name: true } } } },
+          subscriptionAddOn: { include: { feature: { select: { code: true, name: true } } } },
           payments: { orderBy: { createdAt: 'desc' }, take: 1 },
         },
       }),
@@ -311,21 +359,30 @@ export class PaymentOrdersService {
     ]);
 
     return buildPaginatedResponse(
-      data.map((order) => ({
-        id: order.id,
-        reference: order.reference,
-        tenantId: order.tenantId,
-        tenant: order.tenant ?? { id: order.tenantId, name: 'Salon', code: 'SALON' },
-        subscriptionId: order.subscriptionId,
-        plan: order.subscription?.plan ?? { code: 'N/A', name: 'Subscription Plan' },
-        amount: order.amount,
-        currency: order.currency,
-        status: order.status,
-        gateway: order.gateway,
-        purpose: order.purpose,
-        payment: order.payments?.[0] ?? null,
-        createdAt: order.createdAt,
-      })),
+      data.map((order) => {
+        let plan = order.subscription?.plan ?? { code: 'N/A', name: 'Subscription Plan' };
+        if (order.subscriptionAddOn?.feature) {
+          plan = {
+            code: order.subscriptionAddOn.feature.code,
+            name: `Add-on: ${order.subscriptionAddOn.feature.name}`,
+          };
+        }
+        return {
+          id: order.id,
+          reference: order.reference,
+          tenantId: order.tenantId,
+          tenant: order.tenant ?? { id: order.tenantId, name: 'Salon', code: 'SALON' },
+          subscriptionId: order.subscriptionId,
+          plan,
+          amount: Number(order.amount),
+          currency: order.currency,
+          status: order.status,
+          gateway: order.gateway,
+          purpose: order.purpose,
+          payment: order.payments?.[0] ?? null,
+          createdAt: order.createdAt,
+        };
+      }),
       total,
       page,
       limit,

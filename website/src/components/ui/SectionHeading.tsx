@@ -15,12 +15,12 @@ export function SectionHeading({
 }: SectionHeadingProps) {
   const alignClass = align === 'center' ? 'text-center mx-auto' : 'text-left';
   const descColor = dark ? 'text-white/80' : 'text-muted';
-  const eyebrowColor = dark ? 'text-gold' : 'text-burgundy';
+  const eyebrowColor = dark ? 'text-emerald-400' : 'text-[#0b6842]';
 
   return (
     <div className={`max-w-2xl ${alignClass}`}>
       {eyebrow ? (
-        <p className={`mb-3 text-xs font-semibold uppercase tracking-[0.2em] ${eyebrowColor}`}>
+        <p className={`mb-3 text-xs font-bold uppercase tracking-[0.2em] ${eyebrowColor}`}>
           {eyebrow}
         </p>
       ) : null}

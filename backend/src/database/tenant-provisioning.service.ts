@@ -39,9 +39,11 @@ export class TenantProvisioningService {
   private getMigrationsPath(): string {
     const candidates = [
       path.join(__dirname, 'tenant-migrations'),
+      path.join(__dirname, 'tenant-migrations', 'database', 'tenant-migrations'),
       path.join(__dirname, '..', 'database', 'tenant-migrations'),
       path.join(__dirname, '..', 'src', 'database', 'tenant-migrations'),
       path.join(process.cwd(), 'src', 'database', 'tenant-migrations'),
+      path.join(process.cwd(), 'backend', 'src', 'database', 'tenant-migrations'),
       path.join(process.cwd(), 'dist', 'src', 'database', 'tenant-migrations'),
       path.join(process.cwd(), 'dist', 'database', 'tenant-migrations'),
       path.join(process.cwd(), 'database', 'tenant-migrations'),
@@ -49,12 +51,19 @@ export class TenantProvisioningService {
 
     for (const candidate of candidates) {
       if (fs.existsSync(candidate)) {
-        return candidate;
+        try {
+          const sqlFiles = fs.readdirSync(candidate).filter((f) => f.endsWith('.sql'));
+          if (sqlFiles.length > 0) {
+            return candidate;
+          }
+        } catch {
+          // ignore directory read errors
+        }
       }
     }
 
     this.logger.error(
-      `Could not locate tenant-migrations directory. Checked: ${candidates.join(', ')}`,
+      `Could not locate tenant-migrations directory containing .sql files. Checked: ${candidates.join(', ')}`,
     );
     return path.join(process.cwd(), 'src', 'database', 'tenant-migrations');
   }
@@ -69,7 +78,7 @@ export class TenantProvisioningService {
       DECLARE
         tenant_tables TEXT[] := ARRAY[
           'user_roles', 'role_permissions', 'appointment_services', 'sale_items',
-          'quotation_items', 'payroll_items', 'stock_movements', 'payments',
+          'quotation_items', 'payroll_items', 'stock_movements',
           'sales', 'appointments', 'stock', 'products', 'product_categories',
           'services', 'service_categories', 'customers', 'employees',
           'expenses', 'expense_categories', 'payroll_runs', 'employee_loans',
@@ -467,6 +476,18 @@ export class TenantProvisioningService {
       { code: 'QUOTATION_SEND', name: 'Send Quotations' },
       { code: 'QUOTATION_CONVERT', name: 'Convert Quotations to Invoice' },
       { code: 'QUOTATION_CANCEL', name: 'Cancel Quotations' },
+      { code: 'SUPPLIERS_VIEW', name: 'View Suppliers' },
+      { code: 'SUPPLIERS_CREATE', name: 'Create Suppliers' },
+      { code: 'SUPPLIERS_EDIT', name: 'Edit Suppliers' },
+      { code: 'SUPPLIERS_DELETE', name: 'Delete/Deactivate Suppliers' },
+      { code: 'GRN_VIEW', name: 'View GRN / Purchases' },
+      { code: 'GRN_CREATE', name: 'Create GRN / Purchases' },
+      { code: 'GRN_EDIT', name: 'Edit GRN / Purchases' },
+      { code: 'GRN_RECEIVE', name: 'Receive GRN and Increment Stock' },
+      { code: 'GRN_CANCEL', name: 'Cancel GRN' },
+      { code: 'SUPPLIER_PAYMENTS_VIEW', name: 'View Supplier Payments' },
+      { code: 'SUPPLIER_PAYMENTS_CREATE', name: 'Record Supplier Payments' },
+      { code: 'SUPPLIER_OUTSTANDING_VIEW', name: 'View Supplier Outstanding' },
     ];
 
     await client.$executeRawUnsafe(`SET search_path TO "${schemaName}", public`);
@@ -525,7 +546,10 @@ export class TenantProvisioningService {
       SELECT r.id, p.id
       FROM roles r
       INNER JOIN permissions p ON p.code IN (
-        'BRANCH_VIEW', 'PRODUCT_VIEW', 'PRODUCT_CREATE', 'PRODUCT_UPDATE'
+        'BRANCH_VIEW', 'PRODUCT_VIEW', 'PRODUCT_CREATE', 'PRODUCT_UPDATE',
+        'SUPPLIERS_VIEW', 'SUPPLIERS_CREATE', 'SUPPLIERS_EDIT',
+        'GRN_VIEW', 'GRN_CREATE', 'GRN_EDIT', 'GRN_RECEIVE',
+        'SUPPLIER_OUTSTANDING_VIEW'
       )
       WHERE r.code = 'STOCK_KEEPER'
       ON CONFLICT (role_id, permission_id) DO NOTHING

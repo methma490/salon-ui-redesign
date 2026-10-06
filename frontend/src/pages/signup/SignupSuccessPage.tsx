@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock, Loader2, Scissors } from 'lucide-react';
+import { CheckCircle2, Clock, Loader2, Scissors, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,12 +7,23 @@ import { websiteHomeUrl } from '@/config/website-url';
 
 export default function SignupSuccessPage() {
   const [params] = useSearchParams();
+  const isTrial = params.get('trial') === '1';
+  const salonName = params.get('salon') ?? '';
+  const adminEmail = params.get('adminEmail') ?? '';
+  const planName = params.get('plan') ?? '';
+  const trialEnd = params.get('trialEnd') ?? '';
+
   const orderId = params.get('orderId') ?? '';
   const [status, setStatus] = useState<SignupOrderStatus | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!isTrial);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (isTrial) {
+      setLoading(false);
+      return;
+    }
+
     if (!orderId) {
       setError('Missing order reference');
       setLoading(false);
@@ -32,7 +43,7 @@ export default function SignupSuccessPage() {
     };
 
     void finalize();
-  }, [orderId]);
+  }, [isTrial, orderId]);
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-background">
@@ -62,7 +73,53 @@ export default function SignupSuccessPage() {
           </div>
         )}
 
-        {!loading && !error && status && (
+        {!loading && isTrial && (
+          <div className="w-full max-w-md space-y-6 text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+              <CheckCircle2 className="h-12 w-12" />
+            </div>
+            <div className="space-y-3">
+              <h1 className="text-2xl font-bold text-slate-900">Your 21-Day Free Trial is Active!</h1>
+              <p className="text-sm text-slate-600">
+                {salonName ? (
+                  <>
+                    Welcome <span className="font-semibold text-slate-900">{salonName}</span>! Your account has been provisioned
+                    {adminEmail ? ` for ${adminEmail}` : ''}.
+                  </>
+                ) : (
+                  'Welcome to Dart Smart Salon! Your trial account is ready.'
+                )}
+              </p>
+              {planName && (
+                <div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
+                    <Sparkles className="h-3 w-3 text-emerald-600" />
+                    {planName} Plan — 21 Days Free
+                  </span>
+                </div>
+              )}
+              {trialEnd && (
+                <p className="text-xs text-slate-500">
+                  Full access valid until{' '}
+                  <span className="font-medium text-slate-700">
+                    {new Date(trialEnd).toLocaleDateString(undefined, {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </span>
+                  . No payment required today.
+                </p>
+              )}
+            </div>
+
+            <Button asChild size="lg" className="w-full bg-[#064e3b] font-semibold text-white hover:bg-[#047857]">
+              <Link to="/salon/login">Go to Salon Login</Link>
+            </Button>
+          </div>
+        )}
+
+        {!loading && !error && !isTrial && status && (
           <div className="w-full max-w-md space-y-6 text-center">
             {status.awaitingActivation ? (
               <Clock className="mx-auto h-16 w-16 text-primary" />

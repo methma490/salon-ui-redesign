@@ -7,6 +7,7 @@ import SalonAdminRoutes from '@/routes/SalonAdminRoutes';
 import LoginPage from '@/pages/super-admin/LoginPage';
 import PublicQuotationPage from '@/pages/public/PublicQuotationPage';
 import PublicEbillPage from '@/pages/public/PublicEbillPage';
+import PublicAddonPaymentPage from '@/pages/public/PublicAddonPaymentPage';
 import { SuperAdminGuestRoute } from '@/routes/SuperAdminProtectedRoute';
 import { SUPER_ADMIN_LOGIN_PATH, SALON_LOGIN_PATH } from '@/config/auth-paths';
 
@@ -26,6 +27,9 @@ export default function AppRoutes() {
       <Route path="/q/:token" element={<PublicQuotationPage />} />
       <Route path="/i/:token" element={<PublicEbillPage />} />
       <Route path="/ebill/:id" element={<PublicEbillPage />} />
+
+      {/* Public Add-on Payments */}
+      <Route path="/pay/add-on/:token" element={<PublicAddonPaymentPage />} />
 
       {/* Super Admin Auth & Dashboard */}
       <Route element={<SuperAdminGuestRoute />}>

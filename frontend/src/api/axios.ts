@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { toast } from 'sonner';
 import { SUPER_ADMIN_LOGIN_PATH } from '@/config/auth-paths';
 import { authStorage } from '@/lib/auth-storage';
 import type {
@@ -111,6 +112,43 @@ api.interceptors.response.use(
     const originalRequest = error.config as typeof error.config & { _retry?: boolean };
 
     const status = error.response?.status;
+    if (status === 403) {
+      const responseData = error.response?.data;
+      const errorCode = responseData?.code;
+      const rawMessage = responseData?.message;
+      const messageText = Array.isArray(rawMessage)
+        ? rawMessage.join(' ')
+        : typeof rawMessage === 'string'
+          ? rawMessage
+          : '';
+
+      const isSubscriptionSuspended =
+        errorCode === 'SUBSCRIPTION_SUSPENDED' ||
+        messageText.toLowerCase().includes('subscription is suspended') ||
+        messageText.toLowerCase().includes('subscription has expired') ||
+        messageText.toLowerCase().includes('read-only mode');
+
+      if (isSubscriptionSuspended) {
+        toast.error(
+          'Your subscription has expired. Your account is currently read-only. Please renew your subscription to continue making changes.',
+          {
+            id: 'subscription-suspended-alert',
+            duration: 6000,
+          },
+        );
+      } else {
+        const errorMsg =
+          getErrorMessage(error) ||
+          'Permission denied. You do not have permission to perform this action.';
+        toast.error(errorMsg, {
+          id: `permission-denied-${errorMsg}`,
+          duration: 4000,
+        });
+      }
+
+      // DO NOT logout, DO NOT redirect, keep user on current page
+      return Promise.reject(error);
+    }
 
     if (status !== 401 || originalRequest._retry) {
       return Promise.reject(error);

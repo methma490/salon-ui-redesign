@@ -67,6 +67,16 @@ export class PaymentsController {
     return this.paymentProcessor.processWebhook(gateway, body);
   }
 
+  @Post('orders/:reference/confirm-return')
+  @UseGuards(JwtAuthGuard, TenantContextGuard, RolesGuard)
+  @Roles('SALON_ADMIN')
+  async confirmReturn(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('reference') reference: string,
+  ) {
+    return this.paymentProcessor.confirmReturnOrder(reference, tenant.tenantId);
+  }
+
   @Post('checkout')
   @UseGuards(JwtAuthGuard, TenantContextGuard, RolesGuard)
   @Roles('SALON_ADMIN')
