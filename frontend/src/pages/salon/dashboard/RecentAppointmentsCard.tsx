@@ -61,8 +61,8 @@ export function RecentAppointmentsCard({ appointments }: RecentAppointmentsCardP
                     {formatAppointmentDate(appointment.date, appointment.time)}
                   </td>
                   <td className="text-xs font-semibold text-slate-800">{appointment.customer}</td>
-                  <td className="text-xs text-slate-600">{appointment.service || 'â€”'}</td>
-                  <td className="text-xs text-slate-600">{appointment.employee || 'â€”'}</td>
+                  <td className="text-xs text-slate-600">{appointment.service?.trim() || '—'}</td>
+                  <td className="text-xs text-slate-600">{appointment.employee?.trim() || '—'}</td>
                 </tr>
               ))
             ) : (

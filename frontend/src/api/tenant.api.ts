@@ -778,6 +778,8 @@ export interface DashboardData {
     salaries: number;
     salariesGrowth: number;
     netProfit: number;
+    currentNetProfit?: number;
+    currentBankBalance?: number | null;
     profitGrowth: number;
     openingBankBalance?: number | null;
     weeklyComparison: Array<{

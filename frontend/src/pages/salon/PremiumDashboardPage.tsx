@@ -9,7 +9,6 @@ import { useSalonBranch } from '@/contexts/SalonBranchContext';
 import { OpsLoading, OpsError } from './salon-ops-ui';
 import { DashboardHeader, type QuickFilterType } from './dashboard/DashboardHeader';
 import { SummaryKpiCards } from './dashboard/SummaryKpiCards';
-import { PaymentMethodBreakdownCard } from './dashboard/PaymentMethodBreakdownCard';
 import { FinancialOverviewChart } from './dashboard/FinancialOverviewChart';
 import { AppointmentOverviewCard } from './dashboard/AppointmentOverviewCard';
 import { InventoryOverviewCard } from './dashboard/InventoryOverviewCard';
@@ -186,10 +185,11 @@ export default function PremiumDashboardPage() {
   const expensesGrowth = financials?.expensesGrowth ?? kpis?.expensesGrowth ?? 0;
   const salaries = financials?.salaries ?? kpis?.salaries ?? 0;
   const salariesGrowth = financials?.salariesGrowth ?? kpis?.salariesGrowth ?? 0;
-  const netProfit = financials?.netProfit ?? kpis?.netProfit ?? 0;
+  const netProfit = financials?.currentNetProfit ?? financials?.netProfit ?? kpis?.netProfit ?? 0;
   const openingBankBalance = financials?.openingBankBalance ?? null;
   const liveBankBalance =
-    openingBankBalance === null || branchId !== 'all' ? null : openingBankBalance + netProfit;
+    financials?.currentBankBalance ??
+    (openingBankBalance === null || branchId !== 'all' ? null : openingBankBalance + netProfit);
 
   return (
     <div className="dash-container">
@@ -214,35 +214,33 @@ export default function PremiumDashboardPage() {
         netProfit={netProfit}
         openingBankBalance={openingBankBalance}
         liveBankBalance={liveBankBalance}
+        salesByPaymentMethod={dashboardData?.paymentMethodBreakdown?.sales}
+        expensesByPaymentMethod={dashboardData?.paymentMethodBreakdown?.expenses}
       />
 
-      {/* Row 2: Financial overview and payment methods */}
+      {/* Row 2: Financial overview and inventory */}
       <div className="dash-row-2">
         <FinancialOverviewChart
           data={financials?.weeklyComparison}
           timeframe={dashboardPreset === 'today' || dashboardPreset === 'this_week' ? dashboardPreset : 'month'}
           onTimeframeChange={handleDashboardTimeframeChange}
         />
-        <PaymentMethodBreakdownCard
-          sales={dashboardData?.paymentMethodBreakdown?.sales}
-          expenses={dashboardData?.paymentMethodBreakdown?.expenses}
-        />
+        <InventoryOverviewCard data={inventoryOverview} />
       </div>
 
-      {/* Row 3: Appointment and inventory overviews */}
+      {/* Row 3: Appointment overview and employee loans */}
       <div className="dash-row-4">
         <AppointmentOverviewCard
           data={appointmentOverview}
           timeframe={dashboardPreset === 'today' || dashboardPreset === 'this_week' ? dashboardPreset : 'month'}
           onTimeframeChange={handleDashboardTimeframeChange}
         />
-        <InventoryOverviewCard data={inventoryOverview} />
+        {isLoansFeatureEnabled && <EmployeeLoansCard data={employeeLoans} />}
       </div>
 
       {/* Row 4: Recent appointments, employee loans, recent transactions */}
       <div className="dash-row-3">
         <RecentAppointmentsCard appointments={dashboardData?.upcomingAppointments} />
-        {isLoansFeatureEnabled && <EmployeeLoansCard data={employeeLoans} />}
         <RecentTransactionsCard transactions={recentTransactions} />
       </div>
     </div>

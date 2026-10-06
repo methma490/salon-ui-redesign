@@ -1,6 +1,11 @@
 import { CreditCard, TrendingUp, TrendingDown, Users, Wallet } from 'lucide-react';
 import { formatMoneyAmount } from '@/lib/money';
 
+interface PaymentMethodAmount {
+  paymentMethod: string;
+  amount: number;
+}
+
 interface SummaryKpiCardsProps {
   revenue: number;
   revenueGrowth?: number;
@@ -11,6 +16,8 @@ interface SummaryKpiCardsProps {
   netProfit: number;
   openingBankBalance: number | null;
   liveBankBalance: number | null;
+  salesByPaymentMethod?: PaymentMethodAmount[];
+  expensesByPaymentMethod?: PaymentMethodAmount[];
 }
 
 export function SummaryKpiCards({
@@ -23,7 +30,18 @@ export function SummaryKpiCards({
   netProfit,
   openingBankBalance,
   liveBankBalance,
+  salesByPaymentMethod = [],
+  expensesByPaymentMethod = [],
 }: SummaryKpiCardsProps) {
+  const paymentMethods = ['CASH', 'CARD', 'BANK_TRANSFER'] as const;
+  const paymentMethodLabel: Record<(typeof paymentMethods)[number], string> = {
+    CASH: 'Cash',
+    CARD: 'Card',
+    BANK_TRANSFER: 'Bank Transfer',
+  };
+  const getMethodAmount = (rows: PaymentMethodAmount[], method: string) =>
+    rows.find((row) => row.paymentMethod.toUpperCase() === method)?.amount ?? 0;
+
   return (
     <div className="dash-kpi-grid dash-kpi-grid-with-live-balance">
       <div className="dash-kpi-card dash-kpi-card-live-balance">
@@ -71,6 +89,14 @@ export function SummaryKpiCards({
             <span>{revenueGrowth >= 0 ? `+${revenueGrowth}%` : `${revenueGrowth}%`}</span>
             <span className="dash-trend-subtext">vs prev</span>
           </div>
+          <div className="dash-kpi-payment-methods" aria-label="Revenue by payment method">
+            {paymentMethods.map((method) => (
+              <div className="dash-kpi-payment-method" key={method}>
+                <span>{paymentMethodLabel[method]}</span>
+                <strong>{formatMoneyAmount(getMethodAmount(salesByPaymentMethod, method))}</strong>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -91,6 +117,14 @@ export function SummaryKpiCards({
             <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
             <span>{expensesGrowth >= 0 ? `+${expensesGrowth}%` : `${expensesGrowth}%`}</span>
             <span className="dash-trend-subtext">vs prev</span>
+          </div>
+          <div className="dash-kpi-payment-methods" aria-label="Expenses by payment method">
+            {paymentMethods.map((method) => (
+              <div className="dash-kpi-payment-method" key={method}>
+                <span>{paymentMethodLabel[method]}</span>
+                <strong>{formatMoneyAmount(getMethodAmount(expensesByPaymentMethod, method))}</strong>
+              </div>
+            ))}
           </div>
         </div>
       </div>

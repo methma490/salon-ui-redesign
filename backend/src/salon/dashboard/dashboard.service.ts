@@ -396,9 +396,12 @@ export class DashboardService {
                   s.created_at AS "createdAt"
            FROM ${sales} s
            LEFT JOIN ${customers} c ON s.customer_id = c.id
-           WHERE s.status = 'COMPLETED' ${branchCondPlain.replace('branch_id', 's.branch_id')}
+           WHERE s.status = 'COMPLETED'
+             AND s.created_at >= $1::date
+             AND s.created_at < ($2::date + INTERVAL '1 day')
+             ${periodBranchCond}
            ORDER BY s.created_at DESC LIMIT 5`,
-          ...branchParams,
+          ...periodParams,
         ),
         tx.$queryRawUnsafe(
           `SELECT a.id, a.start_time AS "startTime", a.appointment_date AS "appointmentDate",
@@ -408,11 +411,11 @@ export class DashboardService {
            FROM ${appointments} a
            INNER JOIN ${customers} c ON a.customer_id = c.id
            LEFT JOIN ${employees} e ON a.employee_id = e.id
-           WHERE a.appointment_date >= CURRENT_DATE
-             AND a.status IN ('PENDING', 'CONFIRMED')
-             ${apptBranchCond}
+           WHERE a.appointment_date >= $1::date
+             AND a.appointment_date <= $2::date
+             ${apptPeriodBranchCond}
            ORDER BY a.appointment_date ASC, a.start_time ASC LIMIT 8`,
-          ...branchParams,
+          ...apptPeriodParams,
         ),
         tx.$queryRawUnsafe<Array<{
           id: string;
@@ -493,6 +496,18 @@ export class DashboardService {
         ),
       ]);
 
+      // Bank balance is a current, cumulative figure and must not change with the selected chart period.
+      const lifetimeFinancialTotals = await tx.$queryRawUnsafe<Array<{
+        revenue: string;
+        expenses: string;
+        salaries: string;
+      }>>(
+        `SELECT
+           COALESCE((SELECT SUM(total) FROM ${sales} WHERE status = 'COMPLETED'), 0)::text AS revenue,
+           COALESCE((SELECT SUM(amount) FROM ${expensesTable}), 0)::text AS expenses,
+           COALESCE((SELECT SUM(total_net) FROM ${payrollRunsTable}), 0)::text AS salaries`,
+      );
+
       const growthBuckets: Array<{ name: string; key: string }> = [];
       const now = new Date();
       for (let i = 11; i >= 0; i -= 1) {
@@ -523,6 +538,13 @@ export class DashboardService {
       const salariesGrowth = prevSalaries > 0 ? Math.round(((salaries - prevSalaries) / prevSalaries) * 100) : 0;
 
       const netProfit = revenue - expenses - salaries;
+      const currentNetProfit =
+        Number(lifetimeFinancialTotals[0]?.revenue ?? 0) -
+        Number(lifetimeFinancialTotals[0]?.expenses ?? 0) -
+        Number(lifetimeFinancialTotals[0]?.salaries ?? 0);
+      const currentBankBalance = openingBankBalance === null
+        ? null
+        : openingBankBalance + currentNetProfit;
       const prevProfit = prevRevenue - prevExpenses - prevSalaries;
       const profitGrowth = prevProfit !== 0 ? Math.round(((netProfit - prevProfit) / Math.abs(prevProfit)) * 100) : 0;
 
@@ -651,6 +673,8 @@ export class DashboardService {
           salaries,
           salariesGrowth,
           netProfit,
+          currentNetProfit,
+          currentBankBalance,
           profitGrowth,
           revenueGrowth,
         },
@@ -662,6 +686,8 @@ export class DashboardService {
           salaries,
           salariesGrowth,
           netProfit,
+          currentNetProfit,
+          currentBankBalance,
           profitGrowth,
           openingBankBalance,
           weeklyComparison,

@@ -7,7 +7,7 @@ export class DashboardCacheInterceptor extends CacheInterceptor {
   trackBy(context: ExecutionContext): string | undefined {
     const request = context.switchToHttp().getRequest<{
       tenantContext?: TenantContext;
-      query?: { branchId?: string; period?: string };
+      query?: { branchId?: string; period?: string; startDate?: string; endDate?: string };
     }>();
 
     const tenantContext = request.tenantContext;
@@ -17,6 +17,8 @@ export class DashboardCacheInterceptor extends CacheInterceptor {
 
     const branchId = request.query?.branchId ?? 'all';
     const period = request.query?.period ?? 'today';
-    return `dashboard:${tenantContext.tenantId}:${branchId}:${period}`;
+    const startDate = request.query?.startDate ?? 'period-start';
+    const endDate = request.query?.endDate ?? 'period-end';
+    return `dashboard:${tenantContext.tenantId}:${branchId}:${period}:${startDate}:${endDate}`;
   }
 }
