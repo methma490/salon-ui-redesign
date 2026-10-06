@@ -88,21 +88,46 @@ export class AuthService {
         throw new UnauthorizedException('Invalid email or password');
       }
 
-      // Generate ephemeral MFA session token (5 minute expiry)
-      const mfaSessionToken = await this.mfaService.createPendingMfaToken(
-        superAdmin.id,
-        superAdmin.email,
-      );
+      if (superAdmin.mfaEnabled && superAdmin.mfaSecret) {
+        const mfaSessionToken = await this.mfaService.createPendingMfaToken(
+          superAdmin.id,
+          superAdmin.email,
+        );
 
-      // Require MFA verification before issuing privileged session token
+        return {
+          mfaRequired: true as const,
+          mfaSetupRequired: false,
+          mfaSessionToken,
+          user: {
+            id: superAdmin.id,
+            email: superAdmin.email,
+            name: superAdmin.name,
+          },
+        };
+      }
+
+      // MFA not enabled — issue tokens directly
+      this.loginSecurityService.recordSuccessfulLogin(email, ipAddress);
+      const authUser: AuthenticatedUser = {
+        id: superAdmin.id,
+        email: superAdmin.email,
+        name: superAdmin.name,
+        tenantId: null,
+        schemaName: null,
+        roles: ['SUPER_ADMIN'],
+        userType: 'SUPER_ADMIN',
+      };
+      const tokens = await this.issueTokens(authUser, 'SUPER_ADMIN');
+
       return {
-        mfaRequired: true as const,
-        mfaSetupRequired: !superAdmin.mfaEnabled || !superAdmin.mfaSecret,
-        mfaSessionToken,
+        mfaRequired: false as const,
+        ...tokens,
         user: {
           id: superAdmin.id,
           email: superAdmin.email,
           name: superAdmin.name,
+          tenantId: null,
+          roles: ['SUPER_ADMIN'],
         },
       };
     }
