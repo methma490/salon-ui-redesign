@@ -7,6 +7,7 @@ import {
   Receipt,
   Repeat,
   Scissors,
+  ShieldAlert,
   Store,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -26,6 +27,7 @@ const navItems = [
   { to: '/super-admin/subscriptions', label: 'Subscriptions', icon: Repeat },
   { to: '/super-admin/payments', label: 'Payments', icon: Receipt },
   { to: '/super-admin/invoices', label: 'Invoices', icon: FileText },
+  { to: '/super-admin/audit-logs', label: 'Audit Logs', icon: ShieldAlert },
 ];
 
 function PlatformBrand() {

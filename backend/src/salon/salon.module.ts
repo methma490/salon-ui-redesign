@@ -38,9 +38,10 @@ import { MessagingService } from './quotations/messaging.service';
 import { PublicInvoicesController } from './sales/public-invoices.controller';
 import { InvoiceLinksService } from './sales/invoice-links.service';
 import { MailModule } from '../mail/mail.module';
+import { SuppliersModule } from './suppliers/suppliers.module';
 
 @Module({
-  imports: [TenantModule, SubscriptionsModule, DatabaseModule, MailModule],
+  imports: [TenantModule, SubscriptionsModule, DatabaseModule, MailModule, SuppliersModule],
   controllers: [
     BranchesController,
     EmployeesController,

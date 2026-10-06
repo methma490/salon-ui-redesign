@@ -114,3 +114,29 @@
   background: var(--brand-soft, #ecfdf3) !important;
   color: var(--brand-primary, #0d5c3d) !important;
 }
+
+/* ── Universal primary button & accent overrides in salon workspace ── */
+.salon-theme-root .bg-primary,
+.salon-theme-root button.bg-primary,
+.salon-theme-root a.bg-primary,
+.salon-theme-root [data-slot='button'].bg-primary {
+  background-color: var(--brand-primary) !important;
+  color: var(--brand-foreground, #ffffff) !important;
+}
+
+.salon-theme-root .bg-primary:hover:not(:disabled),
+.salon-theme-root button.bg-primary:hover:not(:disabled),
+.salon-theme-root a.bg-primary:hover,
+.salon-theme-root [data-slot='button'].bg-primary:hover:not(:disabled) {
+  background-color: var(--brand-hover, var(--brand-primary)) !important;
+  color: var(--brand-foreground, #ffffff) !important;
+}
+
+.salon-theme-root .text-primary {
+  color: var(--brand-primary) !important;
+}
+
+.salon-theme-root .border-primary {
+  border-color: var(--brand-primary) !important;
+}
+

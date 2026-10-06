@@ -127,37 +127,14 @@ export class PaymentProcessorService {
       throw new BadRequestException('Payment order does not belong to this tenant');
     }
 
-    if (order.status === PaymentOrderStatus.PAID) {
-      return {
-        success: true,
-        status: 'paid',
-        orderReference: order.reference,
-        alreadyProcessed: true,
-      };
-    }
-
-    if (order.status !== PaymentOrderStatus.PENDING) {
-      return {
-        success: false,
-        status: order.status.toLowerCase(),
-        orderReference: order.reference,
-      };
-    }
-
-    const verification: GatewayVerificationResult = {
-      valid: true,
-      status: 'paid',
+    // Return URL only checks and returns current status — NEVER activates payment
+    const isPaid = order.status === PaymentOrderStatus.PAID;
+    return {
+      success: isPaid,
+      status: order.status.toLowerCase(),
       orderReference: order.reference,
-      transactionId: `RETURN-${order.reference}`,
-      amount: Number(order.amount),
-      currency: order.currency,
-      rawPayload: {
-        source: 'return_url',
-        confirmedAt: new Date().toISOString(),
-      },
+      alreadyProcessed: isPaid,
     };
-
-    return this.completePaidOrder(order, verification);
   }
 
   private async completePaidOrder(

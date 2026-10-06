@@ -31,6 +31,13 @@ import PayslipsPage from '@/pages/salon/PayslipsPage';
 import ReportsPage from '@/pages/salon/ReportsPage';
 import SettingsPage from '@/pages/salon/SettingsPage';
 import SubscriptionPage from '@/pages/salon/SubscriptionPage';
+import SuppliersPage from '@/pages/salon/SuppliersPage';
+import SupplierDetailPage from '@/pages/salon/SupplierDetailPage';
+import GrnsPage from '@/pages/salon/GrnsPage';
+import GrnFormPage from '@/pages/salon/GrnFormPage';
+import GrnDetailPage from '@/pages/salon/GrnDetailPage';
+import SupplierPaymentsPage from '@/pages/salon/SupplierPaymentsPage';
+import SupplierOutstandingPage from '@/pages/salon/SupplierOutstandingPage';
 
 export default function SalonAdminRoutes() {
   return (
@@ -51,6 +58,14 @@ export default function SalonAdminRoutes() {
           <Route path="product-categories" element={<ProductCategoriesPage />} />
           <Route path="products" element={<ProductsPage />} />
           <Route path="stock" element={<StockPage />} />
+          <Route path="suppliers" element={<SuppliersPage />} />
+          <Route path="suppliers/:id" element={<SupplierDetailPage />} />
+          <Route path="grns" element={<GrnsPage />} />
+          <Route path="grns/new" element={<GrnFormPage />} />
+          <Route path="grns/:id/edit" element={<GrnFormPage />} />
+          <Route path="grns/:id" element={<GrnDetailPage />} />
+          <Route path="supplier-payments" element={<SupplierPaymentsPage />} />
+          <Route path="supplier-outstanding" element={<SupplierOutstandingPage />} />
           <Route path="pos" element={<PosPage />} />
           <Route path="sales" element={<SalesPage />} />
           <Route path="sales/:id" element={<SaleDetailsPage />} />

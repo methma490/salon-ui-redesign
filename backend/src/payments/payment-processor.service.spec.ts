@@ -185,4 +185,82 @@ describe('PaymentProcessorService', () => {
       { fromPaymentProcessor: true },
     );
   });
+
+  it('rejects webhook with amount mismatch', async () => {
+    gatewayRegistry.get.mockReturnValue({
+      verifyWebhook: jest.fn().mockReturnValue({
+        valid: true,
+        orderReference: orderRef,
+        transactionId: 'TX-789',
+        status: 'paid',
+        amount: 1000, // Expected is 5000
+        currency: 'LKR',
+        rawPayload: { status_code: '2' },
+      }),
+    });
+
+    prisma.paymentOrder.findUnique.mockResolvedValue({
+      id: 'order-1',
+      reference: orderRef,
+      gateway: PaymentGatewayProvider.PAYHERE,
+      tenantId,
+      subscriptionId,
+      amount: 5000,
+      currency: 'LKR',
+      status: PaymentOrderStatus.PENDING,
+      purpose: 'SUBSCRIPTION_ACTIVATE',
+      subscription: { id: subscriptionId, status: SubscriptionStatus.PENDING },
+    });
+
+    await expect(service.processWebhook(PaymentGatewayProvider.PAYHERE, {})).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(subscriptionsService.activateSubscription).not.toHaveBeenCalled();
+  });
+
+  it('proves confirmReturnOrder NEVER marks unpaid pending order as paid', async () => {
+    prisma.paymentOrder.findUnique.mockResolvedValue({
+      id: 'order-1',
+      reference: orderRef,
+      gateway: PaymentGatewayProvider.PAYHERE,
+      tenantId,
+      subscriptionId,
+      amount: 5000,
+      currency: 'LKR',
+      status: PaymentOrderStatus.PENDING,
+      purpose: 'SUBSCRIPTION_ACTIVATE',
+      subscription: { id: subscriptionId, status: SubscriptionStatus.PENDING },
+    });
+
+    const result = await service.confirmReturnOrder(orderRef, tenantId);
+
+    expect(result.success).toBe(false);
+    expect(result.status).toBe('pending');
+    expect(result.alreadyProcessed).toBe(false);
+    expect(subscriptionsService.activateSubscription).not.toHaveBeenCalled();
+    expect(prisma.payment.upsert).not.toHaveBeenCalled();
+    expect(prisma.paymentOrder.update).not.toHaveBeenCalled();
+  });
+
+  it('confirmReturnOrder returns paid status when order was already verified by webhook', async () => {
+    prisma.paymentOrder.findUnique.mockResolvedValue({
+      id: 'order-1',
+      reference: orderRef,
+      gateway: PaymentGatewayProvider.PAYHERE,
+      tenantId,
+      subscriptionId,
+      amount: 5000,
+      currency: 'LKR',
+      status: PaymentOrderStatus.PAID,
+      purpose: 'SUBSCRIPTION_ACTIVATE',
+      subscription: { id: subscriptionId, status: SubscriptionStatus.ACTIVE },
+    });
+
+    const result = await service.confirmReturnOrder(orderRef, tenantId);
+
+    expect(result.success).toBe(true);
+    expect(result.status).toBe('paid');
+    expect(result.alreadyProcessed).toBe(true);
+    expect(subscriptionsService.activateSubscription).not.toHaveBeenCalled();
+  });
 });

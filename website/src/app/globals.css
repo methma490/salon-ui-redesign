@@ -1,16 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --color-black: #111111;
+  --color-black: #0f172a;
   --color-white: #ffffff;
-  --color-burgundy: #a44a5c;
-  --color-burgundy-dark: #8a3d4d;
-  --color-burgundy-soft: #f5e8eb;
-  --color-gold: #d4af7c;
-  --color-gold-soft: #f3e8d8;
-  --color-background: #faf7f4;
-  --color-text-secondary: #6b6b6b;
-  --color-border: #e8e2dc;
+  --color-primary: #0b6842;
+  --color-primary-dark: #085435;
+  --color-primary-soft: #ecfdf5;
+  --color-accent: #10b981;
+  --color-accent-soft: #f0fdf4;
+  --color-background: #ffffff;
+  --color-background-alt: #f8fafc;
+  --color-text-secondary: #475569;
+  --color-border: #e2e8f0;
 
   --background: var(--color-background);
   --foreground: var(--color-black);
@@ -19,14 +20,13 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-burgundy: var(--color-burgundy);
-  --color-burgundy-dark: var(--color-burgundy-dark);
-  --color-burgundy-soft: var(--color-burgundy-soft);
-  --color-gold: var(--color-gold);
-  --color-gold-soft: var(--color-gold-soft);
+  --color-primary: var(--color-primary);
+  --color-primary-dark: var(--color-primary-dark);
+  --color-primary-soft: var(--color-primary-soft);
+  --color-accent: var(--color-accent);
+  --color-accent-soft: var(--color-accent-soft);
   --color-muted: var(--color-text-secondary);
   --color-border: var(--color-border);
-  --font-serif: var(--font-playfair);
   --font-sans: var(--font-inter);
 }
 
@@ -37,25 +37,30 @@ html {
 body {
   background: var(--color-background);
   color: var(--color-black);
-  font-family: var(--font-inter), system-ui, sans-serif;
-}
-
-.font-serif {
-  font-family: var(--font-playfair), Georgia, "Times New Roman", serif;
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
 }
 
 .section-container {
-  @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
+  @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
 }
 
 .card-shadow {
-  box-shadow: 0 4px 24px rgba(17, 17, 17, 0.06);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
 }
 
-.botanical-line {
-  stroke: var(--color-gold);
-  fill: none;
-  stroke-width: 1.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.card-shadow-hover {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+.card-shadow-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 30px -10px rgba(11, 104, 66, 0.12), 0 8px 16px -4px rgba(15, 23, 42, 0.04);
+}
+
+/* Background Ribbon Wave Effects matching the design */
+.bg-wave-ribbon {
+  background-image: radial-gradient(ellipse at 80% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 50%),
+                    radial-gradient(ellipse at 10% 80%, rgba(11, 104, 66, 0.05) 0%, transparent 45%);
+}
+

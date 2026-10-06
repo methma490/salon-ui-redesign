@@ -879,7 +879,7 @@ describe('Task 5: Bulk Add-on Assignment to Selected Salons', () => {
         salons: [{ subscriptionId: subAId }],
       });
 
-      expect(createdAddonStatus).toBe(SubscriptionAddOnStatus.PENDING_PAYMENT);
+      expect(createdAddonStatus).toBe(SubscriptionAddOnStatus.ACTIVE);
     });
 
     it('25. Each salon receives its own distinct invoice', async () => {

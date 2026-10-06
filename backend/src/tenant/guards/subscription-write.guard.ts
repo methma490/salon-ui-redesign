@@ -2,8 +2,10 @@ import {
   CanActivate,
   ExecutionContext,
   ForbiddenException,
+  Inject,
   Injectable,
   Optional,
+  forwardRef,
 } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { SubscriptionFeatureService } from '../../subscriptions/subscription-feature.service';
@@ -15,15 +17,14 @@ export class SubscriptionWriteGuard implements CanActivate {
   private resolvedFeatureService?: SubscriptionFeatureService;
 
   constructor(
-    @Optional()
-    private readonly moduleRef?: ModuleRef | SubscriptionFeatureService,
+    @Inject(forwardRef(() => SubscriptionFeatureService))
     @Optional()
     subscriptionFeatureService?: SubscriptionFeatureService,
+    @Optional()
+    private readonly moduleRef?: ModuleRef,
   ) {
     if (subscriptionFeatureService) {
       this.resolvedFeatureService = subscriptionFeatureService;
-    } else if (moduleRef && 'canTenantWrite' in moduleRef) {
-      this.resolvedFeatureService = moduleRef as SubscriptionFeatureService;
     }
   }
 
@@ -31,11 +32,16 @@ export class SubscriptionWriteGuard implements CanActivate {
     if (this.resolvedFeatureService) {
       return this.resolvedFeatureService;
     }
-    if (this.moduleRef && 'get' in this.moduleRef && typeof this.moduleRef.get === 'function') {
-      this.resolvedFeatureService = this.moduleRef.get(SubscriptionFeatureService, {
-        strict: false,
-      });
-      return this.resolvedFeatureService;
+    if (this.moduleRef && typeof this.moduleRef.get === 'function') {
+      try {
+        const resolved = this.moduleRef.get(SubscriptionFeatureService, { strict: false });
+        if (resolved) {
+          this.resolvedFeatureService = resolved;
+          return this.resolvedFeatureService;
+        }
+      } catch {
+        // Ignore fallback error
+      }
     }
     throw new Error('SubscriptionFeatureService is not available');
   }

@@ -11,6 +11,7 @@ import PlanListPage from '@/pages/super-admin/plans/PlanListPage';
 import SubscriptionListPage from '@/pages/super-admin/subscriptions/SubscriptionListPage';
 import SalonDetailsPage from '@/pages/super-admin/salons/SalonDetailsPage';
 import SalonListPage from '@/pages/super-admin/salons/SalonListPage';
+import AuditLogsPage from '@/pages/super-admin/audit-logs/AuditLogsPage';
 import { SuperAdminGuestRoute, SuperAdminProtectedRoute } from '@/routes/SuperAdminProtectedRoute';
 
 export default function SuperAdminRoutes() {
@@ -34,6 +35,7 @@ export default function SuperAdminRoutes() {
           <Route path="subscriptions" element={<SubscriptionListPage />} />
           <Route path="payments" element={<PaymentListPage />} />
           <Route path="invoices" element={<InvoiceListPage />} />
+          <Route path="audit-logs" element={<AuditLogsPage />} />
         </Route>
       </Route>
     </Routes>

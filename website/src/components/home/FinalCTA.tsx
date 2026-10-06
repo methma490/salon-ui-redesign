@@ -5,40 +5,34 @@ export function FinalCTA() {
   return (
     <section className="py-16 lg:py-20" aria-labelledby="final-cta-heading">
       <div className="section-container">
-        <div className="relative overflow-hidden rounded-3xl bg-burgundy px-6 py-14 text-center text-white sm:px-10">
-          <Image
-            src="/images/salon-hero.jpg"
-            alt=""
-            fill
-            className="object-cover opacity-20"
-            sizes="100vw"
-            aria-hidden
-          />
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#0b6842] via-[#085435] to-[#053d26] px-6 py-16 text-center text-white sm:px-10 shadow-xl">
+          {/* Subtle ribbon curve in background */}
           <svg
-            viewBox="0 0 200 80"
-            className="pointer-events-none absolute left-6 top-6 h-16 w-40 opacity-40"
-            aria-hidden
+            className="pointer-events-none absolute inset-0 h-full w-full opacity-20"
+            viewBox="0 0 1000 300"
+            fill="none"
+            preserveAspectRatio="none"
           >
-            <path className="botanical-line" d="M5 60 C40 20, 80 70, 120 25 S170 10, 195 5" />
-          </svg>
-          <svg
-            viewBox="0 0 200 80"
-            className="pointer-events-none absolute bottom-4 right-6 h-16 w-40 rotate-180 opacity-40"
-            aria-hidden
-          >
-            <path className="botanical-line" d="M5 60 C40 20, 80 70, 120 25 S170 10, 195 5" />
+            <path
+              d="M-50 150 C 250 50, 450 250, 750 100 C 900 20, 1050 200, 1150 150"
+              stroke="#34d399"
+              strokeWidth="3"
+            />
           </svg>
 
           <div className="relative mx-auto max-w-2xl">
-            <h2 id="final-cta-heading" className="font-serif text-3xl sm:text-4xl">
-              Ready to Transform Your Salon?
+            <h2 id="final-cta-heading" className="text-3xl font-extrabold tracking-tight sm:text-4xl text-white">
+              Ready to Modernize Your Salon Operations?
             </h2>
-            <p className="mt-4 text-base text-white/85">
-              Start with the plan that fits today — upgrade as you add POS, payroll, and branches.
+            <p className="mt-4 text-base text-emerald-100/90 leading-relaxed">
+              Start with the plan that fits today — book a personalized demo and see how Dart Smart Salon elevates your revenue and customer experience.
             </p>
-            <div className="mt-8 flex justify-center">
-              <Button href="/pricing" variant="gold" showArrow className="px-8">
-                Get Started Free
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
+              <Button href="/contact" variant="primary" showArrow className="px-8 py-3.5 bg-white text-[#0b6842] hover:bg-emerald-50 rounded-full font-bold shadow-lg">
+                Book a Demo
+              </Button>
+              <Button href="/pricing" variant="outline" className="px-8 py-3.5 border-emerald-300/60 text-white hover:bg-white/10 rounded-full font-semibold">
+                View Pricing
               </Button>
             </div>
           </div>

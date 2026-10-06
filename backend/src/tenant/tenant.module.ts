@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 import { FeatureGuard } from './guards/feature.guard';
 import { PermissionGuard } from './guards/permission.guard';
 import { TenantContextGuard } from './guards/tenant-context.guard';
@@ -10,6 +11,7 @@ import { TenantSchemaService } from './services/tenant-schema.service';
 import { TenantTestController } from './tenant-test.controller';
 
 @Module({
+  imports: [forwardRef(() => SubscriptionsModule)],
   controllers: [TenantTestController],
   providers: [
     TenantContextService,

@@ -474,6 +474,18 @@ export class TenantProvisioningService {
       { code: 'QUOTATION_SEND', name: 'Send Quotations' },
       { code: 'QUOTATION_CONVERT', name: 'Convert Quotations to Invoice' },
       { code: 'QUOTATION_CANCEL', name: 'Cancel Quotations' },
+      { code: 'SUPPLIERS_VIEW', name: 'View Suppliers' },
+      { code: 'SUPPLIERS_CREATE', name: 'Create Suppliers' },
+      { code: 'SUPPLIERS_EDIT', name: 'Edit Suppliers' },
+      { code: 'SUPPLIERS_DELETE', name: 'Delete/Deactivate Suppliers' },
+      { code: 'GRN_VIEW', name: 'View GRN / Purchases' },
+      { code: 'GRN_CREATE', name: 'Create GRN / Purchases' },
+      { code: 'GRN_EDIT', name: 'Edit GRN / Purchases' },
+      { code: 'GRN_RECEIVE', name: 'Receive GRN and Increment Stock' },
+      { code: 'GRN_CANCEL', name: 'Cancel GRN' },
+      { code: 'SUPPLIER_PAYMENTS_VIEW', name: 'View Supplier Payments' },
+      { code: 'SUPPLIER_PAYMENTS_CREATE', name: 'Record Supplier Payments' },
+      { code: 'SUPPLIER_OUTSTANDING_VIEW', name: 'View Supplier Outstanding' },
     ];
 
     await client.$executeRawUnsafe(`SET search_path TO "${schemaName}", public`);
@@ -532,7 +544,10 @@ export class TenantProvisioningService {
       SELECT r.id, p.id
       FROM roles r
       INNER JOIN permissions p ON p.code IN (
-        'BRANCH_VIEW', 'PRODUCT_VIEW', 'PRODUCT_CREATE', 'PRODUCT_UPDATE'
+        'BRANCH_VIEW', 'PRODUCT_VIEW', 'PRODUCT_CREATE', 'PRODUCT_UPDATE',
+        'SUPPLIERS_VIEW', 'SUPPLIERS_CREATE', 'SUPPLIERS_EDIT',
+        'GRN_VIEW', 'GRN_CREATE', 'GRN_EDIT', 'GRN_RECEIVE',
+        'SUPPLIER_OUTSTANDING_VIEW'
       )
       WHERE r.code = 'STOCK_KEEPER'
       ON CONFLICT (role_id, permission_id) DO NOTHING
