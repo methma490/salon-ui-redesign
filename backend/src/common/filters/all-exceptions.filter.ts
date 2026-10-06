@@ -34,10 +34,19 @@ export class AllExceptionsFilter implements ExceptionFilter {
           ? exception.message
           : 'Internal server error';
 
-    this.logger.error(
-      `[${request.method}] ${request.url} - Status ${status} - Error: ${message}`,
-      exception instanceof Error ? exception.stack : undefined,
-    );
+    if (status >= 500) {
+      this.logger.error(
+        `[${request.method}] ${request.url} - Status ${status} - Error: ${message}`,
+        exception instanceof Error ? exception.stack : undefined,
+      );
+    } else if (status === HttpStatus.UNAUTHORIZED && request.url.includes('/auth/refresh')) {
+      // Guest visitor session check — quiet notice
+      this.logger.debug?.(`[${request.method}] ${request.url} - Status 401 (guest visitor / session unauthenticated)`);
+    } else {
+      this.logger.warn(
+        `[${request.method}] ${request.url} - Status ${status} - ${message}`,
+      );
+    }
 
     const isDev = process.env.NODE_ENV !== 'production';
 
