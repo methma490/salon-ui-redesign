@@ -39,6 +39,7 @@ import {
 } from '@/api/tenant.api';
 import { useSalonBranch } from '@/contexts/SalonBranchContext';
 import { useTenantTheme } from '@/contexts/TenantThemeContext';
+import { useDebounce } from '@/hooks/useDebounce';
 import { formatMoneyAmount } from '@/lib/money';
 import {
   Select,
@@ -192,6 +193,7 @@ export default function ReportsPage() {
 
   // Employee Performance Report Specific State
   const [employeeSearch, setEmployeeSearch] = useState('');
+  const debouncedEmployeeSearch = useDebounce(employeeSearch, 400);
   const [empPage, setEmpPage] = useState(1);
   const [empPerPage, setEmpPerPage] = useState(10);
 
@@ -209,7 +211,7 @@ export default function ReportsPage() {
 
   useEffect(() => {
     setEmpPage(1);
-  }, [startDate, endDate, branchId, employeeSearch]);
+  }, [startDate, endDate, branchId, debouncedEmployeeSearch]);
 
   useEffect(() => {
     setInvPage(1);
@@ -262,13 +264,13 @@ export default function ReportsPage() {
     error: empQueryError,
     refetch: refetchEmployees,
   } = useQuery<EmployeePerformanceReportResponse>({
-    queryKey: ['report-employee-performance', startDate, endDate, branchId, employeeSearch],
+    queryKey: ['report-employee-performance', startDate, endDate, branchId, debouncedEmployeeSearch],
     queryFn: () =>
       tenantApi.reports.employeePerformance({
         startDate,
         endDate,
         ...(branchId !== 'all' ? { branchId } : {}),
-        ...(employeeSearch.trim() ? { search: employeeSearch.trim() } : {}),
+        ...(debouncedEmployeeSearch.trim() ? { search: debouncedEmployeeSearch.trim() } : {}),
       }),
     enabled: activeTab === 'employee-performance',
     staleTime: 30_000,
@@ -310,6 +312,14 @@ export default function ReportsPage() {
   // Export Handlers
   const handleExportPDF = () => {
     setExportMenuOpen(false);
+    if (activeTab === 'employee-performance') {
+      document.body.classList.add('employee-performance-print');
+      window.addEventListener(
+        'afterprint',
+        () => document.body.classList.remove('employee-performance-print'),
+        { once: true },
+      );
+    }
     window.print();
   };
 
@@ -356,10 +366,11 @@ export default function ReportsPage() {
       }
     } else if (activeTab === 'employee-performance') {
       filename = `employee-performance-report-${startDate}-to-${endDate}.csv`;
-      const headers = ['#', 'Employee', 'Services Completed', 'Service Sales (LKR)', 'Product Sales (LKR)', 'Total Sales (LKR)', 'Commission (LKR)'];
+      const headers = ['#', 'Employee', 'Branch', 'Services Completed', 'Service Sales (LKR)', 'Product Sales (LKR)', 'Total Sales (LKR)', 'Commission (LKR)'];
       const rows = (employeeData?.employees ?? []).map((e) => [
         e.index,
         `"${e.name}"`,
+        `"${e.branchName}"`,
         e.servicesCompleted,
         e.serviceSales,
         e.productSales,
@@ -420,6 +431,75 @@ export default function ReportsPage() {
 
   return (
     <div className="reports-container" ref={printRef}>
+      {activeTab === 'employee-performance' && (
+        <section className="reports-print-document" aria-label="Employee performance printable report">
+          <header className="reports-print-header">
+            <div>
+              <p className="reports-print-eyebrow">Dart Smart Salon</p>
+              <h1>Employee Performance Report</h1>
+              <p>
+                {formatDateDisplay(startDate)} – {formatDateDisplay(endDate)}
+                {' · '}
+                {branchId === 'all'
+                  ? 'All Branches'
+                  : branches.find((branch) => branch.id === branchId)?.name ?? 'Selected Branch'}
+              </p>
+            </div>
+            <span className="reports-print-generated">Generated {formatDateDisplay(getTodayStr())}</span>
+          </header>
+
+          <div className="reports-print-summary">
+            <div><span>Employees</span><strong>{employeeData?.employees.length ?? 0}</strong></div>
+            <div><span>Services completed</span><strong>{employeeData?.summary.totalServicesCompleted ?? 0}</strong></div>
+            <div><span>Service sales</span><strong>{formatMoneyAmount(employeeData?.summary.totalServiceSales ?? 0)}</strong></div>
+            <div><span>Product sales</span><strong>{formatMoneyAmount(employeeData?.summary.totalProductSales ?? 0)}</strong></div>
+            <div><span>Total sales</span><strong>{formatMoneyAmount(employeeData?.summary.totalSales ?? 0)}</strong></div>
+            <div><span>Commission</span><strong>{formatMoneyAmount(employeeData?.summary.totalCommission ?? 0)}</strong></div>
+          </div>
+
+          <table className="reports-print-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Employee</th>
+                <th>Branch</th>
+                <th>Services Completed</th>
+                <th>Service Sales (LKR)</th>
+                <th>Product Sales (LKR)</th>
+                <th>Total Sales (LKR)</th>
+                <th>Commission (LKR)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {employeeData?.employees.length ? employeeData.employees.map((employee, index) => (
+                <tr key={employee.id}>
+                  <td>{index + 1}</td>
+                  <td>{employee.name}</td>
+                  <td>{employee.branchName}</td>
+                  <td>{employee.servicesCompleted}</td>
+                  <td>{formatMoneyAmount(employee.serviceSales)}</td>
+                  <td>{formatMoneyAmount(employee.productSales)}</td>
+                  <td>{formatMoneyAmount(employee.totalSales)}</td>
+                  <td>{formatMoneyAmount(employee.commission)}</td>
+                </tr>
+              )) : (
+                <tr><td colSpan={8}>No employee performance records found for this period.</td></tr>
+              )}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th colSpan={3}>Total</th>
+                <th>{employeeData?.summary.totalServicesCompleted ?? 0}</th>
+                <th>{formatMoneyAmount(employeeData?.summary.totalServiceSales ?? 0)}</th>
+                <th>{formatMoneyAmount(employeeData?.summary.totalProductSales ?? 0)}</th>
+                <th>{formatMoneyAmount(employeeData?.summary.totalSales ?? 0)}</th>
+                <th>{formatMoneyAmount(employeeData?.summary.totalCommission ?? 0)}</th>
+              </tr>
+            </tfoot>
+          </table>
+        </section>
+      )}
+
       {/* Top Main Navigation Tabs */}
       <div className="reports-nav-header">
         <div className="reports-main-tabs">
@@ -1036,14 +1116,6 @@ export default function ReportsPage() {
           {/* Filter Bar */}
           <div className="reports-filter-bar">
             <div className="reports-filter-group">
-              <span className="reports-filter-label">Date Range</span>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 rounded-md bg-white text-xs font-medium text-slate-700">
-                <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                <span>{formatDateDisplay(startDate)} - {formatDateDisplay(endDate)}</span>
-              </div>
-            </div>
-
-            <div className="reports-filter-group">
               <span className="reports-filter-label">Branch</span>
               <div className="reports-select-wrapper">
                 <Select value={branchId} onValueChange={setBranchId}>
@@ -1098,6 +1170,30 @@ export default function ReportsPage() {
                 </button>
               </div>
             </div>
+            {quickFilter === 'custom' && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  aria-label="Start date"
+                  className="px-2.5 py-1 text-xs border border-slate-300 rounded-md bg-white text-slate-700 outline-none"
+                  value={startDate}
+                  onChange={(e) => {
+                    const nextStartDate = e.target.value;
+                    setStartDate(nextStartDate);
+                    if (endDate < nextStartDate) setEndDate(nextStartDate);
+                  }}
+                />
+                <span className="text-xs text-slate-400">to</span>
+                <input
+                  type="date"
+                  aria-label="End date"
+                  className="px-2.5 py-1 text-xs border border-slate-300 rounded-md bg-white text-slate-700 outline-none"
+                  value={endDate}
+                  min={startDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
+              </div>
+            )}
           </div>
 
           {/* Details Table Card */}
@@ -1125,6 +1221,7 @@ export default function ReportsPage() {
                   <tr>
                     <th style={{ width: '40px' }}>#</th>
                     <th>Employee</th>
+                    <th>Branch</th>
                     <th>Services Completed</th>
                     <th>Service Sales (LKR)</th>
                     <th>Product Sales (LKR)</th>
@@ -1150,6 +1247,7 @@ export default function ReportsPage() {
                             <span className="reports-emp-name">{emp.name}</span>
                           </div>
                         </td>
+                        <td>{emp.branchName}</td>
                         <td>{emp.servicesCompleted}</td>
                         <td>{formatMoneyAmount(emp.serviceSales)}</td>
                         <td>{formatMoneyAmount(emp.productSales)}</td>
@@ -1159,7 +1257,7 @@ export default function ReportsPage() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={7} className="text-center py-6 text-xs text-slate-400">
+                      <td colSpan={8} className="text-center py-6 text-xs text-slate-400">
                         No employee performance records found for this period.
                       </td>
                     </tr>
@@ -1167,7 +1265,7 @@ export default function ReportsPage() {
                 </tbody>
                 <tfoot>
                   <tr className="reports-total-row">
-                    <td>Total</td>
+                    <td colSpan={2}>Total</td>
                     <td></td>
                     <td>{employeeData?.summary?.totalServicesCompleted ?? 0}</td>
                     <td>{formatMoneyAmount(employeeData?.summary?.totalServiceSales ?? 0)}</td>

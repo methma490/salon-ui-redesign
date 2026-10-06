@@ -5,11 +5,14 @@ import {
   IsEmail,
   IsIn,
   IsNotEmpty,
+  IsNumber,
   IsObject,
   IsOptional,
   IsString,
   Matches,
+  Max,
   MaxLength,
+  Min,
   MinLength,
   ValidateNested,
 } from 'class-validator';
@@ -33,6 +36,13 @@ export class UpdateSalonSettingsDto {
   @Transform(emptyToUndefined)
   @IsString()
   phone?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => (value === '' || value === null ? null : Number(value)))
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(99999999.99)
+  openingBankBalance?: number | null;
 }
 
 export class UpdateAppearanceSettingsDto {

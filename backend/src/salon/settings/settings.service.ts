@@ -65,6 +65,7 @@ export class SettingsService {
         phone: true,
         logoUrl: true,
         primaryColor: true,
+        openingBankBalance: true,
         status: true,
         createdAt: true,
       },
@@ -125,6 +126,7 @@ export class SettingsService {
     return {
       salon: {
         ...tenant,
+        openingBankBalance: tenant.openingBankBalance?.toNumber() ?? null,
         primaryColor: resolvePrimaryColor(tenant.primaryColor),
         logoThumbnailUrl,
       },
@@ -146,7 +148,12 @@ export class SettingsService {
       throw new ForbiddenException('Only salon admins can update business information');
     }
 
-    if (!dto.name && dto.email === undefined && dto.phone === undefined) {
+    if (
+      !dto.name &&
+      dto.email === undefined &&
+      dto.phone === undefined &&
+      dto.openingBankBalance === undefined
+    ) {
       throw new BadRequestException('At least one field must be provided for update');
     }
 
@@ -156,6 +163,9 @@ export class SettingsService {
         ...(dto.name !== undefined ? { name: dto.name } : {}),
         ...(dto.email !== undefined ? { email: dto.email } : {}),
         ...(dto.phone !== undefined ? { phone: dto.phone } : {}),
+        ...(dto.openingBankBalance !== undefined
+          ? { openingBankBalance: dto.openingBankBalance }
+          : {}),
       },
       select: {
         id: true,
@@ -165,6 +175,7 @@ export class SettingsService {
         phone: true,
         logoUrl: true,
         primaryColor: true,
+        openingBankBalance: true,
         status: true,
         createdAt: true,
       },
@@ -172,6 +183,7 @@ export class SettingsService {
 
     return {
       ...tenant,
+      openingBankBalance: tenant.openingBankBalance?.toNumber() ?? null,
       primaryColor: resolvePrimaryColor(tenant.primaryColor),
     };
   }

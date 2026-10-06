@@ -39,9 +39,11 @@ export class TenantProvisioningService {
   private getMigrationsPath(): string {
     const candidates = [
       path.join(__dirname, 'tenant-migrations'),
+      path.join(__dirname, 'tenant-migrations', 'database', 'tenant-migrations'),
       path.join(__dirname, '..', 'database', 'tenant-migrations'),
       path.join(__dirname, '..', 'src', 'database', 'tenant-migrations'),
       path.join(process.cwd(), 'src', 'database', 'tenant-migrations'),
+      path.join(process.cwd(), 'backend', 'src', 'database', 'tenant-migrations'),
       path.join(process.cwd(), 'dist', 'src', 'database', 'tenant-migrations'),
       path.join(process.cwd(), 'dist', 'database', 'tenant-migrations'),
       path.join(process.cwd(), 'database', 'tenant-migrations'),
@@ -49,12 +51,19 @@ export class TenantProvisioningService {
 
     for (const candidate of candidates) {
       if (fs.existsSync(candidate)) {
-        return candidate;
+        try {
+          const sqlFiles = fs.readdirSync(candidate).filter((f) => f.endsWith('.sql'));
+          if (sqlFiles.length > 0) {
+            return candidate;
+          }
+        } catch {
+          // ignore directory read errors
+        }
       }
     }
 
     this.logger.error(
-      `Could not locate tenant-migrations directory. Checked: ${candidates.join(', ')}`,
+      `Could not locate tenant-migrations directory containing .sql files. Checked: ${candidates.join(', ')}`,
     );
     return path.join(process.cwd(), 'src', 'database', 'tenant-migrations');
   }
@@ -69,7 +78,7 @@ export class TenantProvisioningService {
       DECLARE
         tenant_tables TEXT[] := ARRAY[
           'user_roles', 'role_permissions', 'appointment_services', 'sale_items',
-          'quotation_items', 'payroll_items', 'stock_movements', 'payments',
+          'quotation_items', 'payroll_items', 'stock_movements',
           'sales', 'appointments', 'stock', 'products', 'product_categories',
           'services', 'service_categories', 'customers', 'employees',
           'expenses', 'expense_categories', 'payroll_runs', 'employee_loans',
@@ -157,6 +166,8 @@ export class TenantProvisioningService {
             data.mainBranchName || 'Main Branch',
             tx,
           );
+
+          await this.seedDefaultServiceCatalog(branchId, tx);
 
           // Create admin user on this pinned connection
           const userId = await this.createAdminUser(schemaName, adminUser, tx);
@@ -465,6 +476,18 @@ export class TenantProvisioningService {
       { code: 'QUOTATION_SEND', name: 'Send Quotations' },
       { code: 'QUOTATION_CONVERT', name: 'Convert Quotations to Invoice' },
       { code: 'QUOTATION_CANCEL', name: 'Cancel Quotations' },
+      { code: 'SUPPLIERS_VIEW', name: 'View Suppliers' },
+      { code: 'SUPPLIERS_CREATE', name: 'Create Suppliers' },
+      { code: 'SUPPLIERS_EDIT', name: 'Edit Suppliers' },
+      { code: 'SUPPLIERS_DELETE', name: 'Delete/Deactivate Suppliers' },
+      { code: 'GRN_VIEW', name: 'View GRN / Purchases' },
+      { code: 'GRN_CREATE', name: 'Create GRN / Purchases' },
+      { code: 'GRN_EDIT', name: 'Edit GRN / Purchases' },
+      { code: 'GRN_RECEIVE', name: 'Receive GRN and Increment Stock' },
+      { code: 'GRN_CANCEL', name: 'Cancel GRN' },
+      { code: 'SUPPLIER_PAYMENTS_VIEW', name: 'View Supplier Payments' },
+      { code: 'SUPPLIER_PAYMENTS_CREATE', name: 'Record Supplier Payments' },
+      { code: 'SUPPLIER_OUTSTANDING_VIEW', name: 'View Supplier Outstanding' },
     ];
 
     await client.$executeRawUnsafe(`SET search_path TO "${schemaName}", public`);
@@ -523,7 +546,10 @@ export class TenantProvisioningService {
       SELECT r.id, p.id
       FROM roles r
       INNER JOIN permissions p ON p.code IN (
-        'BRANCH_VIEW', 'PRODUCT_VIEW', 'PRODUCT_CREATE', 'PRODUCT_UPDATE'
+        'BRANCH_VIEW', 'PRODUCT_VIEW', 'PRODUCT_CREATE', 'PRODUCT_UPDATE',
+        'SUPPLIERS_VIEW', 'SUPPLIERS_CREATE', 'SUPPLIERS_EDIT',
+        'GRN_VIEW', 'GRN_CREATE', 'GRN_EDIT', 'GRN_RECEIVE',
+        'SUPPLIER_OUTSTANDING_VIEW'
       )
       WHERE r.code = 'STOCK_KEEPER'
       ON CONFLICT (role_id, permission_id) DO NOTHING
@@ -557,6 +583,86 @@ export class TenantProvisioningService {
     this.logger.log(`✓ Main branch created: ${branchId}`);
 
     return branchId;
+  }
+
+  /** Seed a starter service catalog for every newly registered salon. */
+  private async seedDefaultServiceCatalog(
+    branchId: string,
+    client: DbClient,
+  ): Promise<void> {
+    const categories = [
+      {
+        code: 'SCAT-0001',
+        name: 'Gents',
+        description: 'Hair and grooming services for men',
+        services: [
+          ['Haircut', 30],
+          ['Beard Trim', 20],
+          ['Haircut & Beard Trim', 45],
+          ['Hair Wash', 15],
+          ['Hair Coloring', 60],
+          ['Hair Styling', 20],
+        ] as Array<[string, number]>,
+      },
+      {
+        code: 'SCAT-0002',
+        name: 'Ladies',
+        description: 'Hair and beauty services for women',
+        services: [
+          ['Haircut', 45],
+          ['Hair Wash & Blow Dry', 45],
+          ['Hair Styling', 30],
+          ['Hair Coloring', 120],
+          ['Root Touch-up', 90],
+          ['Hair Treatment', 60],
+          ['Facial', 60],
+          ['Eyebrow Threading', 15],
+        ] as Array<[string, number]>,
+      },
+      {
+        code: 'SCAT-0003',
+        name: 'Kids',
+        description: 'Hair services for children',
+        services: [
+          ['Kids Haircut', 30],
+          ['Kids Haircut & Wash', 45],
+          ['Fringe Trim', 15],
+        ] as Array<[string, number]>,
+      },
+    ];
+
+    let serviceNumber = 1;
+    for (const category of categories) {
+      const categoryRows = await client.$queryRawUnsafe<Array<{ id: string }>>(
+        `INSERT INTO service_categories (code, name, description, is_active)
+         VALUES ($1, $2, $3, true)
+         RETURNING id`,
+        category.code,
+        category.name,
+        category.description,
+      );
+      const categoryId = categoryRows[0].id;
+
+      await client.$executeRawUnsafe(
+        `INSERT INTO service_category_branches (category_id, branch_id)
+         VALUES ($1::uuid, $2::uuid)`,
+        categoryId,
+        branchId,
+      );
+
+      for (const [name, durationMinutes] of category.services) {
+        const code = `SRV-${String(serviceNumber++).padStart(4, '0')}`;
+        await client.$executeRawUnsafe(
+          `INSERT INTO services
+             (category_id, code, name, price, duration_minutes, is_active)
+           VALUES ($1::uuid, $2, $3, 0, $4, true)`,
+          categoryId,
+          code,
+          name,
+          durationMinutes,
+        );
+      }
+    }
   }
 
   /**

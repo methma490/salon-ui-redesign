@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { TenantProvisioningService } from '../../database/tenant-provisioning.service';
-import { Feature, Prisma, SubscriptionStatus, Tenant, TenantStatus } from '@prisma/client';
+import { Feature, Prisma, SubscriptionAddOnStatus, SubscriptionStatus, Tenant, TenantStatus } from '@prisma/client';
 import { CreateSalonDto } from './dto/create-salon.dto';
 import { ListSalonsQueryDto } from './dto/list-salons-query.dto';
 import { UpdateSalonDto } from './dto/update-salon.dto';
@@ -37,6 +37,11 @@ type TenantWithRelations = Tenant & {
       enabled: boolean;
       feature: Feature;
     }>;
+    addOns?: Array<{
+      id: string;
+      status: SubscriptionAddOnStatus;
+      feature: Feature;
+    }>;
   }>;
 };
 
@@ -47,6 +52,15 @@ const subscriptionInclude = {
     plan: { select: { code: true, name: true } },
     subscriptionFeatures: {
       where: { enabled: true },
+      include: { feature: true },
+      orderBy: { feature: { code: 'asc' as const } },
+    },
+    addOns: {
+      where: {
+        status: {
+          in: [SubscriptionAddOnStatus.ACTIVE, SubscriptionAddOnStatus.CANCEL_AT_PERIOD_END],
+        },
+      },
       include: { feature: true },
       orderBy: { feature: { code: 'asc' as const } },
     },
@@ -317,6 +331,36 @@ export class SalonsService {
             data: { status: TenantStatus.ACTIVE },
           });
 
+          // 5. Create 21-day trial subscription
+          let targetPlanId = dto.planId;
+          if (!targetPlanId) {
+            const firstActivePlan = await this.prisma.plan.findFirst({
+              where: { status: 'ACTIVE', code: { not: 'CUSTOM' } },
+              orderBy: { createdAt: 'asc' },
+            });
+            targetPlanId = firstActivePlan?.id;
+          }
+
+          if (targetPlanId) {
+            await this.subscriptionsService.createTrialSubscription(tenant.id, {
+              planId: targetPlanId,
+              billingCycle: dto.billingCycle ?? 'MONTHLY',
+            });
+
+            // Ensure custom features assigned in dto are also enabled on tenant
+            if (features.length > 0) {
+              for (const f of features) {
+                await this.prisma.tenantFeature.upsert({
+                  where: {
+                    tenantId_featureId: { tenantId: tenant.id, featureId: f.id },
+                  },
+                  create: { tenantId: tenant.id, featureId: f.id, isEnabled: true },
+                  update: { isEnabled: true },
+                });
+              }
+            }
+          }
+
           // Return salon details
           return {
             id: tenant.id,
@@ -562,6 +606,16 @@ export class SalonsService {
       return null;
     }
 
+    const baseCodes = (sub.subscriptionFeatures ?? []).map((sf) => sf.feature.code);
+    const addonCodes = (sub.addOns ?? [])
+      .filter(
+        (a) =>
+          a.status === SubscriptionAddOnStatus.ACTIVE ||
+          a.status === SubscriptionAddOnStatus.CANCEL_AT_PERIOD_END,
+      )
+      .map((a) => a.feature.code);
+    const featureCodes = Array.from(new Set([...baseCodes, ...addonCodes]));
+
     return {
       id: sub.id,
       planCode: sub.plan.code,
@@ -571,14 +625,25 @@ export class SalonsService {
       currency: sub.currency,
       startDate: sub.startDate,
       endDate: sub.endDate,
-      featureCodes: sub.subscriptionFeatures.map((sf) => sf.feature.code),
+      featureCodes,
     };
   }
 
   private getEffectiveFeatureCodes(salon: TenantWithRelations): string[] {
     const sub = salon.subscriptions[0];
-    if (sub && sub.subscriptionFeatures.length > 0) {
-      return sub.subscriptionFeatures.map((sf) => sf.feature.code);
+    if (sub) {
+      const baseCodes = (sub.subscriptionFeatures ?? []).map((sf) => sf.feature.code);
+      const addonCodes = (sub.addOns ?? [])
+        .filter(
+          (a) =>
+            a.status === SubscriptionAddOnStatus.ACTIVE ||
+            a.status === SubscriptionAddOnStatus.CANCEL_AT_PERIOD_END,
+        )
+        .map((a) => a.feature.code);
+      const combined = Array.from(new Set([...baseCodes, ...addonCodes]));
+      if (combined.length > 0) {
+        return combined;
+      }
     }
 
     return salon.tenantFeatures.map((tf) => tf.feature.code);
@@ -588,11 +653,22 @@ export class SalonsService {
     salon: TenantWithRelations,
   ): Array<{ code: string; name: string }> {
     const sub = salon.subscriptions[0];
-    if (sub && sub.subscriptionFeatures.length > 0) {
-      return sub.subscriptionFeatures.map((sf) => ({
-        code: sf.feature.code,
-        name: sf.feature.name,
-      }));
+    if (sub) {
+      const detailsMap = new Map<string, string>();
+      sub.subscriptionFeatures?.forEach((sf) => {
+        detailsMap.set(sf.feature.code, sf.feature.name);
+      });
+      sub.addOns?.forEach((a) => {
+        if (
+          a.status === SubscriptionAddOnStatus.ACTIVE ||
+          a.status === SubscriptionAddOnStatus.CANCEL_AT_PERIOD_END
+        ) {
+          detailsMap.set(a.feature.code, a.feature.name);
+        }
+      });
+      if (detailsMap.size > 0) {
+        return Array.from(detailsMap.entries()).map(([code, name]) => ({ code, name }));
+      }
     }
 
     return salon.tenantFeatures.map((tf) => ({

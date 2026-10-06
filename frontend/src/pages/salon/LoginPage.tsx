@@ -37,9 +37,18 @@ export default function SalonLoginPage() {
         setError('Invalid salon account');
       }
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(message || 'Invalid email or password');
+      const requestError = err as {
+        message?: string;
+        response?: { data?: { message?: string | string[] } };
+      };
+      const serverMessage = requestError.response?.data?.message;
+      if (typeof serverMessage === 'string') {
+        setError(serverMessage);
+      } else if (!requestError.response) {
+        setError('Cannot reach the server. Check that the backend is running, then try again.');
+      } else {
+        setError('Invalid email or password');
+      }
     } finally {
       setLoading(false);
     }

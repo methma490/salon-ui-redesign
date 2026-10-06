@@ -27,8 +27,18 @@ export default function LoginPage() {
         return;
       }
       navigate('/super-admin/dashboard');
-    } catch {
-      setError('Invalid email or password');
+    } catch (err: unknown) {
+      const requestError = err as {
+        response?: { data?: { message?: string | string[] } };
+      };
+      const serverMessage = requestError.response?.data?.message;
+      if (typeof serverMessage === 'string') {
+        setError(serverMessage);
+      } else if (!requestError.response) {
+        setError('Cannot reach the server. Check that the backend is running, then try again.');
+      } else {
+        setError('Invalid email or password');
+      }
     } finally {
       setLoading(false);
     }

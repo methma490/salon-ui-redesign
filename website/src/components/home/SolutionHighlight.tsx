@@ -23,38 +23,49 @@ export function SolutionHighlight() {
       <div className="section-container">
         <div className="grid overflow-hidden rounded-3xl border border-border bg-white lg:grid-cols-2">
           <div className="p-8 sm:p-10 lg:p-12">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-burgundy">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#0b6842]">
               Built for growth
             </p>
             <h2
               id="solution-highlight-heading"
-              className="mt-3 font-serif text-3xl leading-tight text-black sm:text-4xl"
+              className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl"
             >
               Designed for Modern Salons
             </h2>
-            <p className="mt-4 text-base leading-relaxed text-muted">
+            <p className="mt-4 text-base leading-relaxed text-slate-600">
               Whether you run a single chair or multiple branches, manage subscriptions, staff
-              permissions, inventory, and client experiences from one premium workspace.
+              permissions, inventory, and client experiences from one intelligent workspace.
             </p>
-            <ul className="mt-6 space-y-2 text-sm text-black/85">
-              <li>Isolated tenant data with centralized billing</li>
-              <li>Role-based salon admin and staff access</li>
-              <li>SMS, email, and in-app notifications</li>
+            <ul className="mt-6 space-y-2.5 text-sm text-slate-700 font-medium">
+              <li className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#0b6842]" />
+                Isolated tenant data with centralized billing
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#0b6842]" />
+                Role-based salon admin and staff access
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#0b6842]" />
+                SMS, email, and real-time alerts
+              </li>
             </ul>
           </div>
 
-          <div className="relative bg-gradient-to-br from-burgundy to-burgundy-dark p-8 text-white sm:p-10 lg:p-12">
-            <BotanicalAccent className="absolute right-4 top-4 h-24 w-24 opacity-70" />
-            <BotanicalAccent className="absolute bottom-2 left-6 h-20 w-20 rotate-12 opacity-50" />
-            <p className="relative max-w-md font-serif text-2xl leading-snug sm:text-3xl">
-              Premium tools without the complexity of enterprise software.
-            </p>
-            <p className="relative mt-4 max-w-md text-sm leading-relaxed text-white/80">
-              Upgrade plans as you add POS, payroll, analytics, and multi-branch support.
-            </p>
+          <div className="relative bg-gradient-to-br from-[#0b6842] to-[#063b25] p-8 text-white sm:p-10 lg:p-12 flex flex-col justify-between">
+            <BotanicalAccent className="absolute right-4 top-4 h-24 w-24 opacity-40" />
+            <BotanicalAccent className="absolute bottom-2 left-6 h-20 w-20 rotate-12 opacity-30" />
+            <div>
+              <p className="relative max-w-md text-2xl font-bold leading-snug sm:text-3xl">
+                Premium tools without the complexity of legacy software.
+              </p>
+              <p className="relative mt-4 max-w-md text-sm leading-relaxed text-emerald-100/90">
+                Scale your salon with built-in POS, payroll, analytics, suppliers & GRN, and multi-branch management.
+              </p>
+            </div>
             <div className="relative mt-8">
-              <Button href="/solutions" variant="gold" showArrow>
-                Learn More
+              <Button href="/contact" variant="outline" className="border-white text-white hover:bg-white hover:text-[#0b6842] rounded-full" showArrow>
+                Request a Demo
               </Button>
             </div>
           </div>

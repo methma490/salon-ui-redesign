@@ -18,6 +18,7 @@ import {
   Settings,
   ShoppingCart,
   Sparkles,
+  Truck,
   User,
   Users,
   UserSquare2,
@@ -40,6 +41,7 @@ import { cn } from '@/lib/utils';
 import { resolveNavAccess, type NavAccessState } from '@/lib/salon-access';
 import SalonPermissionGate from '@/routes/SalonPermissionGate';
 import { formatRoleLabel } from '@/pages/salon/settings-feature-modules';
+import { SubscriptionBanner } from '@/components/salon/SubscriptionBanner';
 import { APP_NAME } from '@/config/brand';
 import './salon-admin-sidebar.css';
 import './salon-brand-overrides.css';
@@ -229,6 +231,42 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
+    label: 'Suppliers & GRN',
+    icon: Truck,
+    feature: 'INVENTORY',
+    module: 'INVENTORY',
+    children: [
+      {
+        to: '/salon/suppliers',
+        label: 'Suppliers',
+        icon: Truck,
+        feature: 'INVENTORY',
+        module: 'INVENTORY',
+      },
+      {
+        to: '/salon/grns',
+        label: 'GRN / Purchases',
+        icon: FileText,
+        feature: 'INVENTORY',
+        module: 'INVENTORY',
+      },
+      {
+        to: '/salon/supplier-payments',
+        label: 'Supplier Payments',
+        icon: CreditCard,
+        feature: 'INVENTORY',
+        module: 'INVENTORY',
+      },
+      {
+        to: '/salon/supplier-outstanding',
+        label: 'Outstanding / Credit',
+        icon: Coins,
+        feature: 'INVENTORY',
+        module: 'INVENTORY',
+      },
+    ],
+  },
+  {
     label: 'Expenses',
     icon: Coins,
     feature: 'EXPENSES',
@@ -289,13 +327,13 @@ const navGroups: NavGroup[] = [
   {
     label: 'Employees',
     icon: UserSquare2,
-    module: 'CORE',
+    feature: 'EMPLOYEES',
     children: [
       {
         to: '/salon/employees',
         label: 'Staff Management',
         icon: UserSquare2,
-        module: 'CORE',
+        feature: 'EMPLOYEES',
       },
     ],
   },
@@ -709,20 +747,20 @@ function SalonAdminHeader({
           </div>
         </div>
 
-        {/* Desktop: sidebar toggle */}
-        <div className="hidden min-w-0 flex-1 items-center gap-3 md:flex">
-          {collapsed && onToggleCollapse && (
+        {/* Desktop: expand a collapsed sidebar from the top header ribbon */}
+        {collapsed && onToggleCollapse && (
+          <div className="hidden items-center md:flex">
             <button
               type="button"
-              className="salon-collapse-btn"
-              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              className="salon-header-expand-btn"
+              title="Expand sidebar"
+              aria-label="Expand sidebar"
               onClick={onToggleCollapse}
             >
-              {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+              <PanelLeftOpen className="h-4 w-4" />
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       <div className="salon-header-actions flex shrink-0 items-center gap-1 md:gap-2">
@@ -803,7 +841,7 @@ function SalonAdminLayoutInner() {
         <div
           className={cn(
             'salon-sidebar-brand flex h-16 shrink-0 items-center border-b border-border',
-            collapsed ? 'justify-center px-2' : 'justify-between px-4',
+            collapsed ? 'flex-col justify-center gap-0 px-2' : 'justify-between px-4',
           )}
         >
           <SalonBrand salonName={salonName} logoUrl={salonLogoUrl} collapsed={collapsed} />
@@ -863,6 +901,7 @@ function SalonAdminLayoutInner() {
       </aside>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <SubscriptionBanner />
         <SalonAdminHeader
           salonName={salonName}
           salonLogoUrl={salonLogoUrl}
@@ -876,7 +915,7 @@ function SalonAdminLayoutInner() {
 
         <main
           ref={mainRef}
-          className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-[#f8fafc] p-4 md:p-6"
+          className="salon-admin-main min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-[#f8fafc] p-4 md:p-6"
         >
           <SalonPermissionGate>
             <div className="admin-page-content">

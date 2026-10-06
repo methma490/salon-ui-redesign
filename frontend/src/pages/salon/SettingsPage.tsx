@@ -80,7 +80,12 @@ export default function SettingsPage() {
     Record<string, Record<string, FeatureAccessLevel>>
   >({});
   const [accountName, setAccountName] = useState('');
-  const [salonForm, setSalonForm] = useState({ name: '', email: '', phone: '' });
+  const [salonForm, setSalonForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    openingBankBalance: '',
+  });
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
@@ -160,6 +165,8 @@ export default function SettingsPage() {
       name: data.salon.name,
       email: data.salon.email ?? '',
       phone: data.salon.phone ?? '',
+      openingBankBalance:
+        data.salon.openingBankBalance == null ? '' : String(data.salon.openingBankBalance),
     });
   }, [data]);
 
@@ -1106,6 +1113,10 @@ export default function SettingsPage() {
                 name: salonForm.name.trim(),
                 email: salonForm.email.trim() || undefined,
                 phone: salonForm.phone.trim() || undefined,
+                openingBankBalance:
+                  salonForm.openingBankBalance.trim() === ''
+                    ? null
+                    : Number(salonForm.openingBankBalance),
               });
             }}
           >
@@ -1164,6 +1175,29 @@ export default function SettingsPage() {
                 disabled={!isSalonAdmin}
                 placeholder="salon@example.com"
               />
+            </div>
+
+            <div className="settings-field">
+              <label className="emp-label" htmlFor="salon-opening-bank-balance">
+                Opening bank balance <span className="text-slate-400">(optional)</span>
+              </label>
+              <input
+                id="salon-opening-bank-balance"
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                className="emp-input"
+                value={salonForm.openingBankBalance}
+                onChange={(e) =>
+                  setSalonForm({ ...salonForm, openingBankBalance: e.target.value })
+                }
+                disabled={!isSalonAdmin}
+                placeholder="0.00"
+              />
+              <p className="settings-field-hint">
+                Starting funds are shown separately and aren’t counted as revenue or profit.
+              </p>
             </div>
 
             {isSalonAdmin && (

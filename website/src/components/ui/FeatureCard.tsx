@@ -11,15 +11,15 @@ type FeatureCardProps = {
 export function FeatureCard({ icon: Icon, title, description, href }: FeatureCardProps) {
   const inner = (
     <>
-      <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-full bg-burgundy-soft text-burgundy">
+      <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-[#e8f6f0] text-[#0b6842]">
         <Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden />
       </div>
-      <h3 className="font-serif text-xl text-black">{title}</h3>
-      <p className="mt-2 flex-1 text-sm leading-relaxed text-muted">{description}</p>
+      <h3 className="font-semibold text-lg text-slate-900">{title}</h3>
+      <p className="mt-2 flex-1 text-sm leading-relaxed text-slate-600">{description}</p>
       {href ? (
-        <span className="mt-6 inline-flex items-center gap-1 text-sm font-medium text-burgundy">
+        <span className="mt-6 inline-flex items-center gap-1 text-sm font-semibold text-[#0b6842] group-hover:translate-x-0.5 transition-transform">
           Learn more
-          <ArrowUpRight className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+          <ArrowUpRight className="h-4 w-4" strokeWidth={2} aria-hidden />
         </span>
       ) : null}
     </>

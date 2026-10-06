@@ -3,7 +3,13 @@ export const APP_NAME = 'Dart Smart Salon';
 export const SITE_DESCRIPTION =
   'Multi-tenant salon management software for appointments, POS, inventory, payroll, and growth — built for modern salons in Sri Lanka.';
 
-export const CONTACT_EMAIL = 'hello@dartcodes.com';
+export const CONTACT_EMAIL = 'info@dartcodes.com';
+export const CONTACT_PHONE = '+94 77 455 2144';
+export const CONTACT_PHONE_RAW = '+94774552144';
+export const CONTACT_HOURS = 'Mon – Fri, 8:30 AM – 5:30 PM';
+export const COMPANY_NAME = 'DartCodes (Pvt) Ltd.';
+export const WHATSAPP_NUMBER = '94774552144';
+export const WHATSAPP_URL = 'https://wa.me/94774552144';
 
 export const NAV_LINKS = [
   { href: '/', label: 'Home' },

@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useTenantTheme } from '@/contexts/TenantThemeContext';
+import { getDashboardChartColors } from './chart-colors';
 
 interface WeeklyFinancialItem {
   week: string;
@@ -26,14 +27,18 @@ interface WeeklyFinancialItem {
 
 interface FinancialOverviewChartProps {
   data?: WeeklyFinancialItem[];
+  timeframe: string;
+  onTimeframeChange?: (timeframe: string) => void;
 }
 
-export function FinancialOverviewChart({ data }: FinancialOverviewChartProps) {
+export function FinancialOverviewChart({ data, timeframe, onTimeframeChange }: FinancialOverviewChartProps) {
+  const [chartWidth, setChartWidth] = useState(0);
   const theme = useTenantTheme();
   const primaryColor = theme?.palette?.primary ?? '#2563eb';
-  const [timeframe, setTimeframe] = useState('month');
+  const chartColors = getDashboardChartColors(primaryColor);
 
   const chartData = data && data.length > 0 ? data : [];
+  const compactBars = chartWidth > 0 && chartWidth < 400 && chartData.length <= 10;
 
   return (
     <div className="dash-card">
@@ -46,41 +51,46 @@ export function FinancialOverviewChart({ data }: FinancialOverviewChartProps) {
         <div className="dash-card-actions">
           <div className="dash-legend-wrap">
             <div className="dash-legend-item">
-              <span className="dash-legend-dot blue" style={{ backgroundColor: primaryColor }} />
+              <span className="dash-legend-dot" style={{ backgroundColor: chartColors[0] }} />
               <span>Revenue</span>
             </div>
             <div className="dash-legend-item">
-              <span className="dash-legend-dot red" />
+              <span className="dash-legend-dot" style={{ backgroundColor: chartColors[1] }} />
               <span>Expenses</span>
             </div>
             <div className="dash-legend-item">
-              <span className="dash-legend-dot amber" />
+              <span className="dash-legend-dot" style={{ backgroundColor: chartColors[2] }} />
               <span>Salaries</span>
             </div>
           </div>
 
-          <Select value={timeframe} onValueChange={setTimeframe}>
-            <SelectTrigger className="h-8 w-28 text-xs bg-white border-slate-200">
+          <Select value={timeframe} onValueChange={(value) => {
+            onTimeframeChange?.(value);
+          }}>
+            <SelectTrigger className="h-8 w-32 text-xs bg-white border-slate-200">
               <SelectValue placeholder="This Month" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="today">Today</SelectItem>
+              <SelectItem value="this_week">This Week</SelectItem>
               <SelectItem value="month">This Month</SelectItem>
-              <SelectItem value="last_month">Last Month</SelectItem>
-              <SelectItem value="quarter">This Quarter</SelectItem>
-              <SelectItem value="year">This Year</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      <div className="w-full h-60 sm:h-72 flex items-center justify-center">
+      <div className="w-full flex-1 min-h-[15rem] flex items-center justify-center">
         {chartData.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer
+            width="100%"
+            height="100%"
+            onResize={(width) => setChartWidth(Math.round(width))}
+          >
             <BarChart
               data={chartData}
               margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-              barGap={6}
-              barCategoryGap="25%"
+              barGap={compactBars ? 2 : 6}
+              barCategoryGap={compactBars ? '10%' : '25%'}
             >
               <CartesianGrid stroke="#f1f5f9" vertical={false} />
               <XAxis
@@ -107,9 +117,42 @@ export function FinancialOverviewChart({ data }: FinancialOverviewChartProps) {
                 }}
                 formatter={(value: any) => [`LKR ${Number(value).toLocaleString()}`, '']}
               />
-              <Bar dataKey="revenue" name="Revenue" fill={primaryColor} radius={[4, 4, 0, 0]} maxBarSize={32} />
-              <Bar dataKey="expenses" name="Expenses" fill="#f87171" radius={[4, 4, 0, 0]} maxBarSize={32} />
-              <Bar dataKey="salaries" name="Salaries" fill="#fb923c" radius={[4, 4, 0, 0]} maxBarSize={32} />
+              <Bar
+                dataKey="revenue"
+                name="Revenue"
+                fill={chartColors[0]}
+                radius={[4, 4, 0, 0]}
+                maxBarSize={32}
+                barSize={compactBars ? 8 : undefined}
+                isAnimationActive
+                animationBegin={0}
+                animationDuration={850}
+                animationEasing="ease-out"
+              />
+              <Bar
+                dataKey="expenses"
+                name="Expenses"
+                fill={chartColors[1]}
+                radius={[4, 4, 0, 0]}
+                maxBarSize={32}
+                barSize={compactBars ? 8 : undefined}
+                isAnimationActive
+                animationBegin={100}
+                animationDuration={850}
+                animationEasing="ease-out"
+              />
+              <Bar
+                dataKey="salaries"
+                name="Salaries"
+                fill={chartColors[2]}
+                radius={[4, 4, 0, 0]}
+                maxBarSize={32}
+                barSize={compactBars ? 8 : undefined}
+                isAnimationActive
+                animationBegin={200}
+                animationDuration={850}
+                animationEasing="ease-out"
+              />
             </BarChart>
           </ResponsiveContainer>
         ) : (

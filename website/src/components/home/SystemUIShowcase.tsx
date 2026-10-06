@@ -13,8 +13,6 @@ import {
   CheckCircle2,
   Sparkles,
   TrendingUp,
-  CreditCard,
-  CalendarCheck,
   ShieldCheck,
   Zap,
 } from 'lucide-react';
@@ -52,8 +50,8 @@ const DEVICE_VIEWS: Record<DeviceKey, DeviceView> = {
     label: 'All Devices',
     badge: 'Multi-Device Ecosystem',
     icon: Layers,
-    title: 'Dart Smart Salon',
-    subtitle: 'Complete salon management at your fingertips',
+    title: 'Dart Smart Salon Multi-Device Suite',
+    subtitle: 'Unified salon administration across desktop, tablet, and smartphone',
     imageSrc: '/images/dashboard/multi-device-overview.png',
     aspectClass: 'aspect-[1024/550]',
     maxContainerClass: 'max-w-5xl',
@@ -84,25 +82,25 @@ const DEVICE_VIEWS: Record<DeviceKey, DeviceView> = {
     label: 'Desktop',
     badge: 'Admin & Reception View',
     icon: Laptop,
-    title: 'Desktop Dashboard',
-    subtitle: 'Dart Smart Salon admin experience',
+    title: 'Desktop Admin & Billing Dashboard',
+    subtitle: 'Spacious workspace for high-speed counter checkouts and financial reporting',
     imageSrc: '/images/dashboard/desktop-dashboard.png',
     aspectClass: 'aspect-[16/9]',
     maxContainerClass: 'max-w-5xl',
     features: [
       {
-        title: 'Wide analytics view',
-        description: "Get a complete overview of your salon's revenue, expenses and performance.",
+        title: 'Real-Time Analytics Command Center',
+        description: "Get immediate visual tracking of your salon's revenue, expenses, appointments, and margins.",
         icon: TrendingUp,
       },
       {
-        title: 'Full sidebar navigation',
-        description: 'Access all features quickly from a clean and organized sidebar.',
+        title: 'Full Sidebar & Fast Navigation',
+        description: 'Instant access to appointments, client records, inventory, staff commissions, and reports.',
         icon: LayoutGrid,
       },
       {
-        title: 'Optimized for large screens',
-        description: 'A spacious and focused experience designed for desktop productivity.',
+        title: 'Optimized for Large Displays',
+        description: 'High-density display designed for front-desk productivity and branch oversight.',
         icon: Monitor,
       },
     ],
@@ -114,27 +112,27 @@ const DEVICE_VIEWS: Record<DeviceKey, DeviceView> = {
   tablet: {
     key: 'tablet',
     label: 'Tablet',
-    badge: 'Floor & Stylist View',
+    badge: 'Floor & Stylist Station',
     icon: TabletIcon,
-    title: 'Tablet Dashboard',
-    subtitle: 'Dart Smart Salon admin experience',
+    title: 'Station-Side Tablet Terminal',
+    subtitle: 'Touch-optimized for chair-side consultations, service add-ons, and quick checkout',
     imageSrc: '/images/dashboard/tablet-dashboard.jpg',
     aspectClass: 'aspect-[4/5] sm:aspect-[4/5]',
     maxContainerClass: 'max-w-2xl',
     features: [
       {
-        title: 'Balanced layout',
-        description: 'Everything in view, perfectly organized for station-side checkouts.',
+        title: 'Chair-Side Customer Service',
+        description: 'Add products and services directly during client sessions with intuitive touch taps.',
         icon: TabletIcon,
       },
       {
-        title: 'Touch-friendly navigation',
-        description: 'Smooth and intuitive for everyday use with gesture-ready controls.',
+        title: 'Touch-First Gesture Controls',
+        description: 'Designed for quick stylist access, digital job cards, and signature capture.',
         icon: Sparkles,
       },
       {
-        title: 'Optimized for tablets',
-        description: 'A wider view for better productivity during customer service sessions.',
+        title: 'Portable POS & Cash Drawer Sync',
+        description: 'Accept digital card payments and print thermal receipts right at the styling station.',
         icon: Laptop,
       },
     ],
@@ -148,25 +146,25 @@ const DEVICE_VIEWS: Record<DeviceKey, DeviceView> = {
     label: 'Mobile',
     badge: 'Owner On-The-Go',
     icon: Smartphone,
-    title: 'Mobile Dashboard',
-    subtitle: 'Dart Smart Salon admin experience',
+    title: 'Owner Mobile App Companion',
+    subtitle: 'Stay in complete control of your salon business wherever you are',
     imageSrc: '/images/dashboard/mobile-dashboard.jpg',
     aspectClass: 'aspect-[4/5] sm:aspect-[4/5]',
     maxContainerClass: 'max-w-xl',
     features: [
       {
-        title: 'Compact KPI cards',
-        description: 'Key metrics at a glance — revenue, expenses, and net profit in your pocket.',
+        title: 'Pocket KPI Tracking',
+        description: 'Live alerts on daily collections, net profit, staff attendance, and low inventory.',
         icon: BarChart3,
       },
       {
-        title: 'Touch-optimized actions',
-        description: 'Smooth and intuitive experience for rapid appointment management and booking.',
+        title: 'Instant Booking & Notifications',
+        description: 'Accept WhatsApp bookings and notify clients automatically with reminder SMS.',
         icon: Sparkles,
       },
       {
-        title: 'Optimized for mobile',
-        description: 'All the insights you need on the go, anywhere in Sri Lanka or abroad.',
+        title: 'Multi-Branch Overview',
+        description: 'Switch between salon branches in seconds and compare revenue metrics on the go.',
         icon: Smartphone,
       },
     ],
@@ -189,31 +187,31 @@ export function SystemUIShowcase() {
   return (
     <section
       id="system-ui-designs"
-      className="relative overflow-hidden py-16 lg:py-28 bg-gradient-to-b from-background via-white to-background"
+      className="relative overflow-hidden py-20 lg:py-28 bg-gradient-to-b from-white via-[#f7fcf9] to-white"
       aria-labelledby="ui-showcase-heading"
     >
-      {/* Subtle background glow effect */}
-      <div className="pointer-events-none absolute -top-24 left-1/2 h-96 w-full -translate-x-1/2 rounded-full bg-gradient-to-r from-burgundy/10 via-emerald-500/10 to-gold/15 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-emerald-500/5 blur-2xl" />
+      {/* Background Soft Glows */}
+      <div className="pointer-events-none absolute -top-24 left-1/2 h-96 w-full -translate-x-1/2 rounded-full bg-[#10b981]/8 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-0 right-0 h-80 w-80 rounded-full bg-[#0b6842]/5 blur-2xl" />
 
       <div className="section-container relative">
         {/* Header Section */}
         <div className="mx-auto max-w-3xl text-center">
-          <p className="inline-flex items-center gap-1.5 rounded-full border border-emerald-600/20 bg-emerald-50 px-3.5 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-emerald-800">
-            <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
-            System UI & Experience
-          </p>
+          <div className="inline-flex items-center gap-2 rounded-full bg-[#f0f9f5] border border-[#d1fae5] px-4 py-1.5 text-xs font-semibold text-[#0b6842] shadow-xs mb-4">
+            <Sparkles className="h-3.5 w-3.5 text-[#0b6842]" />
+            <span>Interactive Device Showcase</span>
+          </div>
 
           <h2
             id="ui-showcase-heading"
-            className="mt-4 font-serif text-3xl leading-tight text-black sm:text-4xl lg:text-5xl"
+            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 leading-tight"
           >
-            Crafted for Clarity.
+            Crafted for Speed.
             <br />
-            <span className="text-burgundy">Engineered for Every Device.</span>
+            <span className="text-[#0b6842]">Engineered for Every Device.</span>
           </h2>
 
-          <p className="mt-4 text-base leading-relaxed text-muted sm:text-lg">
+          <p className="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto">
             Experience our responsive, high-performance interface. From front desk reception screens
             to stylist tablets and owner smartphones, Dart Smart Salon delivers unmatched ease of use.
           </p>
@@ -221,10 +219,10 @@ export function SystemUIShowcase() {
 
         {/* Device Switcher Tabs */}
         <div className="mt-10 flex justify-center">
-          <div className="inline-flex flex-wrap items-center justify-center gap-1.5 rounded-2xl border border-border bg-white/90 p-1.5 shadow-sm backdrop-blur">
+          <div className="inline-flex flex-wrap items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white p-1.5 shadow-sm backdrop-blur">
             {(
               [
-                { key: 'all', label: 'Overview', icon: Layers },
+                { key: 'all', label: 'All Devices', icon: Layers },
                 { key: 'desktop', label: 'Desktop', icon: Laptop },
                 { key: 'tablet', label: 'Tablet', icon: TabletIcon },
                 { key: 'mobile', label: 'Mobile', icon: Smartphone },
@@ -237,13 +235,13 @@ export function SystemUIShowcase() {
                   key={tab.key}
                   type="button"
                   onClick={() => setActiveTab(tab.key)}
-                  className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all sm:text-sm sm:px-5 sm:py-2.5 ${
+                  className={`flex items-center gap-1.5 sm:gap-2 rounded-full px-3.5 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold transition-all duration-200 ${
                     isActive
-                      ? 'bg-burgundy text-white shadow-md shadow-burgundy/20'
-                      : 'text-muted hover:text-black hover:bg-black/5'
+                      ? 'bg-[#0b6842] text-white shadow-md'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
                   }`}
                 >
-                  <Icon className={`h-4 w-4 ${isActive ? 'text-gold' : 'text-muted'}`} />
+                  <Icon className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                   <span>{tab.label}</span>
                 </button>
               );
@@ -251,38 +249,38 @@ export function SystemUIShowcase() {
           </div>
         </div>
 
-        {/* Active View Title & Tagline Banner */}
+        {/* Active View Title & Badge */}
         <div className="mt-8 text-center">
-          <span className="inline-block text-xs font-bold uppercase tracking-widest text-gold bg-black/80 px-3 py-1 rounded-full mb-2">
+          <span className="inline-block text-xs font-bold uppercase tracking-wider text-[#0b6842] bg-[#e8f6f0] border border-[#d1fae5] px-3.5 py-1 rounded-full mb-2">
             {activeView.badge}
           </span>
-          <h3 className="font-serif text-2xl font-medium text-black sm:text-3xl">
+          <h3 className="text-2xl sm:text-3xl font-bold text-slate-900">
             {activeView.title}
           </h3>
-          <p className="text-sm font-medium text-muted mt-1">{activeView.subtitle}</p>
+          <p className="text-sm font-medium text-slate-600 mt-1">{activeView.subtitle}</p>
         </div>
 
         {/* Device Mockup Display Showcase */}
         <div className="relative mt-8 flex justify-center">
           <div className={`w-full ${activeView.maxContainerClass} transition-all duration-300`}>
             {/* Screen Container with aesthetic styling */}
-            <div className="group relative overflow-hidden rounded-2xl sm:rounded-3xl border border-border/80 bg-white shadow-2xl transition-all hover:shadow-emerald-950/10">
-              {/* Top ambient frame header bar */}
-              <div className="flex items-center justify-between border-b border-border/60 bg-neutral-50/90 px-4 py-2.5 text-xs text-muted backdrop-blur">
+            <div className="group relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200 bg-white shadow-2xl transition-all hover:shadow-[#0b6842]/10">
+              {/* Top ambient browser bar */}
+              <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/90 px-3 sm:px-4 py-2 sm:py-2.5 text-xs text-slate-500 backdrop-blur">
                 <div className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-rose-400/80" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-amber-400/80" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-400/80" />
+                  <span className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-rose-400/80" />
+                  <span className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-amber-400/80" />
+                  <span className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-emerald-400/80" />
                 </div>
-                <div className="flex items-center gap-2 rounded-md border border-border/60 bg-white px-3 py-0.5 text-[11px] font-mono text-muted/90 shadow-2xs">
-                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  app.dartsalon.com / {activeTab}
+                <div className="flex items-center gap-1.5 sm:gap-2 rounded-full border border-slate-200 bg-white px-2.5 sm:px-3.5 py-0.5 text-[10px] sm:text-[11px] font-mono text-slate-600 shadow-2xs">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#10b981] animate-pulse" />
+                  app.dartsmartsalon.com / {activeTab}
                 </div>
-                <div className="text-[11px] font-semibold text-emerald-800">Live UI Preview</div>
+                <div className="text-[10px] sm:text-[11px] font-semibold text-[#0b6842]">Live Platform UI</div>
               </div>
 
               {/* Main Image Frame */}
-              <div className={`relative w-full ${activeView.aspectClass} overflow-hidden bg-neutral-100`}>
+              <div className={`relative w-full ${activeView.aspectClass} overflow-hidden bg-slate-50`}>
                 <Image
                   key={activeView.imageSrc}
                   src={activeView.imageSrc}
@@ -295,15 +293,15 @@ export function SystemUIShowcase() {
               </div>
             </div>
 
-            {/* Side Highlights (if present, like on mobile view) */}
+            {/* Side Highlights */}
             {activeView.sideHighlights && activeView.sideHighlights.length > 0 && (
               <div className="mt-6 flex flex-wrap justify-center gap-2 sm:gap-3">
                 {activeView.sideHighlights.map((highlight, idx) => (
                   <div
                     key={idx}
-                    className="inline-flex items-center gap-2 rounded-full border border-emerald-200/80 bg-emerald-50/90 px-3.5 py-1.5 text-xs font-medium text-emerald-900 shadow-xs backdrop-blur"
+                    className="inline-flex items-center gap-2 rounded-full border border-[#d1fae5] bg-[#f0f9f5] px-4 py-1.5 text-xs font-semibold text-[#0b6842] shadow-xs"
                   >
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-[#0b6842]" />
                     <span>{highlight}</span>
                   </div>
                 ))}
@@ -313,23 +311,23 @@ export function SystemUIShowcase() {
         </div>
 
         {/* 3 Highlight Badges Grid below mockup */}
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {activeView.features.map((feature, idx) => {
             const Icon = feature.icon;
             return (
               <div
                 key={idx}
-                className="group relative overflow-hidden rounded-2xl border border-border bg-white p-6 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-emerald-500/30 hover:shadow-md"
+                className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-[#10b981]/40 hover:shadow-lg"
               >
                 <div className="flex items-start gap-4">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 transition-colors group-hover:bg-emerald-600 group-hover:text-white">
-                    <Icon className="h-5 w-5" />
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#e8f6f0] text-[#0b6842] transition-colors group-hover:bg-[#0b6842] group-hover:text-white">
+                    <Icon className="h-6 w-6" strokeWidth={1.8} />
                   </div>
                   <div>
-                    <h4 className="text-base font-semibold text-black transition-colors group-hover:text-emerald-900">
+                    <h4 className="text-base font-bold text-slate-900 transition-colors group-hover:text-[#0b6842]">
                       {feature.title}
                     </h4>
-                    <p className="mt-1 text-sm leading-relaxed text-muted">
+                    <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
                       {feature.description}
                     </p>
                   </div>
@@ -339,22 +337,22 @@ export function SystemUIShowcase() {
           })}
         </div>
 
-        {/* Bottom Action Strip */}
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 rounded-2xl border border-gold/40 bg-gradient-to-r from-burgundy-soft/40 via-white to-gold-soft/40 p-6 sm:flex-row sm:px-8">
+        {/* Bottom Callout Banner */}
+        <div className="mt-14 flex flex-col items-center justify-between gap-6 rounded-3xl border border-[#bbf0d8] bg-gradient-to-r from-[#e8f6f0] via-white to-[#e8f6f0] p-6 sm:p-8 sm:flex-row shadow-sm">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-burgundy">
-              Experience the platform
+            <p className="text-xs font-bold uppercase tracking-wider text-[#0b6842]">
+              Experience Dart Smart Salon
             </p>
-            <p className="mt-1 font-serif text-lg font-medium text-black">
+            <p className="mt-1 text-lg sm:text-xl font-bold text-slate-900">
               Ready to modernize your salon operations with our intuitive UI?
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-3">
-            <Button href="/pricing" variant="primary" showArrow>
-              Get Started Free
+          <div className="flex flex-col sm:flex-row shrink-0 items-stretch sm:items-center gap-3 w-full sm:w-auto">
+            <Button href="/contact" variant="primary" showArrow className="rounded-full px-6 py-3 bg-[#0b6842] text-white hover:bg-[#07472c] justify-center">
+              Book a Demo
             </Button>
-            <Button href="/features" variant="secondary">
-              View All Modules
+            <Button href="/pricing" variant="secondary" className="rounded-full px-6 py-3 justify-center">
+              View Plans
             </Button>
           </div>
         </div>

@@ -118,7 +118,11 @@ export const SALON_ROUTE_ACCESS: Array<{
     match: (p) =>
       p.startsWith('/salon/products') ||
       p.startsWith('/salon/stock') ||
-      p.startsWith('/salon/product-categories'),
+      p.startsWith('/salon/product-categories') ||
+      p.startsWith('/salon/suppliers') ||
+      p.startsWith('/salon/grns') ||
+      p.startsWith('/salon/supplier-payments') ||
+      p.startsWith('/salon/supplier-outstanding'),
     feature: 'INVENTORY',
     module: 'INVENTORY',
   },
@@ -132,7 +136,7 @@ export const SALON_ROUTE_ACCESS: Array<{
     feature: 'PAYROLL',
     module: 'PAYROLL',
   },
-  { match: (p) => p.startsWith('/salon/employees'), module: 'CORE' },
+  { match: (p) => p.startsWith('/salon/employees'), feature: 'EMPLOYEES' },
   { match: (p) => p.startsWith('/salon/reports'), feature: 'REPORTS', module: 'POS' },
   { match: (p) => p.startsWith('/salon/branches'), module: 'MULTI_BRANCH' },
   { match: (p) => p.startsWith('/salon/subscription'), adminOnly: true },

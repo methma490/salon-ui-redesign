@@ -3,9 +3,11 @@ import {
   ArrayNotEmpty,
   IsArray,
   IsEmail,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   MinLength,
   ValidateNested,
 } from 'class-validator';
@@ -48,4 +50,12 @@ export class CreateSalonDto {
   @ValidateNested()
   @Type(() => CreateSalonAdminDto)
   admin!: CreateSalonAdminDto;
+
+  @IsOptional()
+  @IsUUID()
+  planId?: string;
+
+  @IsOptional()
+  @IsEnum(['MONTHLY', 'YEARLY'])
+  billingCycle?: 'MONTHLY' | 'YEARLY';
 }

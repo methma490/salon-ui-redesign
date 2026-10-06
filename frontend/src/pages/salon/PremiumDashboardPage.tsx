@@ -11,32 +11,37 @@ import { DashboardHeader, type QuickFilterType } from './dashboard/DashboardHead
 import { SummaryKpiCards } from './dashboard/SummaryKpiCards';
 import { FinancialOverviewChart } from './dashboard/FinancialOverviewChart';
 import { AppointmentOverviewCard } from './dashboard/AppointmentOverviewCard';
-import { TopEmployeesCard } from './dashboard/TopEmployeesCard';
 import { InventoryOverviewCard } from './dashboard/InventoryOverviewCard';
 import { EmployeeLoansCard } from './dashboard/EmployeeLoansCard';
-import { RecentOrdersCard } from './dashboard/RecentOrdersCard';
+import { RecentAppointmentsCard } from './dashboard/RecentAppointmentsCard';
 import { RecentTransactionsCard } from './dashboard/RecentTransactionsCard';
 import './dashboard/salon-admin-dashboard.css';
 
 function getTodayStr() {
-  return new Date().toISOString().slice(0, 10);
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 }
 
 function getMonthStartStr() {
   const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
 }
 
 function getWeekStartStr() {
   const d = new Date();
   d.setDate(d.getDate() - 6);
-  return d.toISOString().slice(0, 10);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function formatDateInput(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
 export default function PremiumDashboardPage() {
   const { branchId } = useSalonBranch();
 
   const [quickFilter, setQuickFilter] = useState<QuickFilterType>('this_month');
+  const [dashboardPreset, setDashboardPreset] = useState('month');
   const [startDate, setStartDate] = useState(getMonthStartStr());
   const [endDate, setEndDate] = useState(getTodayStr());
 
@@ -45,11 +50,17 @@ export default function PremiumDashboardPage() {
     if (quickFilter === 'today') return 'today';
     if (quickFilter === 'this_week') return 'week';
     if (quickFilter === 'this_month') return 'month';
-    return 'month';
-  }, [quickFilter]);
+    const rangeDays =
+      (new Date(`${endDate}T00:00:00`).getTime() - new Date(`${startDate}T00:00:00`).getTime()) /
+      (24 * 60 * 60 * 1000);
+    return rangeDays > 100 ? 'year' : 'month';
+  }, [quickFilter, startDate, endDate]);
 
   const handleQuickFilterChange = (filter: QuickFilterType) => {
     setQuickFilter(filter);
+    if (filter !== 'custom') {
+      setDashboardPreset(filter === 'this_month' ? 'month' : filter);
+    }
     if (filter === 'today') {
       const today = getTodayStr();
       setStartDate(today);
@@ -61,6 +72,46 @@ export default function PremiumDashboardPage() {
       setStartDate(getMonthStartStr());
       setEndDate(getTodayStr());
     }
+  };
+
+  const handleStartDateChange = (nextStartDate: string) => {
+    setStartDate(nextStartDate);
+    if (endDate < nextStartDate) setEndDate(nextStartDate);
+  };
+
+  const handleEndDateChange = (nextEndDate: string) => {
+    setEndDate(nextEndDate);
+  };
+
+  const handleDashboardTimeframeChange = (timeframe: string) => {
+    setDashboardPreset(timeframe);
+    if (timeframe === 'custom') {
+      setQuickFilter('custom');
+      return;
+    }
+    const today = new Date();
+    let start: Date;
+    let end = today;
+
+    if (timeframe === 'today') {
+      start = today;
+    } else if (timeframe === 'this_week') {
+      start = new Date(today);
+      start.setDate(start.getDate() - 6);
+    } else if (timeframe === 'last_month') {
+      start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      end = new Date(today.getFullYear(), today.getMonth(), 0);
+    } else if (timeframe === 'quarter') {
+      start = new Date(today.getFullYear(), Math.floor(today.getMonth() / 3) * 3, 1);
+    } else if (timeframe === 'year') {
+      start = new Date(today.getFullYear(), 0, 1);
+    } else {
+      start = new Date(today.getFullYear(), today.getMonth(), 1);
+    }
+
+    setStartDate(formatDateInput(start));
+    setEndDate(formatDateInput(end));
+    setQuickFilter(timeframe === 'month' ? 'this_month' : timeframe as QuickFilterType);
   };
 
   // Fetch tenant enabled features to check if LOANS / PAYROLL is enabled
@@ -88,8 +139,19 @@ export default function PremiumDashboardPage() {
     isError,
     refetch,
   } = useQuery<DashboardData>({
-    queryKey: ['dashboard-comprehensive', branchId, period],
-    queryFn: () => tenantApi.dashboard.get(branchId === 'all' ? undefined : branchId, period),
+    queryKey: [
+      'dashboard-comprehensive',
+      branchId,
+      period,
+      ...(quickFilter === 'custom' ? [startDate, endDate] : []),
+    ],
+    queryFn: () =>
+      tenantApi.dashboard.get(
+        branchId === 'all' ? undefined : branchId,
+        period,
+        quickFilter === 'custom' ? startDate : undefined,
+        quickFilter === 'custom' ? endDate : undefined,
+      ),
     staleTime: 30_000,
     retry: 1,
     refetchOnWindowFocus: false,
@@ -108,14 +170,13 @@ export default function PremiumDashboardPage() {
     );
   }
 
-  const kpis = data?.kpis;
-  const financials = data?.financials;
-  const appointmentOverview = data?.appointmentOverview;
-  const topEmployees = data?.topEmployees;
-  const inventoryOverview = data?.inventoryOverview;
-  const employeeLoans = data?.employeeLoans;
-  const recentOrders = data?.recentOrders;
-  const recentTransactions = data?.recentTransactions;
+  const dashboardData = data;
+  const kpis = dashboardData?.kpis;
+  const financials = dashboardData?.financials;
+  const appointmentOverview = dashboardData?.appointmentOverview;
+  const inventoryOverview = dashboardData?.inventoryOverview;
+  const employeeLoans = dashboardData?.employeeLoans;
+  const recentTransactions = dashboardData?.recentTransactions;
 
   // Extract KPI values with 0 fallback
   const revenue = financials?.revenue ?? kpis?.periodRevenue ?? 0;
@@ -124,8 +185,11 @@ export default function PremiumDashboardPage() {
   const expensesGrowth = financials?.expensesGrowth ?? kpis?.expensesGrowth ?? 0;
   const salaries = financials?.salaries ?? kpis?.salaries ?? 0;
   const salariesGrowth = financials?.salariesGrowth ?? kpis?.salariesGrowth ?? 0;
-  const netProfit = financials?.netProfit ?? kpis?.netProfit ?? 0;
-  const profitGrowth = financials?.profitGrowth ?? kpis?.profitGrowth ?? 0;
+  const netProfit = financials?.currentNetProfit ?? financials?.netProfit ?? kpis?.netProfit ?? 0;
+  const openingBankBalance = financials?.openingBankBalance ?? null;
+  const liveBankBalance =
+    financials?.currentBankBalance ??
+    (openingBankBalance === null || branchId !== 'all' ? null : openingBankBalance + netProfit);
 
   return (
     <div className="dash-container">
@@ -135,11 +199,11 @@ export default function PremiumDashboardPage() {
         onQuickFilterChange={handleQuickFilterChange}
         startDate={startDate}
         endDate={endDate}
-        onStartDateChange={setStartDate}
-        onEndDateChange={setEndDate}
+        onStartDateChange={handleStartDateChange}
+        onEndDateChange={handleEndDateChange}
       />
 
-      {/* Row 1: Summary 4 KPI Cards */}
+      {/* Row 1: Summary KPI cards */}
       <SummaryKpiCards
         revenue={revenue}
         revenueGrowth={revenueGrowth}
@@ -148,25 +212,35 @@ export default function PremiumDashboardPage() {
         salaries={salaries}
         salariesGrowth={salariesGrowth}
         netProfit={netProfit}
-        profitGrowth={profitGrowth}
+        openingBankBalance={openingBankBalance}
+        liveBankBalance={liveBankBalance}
+        salesByPaymentMethod={dashboardData?.paymentMethodBreakdown?.sales}
+        expensesByPaymentMethod={dashboardData?.paymentMethodBreakdown?.expenses}
       />
 
-      {/* Row 2: Revenue/Expenses/Salaries (60%) & Appointment Overview (40%) */}
+      {/* Row 2: Financial overview and inventory */}
       <div className="dash-row-2">
-        <FinancialOverviewChart data={financials?.weeklyComparison} />
-        <AppointmentOverviewCard data={appointmentOverview} />
+        <FinancialOverviewChart
+          data={financials?.weeklyComparison}
+          timeframe={dashboardPreset === 'today' || dashboardPreset === 'this_week' ? dashboardPreset : 'month'}
+          onTimeframeChange={handleDashboardTimeframeChange}
+        />
+        <InventoryOverviewCard data={inventoryOverview} />
       </div>
 
-      {/* Row 3: 3 Cards (Top Performing Employees, Inventory Overview, Employee Loans) */}
-      <div className="dash-row-3">
-        <TopEmployeesCard employees={topEmployees} />
-        <InventoryOverviewCard data={inventoryOverview} />
+      {/* Row 3: Appointment overview and employee loans */}
+      <div className="dash-row-4">
+        <AppointmentOverviewCard
+          data={appointmentOverview}
+          timeframe={dashboardPreset === 'today' || dashboardPreset === 'this_week' ? dashboardPreset : 'month'}
+          onTimeframeChange={handleDashboardTimeframeChange}
+        />
         {isLoansFeatureEnabled && <EmployeeLoansCard data={employeeLoans} />}
       </div>
 
-      {/* Row 4: 2 Cards (Recent Orders & Recent Transactions) */}
-      <div className="dash-row-4">
-        <RecentOrdersCard orders={recentOrders} />
+      {/* Row 4: Recent appointments, employee loans, recent transactions */}
+      <div className="dash-row-3">
+        <RecentAppointmentsCard appointments={dashboardData?.upcomingAppointments} />
         <RecentTransactionsCard transactions={recentTransactions} />
       </div>
     </div>

@@ -18,7 +18,7 @@ import './employees-page.css';
 
 export function getErrorMessage(
   error: unknown,
-  fallback = 'Something went wrong. Please try again.',
+  fallback = 'Could not load data. Please try again.',
 ) {
   const err = error as { response?: { data?: { message?: string | string[] } } };
   const message = err.response?.data?.message;
@@ -43,15 +43,17 @@ export function SimpleFormDialog({
   onOpenChange,
   title,
   children,
+  className,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
   children: ReactNode;
+  className?: string;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+      <DialogContent className={cn("max-h-[90vh] overflow-y-auto overflow-x-hidden sm:max-w-md", className)}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
@@ -123,7 +125,7 @@ export function OpsError({ message, onRetry }: { message: string; onRetry: () =>
   return (
     <div className="emp-page">
       <div className="emp-error-box">
-        <strong>Something went wrong</strong>
+        <strong>Unable to load data</strong>
         <p style={{ margin: '0.5rem 0 0' }}>{message}</p>
       </div>
       <button type="button" className="emp-btn emp-btn-primary" onClick={onRetry}>

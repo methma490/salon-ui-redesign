@@ -61,6 +61,77 @@ export function printReceipt(elementId = 'pos-printable-invoice'): void {
       visibility: visible !important;
       overflow: visible !important;
     }
+    .apt-ticket-invoice {
+      width: 72mm !important;
+      max-width: 72mm !important;
+      margin: 0 auto !important;
+      padding: 5mm !important;
+      border: 1px solid #cbd5e1 !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      font-size: 10px !important;
+    }
+    .apt-ticket-header {
+      padding-bottom: 10px !important;
+      border-bottom: 1px dashed #94a3b8 !important;
+      text-align: center !important;
+    }
+    .apt-ticket-brand { display: flex !important; align-items: center !important; justify-content: flex-start !important; gap: 7px !important; margin-bottom: 5px !important; }
+    .apt-ticket-logo, .apt-ticket-logo-fallback {
+      width: 34px !important; height: 34px !important; margin: 0 !important; flex: 0 0 auto !important;
+      object-fit: cover !important; border: 1px solid #cbd5e1 !important; border-radius: 5px !important;
+    }
+    .apt-ticket-header h2 { margin: 0 !important; color: #000 !important; font-size: 15px !important; font-weight: 800 !important; }
+    .apt-ticket-header > p, .apt-ticket-brand p { margin: 2px 0 0 !important; color: #444 !important; font-size: 9px !important; }
+    .apt-ticket-header .apt-ticket-type { margin-top: 8px !important; font-size: 8px !important; font-weight: 800 !important; letter-spacing: .1em !important; }
+    .apt-ticket-header .apt-ticket-code { font-family: monospace !important; font-size: 10px !important; font-weight: 700 !important; }
+    .apt-ticket-info { display: grid !important; gap: 5px !important; padding: 8px 0 !important; border-bottom: 1px dashed #94a3b8 !important; }
+    .apt-ticket-header .apt-ticket-info { margin-top: 7px !important; border-bottom: 0 !important; text-align: left !important; }
+    .apt-ticket-info div, .apt-ticket-lines-head, .apt-ticket-line, .apt-ticket-total {
+      display: flex !important; justify-content: space-between !important; gap: 8px !important;
+    }
+    .apt-ticket-info span, .apt-ticket-info strong, .apt-ticket-line, .apt-ticket-lines-head { font-size: 9px !important; }
+    .apt-ticket-info span, .apt-ticket-lines-head { color: #555 !important; }
+    .apt-ticket-info strong { color: #000 !important; font-weight: 600 !important; text-align: right !important; }
+    .apt-ticket-lines-head { padding: 6px 0 !important; border-bottom: 1px solid #cbd5e1 !important; font-weight: 800 !important; text-transform: uppercase !important; }
+    .apt-ticket-lines-body { display: block !important; }
+    .apt-ticket-line { padding: 6px 0 !important; border-bottom: 1px solid #e2e8f0 !important; color: #000 !important; }
+    .apt-ticket-line strong { color: #000 !important; font-weight: 600 !important; white-space: nowrap !important; }
+    .apt-ticket-total { margin-top: 8px !important; padding: 7px !important; background: #f1f5f9 !important; color: #000 !important; font-size: 11px !important; font-weight: 800 !important; }
+    .apt-ticket-total strong { font-size: 12px !important; font-variant-numeric: tabular-nums !important; }
+    .apt-ticket-footer { padding-top: 9px !important; border-top: 1px dashed #94a3b8 !important; color: #555 !important; text-align: center !important; }
+    .apt-ticket-footer p { margin: 0 !important; color: #222 !important; font-size: 10px !important; font-weight: 700 !important; }
+    .apt-ticket-footer span { display: block !important; margin-top: 3px !important; font-size: 8px !important; }
+    .apt-invoice-document { width: 100% !important; max-width: 100% !important; padding: 0 !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; color: #0f172a !important; }
+    .apt-invoice-brand-row { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 16px !important; padding: 18px !important; border: 1px solid #dbeafe !important; border-radius: 10px !important; background: #f1f7ff !important; }
+    .apt-invoice-brand { display: flex !important; align-items: center !important; gap: 12px !important; }
+    .apt-invoice-logo, .apt-invoice-logo-fallback { width: 64px !important; height: 64px !important; flex: 0 0 auto !important; border: 4px solid #dbeafe !important; border-radius: 50% !important; object-fit: cover !important; }
+    .apt-invoice-brand-text h2 { margin: 0 !important; color: #0f1e3d !important; font-size: 24px !important; font-weight: 800 !important; }
+    .apt-invoice-brand-text p { margin: 3px 0 0 !important; color: #617898 !important; font-size: 9px !important; font-weight: 700 !important; letter-spacing: .16em !important; }
+    .apt-invoice-brand-text span { display: inline-block !important; margin-top: 3px !important; color: #64748b !important; font-size: 10px !important; }
+    .apt-invoice-ref { min-width: 175px !important; padding-left: 20px !important; border-left: 1px solid #d5e3f5 !important; text-align: center !important; }
+    .apt-invoice-ref p { margin: 0 0 6px !important; color: #607797 !important; font-size: 9px !important; font-weight: 800 !important; letter-spacing: .16em !important; }
+    .apt-invoice-ref strong { display: block !important; padding: 7px 12px !important; border-radius: 8px !important; background: #dcecff !important; color: #1456a8 !important; font-size: 16px !important; }
+    .apt-invoice-details { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 20px !important; margin: 16px 0 !important; padding: 14px !important; border: 1px solid #e2eaf4 !important; border-radius: 9px !important; }
+    .apt-invoice-detail-column { display: grid !important; align-content: start !important; gap: 12px !important; }
+    .apt-invoice-detail-column + .apt-invoice-detail-column { padding-left: 18px !important; border-left: 1px solid #dbe4ef !important; }
+    .apt-invoice-detail { display: grid !important; grid-template-columns: 18px 75px 1fr !important; align-items: center !important; gap: 8px !important; }
+    .apt-invoice-detail svg { width: 15px !important; height: 15px !important; color: #536b8c !important; }
+    .apt-invoice-detail span { color: #607797 !important; font-size: 10px !important; }
+    .apt-invoice-detail strong { color: #0f1e3d !important; font-size: 11px !important; font-weight: 600 !important; }
+    .apt-invoice-lines { overflow: hidden !important; border: 1px solid #e2eaf4 !important; border-radius: 8px !important; }
+    .apt-invoice-lines-head, .apt-invoice-line { display: grid !important; grid-template-columns: 1fr 110px !important; gap: 12px !important; }
+    .apt-invoice-lines-head { padding: 9px 12px !important; background: #f2f7fd !important; color: #526b8e !important; font-size: 9px !important; font-weight: 800 !important; letter-spacing: .08em !important; text-transform: uppercase !important; }
+    .apt-invoice-lines-head span:last-child, .apt-invoice-line strong { text-align: right !important; }
+    .apt-invoice-line { padding: 10px 12px !important; border-top: 1px solid #e8eef6 !important; color: #203451 !important; font-size: 11px !important; }
+    .apt-invoice-line strong { color: #0f1e3d !important; font-weight: 600 !important; }
+    .apt-invoice-total { display: flex !important; align-items: center !important; justify-content: space-between !important; margin: 14px 0 !important; padding: 12px 16px !important; border-radius: 9px !important; background: #edf5ff !important; color: #0f1e3d !important; font-size: 18px !important; font-weight: 800 !important; }
+    .apt-invoice-total strong { color: #1764c0 !important; font-size: 25px !important; }
+    .apt-invoice-footer { display: flex !important; flex-direction: column !important; align-items: center !important; padding-top: 14px !important; border-top: 1px solid #e5edf7 !important; color: #607797 !important; text-align: center !important; }
+    .apt-invoice-crown { display: flex !important; width: 42px !important; height: 42px !important; align-items: center !important; justify-content: center !important; margin-bottom: 8px !important; border: 1px solid #dbeafe !important; border-radius: 50% !important; background: #f2f7ff !important; color: #1764c0 !important; }
+    .apt-invoice-crown svg { width: 18px !important; height: 18px !important; fill: currentColor !important; }
+    .apt-invoice-footer p { margin: 0 !important; color: #0f1e3d !important; font-size: 15px !important; font-weight: 800 !important; }
+    .apt-invoice-footer > span:last-child { margin-top: 4px !important; font-size: 10px !important; }
     .pos-inv-header, .sale-inv-brand-row, .ebill-header {
       display: flex !important;
       justify-content: space-between !important;

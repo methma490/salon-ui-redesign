@@ -166,6 +166,8 @@ describe('buildInvoiceHtml', () => {
         billingCycle: BillingCycle.MONTHLY,
         paymentMethod: 'PAYHERE',
         paymentReference: 'TX-99',
+        metadata: null,
+        subscriptionAddOnId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
         items: [

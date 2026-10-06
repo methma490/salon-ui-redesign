@@ -19,9 +19,9 @@ import { AuthenticatedUser } from '../../auth/interfaces/auth.interface';
 import { CurrentTenant } from '../../tenant/decorators/current-tenant.decorator';
 import { RequireFeature } from '../../tenant/decorators/require-feature.decorator';
 import { RequirePermission } from '../../tenant/decorators/require-permission.decorator';
-import { FeatureGuard } from '../../tenant/guards/feature.guard';
 import { PermissionGuard } from '../../tenant/guards/permission.guard';
 import { TenantContextGuard } from '../../tenant/guards/tenant-context.guard';
+import { FeatureGuard } from '../../tenant/guards/feature.guard';
 import { TenantContext } from '../../tenant/interfaces/tenant-context.interface';
 import {
   CreateEmployeeDto,
@@ -32,12 +32,12 @@ import {
 import { EmployeesService } from './employees.service';
 
 @Controller('tenant/employees')
-@UseGuards(JwtAuthGuard, TenantContextGuard, PermissionGuard)
+@UseGuards(JwtAuthGuard, TenantContextGuard, FeatureGuard, PermissionGuard)
+@RequireFeature('EMPLOYEES')
 export class EmployeesController {
   constructor(private readonly employeesService: EmployeesService) {}
 
   @Get()
-  @RequirePermission('EMPLOYEE_VIEW')
   list(@CurrentTenant() tenant: TenantContext, @Query() query: ListEmployeesQueryDto) {
     return this.employeesService.list(tenant.schemaName, query);
   }
@@ -51,7 +51,6 @@ export class EmployeesController {
   }
 
   @Post('upload-photo')
-  @RequirePermission('EMPLOYEE_CREATE')
   @UseInterceptors(
     FileInterceptor('image', {
       storage: memoryStorage(),
@@ -63,7 +62,6 @@ export class EmployeesController {
   }
 
   @Post(':id/upload-photo')
-  @RequirePermission('EMPLOYEE_UPDATE')
   @UseInterceptors(
     FileInterceptor('image', {
       storage: memoryStorage(),
@@ -75,13 +73,11 @@ export class EmployeesController {
   }
 
   @Get(':id')
-  @RequirePermission('EMPLOYEE_VIEW')
   getById(@CurrentTenant() tenant: TenantContext, @Param('id') id: string) {
     return this.employeesService.findById(tenant.schemaName, id);
   }
 
   @Post()
-  @RequirePermission('EMPLOYEE_CREATE')
   create(
     @CurrentTenant() tenant: TenantContext,
     @CurrentUser() user: AuthenticatedUser,
@@ -91,7 +87,6 @@ export class EmployeesController {
   }
 
   @Patch(':id')
-  @RequirePermission('EMPLOYEE_UPDATE')
   update(
     @CurrentTenant() tenant: TenantContext,
     @CurrentUser() user: AuthenticatedUser,
@@ -102,7 +97,6 @@ export class EmployeesController {
   }
 
   @Patch(':id/status')
-  @RequirePermission('EMPLOYEE_UPDATE')
   updateStatus(
     @CurrentTenant() tenant: TenantContext,
     @CurrentUser() user: AuthenticatedUser,
@@ -113,7 +107,6 @@ export class EmployeesController {
   }
 
   @Delete(':id')
-  @RequirePermission('EMPLOYEE_UPDATE')
   delete(
     @CurrentTenant() tenant: TenantContext,
     @CurrentUser() user: AuthenticatedUser,

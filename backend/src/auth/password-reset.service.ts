@@ -6,6 +6,7 @@ import { PrismaService } from '../database/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { TenantSchemaService } from '../tenant/services/tenant-schema.service';
 import { tenantTable } from '../tenant/utils/schema-name.util';
+import { LoginSecurityService } from './login-security.service';
 import type { AuthPortal } from './dto/forgot-password.dto';
 import { generatePasswordResetToken, hashToken } from './utils/token.util';
 
@@ -29,10 +30,16 @@ export class PasswordResetService {
     private readonly configService: ConfigService,
     private readonly mailService: MailService,
     private readonly tenantSchemaService: TenantSchemaService,
+    private readonly loginSecurityService: LoginSecurityService,
   ) {}
 
-  async requestReset(email: string, portal: AuthPortal = 'salon'): Promise<{ message: string }> {
+  async requestReset(
+    email: string,
+    portal: AuthPortal = 'salon',
+    ipAddress?: string,
+  ): Promise<{ message: string }> {
     const normalizedEmail = email.toLowerCase().trim();
+    this.loginSecurityService.assertNotLocked(normalizedEmail, ipAddress);
     const account = await this.resolveAccount(normalizedEmail, portal);
 
     if (account) {
@@ -78,15 +85,18 @@ export class PasswordResetService {
     };
   }
 
-  async resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+  async resetPassword(token: string, newPassword: string, ipAddress?: string): Promise<{ message: string }> {
     const tokenHash = hashToken(token.trim());
     const record = await this.prisma.passwordResetToken.findUnique({
       where: { tokenHash },
     });
 
     if (!record || record.usedAt || record.expiresAt <= new Date()) {
+      this.loginSecurityService.recordFailedAttempt('reset-token-abuse', ipAddress, 'reset-password-invalid-token');
       throw new UnauthorizedException('Invalid or expired reset link');
     }
+
+    this.loginSecurityService.recordSuccessfulLogin(record.email, ipAddress);
 
     const passwordHash = await bcrypt.hash(newPassword, 12);
 

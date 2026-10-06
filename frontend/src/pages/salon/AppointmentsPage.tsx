@@ -2,15 +2,22 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Building2,
   Calendar,
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
+  Clock3,
+  Crown,
   Loader2,
   Lock,
   Mail,
+  MapPin,
   Pencil,
   Phone,
+  Printer,
   Plus,
   User,
+  UserRound,
+  UsersRound,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -40,6 +47,8 @@ import {
 } from '@/components/ui/select';
 import { useSalonBranch } from '@/contexts/SalonBranchContext';
 import { formatMoneyAmount } from '@/lib/money';
+import { printReceipt } from '@/lib/print-receipt';
+import { resolveUploadUrl } from '@/lib/upload-url';
 import { FormError, getErrorMessage, OpsError, OpsLoading, OpsPagination } from './salon-ops-ui';
 import './appointments-page.css';
 import './employees-page.css';
@@ -72,29 +81,6 @@ const emptyForm: AppointmentForm = {
   notes: '',
   status: 'CONFIRMED',
 };
-
-const CHIP_COLORS = [
-  'apt-chip-blue',
-  'apt-chip-pink',
-  'apt-chip-green',
-  'apt-chip-purple',
-  'apt-chip-amber',
-  'apt-chip-rose',
-  'apt-chip-emerald',
-];
-
-function appointmentCalendarColorClass(status: string, index: number): string {
-  switch (status) {
-    case 'CONFIRMED':
-      return 'apt-chip-confirmed';
-    case 'COMPLETED':
-      return 'apt-chip-completed';
-    case 'PENDING':
-      return 'apt-chip-pending';
-    default:
-      return CHIP_COLORS[index % CHIP_COLORS.length];
-  }
-}
 
 const MONTHS = [
   { value: '01', label: 'January' },
@@ -227,6 +213,10 @@ function computeEndTime(startTime: string, services: Service[], serviceIds: stri
 export default function AppointmentsPage() {
   const qc = useQueryClient();
   const { branchId: ribbonBranchId, activeBranches } = useSalonBranch();
+  const { data: settings } = useQuery({
+    queryKey: ['tenant-settings'],
+    queryFn: tenantApi.settings.get,
+  });
 
   const [activeTab, setActiveTab] = useState<Tab>('calendar');
   const [selectedDate, setSelectedDate] = useState(todayIso());
@@ -247,6 +237,7 @@ export default function AppointmentsPage() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editAppointment, setEditAppointment] = useState<Appointment | null>(null);
+  const [invoiceAppointment, setInvoiceAppointment] = useState<Appointment | null>(null);
   const [form, setForm] = useState<AppointmentForm>(() => ({
     ...emptyForm,
     branchId: branchFilter || activeBranches[0]?.id || '',
@@ -254,6 +245,8 @@ export default function AppointmentsPage() {
   }));
   const [editForm, setEditForm] = useState<AppointmentForm>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
+  const [employeeSearch, setEmployeeSearch] = useState('');
+  const employeeSearchInputRef = useRef<HTMLInputElement>(null);
 
   // Quick Customer Creation Modal inside Appointment Popup
   const [quickCustomerOpen, setQuickCustomerOpen] = useState(false);
@@ -333,6 +326,14 @@ export default function AppointmentsPage() {
     const branchId = editAppointment ? editForm.branchId : form.branchId;
     return employees.filter((employee) => employee.status === 'ACTIVE' && employee.branchId === branchId);
   }, [employees, editAppointment, editForm.branchId, form.branchId]);
+
+  const filteredFormEmployees = useMemo(() => {
+    const search = employeeSearch.trim().toLowerCase();
+    if (!search) return formEmployees;
+    return formEmployees.filter((employee) =>
+      `${employee.name} ${employee.designation || ''}`.toLowerCase().includes(search),
+    );
+  }, [employeeSearch, formEmployees]);
 
   const listParams = useMemo(() => {
     const params: Record<string, string> = {
@@ -437,6 +438,7 @@ export default function AppointmentsPage() {
       qc.invalidateQueries({ queryKey: ['appointments'] });
       qc.invalidateQueries({ queryKey: ['appointments-calendar'] });
       qc.invalidateQueries({ queryKey: ['dashboard-comprehensive'] });
+      qc.invalidateQueries({ queryKey: ['report-employee-performance'] });
       appAlert({
         icon: 'success',
         title: 'Status Updated',
@@ -485,13 +487,17 @@ export default function AppointmentsPage() {
       branchId: activeBranchId,
       employeeId: prefill?.employeeId || '',
       startTime: start,
-      endTime: computeEndTime(start, activeServices, activeServices[0] ? [activeServices[0].id] : []),
-      serviceIds: activeServices[0] ? [activeServices[0].id] : [],
+      endTime: computeEndTime(start, activeServices, []),
+      serviceIds: [],
     });
     setCreateOpen(true);
   };
 
   const openEdit = (appointment: Appointment) => {
+    if (appointment.status === 'COMPLETED') {
+      setInvoiceAppointment(appointment);
+      return;
+    }
     setFormError(null);
     setEditAppointment(appointment);
     setEditForm({
@@ -597,7 +603,7 @@ export default function AppointmentsPage() {
   if (isError) return <OpsError message={getErrorMessage(error)} onRetry={() => void refetch()} />;
 
   return (
-    <div className="mx-auto w-full max-w-[1500px] space-y-6">
+    <div className={`appointments-page mx-auto w-full max-w-[1500px] space-y-6 ${activeTab === 'calendar' ? 'appointments-calendar-page' : ''}`}>
       {/* Top Header matching screenshot */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
@@ -695,7 +701,7 @@ export default function AppointmentsPage() {
       </div>
 
       {/* Main Card Container */}
-      <div className="rounded-2xl border border-slate-200/90 bg-white shadow-xs overflow-hidden">
+      <div className="appointments-card rounded-2xl border border-slate-200/90 bg-white shadow-xs overflow-hidden">
         {/* Subheader bar inside card */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-3.5 sm:px-5 py-3 sm:py-3.5 border-b border-slate-100 bg-white">
           <div className="flex items-center gap-2.5 text-slate-800 font-bold text-sm">
@@ -871,7 +877,7 @@ export default function AppointmentsPage() {
                         )}
 
                         {/* Render Appointments */}
-                        {empApts.map((apt, aptIdx) => {
+                        {empApts.map((apt) => {
                           const [sh, sm] = apt.startTime.split(':').map(Number);
                           const [eh, em] = apt.endTime.split(':').map(Number);
                           const startMin = (sh - TIMELINE_START_HOUR) * 60 + (sm || 0);
@@ -883,7 +889,6 @@ export default function AppointmentsPage() {
                             100 - leftPct,
                             (durationMin / TOTAL_MINUTES) * 100,
                           );
-                          const colorClass = appointmentCalendarColorClass(apt.status, aptIdx);
                           const serviceNames =
                             apt.services.map((s) => s.name).join(', ') || 'Service';
 
@@ -896,7 +901,7 @@ export default function AppointmentsPage() {
                                 top: `${8 + (appointmentLanes.get(apt.id) ?? 0) * 58}px`,
                                 height: '52px',
                               }}
-                              className={`apt-appointment-chip ${colorClass}`}
+                              className={`apt-appointment-chip apt-chip-${apt.status.toLowerCase()}`}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 openEdit(apt);
@@ -912,8 +917,6 @@ export default function AppointmentsPage() {
                                 </span>
                               </div>
                               <div className="text-[11px] text-slate-600 truncate mt-0.5">
-                                <span className="font-semibold">{emp.name}</span>
-                                <span className="text-slate-400"> · </span>
                                 {serviceNames}
                               </div>
                             </div>
@@ -1097,6 +1100,96 @@ export default function AppointmentsPage() {
         )}
       </div>
 
+      {/* Completed appointments open a read-only invoice view. */}
+      <Dialog
+        open={invoiceAppointment !== null}
+        onOpenChange={(open) => {
+          if (!open) setInvoiceAppointment(null);
+        }}
+      >
+        <DialogContent className="apt-invoice-dialog max-h-[86vh] overflow-y-auto rounded-2xl bg-white p-3.5 shadow-lg sm:max-w-2xl sm:p-4">
+          {invoiceAppointment && (
+            <div className="apt-invoice-wrap">
+              <div className="apt-invoice-toolbar">
+                <div>
+                  <DialogHeader className="text-left">
+                    <DialogTitle className="text-lg font-extrabold tracking-tight text-slate-900">Service receipt</DialogTitle>
+                    <DialogDescription className="text-xs text-slate-500">
+                      <span className="apt-invoice-complete"><span>✓</span>Completed appointment</span>
+                    </DialogDescription>
+                  </DialogHeader>
+                </div>
+                <button
+                  type="button"
+                  className="apt-invoice-print-btn"
+                  onClick={() => printReceipt('appointment-printable-invoice')}
+                  aria-label="Print invoice"
+                  title="Print receipt"
+                >
+                  <Printer size={18} />
+                </button>
+              </div>
+
+              <article className="sale-inv-document apt-invoice-document" id="appointment-printable-invoice">
+                <header className="apt-invoice-brand-row">
+                  <div className="apt-invoice-brand">
+                    {settings?.salon.logoUrl ? (
+                      <img src={resolveUploadUrl(settings.salon.logoUrl) || settings.salon.logoUrl} alt="" className="apt-invoice-logo" />
+                    ) : (
+                      <span className="apt-invoice-logo-fallback" aria-hidden="true">✂</span>
+                    )}
+                    <div className="apt-invoice-brand-text">
+                      <h2>{settings?.salon.name || 'Salon'}</h2>
+                      <p>SALON &amp; BEAUTY CARE</p>
+                      {settings?.salon.phone && <span>{settings.salon.phone}</span>}
+                    </div>
+                  </div>
+                  <div className="apt-invoice-ref">
+                    <p>SERVICE RECEIPT</p>
+                    <strong>{invoiceAppointment.code}</strong>
+                  </div>
+                </header>
+
+                <section className="apt-invoice-details">
+                  <div className="apt-invoice-detail-column">
+                    <div className="apt-invoice-detail"><UserRound /><span>Customer</span><strong>{invoiceAppointment.customerName}</strong></div>
+                    <div className="apt-invoice-detail"><CalendarDays /><span>Date</span><strong>{formatDateDisplay(invoiceAppointment.appointmentDate)}</strong></div>
+                    <div className="apt-invoice-detail"><Clock3 /><span>Time</span><strong>{invoiceAppointment.startTime} – {invoiceAppointment.endTime}</strong></div>
+                  </div>
+                  <div className="apt-invoice-detail-column">
+                    <div className="apt-invoice-detail"><MapPin /><span>Branch</span><strong>{invoiceAppointment.branchName}</strong></div>
+                    <div className="apt-invoice-detail"><UsersRound /><span>Staff</span><strong>{invoiceAppointment.employeeName || '—'}</strong></div>
+                  </div>
+                </section>
+
+                <div className="apt-invoice-lines">
+                  <div className="apt-invoice-lines-head"><span>Service</span><span>Amount</span></div>
+                  <div className="apt-invoice-lines-body">
+                    {invoiceAppointment.services.map((service) => (
+                      <div className="apt-invoice-line" key={service.id}>
+                        <span>{service.name}</span>
+                        <strong>{formatMoneyAmount(service.price)}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="apt-invoice-total">
+                  <span>Total</span>
+                  <strong>{formatMoneyAmount(invoiceAppointment.totalPrice)}</strong>
+                </div>
+
+                <footer className="apt-invoice-footer">
+                  <span className="apt-invoice-crown"><Crown /></span>
+                  <p>Thank you for visiting!</p>
+                  <span>Appointment record · {invoiceAppointment.code}</span>
+                </footer>
+              </article>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Appointment Form Dialog (Create / Edit) */}
       <Dialog
         open={createOpen || editAppointment !== null}
@@ -1156,10 +1249,6 @@ export default function AppointmentsPage() {
               }
               if (!activeF.employeeId) {
                 setFormError('Please select an employee.');
-                return;
-              }
-              if (activeF.serviceIds.length === 0) {
-                setFormError('Please select at least one service.');
                 return;
               }
               setFormError(null);
@@ -1300,17 +1389,33 @@ export default function AppointmentsPage() {
                 onValueChange={(value) => {
                   if (editAppointment) setEditForm({ ...editForm, employeeId: value });
                   else setForm({ ...form, employeeId: value });
+                  setEmployeeSearch('');
                 }}
               >
                 <SelectTrigger className="h-10 rounded-xl border-slate-200 text-xs">
                   <SelectValue placeholder="Select employee" />
                 </SelectTrigger>
                 <SelectContent>
-                  {formEmployees.map((employee) => (
+                  <div className="sticky top-0 z-10 bg-popover p-2">
+                    <Input
+                      ref={employeeSearchInputRef}
+                      autoFocus
+                      value={employeeSearch}
+                      onChange={(event) => setEmployeeSearch(event.target.value)}
+                      onKeyDown={(event) => event.stopPropagation()}
+                      placeholder="Search employees..."
+                      aria-label="Search employees"
+                      className="h-8 rounded-lg text-xs"
+                    />
+                  </div>
+                  {filteredFormEmployees.map((employee) => (
                     <SelectItem key={employee.id} value={employee.id} className="text-xs">
                       {employee.name}{employee.designation ? ` · ${employee.designation}` : ''}
                     </SelectItem>
                   ))}
+                  {filteredFormEmployees.length === 0 && (
+                    <div className="px-2 py-1.5 text-xs text-slate-500">No employees found.</div>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -1375,7 +1480,7 @@ export default function AppointmentsPage() {
             {/* Services Checklist */}
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-slate-800">
-                Services <span className="text-rose-500">*</span>
+                Services <span className="text-slate-400 font-normal">(optional)</span>
               </Label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1.5 border border-slate-200 rounded-xl bg-slate-50/50">
                 {activeServices.map((svc) => {

@@ -1,9 +1,10 @@
-import { CreditCard, Layers3 } from 'lucide-react';
+import { CreditCard, Layers3, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { CreatePlanDialog } from '@/features/plans/components/CreatePlanDialog';
 import { EditPlanDialog } from '@/features/plans/components/EditPlanDialog';
 import { ManagePlanFeaturesDialog } from '@/features/plans/components/ManagePlanFeaturesDialog';
 import { ManagePlanPricingDialog } from '@/features/plans/components/ManagePlanPricingDialog';
+import { ManageAddonPricingDialog } from '@/features/plans/components/ManageAddonPricingDialog';
 import {
   useActivatePlan,
   useAdminPlans,
@@ -123,6 +124,7 @@ export default function PlanListPage() {
   const activatePlan = useActivatePlan();
   const deactivatePlan = useDeactivatePlan();
   const [createOpen, setCreateOpen] = useState(false);
+  const [addonPricingOpen, setAddonPricingOpen] = useState(false);
   const [activePlan, setActivePlan] = useState<AdminPlan | null>(null);
   const [activeAction, setActiveAction] = useState<PlanAction | null>(null);
 
@@ -159,9 +161,18 @@ export default function PlanListPage() {
           <h1>Subscription Plans</h1>
           <p>Define plan templates, pricing, and included features for salon tenants</p>
         </div>
-        <button type="button" className="plans-btn plans-btn-primary" onClick={() => setCreateOpen(true)}>
-          + Create Plan
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <button
+            type="button"
+            className="plans-btn plans-btn-secondary"
+            onClick={() => setAddonPricingOpen(true)}
+          >
+            <Sparkles size={16} /> Feature Add-on Pricing
+          </button>
+          <button type="button" className="plans-btn plans-btn-primary" onClick={() => setCreateOpen(true)}>
+            + Create Plan
+          </button>
+        </div>
       </header>
 
       <section className="plans-stats" aria-label="Plan summary">
@@ -325,6 +336,11 @@ export default function PlanListPage() {
         onOpenChange={(open) => {
           if (!open) closeAction();
         }}
+      />
+
+      <ManageAddonPricingDialog
+        open={addonPricingOpen}
+        onOpenChange={setAddonPricingOpen}
       />
     </div>
   );

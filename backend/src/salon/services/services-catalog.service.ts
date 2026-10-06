@@ -354,7 +354,7 @@ export class ServicesCatalogService {
     return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
       const isPaginated = normalizedQuery.page !== undefined || normalizedQuery.limit !== undefined;
 
-      if (!isPaginated && (normalizedQuery.all === true || normalizedQuery.all === 'true' || typeof query === 'string' || !query)) {
+      if (!isPaginated) {
         const rows = await tx.$queryRawUnsafe<Array<any>>(
           `SELECT s.id, s.code, s.name, s.description, s.price, s.duration_minutes AS "durationMinutes",
                   s.category_id AS "categoryId", c.name AS "categoryName",
