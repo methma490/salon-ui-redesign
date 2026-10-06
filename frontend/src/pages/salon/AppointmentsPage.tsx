@@ -46,7 +46,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useSalonBranch } from '@/contexts/SalonBranchContext';
-import { useTenantTheme } from '@/contexts/TenantThemeContext';
 import { formatMoneyAmount } from '@/lib/money';
 import { printReceipt } from '@/lib/print-receipt';
 import { resolveUploadUrl } from '@/lib/upload-url';
@@ -1396,15 +1395,11 @@ export default function AppointmentsPage() {
                 <SelectTrigger className="h-10 rounded-xl border-slate-200 text-xs">
                   <SelectValue placeholder="Select employee" />
                 </SelectTrigger>
-                <SelectContent
-                  onOpenAutoFocus={(event) => {
-                    event.preventDefault();
-                    employeeSearchInputRef.current?.focus();
-                  }}
-                >
+                <SelectContent>
                   <div className="sticky top-0 z-10 bg-popover p-2">
                     <Input
                       ref={employeeSearchInputRef}
+                      autoFocus
                       value={employeeSearch}
                       onChange={(event) => setEmployeeSearch(event.target.value)}
                       onKeyDown={(event) => event.stopPropagation()}
