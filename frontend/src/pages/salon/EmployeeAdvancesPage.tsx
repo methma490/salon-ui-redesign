@@ -430,7 +430,7 @@ export default function EmployeeAdvancesPage() {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 }}>
                   <span>Basic Salary: <strong>LKR {formatMoney(basicSalary)}</strong></span>
-                  <span>Max Allowed ({maxPct}%): <strong style={{ color: '#0d5c3d' }}>LKR {formatMoney(maxAllowed)}</strong></span>
+                  <span>Max Allowed ({maxPct}%): <strong style={{ color: 'var(--brand-primary, #0d5c3d)' }}>LKR {formatMoney(maxAllowed)}</strong></span>
                 </div>
               </div>
             );

@@ -19,6 +19,7 @@ model Tenant {
   updatedAt             DateTime               @updatedAt
   logoUrl               String?
   primaryColor          String?
+  openingBankBalance    Decimal?               @map("opening_bank_balance") @db.Decimal(10, 2)
   invoiceLinks          InvoiceLink[]
   invoices              Invoice[]
   notificationLogs      NotificationLog[]
@@ -765,3 +766,4 @@ enum SubscriptionReminderStatus {
   FAILED
   SKIPPED
 }
+

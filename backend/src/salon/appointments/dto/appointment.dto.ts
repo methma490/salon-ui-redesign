@@ -1,6 +1,5 @@
 import { Transform } from 'class-transformer';
 import {
-  ArrayMinSize,
   IsArray,
   IsDateString,
   IsEnum,
@@ -52,10 +51,10 @@ export class CreateAppointmentDto {
   })
   endTime!: string;
 
+  @IsOptional()
   @IsArray()
-  @ArrayMinSize(1)
   @IsUUID('4', { each: true })
-  serviceIds!: string[];
+  serviceIds?: string[];
 
   @IsOptional()
   @Transform(emptyToUndefined)
@@ -98,7 +97,6 @@ export class UpdateAppointmentDto {
 
   @IsOptional()
   @IsArray()
-  @ArrayMinSize(1)
   @IsUUID('4', { each: true })
   serviceIds?: string[];
 

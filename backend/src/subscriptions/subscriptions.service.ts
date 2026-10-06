@@ -914,53 +914,68 @@ export class SubscriptionsService {
     tenantId: string,
     featureCodes: string[],
   ) {
-    const subscription = await this.findTenantSubscriptionOrThrow(subscriptionId, tenantId);
+    let stage = 'load subscription';
+    try {
+      const subscription = await this.findTenantSubscriptionOrThrow(subscriptionId, tenantId);
 
-    const editableStatuses: SubscriptionStatus[] = [
-      SubscriptionStatus.ACTIVE,
-      SubscriptionStatus.TRIAL,
-      SubscriptionStatus.PENDING,
-    ];
+      const editableStatuses: SubscriptionStatus[] = [
+        SubscriptionStatus.ACTIVE,
+        SubscriptionStatus.TRIAL,
+        SubscriptionStatus.PENDING,
+      ];
 
-    if (!editableStatuses.includes(subscription.status)) {
-      throw new BadRequestException(
-        'Features can only be updated for active, trial, or pending subscriptions',
-      );
-    }
-
-    const uniqueFeatures = normalizeFeatureCodes(featureCodes);
-    const features = await this.resolveActiveFeatures(uniqueFeatures);
-    const featureIds = features.map((feature) => feature.id);
-
-    await this.prisma.$transaction(async (tx) => {
-      await tx.subscriptionFeature.deleteMany({ where: { subscriptionId } });
-
-      if (featureIds.length > 0) {
-        await tx.subscriptionFeature.createMany({
-          data: featureIds.map((featureId) => ({
-            subscriptionId,
-            featureId,
-            enabled: true,
-          })),
-        });
+      if (!editableStatuses.includes(subscription.status)) {
+        throw new BadRequestException(
+          'Features can only be updated for active, trial, or pending subscriptions',
+        );
       }
 
-      await this.recordHistory(tx, {
-        subscriptionId,
-        action: SubscriptionHistoryAction.STATUS_CHANGED,
-        metadata: {
-          reason: 'SUPER_ADMIN_FEATURE_OVERRIDE',
-          features: uniqueFeatures,
-        },
+      stage = 'validate selected features';
+      const uniqueFeatures = normalizeFeatureCodes(featureCodes);
+      const features = await this.resolveActiveFeatures(uniqueFeatures);
+      const featureIds = features.map((feature) => feature.id);
+
+      stage = 'replace subscription feature snapshot';
+      await this.prisma.$transaction(async (tx) => {
+        await tx.subscriptionFeature.deleteMany({ where: { subscriptionId } });
+
+        if (featureIds.length > 0) {
+          await tx.subscriptionFeature.createMany({
+            data: featureIds.map((featureId) => ({
+              subscriptionId,
+              featureId,
+              enabled: true,
+            })),
+          });
+        }
+
+        await this.recordHistory(tx, {
+          subscriptionId,
+          action: SubscriptionHistoryAction.STATUS_CHANGED,
+          metadata: {
+            reason: 'SUPER_ADMIN_FEATURE_OVERRIDE',
+            features: uniqueFeatures,
+          },
+        });
       });
-    });
 
-    await this.syncTenantFeaturesFromSubscription(subscriptionId, tenantId);
-    this.logger.log(
-      `Subscription features updated: subscription=${subscriptionId}, tenant=${tenantId}`,
-    );
+      stage = 'sync tenant feature cache';
+      await this.syncTenantFeaturesFromSubscription(subscriptionId, tenantId);
+      this.logger.log(
+        `Subscription features updated: subscription=${subscriptionId}, tenant=${tenantId}`,
+      );
 
-    return this.findById(subscriptionId, tenantId);
+      stage = 'reload subscription';
+      return await this.findById(subscriptionId, tenantId);
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      const stack = error instanceof Error ? error.stack : undefined;
+      this.logger.error(
+        `Subscription feature update failed at stage "${stage}" (subscription=${subscriptionId}, tenant=${tenantId}): ${detail}`,
+        stack,
+      );
+      throw error;
+    }
   }
 
   async createCustomSubscription(dto: CreateCustomSubscriptionDto) {

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   LineChart,
   Line,
@@ -16,14 +15,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useTenantTheme } from '@/contexts/TenantThemeContext';
+const STATUS_COLORS = {
+  completed: '#10b981',
+  confirmed: '#3b82f6',
+  cancelled: '#f43f5e',
+  pending: '#f59e0b',
+} as const;
 
 interface AppointmentOverviewData {
   total: number;
   completed: number;
   completedPct: number;
-  pending: number;
-  pendingPct: number;
+  confirmed: number;
+  confirmedPct: number;
+  pending?: number;
   cancelled: number;
   cancelledPct: number;
   noShow?: number;
@@ -31,7 +36,8 @@ interface AppointmentOverviewData {
   trend?: Array<{
     date: string;
     completed: number;
-    pending: number;
+    confirmed: number;
+    pending?: number;
     cancelled: number;
     noShow?: number;
   }>;
@@ -39,41 +45,43 @@ interface AppointmentOverviewData {
 
 interface AppointmentOverviewCardProps {
   data?: AppointmentOverviewData;
+  timeframe: string;
+  onTimeframeChange?: (timeframe: string) => void;
 }
 
-export function AppointmentOverviewCard({ data }: AppointmentOverviewCardProps) {
-  const theme = useTenantTheme();
-  const primaryColor = theme?.palette?.primary ?? '#2563eb';
-  const [timeframe, setTimeframe] = useState('month');
+export function AppointmentOverviewCard({ data, timeframe, onTimeframeChange }: AppointmentOverviewCardProps) {
 
   const total = data?.total || 0;
   const completed = data?.completed ?? 0;
+  const confirmed = data?.confirmed ?? 0;
   const pending = data?.pending ?? 0;
   const cancelled = data?.cancelled ?? 0;
 
   const trendData = data?.trend && data.trend.length > 0 ? data.trend : [];
 
   return (
-    <div className="dash-card">
+    <div className="dash-card dash-appointment-overview-card">
       <div className="dash-card-header">
         <div className="dash-card-title-group">
           <h2>Appointment Overview</h2>
           <p>Appointments count by status.</p>
         </div>
 
-        <Select value={timeframe} onValueChange={setTimeframe}>
-          <SelectTrigger className="h-8 w-28 text-xs bg-white border-slate-200">
+        <Select value={timeframe} onValueChange={(value) => {
+          onTimeframeChange?.(value);
+        }}>
+          <SelectTrigger className="h-8 w-32 text-xs bg-white border-slate-200">
             <SelectValue placeholder="This Month" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="today">Today</SelectItem>
+            <SelectItem value="this_week">This Week</SelectItem>
             <SelectItem value="month">This Month</SelectItem>
-            <SelectItem value="last_month">Last Month</SelectItem>
-            <SelectItem value="quarter">This Quarter</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* Top 4 Summary metric tiles */}
+      {/* Appointment summary tiles */}
       <div className="dash-appt-stats-row">
         <div className="dash-appt-stat-tile">
           <div className="dash-appt-stat-icon bg-blue-50 text-blue-600">
@@ -96,6 +104,16 @@ export function AppointmentOverviewCard({ data }: AppointmentOverviewCardProps) 
         </div>
 
         <div className="dash-appt-stat-tile">
+          <div className="dash-appt-stat-icon bg-blue-50 text-blue-600">
+            <Clock className="h-4 w-4" />
+          </div>
+          <div className="dash-appt-stat-info">
+            <span className="dash-appt-stat-val">{confirmed}</span>
+            <span className="dash-appt-stat-lbl">Confirmed</span>
+          </div>
+        </div>
+
+        <div className="dash-appt-stat-tile">
           <div className="dash-appt-stat-icon bg-amber-50 text-amber-600">
             <Clock className="h-4 w-4" />
           </div>
@@ -106,7 +124,7 @@ export function AppointmentOverviewCard({ data }: AppointmentOverviewCardProps) 
         </div>
 
         <div className="dash-appt-stat-tile">
-          <div className="dash-appt-stat-icon bg-slate-100 text-slate-500">
+          <div className="dash-appt-stat-icon bg-rose-50 text-rose-600">
             <XCircle className="h-4 w-4" />
           </div>
           <div className="dash-appt-stat-info">
@@ -119,19 +137,23 @@ export function AppointmentOverviewCard({ data }: AppointmentOverviewCardProps) 
       {/* Legend */}
       <div className="flex items-center gap-4 mb-3 flex-wrap">
         <div className="dash-legend-item">
-          <span className="dash-legend-dot blue" style={{ backgroundColor: primaryColor }} />
+          <span className="dash-legend-dot" style={{ backgroundColor: STATUS_COLORS.completed }} />
           <span>Completed</span>
         </div>
         <div className="dash-legend-item">
-          <span className="dash-legend-dot amber" />
+          <span className="dash-legend-dot" style={{ backgroundColor: STATUS_COLORS.confirmed }} />
+          <span>Confirmed</span>
+        </div>
+        <div className="dash-legend-item">
+          <span className="dash-legend-dot" style={{ backgroundColor: STATUS_COLORS.pending }} />
           <span>Pending</span>
         </div>
         <div className="dash-legend-item">
-          <span className="dash-legend-dot red" />
+          <span className="dash-legend-dot" style={{ backgroundColor: STATUS_COLORS.cancelled }} />
           <span>Cancelled</span>
         </div>
         <div className="dash-legend-item">
-          <span className="dash-legend-dot gray" />
+          <span className="dash-legend-dot" style={{ backgroundColor: STATUS_COLORS.cancelled }} />
           <span>No Show</span>
         </div>
       </div>
@@ -166,34 +188,62 @@ export function AppointmentOverviewCard({ data }: AppointmentOverviewCardProps) 
               <Line
                 type="monotone"
                 dataKey="completed"
-                stroke={primaryColor}
+                stroke={STATUS_COLORS.completed}
                 strokeWidth={2}
-                dot={{ r: 3, fill: primaryColor }}
+                dot={{ r: 3, fill: STATUS_COLORS.completed }}
                 activeDot={{ r: 5 }}
+                isAnimationActive
+                animationBegin={0}
+                animationDuration={850}
+                animationEasing="ease-out"
               />
               <Line
                 type="monotone"
-                dataKey="pending"
-                stroke="#fb923c"
+                dataKey="confirmed"
+                stroke={STATUS_COLORS.confirmed}
                 strokeWidth={2}
-                dot={{ r: 3, fill: '#fb923c' }}
+                dot={{ r: 3, fill: STATUS_COLORS.confirmed }}
                 activeDot={{ r: 5 }}
+                isAnimationActive
+                animationBegin={100}
+                animationDuration={850}
+                animationEasing="ease-out"
               />
               <Line
                 type="monotone"
                 dataKey="cancelled"
-                stroke="#f43f5e"
+                stroke={STATUS_COLORS.cancelled}
                 strokeWidth={2}
-                dot={{ r: 3, fill: '#f43f5e' }}
+                dot={{ r: 3, fill: STATUS_COLORS.cancelled }}
                 activeDot={{ r: 5 }}
+                isAnimationActive
+                animationBegin={200}
+                animationDuration={850}
+                animationEasing="ease-out"
+              />
+              <Line
+                type="monotone"
+                dataKey="pending"
+                stroke={STATUS_COLORS.pending}
+                strokeWidth={2}
+                dot={{ r: 3, fill: STATUS_COLORS.pending }}
+                activeDot={{ r: 5 }}
+                isAnimationActive
+                animationBegin={300}
+                animationDuration={850}
+                animationEasing="ease-out"
               />
               <Line
                 type="monotone"
                 dataKey="noShow"
-                stroke="#94a3b8"
+                stroke={STATUS_COLORS.cancelled}
                 strokeWidth={1.5}
                 strokeDasharray="3 3"
                 dot={false}
+                isAnimationActive
+                animationBegin={400}
+                animationDuration={850}
+                animationEasing="ease-out"
               />
             </LineChart>
           </ResponsiveContainer>

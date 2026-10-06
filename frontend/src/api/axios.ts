@@ -112,7 +112,6 @@ api.interceptors.response.use(
     const originalRequest = error.config as typeof error.config & { _retry?: boolean };
 
     const status = error.response?.status;
-
     if (status === 403) {
       const responseData = error.response?.data;
       const errorCode = responseData?.code;

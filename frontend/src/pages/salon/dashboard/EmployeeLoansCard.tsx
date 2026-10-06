@@ -32,7 +32,7 @@ export function EmployeeLoansCard({ data }: EmployeeLoansCardProps) {
   const loansList = data?.recentLoans ?? [];
 
   return (
-    <div className="dash-card">
+    <div className="dash-card dash-employee-loans-card">
       <div className="dash-card-header">
         <div className="dash-card-title-group">
           <h3>Employee Loans</h3>

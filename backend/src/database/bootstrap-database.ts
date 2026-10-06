@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
@@ -18,6 +18,131 @@ function resolveBackendRoot(): string {
   return process.cwd();
 }
 
+function resolveTenantMigrationsDir(): string | null {
+  const candidates = [
+    join(__dirname, 'tenant-migrations'),
+    join(__dirname, '../database/tenant-migrations'),
+    join(__dirname, '../../database/tenant-migrations'),
+    join(__dirname, '../../src/database/tenant-migrations'),
+    join(process.cwd(), 'src/database/tenant-migrations'),
+    join(process.cwd(), 'dist/database/tenant-migrations'),
+    join(process.cwd(), 'backend/src/database/tenant-migrations'),
+    join(process.cwd(), 'backend/dist/database/tenant-migrations'),
+    join(process.cwd(), 'database/tenant-migrations'),
+  ];
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      try {
+        const sqlFiles = readdirSync(candidate).filter((f) => f.endsWith('.sql'));
+        if (sqlFiles.length > 0) {
+          return candidate;
+        }
+      } catch {
+        // continue search
+      }
+    }
+  }
+
+  return null;
+}
+
+function splitSqlStatements(sql: string): string[] {
+  const statements: string[] = [];
+  let current = '';
+  let i = 0;
+  const len = sql.length;
+
+  while (i < len) {
+    // 1. Single-line comment: -- ... \n
+    if (sql[i] === '-' && sql[i + 1] === '-') {
+      while (i < len && sql[i] !== '\n') {
+        current += sql[i];
+        i++;
+      }
+      if (i < len) {
+        current += sql[i];
+        i++;
+      }
+      continue;
+    }
+
+    // 2. Block comment: /* ... */
+    if (sql[i] === '/' && sql[i + 1] === '*') {
+      current += '/*';
+      i += 2;
+      while (i < len && !(sql[i] === '*' && sql[i + 1] === '/')) {
+        current += sql[i];
+        i++;
+      }
+      if (i < len) {
+        current += '*/';
+        i += 2;
+      }
+      continue;
+    }
+
+    // 3. Dollar quote: $$ ... $$ or $<tag>$ ... $<tag>$
+    if (sql[i] === '$') {
+      const match = sql.slice(i).match(/^\$([a-zA-Z0-9_]*)\$/);
+      if (match) {
+        const tag = match[0];
+        current += tag;
+        i += tag.length;
+        const endIdx = sql.indexOf(tag, i);
+        if (endIdx !== -1) {
+          current += sql.slice(i, endIdx + tag.length);
+          i = endIdx + tag.length;
+        } else {
+          current += sql.slice(i);
+          i = len;
+        }
+        continue;
+      }
+    }
+
+    // 4. Single-quoted string
+    if (sql[i] === "'") {
+      current += "'";
+      i++;
+      while (i < len) {
+        if (sql[i] === "'") {
+          current += "'";
+          i++;
+          if (i < len && sql[i] === "'") {
+            current += "'";
+            i++;
+          } else {
+            break;
+          }
+        } else {
+          current += sql[i];
+          i++;
+        }
+      }
+      continue;
+    }
+
+    // 5. Statement delimiter: ;
+    if (sql[i] === ';') {
+      current += ';';
+      i++;
+      statements.push(current);
+      current = '';
+      continue;
+    }
+
+    current += sql[i];
+    i++;
+  }
+
+  if (current.trim().length > 0) {
+    statements.push(current);
+  }
+
+  return statements;
+}
+
 function runPrismaCommand(command: string, backendRoot: string): void {
   execSync(`npx prisma ${command}`, {
     cwd: backendRoot,
@@ -27,8 +152,12 @@ function runPrismaCommand(command: string, backendRoot: string): void {
 }
 
 /**
- * Applies Prisma migrations and seeds when the public schema is empty.
- * Runs before NestJS bootstraps so tables exist on first `npm run dev`.
+ * Automatically applies:
+ * 1. Prisma migrations (Public schema tables, columns, indexes, enums).
+ * 2. Seeds initial data if the public schema is brand new.
+ * 3. Discovers and runs all tenant schema migrations dynamically across all tenants.
+ *
+ * Runs automatically on backend startup before NestJS listens for requests.
  */
 export async function bootstrapDatabase(): Promise<void> {
   if (process.env.DATABASE_AUTO_SETUP === 'false') {
@@ -45,17 +174,29 @@ export async function bootstrapDatabase(): Promise<void> {
 
   const backendRoot = resolveBackendRoot();
 
-  logger.log('Applying database migrations...');
-  runPrismaCommand('migrate deploy', backendRoot);
+  // 1. Prisma Migrate Deploy (Public Schema)
+  try {
+    logger.log('Applying Prisma public schema migrations (migrate deploy)...');
+    runPrismaCommand('migrate deploy', backendRoot);
+    logger.log('Prisma public schema migrations verified / up to date.');
+  } catch (err: any) {
+    logger.warn(`Prisma migrate deploy warning/error: ${err.message || err}`);
+  }
 
   const prisma = new PrismaClient();
 
   try {
     await prisma.$connect();
 
-    await prisma.$executeRawUnsafe(`CREATE EXTENSION IF NOT EXISTS pg_trgm SCHEMA public`);
+    // 2. Ensure public extensions and payments table
+    try {
+      await prisma.$executeRawUnsafe(`CREATE EXTENSION IF NOT EXISTS pg_trgm SCHEMA public`);
+    } catch (e: any) {
+      logger.warn(`Could not verify pg_trgm extension: ${e.message || e}`);
+    }
     await ensurePublicPaymentsTable(prisma);
 
+    // 3. Seed default data if database is empty
     const planCount = await prisma.plan.count();
 
     if (planCount === 0) {
@@ -72,10 +213,10 @@ export async function bootstrapDatabase(): Promise<void> {
         runPrismaCommand('db seed', backendRoot);
       }
     } else {
-      logger.log('Database schema ready');
+      logger.log('Database public schema ready');
     }
 
-    // Sync all existing tenant schemas with latest columns/migrations
+    // 4. Sync and run migrations for all tenant schemas automatically
     await syncAllTenantSchemas(prisma);
   } finally {
     await prisma.$disconnect();
@@ -108,6 +249,7 @@ async function syncAllTenantSchemas(prisma: PrismaClient): Promise<void> {
     const schemaRows = await prisma.$queryRaw<Array<{ schema_name: string }>>`
       SELECT schema_name FROM information_schema.schemata WHERE schema_name ~ '^tenant_'
     `;
+    const physicallyExisting = new Set(schemaRows.map((r) => r.schema_name));
     const tenantRows = await prisma.$queryRaw<Array<{ schemaName: string }>>`
       SELECT "schemaName" FROM tenants WHERE "schemaName" IS NOT NULL
     `;
@@ -116,258 +258,161 @@ async function syncAllTenantSchemas(prisma: PrismaClient): Promise<void> {
         ...schemaRows.map((r) => r.schema_name),
         ...tenantRows.map((r) => r.schemaName),
       ]),
-    );
+    ).filter((s): s is string => Boolean(s) && physicallyExisting.has(s));
+
+    if (schemas.length === 0) {
+      logger.log('No active tenant schemas found to sync.');
+      return;
+    }
+
+    const migrationsDir = resolveTenantMigrationsDir();
+    const migrationFiles = migrationsDir
+      ? readdirSync(migrationsDir)
+          .filter((f) => f.endsWith('.sql'))
+          .sort()
+      : [];
+
+    logger.log(`Found ${schemas.length} tenant schema(s) to check/migrate: [${schemas.join(', ')}]`);
+    if (migrationsDir) {
+      logger.log(`Loaded tenant migrations from: ${migrationsDir} (${migrationFiles.length} migration files found)`);
+    } else {
+      logger.warn('Tenant migrations directory not found; will apply inline schema fallbacks.');
+    }
 
     for (const schema of schemas) {
       if (!schema) continue;
       try {
-        // Keep this first: this column is read by the appointment list query. Other
-        // optional sync statements may fail on partially provisioned tenant schemas.
-        await prisma.$executeRawUnsafe(
-          `ALTER TABLE "${schema}".appointments ADD COLUMN IF NOT EXISTS employee_id UUID`,
-        );
-
-        await prisma.$executeRawUnsafe(
-          `ALTER TABLE "${schema}".branches ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION`,
-        );
-        await prisma.$executeRawUnsafe(
-          `ALTER TABLE "${schema}".branches ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION`,
-        );
-        await prisma.$executeRawUnsafe(
-          `ALTER TABLE "${schema}".service_categories ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true`,
-        );
-        await prisma.$executeRawUnsafe(
-          `ALTER TABLE "${schema}".product_categories ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true`,
-        );
-        await prisma.$executeRawUnsafe(
-          `CREATE TABLE IF NOT EXISTS "${schema}".service_category_branches (
-            category_id UUID NOT NULL,
-            branch_id UUID NOT NULL,
-            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-            PRIMARY KEY (category_id, branch_id),
-            CONSTRAINT scb_category_fkey FOREIGN KEY (category_id) REFERENCES "${schema}".service_categories(id) ON DELETE CASCADE,
-            CONSTRAINT scb_branch_fkey FOREIGN KEY (branch_id) REFERENCES "${schema}".branches(id) ON DELETE CASCADE
-          )`,
-        );
-        await prisma.$executeRawUnsafe(
-          `CREATE INDEX IF NOT EXISTS idx_scb_category_id ON "${schema}".service_category_branches(category_id)`,
-        );
-        await prisma.$executeRawUnsafe(
-          `CREATE INDEX IF NOT EXISTS idx_scb_branch_id ON "${schema}".service_category_branches(branch_id)`,
-        );
-        await prisma.$executeRawUnsafe(
-          `ALTER TABLE "${schema}".products ADD COLUMN IF NOT EXISTS image_url TEXT`,
-        );
-        await prisma.$executeRawUnsafe(
-          `CREATE TABLE IF NOT EXISTS "${schema}".product_branches (
-            product_id UUID NOT NULL,
-            branch_id UUID NOT NULL,
-            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-            PRIMARY KEY (product_id, branch_id),
-            CONSTRAINT pb_product_fkey FOREIGN KEY (product_id) REFERENCES "${schema}".products(id) ON DELETE CASCADE,
-            CONSTRAINT pb_branch_fkey FOREIGN KEY (branch_id) REFERENCES "${schema}".branches(id) ON DELETE CASCADE
-          )`,
-        );
-        await prisma.$executeRawUnsafe(
-          `CREATE INDEX IF NOT EXISTS idx_pb_product_id ON "${schema}".product_branches(product_id)`,
-        );
-        await prisma.$executeRawUnsafe(
-          `CREATE INDEX IF NOT EXISTS idx_pb_branch_id ON "${schema}".product_branches(branch_id)`,
-        );
-        await prisma.$executeRawUnsafe(
-          `ALTER TABLE "${schema}".quotations ADD COLUMN IF NOT EXISTS cancel_reason VARCHAR(255)`,
-        );
-        await prisma.$executeRawUnsafe(
-          `ALTER TABLE "${schema}".quotations ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP`,
-        );
-        await prisma.$executeRawUnsafe(
-          `ALTER TABLE "${schema}".employees ADD COLUMN IF NOT EXISTS max_advance_percentage NUMERIC(5,2) NOT NULL DEFAULT 100.00`,
-        );
-        await prisma.$executeRawUnsafe(
-          `ALTER TABLE "${schema}".employees ADD COLUMN IF NOT EXISTS photo_url TEXT`,
-        );
-        await prisma.$executeRawUnsafe(
-          `ALTER TABLE "${schema}".payroll_settings ADD COLUMN IF NOT EXISTS max_salary_advance_percentage NUMERIC(5,2) NOT NULL DEFAULT 50.00`,
-        );
-
-        // Sync migration 026: Suppliers, GRNs, Payments & Permissions
-        await prisma.$executeRawUnsafe(`SET search_path TO "${schema}", public`);
-        await prisma.$executeRawUnsafe(`
-          DO $$ BEGIN
-            IF NOT EXISTS (
-              SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid = t.typnamespace
-              WHERE t.typname = 'grn_status' AND n.nspname = current_schema()
-            ) THEN
-              CREATE TYPE grn_status AS ENUM ('DRAFT', 'RECEIVED', 'CANCELLED');
-            END IF;
-          END $$;
-
-          DO $$ BEGIN
-            IF NOT EXISTS (
-              SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid = t.typnamespace
-              WHERE t.typname = 'grn_payment_status' AND n.nspname = current_schema()
-            ) THEN
-              CREATE TYPE grn_payment_status AS ENUM ('UNPAID', 'PARTIALLY_PAID', 'PAID');
-            END IF;
-          END $$;
-
-          DO $$ BEGIN
-            IF NOT EXISTS (
-              SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid = t.typnamespace
-              WHERE t.typname = 'supplier_payment_method' AND n.nspname = current_schema()
-            ) THEN
-              CREATE TYPE supplier_payment_method AS ENUM ('CASH', 'BANK_TRANSFER', 'CHEQUE');
-            END IF;
-          END $$;
-
-          DO $$ BEGIN
-            IF NOT EXISTS (
-              SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid = t.typnamespace
-              WHERE t.typname = 'supplier_cheque_status' AND n.nspname = current_schema()
-            ) THEN
-              CREATE TYPE supplier_cheque_status AS ENUM ('PENDING', 'CLEARED', 'BOUNCED');
-            END IF;
-          END $$;
-
-          CREATE TABLE IF NOT EXISTS suppliers (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            name VARCHAR(255) NOT NULL,
-            contact_person VARCHAR(255),
-            phone VARCHAR(50),
-            email VARCHAR(255),
-            address TEXT,
-            notes TEXT,
-            is_active BOOLEAN NOT NULL DEFAULT true,
-            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-            updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-          );
-
-          CREATE TABLE IF NOT EXISTS grns (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            grn_number VARCHAR(50) NOT NULL,
-            supplier_id UUID NOT NULL,
-            branch_id UUID NOT NULL,
-            supplier_invoice_number VARCHAR(100),
-            grn_date DATE NOT NULL DEFAULT CURRENT_DATE,
-            due_date DATE,
-            notes TEXT,
-            subtotal DECIMAL(12,2) NOT NULL DEFAULT 0,
-            discount_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
-            total_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
-            paid_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
-            outstanding_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
-            payment_status grn_payment_status NOT NULL DEFAULT 'UNPAID',
-            grn_status grn_status NOT NULL DEFAULT 'DRAFT',
-            received_at TIMESTAMP,
-            cancelled_at TIMESTAMP,
-            created_by UUID,
-            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-            updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-            CONSTRAINT grns_supplier_fkey FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE RESTRICT,
-            CONSTRAINT grns_branch_fkey FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE RESTRICT,
-            CONSTRAINT grns_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
-            CONSTRAINT grns_grn_number_unique UNIQUE (grn_number)
-          );
-
-          CREATE TABLE IF NOT EXISTS grn_items (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            grn_id UUID NOT NULL,
-            product_id UUID NOT NULL,
-            quantity DECIMAL(10,2) NOT NULL,
-            unit_cost DECIMAL(12,2) NOT NULL DEFAULT 0,
-            line_total DECIMAL(12,2) NOT NULL DEFAULT 0,
-            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-            CONSTRAINT grn_items_grn_fkey FOREIGN KEY (grn_id) REFERENCES grns(id) ON DELETE CASCADE,
-            CONSTRAINT grn_items_product_fkey FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
-          );
-
-          CREATE TABLE IF NOT EXISTS supplier_payments (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            supplier_id UUID NOT NULL,
-            payment_date DATE NOT NULL DEFAULT CURRENT_DATE,
-            amount DECIMAL(12,2) NOT NULL,
-            payment_method supplier_payment_method NOT NULL DEFAULT 'CASH',
-            reference_number VARCHAR(100),
-            bank_name VARCHAR(100),
-            cheque_number VARCHAR(50),
-            cheque_date DATE,
-            cheque_status supplier_cheque_status NOT NULL DEFAULT 'CLEARED',
-            cleared_at TIMESTAMP,
-            notes TEXT,
-            created_by UUID,
-            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-            updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-            CONSTRAINT supplier_payments_supplier_fkey FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE RESTRICT,
-            CONSTRAINT supplier_payments_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
-          );
-
-          CREATE TABLE IF NOT EXISTS supplier_payment_allocations (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            payment_id UUID NOT NULL,
-            grn_id UUID NOT NULL,
-            allocated_amount DECIMAL(12,2) NOT NULL,
-            created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-            CONSTRAINT supplier_payment_allocations_payment_fkey FOREIGN KEY (payment_id) REFERENCES supplier_payments(id) ON DELETE CASCADE,
-            CONSTRAINT supplier_payment_allocations_grn_fkey FOREIGN KEY (grn_id) REFERENCES grns(id) ON DELETE RESTRICT
-          );
-
-          CREATE INDEX IF NOT EXISTS suppliers_is_active_idx ON suppliers (is_active);
-          CREATE INDEX IF NOT EXISTS suppliers_name_idx ON suppliers (name);
-          CREATE INDEX IF NOT EXISTS grns_supplier_idx ON grns (supplier_id);
-          CREATE INDEX IF NOT EXISTS grns_branch_idx ON grns (branch_id);
-          CREATE INDEX IF NOT EXISTS grns_status_idx ON grns (grn_status);
-          CREATE INDEX IF NOT EXISTS grns_payment_status_idx ON grns (payment_status);
-          CREATE INDEX IF NOT EXISTS grns_grn_date_idx ON grns (grn_date DESC);
-          CREATE INDEX IF NOT EXISTS grn_items_grn_idx ON grn_items (grn_id);
-          CREATE INDEX IF NOT EXISTS grn_items_product_idx ON grn_items (product_id);
-          CREATE INDEX IF NOT EXISTS supplier_payments_supplier_idx ON supplier_payments (supplier_id);
-          CREATE INDEX IF NOT EXISTS supplier_payments_date_idx ON supplier_payments (payment_date DESC);
-          CREATE INDEX IF NOT EXISTS supplier_payment_allocations_payment_idx ON supplier_payment_allocations (payment_id);
-          CREATE INDEX IF NOT EXISTS supplier_payment_allocations_grn_idx ON supplier_payment_allocations (grn_id);
-
-          INSERT INTO permissions (code, name) VALUES
-            ('SUPPLIERS_VIEW', 'View Suppliers'),
-            ('SUPPLIERS_CREATE', 'Create Suppliers'),
-            ('SUPPLIERS_EDIT', 'Edit Suppliers'),
-            ('SUPPLIERS_DELETE', 'Delete/Deactivate Suppliers'),
-            ('GRN_VIEW', 'View GRN / Purchases'),
-            ('GRN_CREATE', 'Create GRN / Purchases'),
-            ('GRN_EDIT', 'Edit GRN / Purchases'),
-            ('GRN_RECEIVE', 'Receive GRN and Increment Stock'),
-            ('GRN_CANCEL', 'Cancel GRN'),
-            ('SUPPLIER_PAYMENTS_VIEW', 'View Supplier Payments'),
-            ('SUPPLIER_PAYMENTS_CREATE', 'Record Supplier Payments'),
-            ('SUPPLIER_OUTSTANDING_VIEW', 'View Supplier Outstanding')
-          ON CONFLICT (code) DO NOTHING;
-
-          INSERT INTO role_permissions (role_id, permission_id)
-          SELECT r.id, p.id FROM roles r CROSS JOIN permissions p
-          WHERE r.code = 'SALON_ADMIN'
-            AND p.code IN (
-              'SUPPLIERS_VIEW', 'SUPPLIERS_CREATE', 'SUPPLIERS_EDIT', 'SUPPLIERS_DELETE',
-              'GRN_VIEW', 'GRN_CREATE', 'GRN_EDIT', 'GRN_RECEIVE', 'GRN_CANCEL',
-              'SUPPLIER_PAYMENTS_VIEW', 'SUPPLIER_PAYMENTS_CREATE',
-              'SUPPLIER_OUTSTANDING_VIEW'
+        // 1. Automatically run any unapplied .sql tenant migrations
+        if (migrationsDir && migrationFiles.length > 0) {
+          await prisma.$executeRawUnsafe(`
+            CREATE TABLE IF NOT EXISTS "${schema}"._applied_tenant_migrations (
+              name VARCHAR(255) PRIMARY KEY,
+              applied_at TIMESTAMP NOT NULL DEFAULT NOW()
             )
-          ON CONFLICT (role_id, permission_id) DO NOTHING;
+          `);
 
-          INSERT INTO role_permissions (role_id, permission_id)
-          SELECT r.id, p.id FROM roles r CROSS JOIN permissions p
-          WHERE r.code = 'STOCK_KEEPER'
-            AND p.code IN (
-              'SUPPLIERS_VIEW', 'SUPPLIERS_CREATE', 'SUPPLIERS_EDIT',
-              'GRN_VIEW', 'GRN_CREATE', 'GRN_EDIT', 'GRN_RECEIVE',
-              'SUPPLIER_OUTSTANDING_VIEW'
-            )
-          ON CONFLICT (role_id, permission_id) DO NOTHING;
-        `);
-      } catch (err) {
-        logger.warn(`Could not sync schema ${schema}: ${err}`);
+          const appliedRows = await prisma.$queryRawUnsafe<Array<{ name: string }>>(
+            `SELECT name FROM "${schema}"._applied_tenant_migrations`,
+          );
+          const appliedSet = new Set(appliedRows.map((r) => r.name));
+
+          for (const file of migrationFiles) {
+            if (appliedSet.has(file)) {
+              continue; // Already applied
+            }
+
+            logger.log(`Applying tenant migration [${file}] to schema [${schema}]...`);
+            const filePath = join(migrationsDir, file);
+            const sql = readFileSync(filePath, 'utf-8');
+            const statements = splitSqlStatements(sql);
+
+            await prisma.$executeRawUnsafe(`SET search_path TO "${schema}", public`);
+
+            for (const stmt of statements) {
+              const trimmed = stmt.trim();
+              const executable = trimmed
+                .replace(/--.*$/gm, '')
+                .replace(/\/\*[\s\S]*?\*\//g, '')
+                .trim();
+              if (!executable) continue;
+
+              try {
+                await prisma.$executeRawUnsafe(stmt);
+              } catch (stmtErr: any) {
+                // Ignore idempotent notices like type or relation already existing
+                logger.debug?.(`Notice in [${schema}] on [${file}]: ${stmtErr.message || stmtErr}`);
+              }
+            }
+
+            await prisma.$executeRawUnsafe(
+              `INSERT INTO "${schema}"._applied_tenant_migrations (name) VALUES ($1) ON CONFLICT (name) DO NOTHING`,
+              file,
+            );
+            logger.log(`✓ Migration [${file}] completed for schema [${schema}]`);
+          }
+        }
+
+        // 2. Extra safety fallback for critical tenant columns and indexes
+        await applyTenantFallbackColumns(prisma, schema);
+
+      } catch (err: any) {
+        logger.warn(`Could not sync schema ${schema}: ${err.message || err}`);
       }
     }
-  } catch (err) {
-    logger.warn(`Could not query tenant schemas for sync: ${err}`);
+    logger.log('All tenant schemas verified and up to date.');
+  } catch (err: any) {
+    logger.warn(`Could not query tenant schemas for sync: ${err.message || err}`);
   }
+}
+
+async function applyTenantFallbackColumns(prisma: PrismaClient, schema: string): Promise<void> {
+  // Keep this first: this column is read by the appointment list query.
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "${schema}".appointments ADD COLUMN IF NOT EXISTS employee_id UUID`,
+  );
+
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "${schema}".branches ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION`,
+  );
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "${schema}".branches ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION`,
+  );
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "${schema}".service_categories ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true`,
+  );
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "${schema}".product_categories ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT true`,
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE TABLE IF NOT EXISTS "${schema}".service_category_branches (
+      category_id UUID NOT NULL,
+      branch_id UUID NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (category_id, branch_id),
+      CONSTRAINT scb_category_fkey FOREIGN KEY (category_id) REFERENCES "${schema}".service_categories(id) ON DELETE CASCADE,
+      CONSTRAINT scb_branch_fkey FOREIGN KEY (branch_id) REFERENCES "${schema}".branches(id) ON DELETE CASCADE
+    )`,
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS idx_scb_category_id ON "${schema}".service_category_branches(category_id)`,
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS idx_scb_branch_id ON "${schema}".service_category_branches(branch_id)`,
+  );
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "${schema}".products ADD COLUMN IF NOT EXISTS image_url TEXT`,
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE TABLE IF NOT EXISTS "${schema}".product_branches (
+      product_id UUID NOT NULL,
+      branch_id UUID NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (product_id, branch_id),
+      CONSTRAINT pb_product_fkey FOREIGN KEY (product_id) REFERENCES "${schema}".products(id) ON DELETE CASCADE,
+      CONSTRAINT pb_branch_fkey FOREIGN KEY (branch_id) REFERENCES "${schema}".branches(id) ON DELETE CASCADE
+    )`,
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS idx_pb_product_id ON "${schema}".product_branches(product_id)`,
+  );
+  await prisma.$executeRawUnsafe(
+    `CREATE INDEX IF NOT EXISTS idx_pb_branch_id ON "${schema}".product_branches(branch_id)`,
+  );
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "${schema}".quotations ADD COLUMN IF NOT EXISTS cancel_reason VARCHAR(255)`,
+  );
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "${schema}".quotations ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP`,
+  );
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "${schema}".employees ADD COLUMN IF NOT EXISTS max_advance_percentage NUMERIC(5,2) NOT NULL DEFAULT 100.00`,
+  );
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "${schema}".employees ADD COLUMN IF NOT EXISTS photo_url TEXT`,
+  );
+  await prisma.$executeRawUnsafe(
+    `ALTER TABLE "${schema}".payroll_settings ADD COLUMN IF NOT EXISTS max_salary_advance_percentage NUMERIC(5,2) NOT NULL DEFAULT 50.00`,
+  );
 }
 
 async function ensurePublicPaymentsTable(prisma: PrismaClient): Promise<void> {
@@ -440,8 +485,7 @@ async function ensurePublicPaymentsTable(prisma: PrismaClient): Promise<void> {
         END IF;
       END $$;
     `);
-  } catch (err) {
-    logger.warn(`Could not verify public.payments table: ${err}`);
+  } catch (err: any) {
+    logger.warn(`Could not verify public.payments table: ${err.message || err}`);
   }
 }
-
