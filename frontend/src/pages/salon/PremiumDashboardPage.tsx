@@ -19,24 +19,30 @@ import { RecentTransactionsCard } from './dashboard/RecentTransactionsCard';
 import './dashboard/salon-admin-dashboard.css';
 
 function getTodayStr() {
-  return new Date().toISOString().slice(0, 10);
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 }
 
 function getMonthStartStr() {
   const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
 }
 
 function getWeekStartStr() {
   const d = new Date();
   d.setDate(d.getDate() - 6);
-  return d.toISOString().slice(0, 10);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function formatDateInput(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
 export default function PremiumDashboardPage() {
   const { branchId } = useSalonBranch();
 
   const [quickFilter, setQuickFilter] = useState<QuickFilterType>('this_month');
+  const [dashboardPreset, setDashboardPreset] = useState('month');
   const [startDate, setStartDate] = useState(getMonthStartStr());
   const [endDate, setEndDate] = useState(getTodayStr());
 
@@ -45,11 +51,17 @@ export default function PremiumDashboardPage() {
     if (quickFilter === 'today') return 'today';
     if (quickFilter === 'this_week') return 'week';
     if (quickFilter === 'this_month') return 'month';
-    return 'month';
-  }, [quickFilter]);
+    const rangeDays =
+      (new Date(`${endDate}T00:00:00`).getTime() - new Date(`${startDate}T00:00:00`).getTime()) /
+      (24 * 60 * 60 * 1000);
+    return rangeDays > 100 ? 'year' : 'month';
+  }, [quickFilter, startDate, endDate]);
 
   const handleQuickFilterChange = (filter: QuickFilterType) => {
     setQuickFilter(filter);
+    if (filter !== 'custom') {
+      setDashboardPreset(filter === 'this_month' ? 'month' : filter);
+    }
     if (filter === 'today') {
       const today = getTodayStr();
       setStartDate(today);
@@ -66,6 +78,41 @@ export default function PremiumDashboardPage() {
   const handleStartDateChange = (nextStartDate: string) => {
     setStartDate(nextStartDate);
     if (endDate < nextStartDate) setEndDate(nextStartDate);
+  };
+
+  const handleEndDateChange = (nextEndDate: string) => {
+    setEndDate(nextEndDate);
+  };
+
+  const handleDashboardTimeframeChange = (timeframe: string) => {
+    setDashboardPreset(timeframe);
+    if (timeframe === 'custom') {
+      setQuickFilter('custom');
+      return;
+    }
+    const today = new Date();
+    let start: Date;
+    let end = today;
+
+    if (timeframe === 'today') {
+      start = today;
+    } else if (timeframe === 'this_week') {
+      start = new Date(today);
+      start.setDate(start.getDate() - 6);
+    } else if (timeframe === 'last_month') {
+      start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      end = new Date(today.getFullYear(), today.getMonth(), 0);
+    } else if (timeframe === 'quarter') {
+      start = new Date(today.getFullYear(), Math.floor(today.getMonth() / 3) * 3, 1);
+    } else if (timeframe === 'year') {
+      start = new Date(today.getFullYear(), 0, 1);
+    } else {
+      start = new Date(today.getFullYear(), today.getMonth(), 1);
+    }
+
+    setStartDate(formatDateInput(start));
+    setEndDate(formatDateInput(end));
+    setQuickFilter(timeframe === 'month' ? 'this_month' : timeframe as QuickFilterType);
   };
 
   // Fetch tenant enabled features to check if LOANS / PAYROLL is enabled
@@ -153,7 +200,7 @@ export default function PremiumDashboardPage() {
         startDate={startDate}
         endDate={endDate}
         onStartDateChange={handleStartDateChange}
-        onEndDateChange={setEndDate}
+        onEndDateChange={handleEndDateChange}
       />
 
       {/* Row 1: Summary KPI cards */}
@@ -169,26 +216,33 @@ export default function PremiumDashboardPage() {
         liveBankBalance={liveBankBalance}
       />
 
-      {/* Row 2: Revenue/Expenses/Salaries (60%) & Appointment Overview (40%) */}
+      {/* Row 2: Financial overview and payment methods */}
       <div className="dash-row-2">
-        <FinancialOverviewChart data={financials?.weeklyComparison} />
-        <AppointmentOverviewCard data={appointmentOverview} />
+        <FinancialOverviewChart
+          data={financials?.weeklyComparison}
+          timeframe={dashboardPreset === 'today' || dashboardPreset === 'this_week' ? dashboardPreset : 'month'}
+          onTimeframeChange={handleDashboardTimeframeChange}
+        />
+        <PaymentMethodBreakdownCard
+          sales={dashboardData?.paymentMethodBreakdown?.sales}
+          expenses={dashboardData?.paymentMethodBreakdown?.expenses}
+        />
       </div>
 
-      <PaymentMethodBreakdownCard
-        sales={dashboardData?.paymentMethodBreakdown?.sales}
-        expenses={dashboardData?.paymentMethodBreakdown?.expenses}
-      />
-
-      {/* Row 3: Inventory and employee loans */}
-      <div className="dash-row-3">
-        <InventoryOverviewCard data={inventoryOverview} />
-        {isLoansFeatureEnabled && <EmployeeLoansCard data={employeeLoans} />}
-      </div>
-
-      {/* Row 4: Recent appointments and transactions */}
+      {/* Row 3: Appointment and inventory overviews */}
       <div className="dash-row-4">
+        <AppointmentOverviewCard
+          data={appointmentOverview}
+          timeframe={dashboardPreset === 'today' || dashboardPreset === 'this_week' ? dashboardPreset : 'month'}
+          onTimeframeChange={handleDashboardTimeframeChange}
+        />
+        <InventoryOverviewCard data={inventoryOverview} />
+      </div>
+
+      {/* Row 4: Recent appointments, employee loans, recent transactions */}
+      <div className="dash-row-3">
         <RecentAppointmentsCard appointments={dashboardData?.upcomingAppointments} />
+        {isLoansFeatureEnabled && <EmployeeLoansCard data={employeeLoans} />}
         <RecentTransactionsCard transactions={recentTransactions} />
       </div>
     </div>

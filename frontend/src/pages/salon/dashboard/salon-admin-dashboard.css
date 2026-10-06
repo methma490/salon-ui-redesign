@@ -644,7 +644,7 @@
 }
 
 /* ------------------------------------------------------------------------- */
-/* ROW 2: REVENUE/EXPENSES/SALARIES (60%) & APPOINTMENT OVERVIEW (40%)      */
+/* ROW 2: FINANCIAL OVERVIEW AND PAYMENT METHODS                            */
 /* ------------------------------------------------------------------------- */
 .dash-row-2 {
   display: grid;
@@ -732,6 +732,7 @@
   position: relative;
   z-index: 2;
   padding: 1rem 1.25rem;
+  container-type: inline-size;
 }
 
 .dash-payment-method-header {
@@ -740,6 +741,36 @@
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1rem;
+}
+
+.dash-payment-method-filter {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 0.25rem;
+  margin: 0 0 0.75rem;
+  padding: 0.2rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.625rem;
+  background: #f8fafc;
+}
+
+.dash-payment-method-filter-btn {
+  min-height: 2rem;
+  padding: 0.35rem 0.8rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+
+.dash-payment-method-filter-btn.active {
+  background: #ffffff;
+  color: var(--brand-primary, #0d9488);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
 }
 
 .dash-payment-method-legend {
@@ -769,12 +800,6 @@
   flex: 0 0 auto;
   border-radius: 50%;
   box-shadow: 0 0 0 2px #ffffff, 0 0 0 3px #e7e9ef;
-}
-
-.dash-payment-method-panels {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
 }
 
 .dash-payment-method-panel {
@@ -811,8 +836,9 @@
 .dash-payment-method-donut {
   position: relative;
   display: block;
-  width: 11rem;
-  height: 11rem;
+  width: min(11rem, 100%);
+  height: auto;
+  aspect-ratio: 1;
   border-radius: 50%;
   box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
 }
@@ -893,10 +919,6 @@
     flex-direction: column;
   }
 
-  .dash-payment-method-panels {
-    gap: 0.65rem;
-  }
-
   .dash-payment-method-content {
     min-height: 10rem;
   }
@@ -912,10 +934,6 @@
     padding: 0.9rem;
   }
 
-  .dash-payment-method-panels {
-    grid-template-columns: 1fr;
-  }
-
   .dash-payment-method-content {
     min-height: 9rem;
   }
@@ -923,6 +941,21 @@
   .dash-payment-method-donut {
     width: 7.5rem;
     height: 7.5rem;
+  }
+}
+
+@container (max-width: 440px) {
+  .dash-payment-method-panel {
+    padding: 0.75rem;
+  }
+
+  .dash-payment-method-content {
+    min-height: 0;
+  }
+
+  .dash-payment-method-donut {
+    width: min(9rem, 70cqi);
+    height: auto;
   }
 }
 
@@ -1026,11 +1059,15 @@
 
 @media (min-width: 640px) {
   .dash-appt-stats-row {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.625rem;
     margin-bottom: 1.25rem;
     padding-bottom: 1rem;
   }
+}
+
+.dash-appointment-overview-card {
+  container-type: inline-size;
 }
 
 .dash-appt-stat-tile {
@@ -1094,9 +1131,7 @@
   font-size: 0.625rem;
   color: #64748b;
   font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.15;
 }
 
 @media (min-width: 640px) {
@@ -1105,8 +1140,25 @@
   }
 }
 
+@container (min-width: 620px) {
+  .dash-appt-stats-row {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.4rem;
+  }
+
+  .dash-appt-stat-tile {
+    gap: 0.35rem;
+    padding: 0.35rem 0.4rem;
+  }
+
+  .dash-appt-stat-icon {
+    width: 24px;
+    height: 24px;
+  }
+}
+
 /* ------------------------------------------------------------------------- */
-/* ROW 3: 3 CARDS (TOP EMPLOYEES, INVENTORY OVERVIEW, EMPLOYEE LOANS)        */
+/* ROW 4: RECENT APPOINTMENTS, EMPLOYEE LOANS, RECENT TRANSACTIONS           */
 /* ------------------------------------------------------------------------- */
 .dash-row-3 {
   display: grid;
@@ -1607,7 +1659,7 @@
 }
 
 /* ------------------------------------------------------------------------- */
-/* ROW 4: 2 TABLES (RECENT ORDERS & RECENT TRANSACTIONS)                    */
+/* ROW 4: APPOINTMENT AND INVENTORY OVERVIEWS                               */
 /* ------------------------------------------------------------------------- */
 .dash-row-4 {
   display: grid;
@@ -1898,7 +1950,7 @@
 @media (min-width: 1280px) {
   .dash-container {
     display: grid;
-    grid-template-columns: minmax(0, 1.65fr) minmax(340px, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     align-items: start;
     column-gap: 0.75rem;
     row-gap: 0.75rem;
@@ -1916,40 +1968,48 @@
   }
 
   .dash-row-2 > .dash-card:first-child {
-    grid-column: 1;
+    grid-column: 1 / 3;
     grid-row: 3;
     min-height: 13.75rem;
+    align-self: stretch;
   }
 
-  .dash-row-2 > .dash-card:last-child {
-    grid-column: 2;
+  .dash-row-2 > .dash-payment-method-card {
+    grid-column: 3;
     grid-row: 3;
     min-height: 13.75rem;
+    align-self: stretch;
   }
 
-  .dash-payment-method-card {
-    grid-column: 1;
-    grid-row: 4;
-  }
-
-  .dash-row-3 > .dash-card:has(a[href="/salon/products"]) {
+  .dash-row-3 > .dash-recent-appointments {
     grid-column: 1;
     grid-row: 5;
   }
 
-  .dash-row-3 > .dash-card:has(a[href="/salon/payroll/loans"]) {
-    grid-column: 1;
-    grid-row: 6;
-  }
-
-  .dash-row-4 > .dash-recent-appointments {
-    grid-column: 2;
-    grid-row: 4;
-  }
-
-  .dash-row-4 > .dash-card:last-child {
+  .dash-row-3 > .dash-employee-loans-card {
     grid-column: 2;
     grid-row: 5;
+  }
+
+  .dash-row-3 > .dash-recent-transactions {
+    grid-column: 3;
+    grid-row: 5;
+  }
+
+  .dash-row-3 > .dash-card {
+    align-self: stretch;
+  }
+
+  .dash-row-4 > .dash-appointment-overview-card {
+    grid-column: 1 / 3;
+    grid-row: 4;
+    align-self: stretch;
+  }
+
+  .dash-row-4 > .dash-inventory-overview-card {
+    grid-column: 3;
+    grid-row: 4;
+    align-self: stretch;
   }
 }
 

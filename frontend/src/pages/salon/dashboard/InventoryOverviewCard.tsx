@@ -44,7 +44,7 @@ export function InventoryOverviewCard({ data }: InventoryOverviewCardProps) {
   ].filter((d) => d.value > 0);
 
   return (
-    <div className="dash-card">
+    <div className="dash-card dash-inventory-overview-card">
       <div className="dash-card-header">
         <div className="dash-card-title-group">
           <h3>Inventory Overview</h3>
@@ -62,6 +62,10 @@ export function InventoryOverviewCard({ data }: InventoryOverviewCardProps) {
                 outerRadius={68}
                 paddingAngle={3}
                 dataKey="value"
+                isAnimationActive
+                animationBegin={0}
+                animationDuration={850}
+                animationEasing="ease-out"
               >
                 {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />

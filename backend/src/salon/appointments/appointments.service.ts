@@ -63,11 +63,6 @@ export class AppointmentsService {
     return `$${paramIndex}::text::"${schemaName}".appointment_status`;
   }
 
-  private timeToMinutes(time: string): number {
-    const [hours, minutes] = time.split(':').slice(0, 2).map(Number);
-    return hours * 60 + minutes;
-  }
-
   private async assertEmployeeCapacity(
     tx: TenantTx,
     schemaName: string,
@@ -98,26 +93,9 @@ export class AppointmentsService {
       excludeAppointmentId ?? null,
     );
 
-    const candidateStart = this.timeToMinutes(startTime);
-    const candidateEnd = this.timeToMinutes(endTime);
-    const events: Array<{ time: number; delta: number }> = [];
-    for (const appointment of overlapping) {
-      events.push(
-        { time: Math.max(candidateStart, this.timeToMinutes(appointment.startTime)), delta: 1 },
-        { time: Math.min(candidateEnd, this.timeToMinutes(appointment.endTime)), delta: -1 },
-      );
-    }
-    events.sort((a, b) => a.time - b.time || a.delta - b.delta);
-    let concurrent = 0;
-    let maxConcurrent = 0;
-    for (const event of events) {
-      concurrent += event.delta;
-      maxConcurrent = Math.max(maxConcurrent, concurrent);
-    }
-
-    if (maxConcurrent >= 3) {
+    if (overlapping.length > 0) {
       throw new BadRequestException(
-        'This employee already has 3 overlapping appointments during that time. Choose another time slot or employee.',
+        'Employee is already booked for this time.',
       );
     }
   }

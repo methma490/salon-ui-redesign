@@ -31,7 +31,7 @@ export function RecentTransactionsCard({ transactions }: RecentTransactionsCardP
   const list = transactions ?? [];
 
   return (
-    <div className="dash-card">
+    <div className="dash-card dash-recent-transactions">
       <div className="dash-card-header">
         <div className="dash-card-title-group">
           <h3>Recent Transactions</h3>

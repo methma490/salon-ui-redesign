@@ -246,6 +246,8 @@ export default function AppointmentsPage() {
   }));
   const [editForm, setEditForm] = useState<AppointmentForm>(emptyForm);
   const [formError, setFormError] = useState<string | null>(null);
+  const [employeeSearch, setEmployeeSearch] = useState('');
+  const employeeSearchInputRef = useRef<HTMLInputElement>(null);
 
   // Quick Customer Creation Modal inside Appointment Popup
   const [quickCustomerOpen, setQuickCustomerOpen] = useState(false);
@@ -325,6 +327,14 @@ export default function AppointmentsPage() {
     const branchId = editAppointment ? editForm.branchId : form.branchId;
     return employees.filter((employee) => employee.status === 'ACTIVE' && employee.branchId === branchId);
   }, [employees, editAppointment, editForm.branchId, form.branchId]);
+
+  const filteredFormEmployees = useMemo(() => {
+    const search = employeeSearch.trim().toLowerCase();
+    if (!search) return formEmployees;
+    return formEmployees.filter((employee) =>
+      `${employee.name} ${employee.designation || ''}`.toLowerCase().includes(search),
+    );
+  }, [employeeSearch, formEmployees]);
 
   const listParams = useMemo(() => {
     const params: Record<string, string> = {
@@ -1380,17 +1390,37 @@ export default function AppointmentsPage() {
                 onValueChange={(value) => {
                   if (editAppointment) setEditForm({ ...editForm, employeeId: value });
                   else setForm({ ...form, employeeId: value });
+                  setEmployeeSearch('');
                 }}
               >
                 <SelectTrigger className="h-10 rounded-xl border-slate-200 text-xs">
                   <SelectValue placeholder="Select employee" />
                 </SelectTrigger>
-                <SelectContent>
-                  {formEmployees.map((employee) => (
+                <SelectContent
+                  onOpenAutoFocus={(event) => {
+                    event.preventDefault();
+                    employeeSearchInputRef.current?.focus();
+                  }}
+                >
+                  <div className="sticky top-0 z-10 bg-popover p-2">
+                    <Input
+                      ref={employeeSearchInputRef}
+                      value={employeeSearch}
+                      onChange={(event) => setEmployeeSearch(event.target.value)}
+                      onKeyDown={(event) => event.stopPropagation()}
+                      placeholder="Search employees..."
+                      aria-label="Search employees"
+                      className="h-8 rounded-lg text-xs"
+                    />
+                  </div>
+                  {filteredFormEmployees.map((employee) => (
                     <SelectItem key={employee.id} value={employee.id} className="text-xs">
                       {employee.name}{employee.designation ? ` · ${employee.designation}` : ''}
                     </SelectItem>
                   ))}
+                  {filteredFormEmployees.length === 0 && (
+                    <div className="px-2 py-1.5 text-xs text-slate-500">No employees found.</div>
+                  )}
                 </SelectContent>
               </Select>
             </div>

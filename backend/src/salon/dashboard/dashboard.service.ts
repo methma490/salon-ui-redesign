@@ -7,7 +7,9 @@ import { calculateCommissionAmount } from '../payroll/payroll-calculation.servic
 
 function periodDates(period: SalonDashboardPeriod): { start: string; end: string } {
   const now = new Date();
-  const end = now.toISOString().slice(0, 10);
+  const toDateString = (date: Date) =>
+    `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const end = toDateString(now);
   let startDate: Date;
 
   switch (period) {
@@ -26,7 +28,7 @@ function periodDates(period: SalonDashboardPeriod): { start: string; end: string
       startDate.setHours(0, 0, 0, 0);
   }
 
-  return { start: startDate.toISOString().slice(0, 10), end };
+  return { start: toDateString(startDate), end };
 }
 
 function monthKey(date: Date): string {
@@ -281,17 +283,18 @@ export class DashboardService {
              ${apptPeriodBranchCond}`,
           ...apptPeriodParams,
         ),
-        tx.$queryRawUnsafe<Array<{ completed: bigint; confirmed: bigint; cancelled: bigint; noShow: bigint }>>(
+        tx.$queryRawUnsafe<Array<{ completed: bigint; confirmed: bigint; cancelled: bigint; noShow: bigint; pending: bigint }>>(
           `SELECT
              COUNT(*) FILTER (WHERE a.status::text = 'COMPLETED')::bigint AS completed,
              COUNT(*) FILTER (WHERE a.status::text = 'CONFIRMED')::bigint AS confirmed,
              COUNT(*) FILTER (WHERE a.status::text = 'CANCELLED')::bigint AS cancelled,
+             COUNT(*) FILTER (WHERE a.status::text = 'PENDING')::bigint AS pending,
              COUNT(*) FILTER (WHERE a.status::text = 'NO_SHOW')::bigint AS "noShow"
            FROM ${appointments} a
            WHERE a.appointment_date >= $1::date AND a.appointment_date <= $2::date
              ${apptPeriodBranchCond}`,
           ...apptPeriodParams,
-        ).catch(() => [{ completed: BigInt(0), confirmed: BigInt(0), cancelled: BigInt(0), noShow: BigInt(0) }]),
+        ).catch(() => [{ completed: BigInt(0), confirmed: BigInt(0), cancelled: BigInt(0), noShow: BigInt(0), pending: BigInt(0) }]),
         tx.$queryRawUnsafe(
           `SELECT sv.id, sv.name, COUNT(*)::bigint AS "saleCount", SUM(si.total)::text AS revenue
            FROM ${saleItems} si
@@ -353,13 +356,14 @@ export class DashboardService {
            ORDER BY month ASC`,
         ),
         tx.$queryRawUnsafe<
-          Array<{ label: string; completed: bigint; confirmed: bigint; cancelled: bigint; noShow: bigint }>
+          Array<{ label: string; completed: bigint; confirmed: bigint; cancelled: bigint; noShow: bigint; pending: bigint }>
         >(
           period === 'year'
             ? `SELECT TO_CHAR(DATE_TRUNC('month', a.appointment_date), 'Mon') AS label,
                       COUNT(*) FILTER (WHERE a.status::text = 'COMPLETED')::bigint AS completed,
                       COUNT(*) FILTER (WHERE a.status::text = 'CONFIRMED')::bigint AS confirmed,
                       COUNT(*) FILTER (WHERE a.status::text = 'CANCELLED')::bigint AS cancelled,
+                      COUNT(*) FILTER (WHERE a.status::text = 'PENDING')::bigint AS pending,
                       COUNT(*) FILTER (WHERE a.status::text = 'NO_SHOW')::bigint AS "noShow"
                FROM ${appointments} a
                WHERE a.appointment_date >= $1::date AND a.appointment_date <= $2::date ${apptPeriodBranchCond}
@@ -369,6 +373,7 @@ export class DashboardService {
                       COUNT(*) FILTER (WHERE a.status::text = 'COMPLETED')::bigint AS completed,
                       COUNT(*) FILTER (WHERE a.status::text = 'CONFIRMED')::bigint AS confirmed,
                       COUNT(*) FILTER (WHERE a.status::text = 'CANCELLED')::bigint AS cancelled,
+                      COUNT(*) FILTER (WHERE a.status::text = 'PENDING')::bigint AS pending,
                       COUNT(*) FILTER (WHERE a.status::text = 'NO_SHOW')::bigint AS "noShow"
                FROM ${appointments} a
                WHERE a.appointment_date >= $1::date AND a.appointment_date <= $2::date ${apptPeriodBranchCond}
@@ -533,7 +538,8 @@ export class DashboardService {
       const apptConfirmed = Number(appointmentBreakdown[0]?.confirmed ?? 0);
       const apptCancelled = Number(appointmentBreakdown[0]?.cancelled ?? 0);
       const apptNoShow = Number(appointmentBreakdown[0]?.noShow ?? 0);
-      const totalAppts = apptCompleted + apptConfirmed + apptCancelled + apptNoShow || Number(periodAppointments[0]?.count ?? 0);
+      const apptPending = Number(appointmentBreakdown[0]?.pending ?? 0);
+      const totalAppts = apptCompleted + apptConfirmed + apptCancelled + apptNoShow + apptPending || Number(periodAppointments[0]?.count ?? 0);
 
       const completedPct = totalAppts > 0 ? Math.round((apptCompleted / totalAppts) * 100) : 0;
       const confirmedPct = totalAppts > 0 ? Math.round((apptConfirmed / totalAppts) * 100) : 0;
@@ -676,6 +682,7 @@ export class DashboardService {
           completedPct,
           confirmed: apptConfirmed,
           confirmedPct,
+          pending: apptPending,
           cancelled: apptCancelled,
           cancelledPct,
           noShow: apptNoShow,
@@ -685,6 +692,7 @@ export class DashboardService {
             date: row.label,
             completed: Number(row.completed),
             confirmed: Number(row.confirmed),
+            pending: Number(row.pending ?? 0),
             cancelled: Number(row.cancelled),
             noShow: Number(row.noShow ?? 0),
           })),

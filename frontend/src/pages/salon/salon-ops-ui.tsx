@@ -18,7 +18,7 @@ import './employees-page.css';
 
 export function getErrorMessage(
   error: unknown,
-  fallback = 'Something went wrong. Please try again.',
+  fallback = 'Could not load data. Please try again.',
 ) {
   const err = error as { response?: { data?: { message?: string | string[] } } };
   const message = err.response?.data?.message;
@@ -123,7 +123,7 @@ export function OpsError({ message, onRetry }: { message: string; onRetry: () =>
   return (
     <div className="emp-page">
       <div className="emp-error-box">
-        <strong>Something went wrong</strong>
+        <strong>Unable to load data</strong>
         <p style={{ margin: '0.5rem 0 0' }}>{message}</p>
       </div>
       <button type="button" className="emp-btn emp-btn-primary" onClick={onRetry}>

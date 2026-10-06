@@ -793,6 +793,7 @@ export interface DashboardData {
     completedPct: number;
     confirmed: number;
     confirmedPct: number;
+    pending: number;
     cancelled: number;
     cancelledPct: number;
     noShow: number;
@@ -802,6 +803,7 @@ export interface DashboardData {
       date: string;
       completed: number;
       confirmed: number;
+      pending: number;
       cancelled: number;
       noShow: number;
     }>;

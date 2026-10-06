@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { useTenantTheme } from '@/contexts/TenantThemeContext';
 import { formatMoneyAmount } from '@/lib/money';
@@ -74,7 +74,10 @@ function PaymentMethodPanel({
                 outerRadius="89%"
                 paddingAngle={total > 0 ? 2 : 0}
                 stroke="none"
-                isAnimationActive={false}
+                isAnimationActive
+                animationBegin={0}
+                animationDuration={850}
+                animationEasing="ease-out"
               >
                 {chartData.map((entry) => <Cell key={entry.method} fill={entry.color} />)}
               </Pie>
@@ -110,8 +113,11 @@ export function PaymentMethodBreakdownCard({
   sales = [],
   expenses = [],
 }: PaymentMethodBreakdownCardProps) {
+  const [selectedType, setSelectedType] = useState<'sales' | 'expenses'>('sales');
   const theme = useTenantTheme();
   const colors = useMemo(() => getDashboardChartColors(theme.palette.primary), [theme.palette.primary]);
+  const selectedRows = selectedType === 'sales' ? sales : expenses;
+  const selectedTitle = selectedType === 'sales' ? 'Sales' : 'Expenses';
 
   return (
     <div className="dash-card dash-payment-method-card">
@@ -120,6 +126,24 @@ export function PaymentMethodBreakdownCard({
           <h2>Payment Method Breakdown</h2>
           <p>Sales and expenses grouped by payment method for the selected period.</p>
         </div>
+      </div>
+      <div className="dash-payment-method-filter" role="group" aria-label="Payment breakdown type">
+        <button
+          type="button"
+          aria-pressed={selectedType === 'sales'}
+          className={`dash-payment-method-filter-btn ${selectedType === 'sales' ? 'active' : ''}`}
+          onClick={() => setSelectedType('sales')}
+        >
+          Sales
+        </button>
+        <button
+          type="button"
+          aria-pressed={selectedType === 'expenses'}
+          className={`dash-payment-method-filter-btn ${selectedType === 'expenses' ? 'active' : ''}`}
+          onClick={() => setSelectedType('expenses')}
+        >
+          Expenses
+        </button>
       </div>
       <div className="dash-payment-method-legend" aria-label="Payment method colour key">
         {PAYMENT_METHODS.map((method, index) => (
@@ -133,10 +157,7 @@ export function PaymentMethodBreakdownCard({
           </span>
         ))}
       </div>
-      <div className="dash-payment-method-panels">
-        <PaymentMethodPanel title="Sales" rows={sales} colors={colors} />
-        <PaymentMethodPanel title="Expenses" rows={expenses} colors={colors} />
-      </div>
+      <PaymentMethodPanel title={selectedTitle} rows={selectedRows} colors={colors} />
     </div>
   );
 }
