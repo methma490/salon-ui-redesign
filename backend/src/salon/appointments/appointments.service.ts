@@ -276,6 +276,10 @@ export class AppointmentsService {
     schemaName: string,
     serviceIds: string[],
   ): Promise<ServiceSnapshot[]> {
+    if (serviceIds.length === 0) {
+      return [];
+    }
+
     const services = tenantTable(schemaName, 'services');
     const placeholders = serviceIds.map((_, index) => `$${index + 1}::uuid`).join(', ');
     const rows = await tx.$queryRawUnsafe<ServiceSnapshot[]>(
@@ -515,6 +519,7 @@ export class AppointmentsService {
     userId: string,
   ): Promise<AppointmentRecord> {
     const appointments = tenantTable(schemaName, 'appointments');
+    const serviceIds = dto.serviceIds ?? [];
     const startTime = this.normalizeTime(dto.startTime);
     const endTime = this.normalizeTime(dto.endTime);
 
@@ -539,7 +544,7 @@ export class AppointmentsService {
           );
         }
 
-        const snapshots = await this.fetchServiceSnapshots(tx, schemaName, dto.serviceIds);
+        const snapshots = await this.fetchServiceSnapshots(tx, schemaName, serviceIds);
         const code = await generateSequentialCode(tx, appointments, 'APT-');
 
         const rows = await tx.$queryRawUnsafe<Array<{ id: string }>>(
@@ -571,7 +576,7 @@ export class AppointmentsService {
             branchId: dto.branchId,
             employeeId: dto.employeeId ?? null,
             appointmentDate: dto.appointmentDate,
-            serviceIds: dto.serviceIds,
+            serviceIds,
           },
         });
 

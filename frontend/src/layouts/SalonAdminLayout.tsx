@@ -709,20 +709,20 @@ function SalonAdminHeader({
           </div>
         </div>
 
-        {/* Desktop: sidebar toggle */}
-        <div className="hidden min-w-0 flex-1 items-center gap-3 md:flex">
-          {collapsed && onToggleCollapse && (
+        {/* Desktop: expand a collapsed sidebar from the top header ribbon */}
+        {collapsed && onToggleCollapse && (
+          <div className="hidden items-center md:flex">
             <button
               type="button"
-              className="salon-collapse-btn"
-              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              className="salon-header-expand-btn"
+              title="Expand sidebar"
+              aria-label="Expand sidebar"
               onClick={onToggleCollapse}
             >
-              {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+              <PanelLeftOpen className="h-4 w-4" />
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       <div className="salon-header-actions flex shrink-0 items-center gap-1 md:gap-2">
@@ -803,7 +803,7 @@ function SalonAdminLayoutInner() {
         <div
           className={cn(
             'salon-sidebar-brand flex h-16 shrink-0 items-center border-b border-border',
-            collapsed ? 'justify-center px-2' : 'justify-between px-4',
+            collapsed ? 'flex-col justify-center gap-0 px-2' : 'justify-between px-4',
           )}
         >
           <SalonBrand salonName={salonName} logoUrl={salonLogoUrl} collapsed={collapsed} />
