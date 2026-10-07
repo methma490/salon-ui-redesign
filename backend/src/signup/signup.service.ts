@@ -258,11 +258,10 @@ export class SignupService {
         { timeout: 15000, maxWait: 5000 },
       );
 
-      const apiBase =
-        this.configService.get<string>('API_PUBLIC_URL') ?? 'http://localhost:3000/api';
       const signupNotifyUrl =
-        this.configService.get<string>('payhere.notifyUrl') ??
-        `${apiBase.replace(/\/$/, '')}/payments/payhere/notify`;
+        this.configService.get<string>('payhere.notifyUrl') ||
+        process.env.PAYHERE_NOTIFY_URL ||
+        '';
 
       const checkoutSession = await this.paymentOrdersService.buildCheckoutSession(
         orderId,
@@ -337,13 +336,15 @@ export class SignupService {
         payload,
       );
 
-      if (result.status === 'paid' || result.alreadyProcessed) {
-        return this.finalizePaidSignup(payload.order_id, payload.payment_id ?? payload.order_id);
-      }
+      if (paymentOrder.purpose === PaymentPurpose.SIGNUP) {
+        if (result.status === 'paid' || result.alreadyProcessed) {
+          return this.finalizePaidSignup(payload.order_id, payload.payment_id ?? payload.order_id);
+        }
 
-      if (result.status === 'failed') {
-        await this.markSignupFailed(payload.order_id);
-        return { success: false, status: 'failed' };
+        if (result.status === 'failed') {
+          await this.markSignupFailed(payload.order_id);
+          return { success: false, status: 'failed' };
+        }
       }
 
       return result;

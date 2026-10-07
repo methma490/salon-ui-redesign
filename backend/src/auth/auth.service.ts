@@ -80,7 +80,7 @@ export class AuthService {
         throw new UnauthorizedException('Invalid email or password');
       }
 
-      // MFA not enabled — issue tokens directly
+      // Issue tokens directly
       this.loginSecurityService.recordSuccessfulLogin(email, ipAddress);
       const authUser: AuthenticatedUser = {
         id: superAdmin.id,

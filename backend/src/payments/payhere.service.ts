@@ -68,6 +68,14 @@ export class PayHereService implements OnModuleInit {
     return this.configService.get<boolean>('payhere.sandbox', true);
   }
 
+  get notifyUrl(): string {
+    return (
+      this.configService.get<string>('payhere.notifyUrl') ||
+      process.env.PAYHERE_NOTIFY_URL ||
+      ''
+    );
+  }
+
   isConfigured(): boolean {
     return Boolean(this.merchantId && this.merchantSecret);
   }
@@ -107,17 +115,18 @@ export class PayHereService implements OnModuleInit {
     city: string;
     returnUrl: string;
     cancelUrl: string;
-    notifyUrl: string;
+    notifyUrl?: string;
   }): PayHereCheckoutParams {
     const amount = this.formatAmount(input.amount);
     const hash = this.generateCheckoutHash(input.orderId, amount, input.currency);
+    const resolvedNotifyUrl = this.notifyUrl || input.notifyUrl || '';
 
     return {
       sandbox: this.sandbox,
       merchant_id: this.merchantId,
       return_url: input.returnUrl,
       cancel_url: input.cancelUrl,
-      notify_url: input.notifyUrl,
+      notify_url: resolvedNotifyUrl,
       order_id: input.orderId,
       items: input.items,
       amount,

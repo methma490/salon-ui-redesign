@@ -207,11 +207,11 @@ const ALL_FEATURES: FeatureItem[] = [
     badge: 'Bank-Grade Security',
     title: 'Audit Trails & Enterprise Security',
     description:
-      'Enterprise cloud infrastructure with isolated database schemas, two-factor authentication (MFA/TOTP), and tamper-proof user activity audit logs.',
+      'Enterprise cloud infrastructure with isolated database schemas, role-based access control, and tamper-proof user activity audit logs.',
     icon: ShieldCheck,
     highlights: [
       'Complete audit trail of user edits & actions',
-      'Super Admin & Salon Admin MFA security',
+      'Role-based access control and session security',
       'Automated daily backups with zero data loss',
     ],
     href: '/features',
