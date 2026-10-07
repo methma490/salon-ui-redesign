@@ -12,6 +12,7 @@ import {
   Send,
   ShoppingCart,
   Trash2,
+  X,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -25,6 +26,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -36,7 +38,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSalonBranch } from '@/contexts/SalonBranchContext';
 import {
   FormError,
-  FormSubmit,
   getErrorMessage,
   SimpleForm,
   SimpleFormDialog,
@@ -200,6 +201,8 @@ export default function PosPage() {
 
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [mobileCheckoutStep, setMobileCheckoutStep] = useState<'cart' | 'payment'>('cart');
+  const [mobileWizardStep, setMobileWizardStep] = useState<1 | 2 | 3 | 4>(1);
+  const [mixPaymentSheetOpen, setMixPaymentSheetOpen] = useState(false);
   const [catalogTab, setCatalogTab] = useState<CatalogTab>('services');
   const [catalogSearch, setCatalogSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
@@ -385,6 +388,7 @@ export default function PosPage() {
       setDiscountInput(String(Number(sale.discount) || 0));
       setDiscountMode('amount');
       setDraftSaleId(sale.id);
+      setMobileWizardStep(3);
       setPaymentMode('CASH');
       setPaymentReference('');
       setCashReceived('');
@@ -595,11 +599,7 @@ export default function PosPage() {
     if (total <= 0 || cartCount === 0) return false;
     if (paymentMode === 'MIX') {
       const mixSum = paymentLines.reduce((sum, line) => sum + (Number(line.amount) || 0), 0);
-      const cashInMix = paymentLines
-        .filter((l) => l.method === 'CASH')
-        .reduce((sum, l) => sum + (Number(l.amount) || 0), 0);
-      const cashOk = cashInMix <= 0 || cashReceivedNum >= cashInMix;
-      return Math.abs(mixSum - total) < 0.01 && cashOk;
+      return Math.abs(mixSum - total) < 0.01;
     }
     if (paymentMode === 'CASH') {
       return cashReceived.trim() !== '' && cashReceivedNum >= total;
@@ -612,6 +612,9 @@ export default function PosPage() {
     setPaymentReference('');
     setCashReceived('');
     if (mode === 'MIX') {
+      if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches) {
+        setMixPaymentSheetOpen(true);
+      }
       setPaymentLines([
         { key: crypto.randomUUID(), method: 'CASH', amount: '', referenceNumber: '' },
         { key: crypto.randomUUID(), method: 'CARD', amount: '', referenceNumber: '' },
@@ -702,6 +705,13 @@ export default function PosPage() {
     setCartServices([]);
     setCartProducts([]);
     setDiscountInput('');
+    setDiscountMode('amount');
+    setCustomerMode('walkin');
+    setCustomerId(null);
+    setCustomerName(null);
+    setCustomerPhone(null);
+    setCustomerSearch('');
+    setPaymentMode('CASH');
     setCashReceived('');
     setPaymentReference('');
     setPaymentLines([
@@ -709,6 +719,7 @@ export default function PosPage() {
     ]);
     setFormError(null);
     setDraftSaleId(null);
+    setMobileWizardStep(1);
   };
 
   const addPaymentLine = (method: PayMethod = 'CASH') => {
@@ -729,7 +740,7 @@ export default function PosPage() {
   };
 
   const removePaymentLine = (key: string) => {
-    const minLines = paymentMode === 'MIX' ? 2 : 1;
+    const minLines = 1;
     setPaymentLines((prev) =>
       prev.length <= minLines ? prev : prev.filter((line) => line.key !== key),
     );
@@ -1004,7 +1015,11 @@ export default function PosPage() {
     </div>
   );
 
-  const renderCartPanel = (className = '', variant: 'desktop' | 'mobile' = 'desktop') => (
+  const renderCartPanel = (
+    className = '',
+    variant: 'desktop' | 'mobile' = 'desktop',
+    discountLabel = 'Discount',
+  ) => (
     <div className={`pos-panel ${className}`.trim()}>
       {variant === 'desktop' && (
         <div className="pos-panel-head">
@@ -1041,7 +1056,7 @@ export default function PosPage() {
             <span>{formatMoneyAmount(subtotal)}</span>
           </div>
           <div className="pos-total-row">
-            <span>Discount</span>
+            <span>{discountLabel}</span>
             <div className="pos-discount-row">
               <div className="pos-discount-toggle">
                 <button
@@ -1084,7 +1099,7 @@ export default function PosPage() {
     (paymentMode === 'MIX' && paymentLines.some((line) => line.method === 'CASH'));
 
   const renderPaymentPanel = (options?: { hideActions?: boolean; className?: string }) => (
-    <div className={`pos-panel ${options?.className ?? ''}`.trim()}>
+    <div className={`pos-panel ${options?.className ?? ''} ${paymentMode === 'MIX' ? 'pos-payment-mix' : ''}`.trim()}>
       <div className="pos-panel-head">
         <h2>Payment</h2>
       </div>
@@ -1102,6 +1117,13 @@ export default function PosPage() {
           ))}
         </div>
 
+        {paymentMode === 'MIX' && (
+          <button type="button" className="pos-mix-mobile-trigger" onClick={() => setMixPaymentSheetOpen(true)}>
+            Edit split payment · {formatMoneyLkr(paymentRemaining)} remaining
+          </button>
+        )}
+
+        <div className="pos-mix-inline">
         {paymentMode === 'MIX' ? (
           <>
             <div className="pos-split-list">
@@ -1133,7 +1155,7 @@ export default function PosPage() {
                     aria-label="Remove payment line"
                     onClick={() => removePaymentLine(line.key)}
                   >
-                    ×
+                    <Trash2 size={15} aria-hidden="true" />
                   </button>
                 </div>
               ))}
@@ -1179,6 +1201,8 @@ export default function PosPage() {
             )}
           </div>
         )}
+
+        </div>
 
         {showCashFields && (
           <div className="pos-pay-fields">
@@ -1425,6 +1449,7 @@ export default function PosPage() {
               <span className="pos-title-short">POS</span>
               <span className="pos-title-full">Point of Sale</span>
             </h1>
+            <span className="pos-mobile-subtitle">Create a new sale</span>
             <span className="pos-datetime pos-datetime-inline">{clock.time}</span>
           </div>
 
@@ -1471,9 +1496,10 @@ export default function PosPage() {
 
       <Dialog open={draftHistoryOpen} onOpenChange={setDraftHistoryOpen}>
         <DialogContent
-          className="pos-assign-dialog sm:max-w-xl"
+          className="pos-assign-dialog pos-draft-history-sheet sm:max-w-xl"
           style={{ maxHeight: '85vh', overflowY: 'auto' }}
         >
+          <span className="pos-employee-sheet-handle" aria-hidden="true" />
           <DialogHeader>
             <DialogTitle>POS draft history</DialogTitle>
           </DialogHeader>
@@ -1505,6 +1531,181 @@ export default function PosPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <main className="pos-mobile-wizard">
+        <nav className="pos-wizard-steps" aria-label="Sale progress">
+          {(['Customer', 'Services', 'Details', 'Payment'] as const).map((label, index) => {
+            const step = (index + 1) as 1 | 2 | 3 | 4;
+            const completed = mobileWizardStep > step;
+            return (
+              <button
+                key={label}
+                type="button"
+                className={`pos-wizard-step ${mobileWizardStep === step ? 'is-current' : ''} ${completed ? 'is-complete' : ''}`}
+                onClick={() => step < mobileWizardStep && setMobileWizardStep(step)}
+                disabled={step >= mobileWizardStep}
+              >
+                <span className="pos-wizard-step-dot">{completed ? '✓' : step}</span>
+                <span>{label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        {mobileWizardStep === 1 && (
+          <section className="pos-wizard-card">
+            <div className="pos-wizard-card-heading">
+              <span className="pos-wizard-icon">♙</span>
+              <div><h2>Select Customer</h2><p>Choose a customer for this sale</p></div>
+            </div>
+            <div className="pos-wizard-choice-row">
+              <button
+                type="button"
+                className={`pos-wizard-choice ${customerMode === 'walkin' ? 'is-selected' : ''}`}
+                onClick={() => {
+                  setCustomerMode('walkin');
+                  setCustomerId(null);
+                  setCustomerName(null);
+                  setCustomerPhone(null);
+                  setCustomerSearch('');
+                }}
+              ><strong>Walk-in</strong><span>Quick sale for walk-in customer</span></button>
+              <button
+                type="button"
+                className={`pos-wizard-choice ${customerMode === 'registered' ? 'is-selected' : ''}`}
+                onClick={() => setCustomerMode('registered')}
+              ><strong>Registered</strong><span>Search or create customer</span></button>
+            </div>
+            {customerMode === 'registered' && (
+              <div className="pos-wizard-customer-box">
+                <label htmlFor="pos-wizard-customer-search">Search Existing Customer</label>
+                <input
+                  id="pos-wizard-customer-search"
+                  className="pos-wizard-search"
+                  type="search"
+                  placeholder="Search by name, phone number or email"
+                  value={customerSearch}
+                  onChange={(event) => {
+                    setCustomerSearch(event.target.value);
+                    if (customerId) {
+                      setCustomerId(null);
+                      setCustomerName(null);
+                      setCustomerPhone(null);
+                    }
+                  }}
+                />
+                {isCustomerSearching && <p className="pos-wizard-muted">Searching customers…</p>}
+                {searchResults.map((customer) => (
+                  <button
+                    key={customer.id}
+                    type="button"
+                    className={`pos-wizard-customer-result ${customer.id === customerId ? 'is-selected' : ''}`}
+                    onClick={() => {
+                      setCustomerId(customer.id);
+                      setCustomerName(customer.name);
+                      setCustomerPhone(customer.phone || null);
+                      setCustomerSearch(customer.name);
+                    }}
+                  >
+                    <span className="pos-wizard-customer-initials">{userInitials(customer.name)}</span>
+                    <span className="pos-wizard-customer-info"><strong>{customer.name}</strong><span>{customer.phone || 'No phone'}{customer.email ? ` · ${customer.email}` : ''}</span></span>
+                    <span className="pos-wizard-radio" />
+                  </button>
+                ))}
+                {customerSearch.trim() && !isCustomerSearching && searchResults.length === 0 && !customerId && (
+                  <p className="pos-wizard-muted">No customer found. Create a new customer below.</p>
+                )}
+                <button type="button" className="pos-wizard-create-customer" onClick={handleOpenCreateCustomer}>
+                  <span className="pos-wizard-create-plus">+</span><span><strong>Create New Customer</strong><small>Add a new customer to the system</small></span><span className="pos-wizard-chevron">›</span>
+                </button>
+              </div>
+            )}
+            <div className="pos-wizard-selected-customer">
+              <strong>Selected Customer</strong>
+              <span>{customerName || (customerMode === 'walkin' ? 'Walk-in customer' : 'None selected')}</span>
+            </div>
+          </section>
+        )}
+
+        {mobileWizardStep === 2 && (
+          <section className="pos-wizard-card">
+            <div className="pos-wizard-card-heading">
+              <span className="pos-wizard-icon">✂</span>
+              <div><h2>Select Services</h2><p>Choose services and assign employees</p></div>
+            </div>
+            <div className="pos-wizard-catalog-tabs">
+              <button type="button" className={catalogTab === 'services' ? 'is-selected' : ''} onClick={() => { setCatalogTab('services'); setCatalogSearch(''); }}>Services ({activeServices.length})</button>
+              <button type="button" className={catalogTab === 'products' ? 'is-selected' : ''} onClick={() => { setCatalogTab('products'); setCatalogSearch(''); }}>Products ({activeProducts.length})</button>
+            </div>
+            <input className="pos-wizard-search" type="search" placeholder={`Search ${catalogTab}…`} value={catalogSearch} onChange={(event) => setCatalogSearch(event.target.value)} />
+            <div className="pos-wizard-categories">
+              {categories.map((category) => <button key={category} type="button" className={categoryFilter === category ? 'is-selected' : ''} onClick={() => setCategoryFilter(category)}>{category === 'ALL' ? 'All' : category}</button>)}
+            </div>
+            {hasNoEmployees && catalogTab === 'services' && <div className="pos-alert pos-alert-warn">Select a branch to load your stylist profile.</div>}
+            <div className="pos-wizard-items">
+              {catalogTab === 'services' ? filteredServices.map((service) => {
+                const isSelected = cartServices.some((item) => item.serviceId === service.id);
+                const isPending = pendingServiceId === service.id;
+                return (
+                <button key={service.id} type="button" aria-pressed={isSelected || isPending} className={`pos-wizard-item ${isSelected ? 'is-selected' : ''} ${isPending ? 'is-pending' : ''}`} disabled={hasNoEmployees} onClick={() => handleServiceAdd(service.id)}>
+                  <span className="pos-wizard-item-check">{isSelected ? <Check size={17} /> : <Plus size={17} />}</span><span className="pos-wizard-item-info"><strong>{service.name}</strong><small>{service.durationMinutes ?? '—'} min</small></span><strong className="pos-wizard-item-price">LKR {formatMoneyAmount(service.price)}</strong>
+                </button>
+              )}) : filteredProducts.map((product) => (
+                <button key={product.id} type="button" className="pos-wizard-item" disabled={(product.stockQuantity ?? 0) <= 0} onClick={() => handleProductAdd(product.id)}>
+                  <span className="pos-wizard-item-check">+</span><span className="pos-wizard-item-info"><strong>{product.name}</strong><small>{product.categoryName || 'Product'} · {product.stockQuantity ?? 0} in stock</small></span><strong className="pos-wizard-item-price">LKR {formatMoneyAmount(product.sellingPrice)}</strong>
+                </button>
+              ))}
+              {(catalogTab === 'services' ? filteredServices.length : filteredProducts.length) === 0 && <p className="pos-wizard-muted">No {catalogTab} found.</p>}
+            </div>
+            {cartCount > 0 && <div className="pos-wizard-selection-summary"><strong>{cartCount} item{cartCount === 1 ? '' : 's'} selected</strong><span>{formatMoneyLkr(total)}</span></div>}
+          </section>
+        )}
+
+        {mobileWizardStep === 3 && (
+          <section className="pos-wizard-card">
+            <div className="pos-wizard-card-heading">
+              <span className="pos-wizard-icon">▤</span>
+              <div><h2>Sale Details</h2><p>Review selected items and adjust the sale</p></div>
+            </div>
+            <div className="pos-wizard-section-title"><strong>Selected Items</strong><span>{cartCount} items</span></div>
+            {renderCartPanel('pos-wizard-cart', 'mobile', 'Discount amount')}
+          </section>
+        )}
+
+        {mobileWizardStep === 4 && (
+          <section className="pos-wizard-card">
+            <div className="pos-wizard-card-heading">
+              <span className="pos-wizard-icon">▣</span>
+              <div><h2>Payment</h2><p>Review the total and complete the sale</p></div>
+            </div>
+            <div className="pos-wizard-payment-summary">
+              <div className="pos-wizard-section-title"><strong>Order Summary</strong><span>{cartCount} items</span></div>
+              {cartRows.map((row) => <div className="pos-wizard-summary-row" key={row.key}><span><strong>{row.name}</strong><small>{row.kind === 'service' ? row.employeeName || row.sub : `Qty ${row.qty}`}</small></span><b>{formatMoneyLkr(row.total)}</b></div>)}
+              <div className="pos-wizard-summary-adjustment"><span>Subtotal</span><b>{formatMoneyLkr(subtotal)}</b></div>
+              {discount > 0 && <div className="pos-wizard-summary-adjustment is-discount"><span>Discount applied</span><b>− {formatMoneyLkr(discount)}</b></div>}
+              <div className="pos-wizard-summary-total"><strong>Total</strong><strong>{formatMoneyLkr(total)}</strong></div>
+            </div>
+            {renderPaymentPanel({ hideActions: true, className: 'pos-wizard-payment-panel' })}
+          </section>
+        )}
+
+        {formError && <div className="pos-alert pos-alert-error pos-wizard-error">{formError}</div>}
+
+        <footer className="pos-wizard-footer">
+          {mobileWizardStep > 1 && <button type="button" className="pos-wizard-back" onClick={() => setMobileWizardStep((mobileWizardStep - 1) as 1 | 2 | 3 | 4)}>← <span>Back</span></button>}
+          <button type="button" className="pos-wizard-save" disabled={draftDisabled} onClick={saveDraftSale}><FileText size={17} /> Save Draft</button>
+          {mobileWizardStep < 4 ? (
+            <button
+              type="button"
+              className="pos-wizard-continue"
+              disabled={(mobileWizardStep === 2 || mobileWizardStep === 3) && cartCount === 0}
+              onClick={() => { setFormError(null); setMobileWizardStep((mobileWizardStep + 1) as 2 | 3 | 4); }}
+            >{mobileWizardStep === 1 ? 'Continue to Services' : mobileWizardStep === 2 ? 'Continue to Details' : 'Continue to Payment'} <span>→</span></button>
+          ) : (
+            <button type="button" className="pos-wizard-continue" disabled={completeDisabled} onClick={completeSale}>{createSaleMutation.isPending ? 'Processing…' : `Complete Sale · ${formatMoneyLkr(total)}`} <span>→</span></button>
+          )}
+        </footer>
+      </main>
 
       <section className="pos-customer-panel">
         <div className="pos-toolbar-customer">
@@ -1834,13 +2035,73 @@ export default function PosPage() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={mixPaymentSheetOpen} onOpenChange={setMixPaymentSheetOpen}>
+        <DialogContent className="pos-mix-sheet">
+          <span className="pos-employee-sheet-handle" aria-hidden="true" />
+          <DialogHeader>
+            <DialogTitle>Split payment</DialogTitle>
+            <p className="pos-mix-sheet-description">Add payment methods until the total is covered.</p>
+          </DialogHeader>
+          <div className="pos-mix-sheet-body">
+            <div className="pos-split-list">
+              {paymentLines.map((line) => (
+                <div key={line.key} className="pos-split-row">
+                  <select
+                    aria-label="Payment method"
+                    value={line.method}
+                    onChange={(event) => updatePaymentLine(line.key, { method: event.target.value as PayMethod })}
+                  >
+                    {SPLIT_METHODS.map((method) => <option key={method.value} value={method.value}>{method.label}</option>)}
+                  </select>
+                  <input
+                    aria-label={`${line.method} amount`}
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={line.amount}
+                    onChange={(event) => updatePaymentLine(line.key, { amount: event.target.value })}
+                  />
+                  <button type="button" className="pos-split-remove" aria-label="Remove payment line" onClick={() => removePaymentLine(line.key)}>
+                    <Trash2 size={16} aria-hidden="true" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button type="button" className="pos-add-split-btn" disabled={paymentRemaining <= 0 || paymentTotal >= total} onClick={() => addPaymentLine()}>
+              + Add payment line
+            </button>
+            <div className={`pos-pay-summary ${paymentBalanced ? 'is-ok' : paymentTotal > total ? 'is-error' : ''}`}>
+              <span>Paid {formatMoneyLkr(paymentTotal)}</span>
+              <span>{paymentRemaining > 0 ? `Remaining ${formatMoneyLkr(paymentRemaining)}` : 'Fully allocated'}</span>
+            </div>
+            {showCashFields && (
+              <div className="pos-pay-fields">
+                <div className="pos-field">
+                  <label htmlFor="pos-mix-cash-received">Amount received in cash</label>
+                  <input id="pos-mix-cash-received" type="number" min="0" step="0.01" value={cashReceived} onChange={(event) => setCashReceived(event.target.value)} placeholder={cashLineTotal.toFixed(2)} />
+                </div>
+                <div className="pos-field">
+                  <label htmlFor="pos-mix-change">Change</label>
+                  <input id="pos-mix-change" readOnly value={formatMoneyAmount(changeDue)} />
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="pos-mix-sheet-footer">
+            <button type="button" className="pos-mix-done" onClick={() => setMixPaymentSheetOpen(false)}>Done</button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog
         open={!!pendingService && hasMultipleEmployees}
         onOpenChange={(open) => {
           if (!open) setPendingServiceId('');
         }}
       >
-        <DialogContent className="pos-assign-dialog sm:max-w-md">
+        <DialogContent className="pos-assign-dialog pos-employee-sheet sm:max-w-md">
+          <span className="pos-employee-sheet-handle" aria-hidden="true" />
           <DialogHeader>
             <DialogTitle>Assign employee</DialogTitle>
           </DialogHeader>
@@ -1889,6 +2150,7 @@ export default function PosPage() {
         open={createCustomerOpen}
         onOpenChange={handleCloseCreateCustomer}
         title="New Customer"
+        className="pos-new-customer-sheet"
       >
         <SimpleForm
           onSubmit={(e) => {
@@ -1941,7 +2203,13 @@ export default function PosPage() {
               }}
             />
           </div>
-          <FormSubmit pending={createCustomerMutation.isPending}>Add Customer</FormSubmit>
+          <Button
+            type="submit"
+            className="pos-customer-submit w-full"
+            disabled={createCustomerMutation.isPending}
+          >
+            {createCustomerMutation.isPending ? 'Saving…' : 'Add Customer'}
+          </Button>
         </SimpleForm>
       </SimpleFormDialog>
 
@@ -1954,6 +2222,18 @@ export default function PosPage() {
               <span>Invoice Preview</span>
             </div>
             <div className="pos-inv-preview-actions">
+              <button
+                type="button"
+                className="pos-inv-btn-outline pos-inv-close-btn"
+                onClick={() => {
+                  setInvoicePreviewOpen(false);
+                  clearCart();
+                }}
+                aria-label="Close invoice preview"
+              >
+                <X size={16} />
+                <span>Close</span>
+              </button>
               <button
                 type="button"
                 className="pos-inv-btn-primary"
@@ -2042,6 +2322,18 @@ export default function PosPage() {
               </span>
             </div>
             <div className="pos-inv-preview-actions">
+              <button
+                type="button"
+                className="pos-inv-btn-outline pos-inv-close-btn"
+                onClick={() => {
+                  setCompletedModalOpen(false);
+                  clearCart();
+                }}
+                aria-label="Close completed invoice"
+              >
+                <X size={16} />
+                <span>Close</span>
+              </button>
               <button
                 type="button"
                 className="pos-inv-btn-primary"

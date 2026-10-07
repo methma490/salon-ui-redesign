@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ForbiddenException,
   Inject,
   Injectable,
@@ -18,15 +17,9 @@ import { TenantPermissionService } from '../tenant/services/tenant-permission.se
 import { TenantSchemaService } from '../tenant/services/tenant-schema.service';
 import { tenantTable } from '../tenant/utils/schema-name.util';
 import { LoginDto } from './dto/login.dto';
-import {
-  MfaDisableDto,
-  MfaEnableDto,
-  MfaRegenerateRecoveryCodesDto,
-  MfaVerifyLoginDto,
-} from './dto/mfa.dto';
 import { AuthenticatedUser, AuthUserResponse, JwtPayload } from './interfaces/auth.interface';
 import { LoginSecurityService } from './login-security.service';
-import { MfaService } from './mfa.service';
+
 import { SuperAdminAuditLogsService } from '../super-admin/audit-logs/super-admin-audit-logs.service';
 import { generateRefreshToken, hashToken } from './utils/token.util';
 
@@ -41,14 +34,13 @@ export class AuthService {
     private readonly tenantSchemaService: TenantSchemaService,
     private readonly tenantPermissionService: TenantPermissionService,
     private readonly loginSecurityService: LoginSecurityService,
-    private readonly mfaService: MfaService,
     private readonly auditLogsService: SuperAdminAuditLogsService,
     @Inject(forwardRef(() => SubscriptionsService))
     private readonly subscriptionsService: SubscriptionsService,
   ) {}
 
   /**
-   * Universal login - supports both Super Admin (enforcing MFA) and tenant users
+   * Universal login for Super Admin and tenant users
    */
   async login(dto: LoginDto, ipAddress?: string) {
     const email = dto.email.trim().toLowerCase();
@@ -88,21 +80,28 @@ export class AuthService {
         throw new UnauthorizedException('Invalid email or password');
       }
 
-      // Generate ephemeral MFA session token (5 minute expiry)
-      const mfaSessionToken = await this.mfaService.createPendingMfaToken(
-        superAdmin.id,
-        superAdmin.email,
-      );
+      // MFA not enabled — issue tokens directly
+      this.loginSecurityService.recordSuccessfulLogin(email, ipAddress);
+      const authUser: AuthenticatedUser = {
+        id: superAdmin.id,
+        email: superAdmin.email,
+        name: superAdmin.name,
+        tenantId: null,
+        schemaName: null,
+        roles: ['SUPER_ADMIN'],
+        userType: 'SUPER_ADMIN',
+      };
+      const tokens = await this.issueTokens(authUser, 'SUPER_ADMIN');
 
-      // Require MFA verification before issuing privileged session token
       return {
-        mfaRequired: true as const,
-        mfaSetupRequired: !superAdmin.mfaEnabled || !superAdmin.mfaSecret,
-        mfaSessionToken,
+
+        ...tokens,
         user: {
           id: superAdmin.id,
           email: superAdmin.email,
           name: superAdmin.name,
+          tenantId: null,
+          roles: ['SUPER_ADMIN'],
         },
       };
     }
@@ -115,7 +114,7 @@ export class AuthService {
       const tokens = await this.issueTokens(tenantUser, 'TENANT_USER');
 
       return {
-        mfaRequired: false as const,
+
         ...tokens,
         user: this.serializeUser(tenantUser),
       };
@@ -720,248 +719,5 @@ export class AuthService {
     return new Date(now + amount * multipliers[unit]);
   }
 
-  /**
-   * Complete Super Admin login by validating TOTP or recovery code against pending MFA session
-   */
-  async verifyMfaLogin(dto: MfaVerifyLoginDto, ipAddress?: string) {
-    const payload = await this.mfaService.verifyPendingMfaToken(dto.mfaSessionToken);
-    const email = payload.email;
 
-    this.loginSecurityService.assertNotLocked(email, ipAddress);
-
-    const superAdmin = await this.prisma.superAdminUser.findUnique({
-      where: { id: payload.sub },
-    });
-
-    if (!superAdmin || superAdmin.status !== SuperAdminStatus.ACTIVE) {
-      throw new UnauthorizedException('Super admin user not found or inactive');
-    }
-
-    let isValid = false;
-
-    if (dto.code && superAdmin.mfaSecret) {
-      isValid = this.mfaService.verifyTotp(dto.code, superAdmin.mfaSecret);
-    } else if (dto.recoveryCode) {
-      isValid = await this.mfaService.verifyAndConsumeRecoveryCode(superAdmin.id, dto.recoveryCode);
-    }
-
-    if (!isValid) {
-      this.loginSecurityService.recordFailedAttempt(email, ipAddress, 'mfa-verify-failed');
-      throw new UnauthorizedException('Invalid authentication code or recovery code');
-    }
-
-    this.loginSecurityService.recordSuccessfulLogin(email, ipAddress);
-
-    const authUser: AuthenticatedUser = {
-      id: superAdmin.id,
-      email: superAdmin.email,
-      name: superAdmin.name,
-      tenantId: null,
-      schemaName: null,
-      roles: ['SUPER_ADMIN'],
-      userType: 'SUPER_ADMIN',
-    };
-
-    const tokens = await this.issueTokens(authUser, 'SUPER_ADMIN');
-
-    return {
-      ...tokens,
-      user: this.serializeUser(authUser),
-    };
-  }
-
-  /**
-   * Generate MFA setup secret and QR code for Super Admin
-   */
-  async setupMfa(adminUserId: string) {
-    const superAdmin = await this.prisma.superAdminUser.findUnique({
-      where: { id: adminUserId },
-    });
-
-    if (!superAdmin || superAdmin.status !== SuperAdminStatus.ACTIVE) {
-      throw new UnauthorizedException('Super admin user not found or inactive');
-    }
-
-    return this.mfaService.generateMfaSetup(superAdmin.email);
-  }
-
-  /**
-   * Setup MFA from an active MFA session token during initial onboarding
-   */
-  async setupMfaWithSessionToken(mfaSessionToken: string) {
-    const payload = await this.mfaService.verifyPendingMfaToken(mfaSessionToken);
-    return this.setupMfa(payload.sub);
-  }
-
-  /**
-   * Confirm and enable MFA on a Super Admin account
-   */
-  async enableMfa(
-    adminUserId: string,
-    dto: MfaEnableDto,
-    ipAddress?: string,
-  ) {
-    const superAdmin = await this.prisma.superAdminUser.findUnique({
-      where: { id: adminUserId },
-    });
-
-    if (!superAdmin || superAdmin.status !== SuperAdminStatus.ACTIVE) {
-      throw new UnauthorizedException('Super admin user not found or inactive');
-    }
-
-    const isValid = this.mfaService.verifyTotp(dto.code, dto.secret);
-    if (!isValid) {
-      this.loginSecurityService.recordFailedAttempt(superAdmin.email, ipAddress, 'mfa-enable-invalid-code');
-      throw new BadRequestException('Invalid authentication code. Please check your authenticator app and try again.');
-    }
-
-    await this.prisma.superAdminUser.update({
-      where: { id: adminUserId },
-      data: {
-        mfaEnabled: true,
-        mfaSecret: dto.secret,
-        mfaEnrolledAt: new Date(),
-      },
-    });
-
-    await this.mfaService.saveRecoveryCodes(adminUserId, dto.recoveryCodes);
-
-    await this.auditLogsService.logAction({
-      adminUserId,
-      action: 'MFA_ENABLE',
-      entityType: 'SUPER_ADMIN',
-      entityId: adminUserId,
-      metadata: { mfaEnabled: true },
-      ipAddress,
-    });
-
-    const authUser: AuthenticatedUser = {
-      id: superAdmin.id,
-      email: superAdmin.email,
-      name: superAdmin.name,
-      tenantId: null,
-      schemaName: null,
-      roles: ['SUPER_ADMIN'],
-      userType: 'SUPER_ADMIN',
-    };
-
-    const tokens = await this.issueTokens(authUser, 'SUPER_ADMIN');
-
-    return {
-      success: true,
-      message: 'MFA has been successfully enabled for your account.',
-      ...tokens,
-      user: this.serializeUser(authUser),
-    };
-  }
-
-  /**
-   * Enable MFA using an onboarding MFA session token
-   */
-  async enableMfaWithSessionToken(
-    mfaSessionToken: string,
-    dto: MfaEnableDto,
-    ipAddress?: string,
-  ) {
-    const payload = await this.mfaService.verifyPendingMfaToken(mfaSessionToken);
-    return this.enableMfa(payload.sub, dto, ipAddress);
-  }
-
-  /**
-   * Disable MFA on a Super Admin account (requires password + current TOTP/recovery verification)
-   */
-  async disableMfa(adminUserId: string, dto: MfaDisableDto, ipAddress?: string) {
-    const superAdmin = await this.prisma.superAdminUser.findUnique({
-      where: { id: adminUserId },
-    });
-
-    if (!superAdmin || superAdmin.status !== SuperAdminStatus.ACTIVE) {
-      throw new UnauthorizedException('Super admin user not found or inactive');
-    }
-
-    const isPasswordValid = await bcrypt.compare(dto.password, superAdmin.passwordHash);
-    if (!isPasswordValid) {
-      this.loginSecurityService.recordFailedAttempt(superAdmin.email, ipAddress, 'mfa-disable-wrong-password');
-      throw new UnauthorizedException('Incorrect password');
-    }
-
-    let isCodeValid = false;
-    if (dto.code && superAdmin.mfaSecret) {
-      isCodeValid = this.mfaService.verifyTotp(dto.code, superAdmin.mfaSecret);
-    } else if (dto.recoveryCode) {
-      isCodeValid = await this.mfaService.verifyAndConsumeRecoveryCode(adminUserId, dto.recoveryCode);
-    }
-
-    if (!isCodeValid) {
-      this.loginSecurityService.recordFailedAttempt(superAdmin.email, ipAddress, 'mfa-disable-invalid-code');
-      throw new UnauthorizedException('Invalid authentication code or recovery code');
-    }
-
-    await this.prisma.superAdminUser.update({
-      where: { id: adminUserId },
-      data: {
-        mfaEnabled: false,
-        mfaSecret: null,
-        mfaEnrolledAt: null,
-      },
-    });
-
-    await this.prisma.superAdminMfaRecoveryCode.deleteMany({
-      where: { superAdminId: adminUserId },
-    });
-
-    await this.auditLogsService.logAction({
-      adminUserId,
-      action: 'MFA_DISABLE',
-      entityType: 'SUPER_ADMIN',
-      entityId: adminUserId,
-      metadata: { mfaEnabled: false },
-      ipAddress,
-    });
-
-    return {
-      success: true,
-      message: 'MFA has been successfully disabled.',
-    };
-  }
-
-  /**
-   * Regenerate one-time backup recovery codes for Super Admin
-   */
-  async regenerateRecoveryCodes(
-    adminUserId: string,
-    dto: MfaRegenerateRecoveryCodesDto,
-    ipAddress?: string,
-  ) {
-    const superAdmin = await this.prisma.superAdminUser.findUnique({
-      where: { id: adminUserId },
-    });
-
-    if (!superAdmin || superAdmin.status !== SuperAdminStatus.ACTIVE) {
-      throw new UnauthorizedException('Super admin user not found or inactive');
-    }
-
-    const isPasswordValid = await bcrypt.compare(dto.password, superAdmin.passwordHash);
-    if (!isPasswordValid) {
-      this.loginSecurityService.recordFailedAttempt(superAdmin.email, ipAddress, 'mfa-regen-wrong-password');
-      throw new UnauthorizedException('Incorrect password');
-    }
-
-    const newCodes = this.mfaService.generateRecoveryCodes(8);
-    await this.mfaService.saveRecoveryCodes(adminUserId, newCodes);
-
-    await this.auditLogsService.logAction({
-      adminUserId,
-      action: 'MFA_RECOVERY_REGENERATE',
-      entityType: 'SUPER_ADMIN',
-      entityId: adminUserId,
-      metadata: { codeCount: newCodes.length },
-      ipAddress,
-    });
-
-    return {
-      recoveryCodes: newCodes,
-      message: 'New recovery codes generated. Store them safely.',
-    };
-  }
 }
