@@ -460,11 +460,13 @@
 
 .salon-admin-main {
   background: #f7f8fc;
+  padding-top: 0.5rem !important;
 }
 
 .salon-admin-main > .admin-page-content {
   width: 100%;
   max-width: 1600px;
   margin-inline: auto;
+  padding-top: 0.5rem !important;
 }
 

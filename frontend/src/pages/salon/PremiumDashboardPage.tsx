@@ -189,7 +189,9 @@ export default function PremiumDashboardPage() {
   const openingBankBalance = financials?.openingBankBalance ?? null;
   const liveBankBalance =
     financials?.currentBankBalance ??
-    (openingBankBalance === null || branchId !== 'all' ? null : openingBankBalance + netProfit);
+    (openingBankBalance === null
+      ? null
+      : openingBankBalance + (financials?.currentNetProfit ?? 0));
 
   return (
     <div className="dash-container">

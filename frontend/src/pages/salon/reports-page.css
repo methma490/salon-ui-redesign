@@ -6,6 +6,7 @@
   gap: 1.5rem;
   width: 100%;
   max-width: 1440px;
+  min-width: 0;
   margin: 0 auto;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   color: #0f172a;
@@ -251,7 +252,7 @@
 /* Stat Cards Grid */
 .reports-stats-grid-4 {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.625rem;
 }
 
@@ -270,7 +271,7 @@
 
 .reports-stats-grid-5 {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.625rem;
 }
 
@@ -299,6 +300,7 @@
   gap: 1rem;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+  min-width: 0;
 }
 
 .reports-stat-card:hover {
@@ -970,7 +972,87 @@
 @media (max-width: 639px) {
   .reports-container {
     gap: 1rem;
-    padding: 0.25rem;
+    padding: 0;
+    overflow-x: clip;
+  }
+
+  .reports-nav-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .reports-main-tabs {
+    width: 100%;
+  }
+
+  .reports-main-tab-btn {
+    flex: 0 0 auto;
+    padding-inline: 0.6rem;
+    font-size: 0.7rem;
+  }
+
+  .reports-filter-bar,
+  .reports-stats-grid-4,
+  .reports-stats-grid-5,
+  .reports-chart-card,
+  .reports-table-card {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .reports-filter-group {
+    min-width: 0;
+  }
+
+  .reports-quick-pills {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .reports-filter-group.ml-auto {
+    margin-left: 0;
+  }
+
+  .reports-stat-card {
+    min-width: 0;
+    padding: 0.7rem;
+    gap: 0.5rem;
+  }
+
+  .reports-stat-content {
+    min-width: 0;
+  }
+
+  .reports-stat-value {
+    font-size: clamp(0.78rem, 4vw, 1rem);
+  }
+
+  .reports-chart-card,
+  .reports-table-card {
+    overflow: hidden;
+  }
+
+  .reports-chart-card > div:last-child {
+    min-width: 0;
+  }
+
+  .reports-table-container {
+    max-width: 100%;
+    overscroll-behavior-x: contain;
+  }
+
+  .reports-pagination-pages {
+    max-width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .reports-pagination-bar > div:first-child {
+    text-align: center;
+  }
+
+  .reports-per-page-wrap {
+    justify-content: center;
   }
 
   .reports-hero {

@@ -17,12 +17,6 @@ import { CurrentUser } from './decorators/current-user.decorator';
 import { Roles } from './decorators/roles.decorator';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
-import {
-  MfaDisableDto,
-  MfaEnableDto,
-  MfaRegenerateRecoveryCodesDto,
-  MfaVerifyLoginDto,
-} from './dto/mfa.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { LogoutDto, RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -69,153 +63,12 @@ export class AuthController {
     const clientIp = extractClientIp(req);
     const result = await this.authService.login(dto, clientIp);
 
-    if (result.mfaRequired) {
-      return {
-        mfaRequired: true,
-        mfaSetupRequired: result.mfaSetupRequired,
-        mfaSessionToken: result.mfaSessionToken,
-        user: result.user,
-      };
-    }
-
-    res.cookie(REFRESH_COOKIE_NAME, result.refreshToken, getRefreshCookieOptions());
-
-    return {
-      mfaRequired: false,
-      accessToken: result.accessToken,
-      user: result.user,
-    };
-  }
-
-  @Post('mfa/login-verify')
-  @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async verifyMfaLogin(
-    @Body() dto: MfaVerifyLoginDto,
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const clientIp = extractClientIp(req);
-    const result = await this.authService.verifyMfaLogin(dto, clientIp);
     res.cookie(REFRESH_COOKIE_NAME, result.refreshToken, getRefreshCookieOptions());
 
     return {
       accessToken: result.accessToken,
       user: result.user,
     };
-  }
-
-  @Post('mfa/verify')
-  @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async verifyMfaAlias(
-    @Body() dto: MfaVerifyLoginDto,
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    return this.verifyMfaLogin(dto, req, res);
-  }
-
-  @Post('mfa/setup')
-  @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async setupMfa(
-    @Req() req: Request,
-    @Body() body?: { mfaSessionToken?: string },
-  ) {
-    if (body?.mfaSessionToken) {
-      return this.authService.setupMfaWithSessionToken(body.mfaSessionToken);
-    }
-    // If not using session token, check authorization header
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Missing authentication token or MFA session token');
-    }
-    // Try resolving as pending MFA session token first or normal jwt
-    const token = authHeader.replace('Bearer ', '').trim();
-    try {
-      return await this.authService.setupMfaWithSessionToken(token);
-    } catch {
-      // Decode user from authenticated session
-      const me = await this.authService.getProfile(
-        (req as any).user?.id,
-        (req as any).user?.userType,
-      );
-      if ((req as any).user?.userType !== 'SUPER_ADMIN') {
-        throw new UnauthorizedException('Super Admin privilege required');
-      }
-      return this.authService.setupMfa(me.id);
-    }
-  }
-
-  @Post('mfa/enable')
-  @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async enableMfa(
-    @Body() dto: MfaEnableDto & { mfaSessionToken?: string },
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const clientIp = extractClientIp(req);
-    if (dto.mfaSessionToken) {
-      const result = await this.authService.enableMfaWithSessionToken(
-        dto.mfaSessionToken,
-        dto,
-        clientIp,
-      );
-      if (result.refreshToken) {
-        res.cookie(REFRESH_COOKIE_NAME, result.refreshToken, getRefreshCookieOptions());
-      }
-      return result;
-    }
-
-    const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Missing authentication token or MFA session token');
-    }
-
-    const token = authHeader.replace('Bearer ', '').trim();
-    try {
-      const result = await this.authService.enableMfaWithSessionToken(token, dto, clientIp);
-      if (result.refreshToken) {
-        res.cookie(REFRESH_COOKIE_NAME, result.refreshToken, getRefreshCookieOptions());
-      }
-      return result;
-    } catch {
-      const user = (req as any).user;
-      if (!user || user.userType !== 'SUPER_ADMIN') {
-        throw new UnauthorizedException('Super Admin privilege required');
-      }
-      return this.authService.enableMfa(user.id, dto, clientIp);
-    }
-  }
-
-  @Post('mfa/disable')
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async disableMfa(
-    @CurrentUser() user: AuthenticatedUser,
-    @Body() dto: MfaDisableDto,
-    @Req() req: Request,
-  ) {
-    const clientIp = extractClientIp(req);
-    return this.authService.disableMfa(user.id, dto, clientIp);
-  }
-
-  @Post('mfa/recovery-codes/regenerate')
-  @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('SUPER_ADMIN')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async regenerateRecoveryCodes(
-    @CurrentUser() user: AuthenticatedUser,
-    @Body() dto: MfaRegenerateRecoveryCodesDto,
-    @Req() req: Request,
-  ) {
-    const clientIp = extractClientIp(req);
-    return this.authService.regenerateRecoveryCodes(user.id, dto, clientIp);
   }
 
   @Post('refresh')

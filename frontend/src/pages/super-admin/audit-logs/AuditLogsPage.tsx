@@ -215,7 +215,6 @@ export default function AuditLogsPage() {
                     <SelectItem value="PLAN_">Plan Actions</SelectItem>
                     <SelectItem value="PAYMENT_">Payment Actions</SelectItem>
                     <SelectItem value="FEATURE_">Feature Actions</SelectItem>
-                    <SelectItem value="MFA_">MFA / Security</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

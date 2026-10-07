@@ -69,11 +69,7 @@ model SuperAdminUser {
   status                     SuperAdminStatus            @default(ACTIVE)
   createdAt                  DateTime                    @default(now())
   updatedAt                  DateTime
-  mfaEnabled                 Boolean                     @default(false) @map("mfa_enabled")
-  mfaSecret                  String?                     @map("mfa_secret")
-  mfaEnrolledAt              DateTime?                   @map("mfa_enrolled_at")
   auditLogs                  SuperAdminAuditLog[]
-  recoveryCodes              SuperAdminMfaRecoveryCode[]
   refreshTokens              SuperAdminRefreshToken[]
 
   @@map("super_admin_users")
@@ -90,18 +86,6 @@ model SuperAdminRefreshToken {
 
   @@index([userId])
   @@map("super_admin_refresh_tokens")
-}
-
-model SuperAdminMfaRecoveryCode {
-  id           String         @id @default(uuid()) @db.Uuid
-  superAdminId String         @map("super_admin_id") @db.Uuid
-  codeHash     String         @map("code_hash")
-  usedAt       DateTime?      @map("used_at")
-  createdAt    DateTime       @default(now()) @map("created_at")
-  superAdmin   SuperAdminUser @relation(fields: [superAdminId], references: [id], onDelete: Cascade)
-
-  @@index([superAdminId])
-  @@map("super_admin_mfa_recovery_codes")
 }
 
 model SuperAdminAuditLog {
