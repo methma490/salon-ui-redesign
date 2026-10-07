@@ -158,6 +158,23 @@ export default function ReportsPage() {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = (searchParams.get('tab') as ReportTab) || 'sales';
+  const { data: enabledFeatures = [] } = useQuery({
+    queryKey: ['tenant-features'],
+    queryFn: tenantApi.features,
+    staleTime: 60_000,
+  });
+  const reportTabs: Array<{ id: ReportTab; feature: string }> = [
+    { id: 'sales', feature: 'SALES_REPORTS' },
+    { id: 'employee-performance', feature: 'EMPLOYEE_REPORTS' },
+    { id: 'inventory', feature: 'INVENTORY_REPORTS' },
+  ];
+  const availableReportTabs = reportTabs.filter((tab) => enabledFeatures.includes(tab.feature));
+
+  useEffect(() => {
+    if (availableReportTabs.length > 0 && !availableReportTabs.some((tab) => tab.id === activeTab)) {
+      setSearchParams({ tab: availableReportTabs[0].id }, { replace: true });
+    }
+  }, [activeTab, availableReportTabs, setSearchParams]);
 
   const setActiveTab = (tab: ReportTab) => {
     setSearchParams({ tab });
@@ -503,30 +520,30 @@ export default function ReportsPage() {
       {/* Top Main Navigation Tabs */}
       <div className="reports-nav-header">
         <div className="reports-main-tabs">
-          <button
+          {enabledFeatures.includes('SALES_REPORTS') && <button
             type="button"
             className={`reports-main-tab-btn ${activeTab === 'sales' ? 'active' : ''}`}
             onClick={() => setActiveTab('sales')}
           >
             <CreditCard className="h-4 w-4" />
             <span>Sales Report</span>
-          </button>
-          <button
+          </button>}
+          {enabledFeatures.includes('EMPLOYEE_REPORTS') && <button
             type="button"
             className={`reports-main-tab-btn ${activeTab === 'employee-performance' ? 'active' : ''}`}
             onClick={() => setActiveTab('employee-performance')}
           >
             <User className="h-4 w-4" />
             <span>Employee Performance Report</span>
-          </button>
-          <button
+          </button>}
+          {enabledFeatures.includes('INVENTORY_REPORTS') && <button
             type="button"
             className={`reports-main-tab-btn ${activeTab === 'inventory' ? 'active' : ''}`}
             onClick={() => setActiveTab('inventory')}
           >
             <Package className="h-4 w-4" />
             <span>Inventory Report</span>
-          </button>
+          </button>}
         </div>
 
         <div className="relative" ref={exportRef}>

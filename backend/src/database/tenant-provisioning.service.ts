@@ -1,11 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 import { Prisma } from '@prisma/client';
-import * as fs from 'fs';
-import * as path from 'path';
 import * as bcrypt from 'bcrypt';
-
-export type DbClient = Prisma.TransactionClient | PrismaService;
+import {
+  DbClient,
+  runMigrationsForTenant,
+  validateTenantSchemaName,
+} from './tenant-migration-runner';
 
 export interface TenantProvisioningData {
   tenantCode: string;
@@ -34,41 +35,6 @@ export class TenantProvisioningService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Resolve the tenant migrations directory dynamically across dev, prod, and Docker environments
-   */
-  private getMigrationsPath(): string {
-    const candidates = [
-      path.join(__dirname, 'tenant-migrations'),
-      path.join(__dirname, 'tenant-migrations', 'database', 'tenant-migrations'),
-      path.join(__dirname, '..', 'database', 'tenant-migrations'),
-      path.join(__dirname, '..', 'src', 'database', 'tenant-migrations'),
-      path.join(process.cwd(), 'src', 'database', 'tenant-migrations'),
-      path.join(process.cwd(), 'backend', 'src', 'database', 'tenant-migrations'),
-      path.join(process.cwd(), 'dist', 'src', 'database', 'tenant-migrations'),
-      path.join(process.cwd(), 'dist', 'database', 'tenant-migrations'),
-      path.join(process.cwd(), 'database', 'tenant-migrations'),
-    ];
-
-    for (const candidate of candidates) {
-      if (fs.existsSync(candidate)) {
-        try {
-          const sqlFiles = fs.readdirSync(candidate).filter((f) => f.endsWith('.sql'));
-          if (sqlFiles.length > 0) {
-            return candidate;
-          }
-        } catch {
-          // ignore directory read errors
-        }
-      }
-    }
-
-    this.logger.error(
-      `Could not locate tenant-migrations directory containing .sql files. Checked: ${candidates.join(', ')}`,
-    );
-    return path.join(process.cwd(), 'src', 'database', 'tenant-migrations');
-  }
-
-  /**
    * Safely drops any orphan tenant enum types that were accidentally created in the public schema
    * during previous unpinned connection executions.
    */
@@ -82,7 +48,8 @@ export class TenantProvisioningService {
           'sales', 'appointments', 'stock', 'products', 'product_categories',
           'services', 'service_categories', 'customers', 'employees',
           'expenses', 'expense_categories', 'payroll_runs', 'employee_loans',
-          'employee_advances', 'quotations', 'permissions', 'roles', 'users', 'branches'
+          'employee_advances', 'quotations', 'permissions', 'roles', 'users', 'branches',
+          'suppliers', 'grns', 'grn_items', 'supplier_payments', 'supplier_payment_allocations'
         ];
         tbl_name TEXT;
         tenant_types TEXT[] := ARRAY[
@@ -91,7 +58,8 @@ export class TenantProvisioningService {
           'appointment_status', 'expense_status', 'loan_status', 'payroll_run_status',
           'sale_assignment_type', 'advance_status', 'stock_receipt_payment_status',
           'stock_credit_payment_method', 'quotation_status', 'quotation_message_channel',
-          'quotation_message_status'
+          'quotation_message_status', 'grn_status', 'grn_payment_status',
+          'supplier_payment_method', 'supplier_cheque_status'
         ];
         t_name TEXT;
       BEGIN
@@ -133,10 +101,11 @@ export class TenantProvisioningService {
   }
 
   /**
-   * Provision a complete tenant schema with all tables, roles, and initial data
+   * Provision a complete tenant schema with all tables, migrations, roles, and initial data.
    */
   async provisionTenantSchema(data: TenantProvisioningData): Promise<TenantProvisioningResult> {
-    const { schemaName, tenantCode, adminUser } = data;
+    const { tenantCode, adminUser } = data;
+    const schemaName = validateTenantSchemaName(data.schemaName);
 
     try {
       this.logger.log(`Starting provisioning for tenant ${tenantCode} (${schemaName})`);
@@ -148,14 +117,13 @@ export class TenantProvisioningService {
       await this.createSchema(schemaName);
 
       // 2. Execute all provisioning steps inside a dedicated transaction to guarantee connection pinning!
-      // In Prisma, $transaction pins a single underlying physical connection for the entire callback.
       const { mainBranchId, adminUserId } = await this.prisma.$transaction(
         async (tx) => {
           // Pin search_path to the new tenant schema on this dedicated connection
           await tx.$executeRawUnsafe(`SET search_path TO "${schemaName}", public`);
 
-          // Run all migrations on this pinned connection
-          await this.runMigrations(schemaName, tx);
+          // Run all migrations and record history on this pinned connection
+          await runMigrationsForTenant(schemaName, tx);
 
           // Seed default roles and permissions on this pinned connection
           await this.seedRolesAndPermissions(schemaName, data.roles, tx);
@@ -167,9 +135,10 @@ export class TenantProvisioningService {
             tx,
           );
 
+          // Seed starter services
           await this.seedDefaultServiceCatalog(branchId, tx);
 
-          // Create admin user on this pinned connection
+          // Create salon admin user on this pinned connection
           const userId = await this.createAdminUser(schemaName, adminUser, tx);
 
           return { mainBranchId: branchId, adminUserId: userId };
@@ -180,7 +149,7 @@ export class TenantProvisioningService {
         },
       );
 
-      this.logger.log(`✓ Successfully provisioned tenant ${tenantCode}`);
+      this.logger.log(`✓ Successfully provisioned tenant ${tenantCode} (${schemaName})`);
 
       return {
         success: true,
@@ -210,9 +179,10 @@ export class TenantProvisioningService {
    * Create a fresh PostgreSQL schema (dropping any abandoned/stale schema first)
    */
   private async createSchema(schemaName: string): Promise<void> {
-    this.logger.log(`Creating fresh schema: ${schemaName}`);
-    await this.prisma.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schemaName}" CASCADE`);
-    await this.prisma.$executeRawUnsafe(`CREATE SCHEMA "${schemaName}"`);
+    const safeSchema = validateTenantSchemaName(schemaName);
+    this.logger.log(`Creating fresh schema: ${safeSchema}`);
+    await this.prisma.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${safeSchema}" CASCADE`);
+    await this.prisma.$executeRawUnsafe(`CREATE SCHEMA "${safeSchema}"`);
   }
 
   /**
@@ -226,209 +196,28 @@ export class TenantProvisioningService {
    * Drop a schema (used for cleanup on failure)
    */
   private async dropSchema(schemaName: string): Promise<void> {
-    this.logger.log(`Dropping schema: ${schemaName}`);
-    await this.prisma.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${schemaName}" CASCADE`);
+    const safeSchema = validateTenantSchemaName(schemaName);
+    this.logger.log(`Dropping schema: ${safeSchema}`);
+    await this.prisma.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${safeSchema}" CASCADE`);
   }
 
   /**
-   * Run all tenant migration files in order
+   * Seed default roles and permissions for a tenant schema idempotently.
    */
-  private async runMigrations(schemaName: string, client: DbClient = this.prisma): Promise<void> {
-    const migrationsPath = this.getMigrationsPath();
-    this.logger.log(`Running migrations for schema: ${schemaName} (from ${migrationsPath})`);
-
-    if (!fs.existsSync(migrationsPath)) {
-      throw new Error(`Tenant migrations directory not found at: ${migrationsPath}`);
-    }
-
-    // Ensure search_path is set on this client/connection
-    await client.$executeRawUnsafe(`SET search_path TO "${schemaName}", public`);
-
-    // Get all migration files sorted by name
-    const files = fs
-      .readdirSync(migrationsPath)
-      .filter((file) => file.endsWith('.sql'))
-      .sort();
-
-    if (files.length === 0) {
-      throw new Error(`No .sql migration files found in: ${migrationsPath}`);
-    }
-
-    for (const file of files) {
-      this.logger.log(`  Applying migration: ${file}`);
-      const sql = fs.readFileSync(path.join(migrationsPath, file), 'utf-8');
-
-      // Split SQL into statements, handling quotes, comments, and dollar-quoted blocks
-      const statements = this.splitSqlStatements(sql);
-
-      let statementIndex = 0;
-      for (const statement of statements) {
-        statementIndex++;
-        const trimmed = statement.trim();
-        if (trimmed.length === 0) continue;
-
-        // Skip pure comment blocks that have no executable SQL
-        const executableContent = trimmed
-          .replace(/--.*$/gm, '')
-          .replace(/\/\*[\s\S]*?\*\//g, '')
-          .trim();
-        if (executableContent.length === 0) continue;
-
-        try {
-          await client.$executeRawUnsafe(statement);
-        } catch (error: any) {
-          const prismaCode = error?.code || 'UNKNOWN_PRISMA_CODE';
-          const dbCode = error?.meta?.code || 'N/A';
-          const dbMessage = error?.meta?.message || error?.message || String(error);
-
-          this.logger.error(
-            `\n[MIGRATION FAILURE]\n` +
-            `================================================================================\n` +
-            `Migration File : ${file}\n` +
-            `Statement #    : ${statementIndex}\n` +
-            `Prisma Code    : ${prismaCode}\n` +
-            `DB Error Code  : ${dbCode}\n` +
-            `DB Message     : ${dbMessage}\n` +
-            `Failed SQL     :\n${statement}\n` +
-            `================================================================================`,
-          );
-          throw error;
-        }
-      }
-    }
-
-    this.logger.log(`✓ Migrations complete for ${schemaName}`);
-  }
-
-  /**
-   * Split SQL into executable statements, properly preserving:
-   * 1. Single-line comments (-- ...)
-   * 2. Block comments (/* ... * /)
-   * 3. Single-quoted strings ('...' and '' escapes)
-   * 4. Dollar-quoted blocks ($$ ... $$ or $<tag>$ ... $<tag>$)
-   */
-  private splitSqlStatements(sql: string): string[] {
-    const statements: string[] = [];
-    let current = '';
-    let i = 0;
-    const len = sql.length;
-
-    while (i < len) {
-      // 1. Single-line comment: -- ... \n
-      if (sql[i] === '-' && sql[i + 1] === '-') {
-        while (i < len && sql[i] !== '\n') {
-          current += sql[i];
-          i++;
-        }
-        if (i < len) {
-          current += sql[i]; // include \n
-          i++;
-        }
-        continue;
-      }
-
-      // 2. Block comment: /* ... */
-      if (sql[i] === '/' && sql[i + 1] === '*') {
-        current += '/*';
-        i += 2;
-        while (i < len && !(sql[i] === '*' && sql[i + 1] === '/')) {
-          current += sql[i];
-          i++;
-        }
-        if (i < len) {
-          current += '*/';
-          i += 2;
-        }
-        continue;
-      }
-
-      // 3. Dollar quote: $$ ... $$ or $<tag>$ ... $<tag>$
-      if (sql[i] === '$') {
-        const match = sql.slice(i).match(/^\$([a-zA-Z0-9_]*)\$/);
-        if (match) {
-          const tag = match[0];
-          current += tag;
-          i += tag.length;
-          const endIdx = sql.indexOf(tag, i);
-          if (endIdx !== -1) {
-            current += sql.slice(i, endIdx + tag.length);
-            i = endIdx + tag.length;
-          } else {
-            current += sql.slice(i);
-            i = len;
-          }
-          continue;
-        }
-      }
-
-      // 4. Single-quoted string: '...' (handles '' and \' escapes)
-      if (sql[i] === "'") {
-        current += "'";
-        i++;
-        while (i < len) {
-          if (sql[i] === "'") {
-            current += "'";
-            i++;
-            // Check for doubled quote escape ''
-            if (sql[i] === "'") {
-              current += "'";
-              i++;
-            } else {
-              break;
-            }
-          } else if (sql[i] === '\\' && i + 1 < len) {
-            current += sql[i] + sql[i + 1];
-            i += 2;
-          } else {
-            current += sql[i];
-            i++;
-          }
-        }
-        continue;
-      }
-
-      // 5. Statement delimiter: ;
-      if (sql[i] === ';') {
-        current += ';';
-        i++;
-        const trimmed = current.trim();
-        if (trimmed.length > 0) {
-          statements.push(trimmed);
-        }
-        current = '';
-        continue;
-      }
-
-      current += sql[i];
-      i++;
-    }
-
-    const trimmed = current.trim();
-    if (trimmed.length > 0) {
-      statements.push(trimmed);
-    }
-
-    return statements;
-  }
-
-  /**
-   * Seed default roles and permissions
-   */
-  private async seedRolesAndPermissions(
+  async seedRolesAndPermissions(
     schemaName: string,
     _customRoles?: string[],
     client: DbClient = this.prisma,
   ): Promise<void> {
-    this.logger.log(`Seeding roles and permissions for ${schemaName}`);
+    const safeSchema = validateTenantSchemaName(schemaName);
+    this.logger.log(`Seeding roles and permissions for ${safeSchema}`);
 
-    // Default tenant roles (NOT SUPER_ADMIN - that's platform-level only)
     const roles = [
       { code: 'SALON_ADMIN', name: 'Salon Admin', description: 'Salon administrator' },
       { code: 'CASHIER', name: 'Cashier', description: 'Point of sale cashier' },
       { code: 'STOCK_KEEPER', name: 'Stock Keeper', description: 'Inventory manager' },
     ];
 
-    // Default permissions for tenant users
     const permissions = [
       { code: 'BRANCH_VIEW', name: 'View Branches' },
       { code: 'BRANCH_CREATE', name: 'Create Branches' },
@@ -490,9 +279,9 @@ export class TenantProvisioningService {
       { code: 'SUPPLIER_OUTSTANDING_VIEW', name: 'View Supplier Outstanding' },
     ];
 
-    await client.$executeRawUnsafe(`SET search_path TO "${schemaName}", public`);
+    await client.$executeRawUnsafe(`SET search_path TO "${safeSchema}", public`);
 
-    // Insert roles (idempotent — safe if migration already seeded or retry mid-seed)
+    // Insert roles
     for (const role of roles) {
       await client.$executeRawUnsafe(
         `INSERT INTO roles (code, name, description, is_system)
@@ -504,7 +293,7 @@ export class TenantProvisioningService {
       );
     }
 
-    // Insert permissions (idempotent — never re-insert QUOTATION_* / others)
+    // Insert permissions
     for (const permission of permissions) {
       await client.$executeRawUnsafe(
         `INSERT INTO permissions (code, name)
@@ -555,7 +344,7 @@ export class TenantProvisioningService {
       ON CONFLICT (role_id, permission_id) DO NOTHING
     `);
 
-    this.logger.log(`✓ Roles and permissions seeded for ${schemaName}`);
+    this.logger.log(`✓ Roles and permissions seeded for ${safeSchema}`);
   }
 
   /**
@@ -566,9 +355,10 @@ export class TenantProvisioningService {
     name: string,
     client: DbClient = this.prisma,
   ): Promise<string> {
-    this.logger.log(`Creating main branch for ${schemaName}`);
+    const safeSchema = validateTenantSchemaName(schemaName);
+    this.logger.log(`Creating main branch for ${safeSchema}`);
 
-    await client.$executeRawUnsafe(`SET search_path TO "${schemaName}", public`);
+    await client.$executeRawUnsafe(`SET search_path TO "${safeSchema}", public`);
 
     const result = await client.$queryRawUnsafe<{ id: string }[]>(
       `
@@ -673,13 +463,13 @@ export class TenantProvisioningService {
     adminData: TenantProvisioningData['adminUser'],
     client: DbClient = this.prisma,
   ): Promise<string> {
-    this.logger.log(`Creating admin user for ${schemaName}`);
+    const safeSchema = validateTenantSchemaName(schemaName);
+    this.logger.log(`Creating admin user for ${safeSchema}`);
 
     const passwordHash = await bcrypt.hash(adminData.password, 12);
 
-    await client.$executeRawUnsafe(`SET search_path TO "${schemaName}", public`);
+    await client.$executeRawUnsafe(`SET search_path TO "${safeSchema}", public`);
 
-    // Create user
     const userResult = await client.$queryRawUnsafe<{ id: string }[]>(
       `
       INSERT INTO users (name, email, phone, password_hash, status)
@@ -722,12 +512,11 @@ export class TenantProvisioningService {
   }
 
   /**
-   * Generate next tenant schema name
+   * Generate next tenant schema name (e.g. tenant_000001)
    */
   async generateSchemaName(): Promise<string> {
     await this.prisma.$executeRawUnsafe(`SET search_path TO public`);
 
-    // Check both information_schema.schemata and tenants table to find the highest existing tenant number
     const [schemaRows, tenantRows] = await Promise.all([
       this.prisma.$queryRaw<{ schema_name: string }[]>`
         SELECT schema_name

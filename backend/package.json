@@ -22,13 +22,11 @@
     "prisma:migrate": "prisma migrate dev",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed",
-    "db:setup": "prisma migrate deploy && prisma db seed",
-    "db:indexes:tenants": "ts-node scripts/apply-performance-indexes-migration.ts",
-    "db:expenses:tenants": "ts-node scripts/apply-expenses-migration.ts",
-    "db:payroll:tenants": "ts-node scripts/apply-payroll-migration.ts",
-    "db:sale-employees:tenants": "ts-node scripts/apply-sale-employees-migration.ts",
-    "db:advances:tenants": "ts-node scripts/apply-employee-advances-migration.ts",
-    "db:quotations:tenants": "ts-node scripts/apply-quotations.ts"
+    "db:seed:features": "ts-node --transpile-only scripts/seed-feature-catalog.ts",
+    "db:setup": "ts-node --transpile-only scripts/db-setup.ts",
+    "db:status": "ts-node --transpile-only scripts/db-status.ts",
+    "db:tenant:migrate": "ts-node --transpile-only scripts/db-tenant-migrate.ts",
+    "db:tenant:seed": "ts-node --transpile-only scripts/db-tenant-seed.ts"
   },
   "prisma": {
     "seed": "node prisma/seed-runner.js"
