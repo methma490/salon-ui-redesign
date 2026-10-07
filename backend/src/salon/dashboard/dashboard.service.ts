@@ -54,9 +54,9 @@ export class DashboardService {
       where: { id: tenantId },
       select: { openingBankBalance: true },
     });
-    const openingBankBalance = branchId
-      ? null
-      : (tenant?.openingBankBalance?.toNumber() ?? null);
+    // The opening bank balance belongs to the salon, not an individual branch.
+    // Keep the salon-wide balance visible even while a branch filter is active.
+    const openingBankBalance = tenant?.openingBankBalance?.toNumber() ?? null;
 
     const { start, end } = customStartDate && customEndDate
       ? { start: customStartDate, end: customEndDate }

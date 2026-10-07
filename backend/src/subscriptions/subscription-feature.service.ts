@@ -172,23 +172,45 @@ export class SubscriptionFeatureService {
     return false;
   }
 
-  getEntitlementSubscriptionRecord(
+  async getEntitlementSubscriptionRecord(
     tenantId: string,
   ): Promise<SubscriptionWithFeatures | null> {
-    return this.prisma.subscription.findFirst({
+    const include = {
+      subscriptionFeatures: {
+        where: { enabled: true },
+        include: { feature: { select: { id: true, code: true, name: true, status: true } } },
+      },
+      addOns: {
+        include: { feature: { select: { id: true, code: true, name: true, status: true } } },
+      },
+    } as const;
+
+    // A newly created PENDING subscription must not shadow an existing
+    // subscription that still grants feature access while payment is pending.
+    const entitledSubscription = await this.prisma.subscription.findFirst({
       where: {
         tenantId,
+        status: {
+          in: [
+            SubscriptionStatus.ACTIVE,
+            SubscriptionStatus.TRIAL,
+            SubscriptionStatus.SUSPENDED,
+            SubscriptionStatus.PAST_DUE,
+          ],
+        },
       },
       orderBy: { createdAt: 'desc' },
-      include: {
-        subscriptionFeatures: {
-          where: { enabled: true },
-          include: { feature: { select: { id: true, code: true, name: true, status: true } } },
-        },
-        addOns: {
-          include: { feature: { select: { id: true, code: true, name: true, status: true } } },
-        },
-      },
+      include,
+    });
+
+    if (entitledSubscription) {
+      return entitledSubscription;
+    }
+
+    return this.prisma.subscription.findFirst({
+      where: { tenantId },
+      orderBy: { createdAt: 'desc' },
+      include,
     });
   }
 

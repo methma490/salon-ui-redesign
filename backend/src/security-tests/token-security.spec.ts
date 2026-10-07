@@ -12,7 +12,6 @@ describe('Token Security & Invalidation Spec', () => {
   let mockTenantSchemaService: any;
   let mockTenantPermissionService: any;
   let mockSubscriptionsService: any;
-  let mockMfaService: any;
   let mockLoginSecurityService: any;
 
   const validAccessSecret = 'super-secure-access-jwt-secret-key-32-chars';
@@ -67,12 +66,6 @@ describe('Token Security & Invalidation Spec', () => {
       }),
     };
 
-    mockMfaService = {
-      verifyPendingMfaToken: jest.fn(),
-      verifyTotp: jest.fn(),
-      verifyAndConsumeRecoveryCode: jest.fn(),
-    };
-
     mockLoginSecurityService = {
       assertNotLocked: jest.fn(),
       recordSuccessfulAttempt: jest.fn(),
@@ -90,7 +83,6 @@ describe('Token Security & Invalidation Spec', () => {
       mockTenantSchemaService,
       mockTenantPermissionService,
       mockLoginSecurityService,
-      mockMfaService,
       mockAuditLogsService as any,
       mockSubscriptionsService,
     );

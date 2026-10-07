@@ -11,7 +11,6 @@ import { TenantModule } from '../tenant/tenant.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { LoginSecurityService } from './login-security.service';
-import { MfaService } from './mfa.service';
 import { PasswordResetService } from './password-reset.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
@@ -35,7 +34,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, PasswordResetService, LoginSecurityService, MfaService, JwtStrategy],
-  exports: [AuthService, LoginSecurityService, MfaService, JwtModule, PassportModule],
+  providers: [AuthService, PasswordResetService, LoginSecurityService, JwtStrategy],
+  exports: [AuthService, LoginSecurityService, JwtModule, PassportModule],
 })
 export class AuthModule {}
