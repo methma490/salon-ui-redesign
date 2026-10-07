@@ -340,29 +340,27 @@ const navGroups: NavGroup[] = [
   {
     label: 'Reports',
     icon: BarChart3,
-    feature: 'REPORTS',
-    module: 'POS',
     children: [
       {
         to: '/salon/reports?tab=sales',
         label: 'Sales Report',
         icon: Receipt,
-        feature: 'REPORTS',
+        feature: 'SALES_REPORTS',
         module: 'POS',
       },
       {
         to: '/salon/reports?tab=employee-performance',
         label: 'Employee Performance',
         icon: UserSquare2,
-        feature: 'REPORTS',
+        feature: 'EMPLOYEE_REPORTS',
         module: 'POS',
       },
       {
         to: '/salon/reports?tab=inventory',
         label: 'Inventory Report',
         icon: Package,
-        feature: 'REPORTS',
-        module: 'POS',
+        feature: 'INVENTORY_REPORTS',
+        module: 'INVENTORY',
       },
     ],
   },

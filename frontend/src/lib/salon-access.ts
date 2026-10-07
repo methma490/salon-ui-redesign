@@ -91,6 +91,7 @@ export function resolveNavAccess(opts: {
 export const SALON_ROUTE_ACCESS: Array<{
   match: (pathname: string) => boolean;
   feature?: string;
+  anyFeature?: string[];
   module?: string;
   adminOnly?: boolean;
 }> = [
@@ -137,7 +138,10 @@ export const SALON_ROUTE_ACCESS: Array<{
     module: 'PAYROLL',
   },
   { match: (p) => p.startsWith('/salon/employees'), feature: 'EMPLOYEES' },
-  { match: (p) => p.startsWith('/salon/reports'), feature: 'REPORTS', module: 'POS' },
+  {
+    match: (p) => p.startsWith('/salon/reports'),
+    anyFeature: ['SALES_REPORTS', 'EMPLOYEE_REPORTS', 'INVENTORY_REPORTS', 'REPORTS'],
+  },
   { match: (p) => p.startsWith('/salon/branches'), module: 'MULTI_BRANCH' },
   { match: (p) => p.startsWith('/salon/subscription'), adminOnly: true },
   { match: (p) => p.startsWith('/salon/settings'), adminOnly: true },
@@ -151,6 +155,9 @@ export function resolveRouteAccess(
 ): NavAccessState {
   const rule = SALON_ROUTE_ACCESS.find((entry) => entry.match(pathname));
   if (!rule) return 'allowed';
+  if (rule.anyFeature && !rule.anyFeature.some((feature) => enabledFeatures.includes(feature))) {
+    return 'hidden';
+  }
   return resolveNavAccess({
     feature: rule.feature,
     module: rule.module,

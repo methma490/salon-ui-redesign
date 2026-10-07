@@ -66,11 +66,20 @@ export class SubscriptionFeatureService {
       }
 
       const direct = await this.tenantFeatureService.tenantHasFeature(tenantId, featureCode);
-      return Boolean(direct);
+      if (direct) return true;
+      return this.isLegacyReportsGrant(tenantId, featureCode);
     }
 
     const direct = await this.tenantFeatureService.tenantHasFeature(tenantId, featureCode);
-    return Boolean(direct);
+    if (direct) return true;
+    return this.isLegacyReportsGrant(tenantId, featureCode);
+  }
+
+  private isLegacyReportsGrant(tenantId: string, featureCode: string): Promise<boolean> {
+    if (!['SALES_REPORTS', 'EMPLOYEE_REPORTS', 'INVENTORY_REPORTS'].includes(featureCode)) {
+      return Promise.resolve(false);
+    }
+    return this.tenantFeatureService.tenantHasFeature(tenantId, 'REPORTS');
   }
 
   async getTenantFeatureCodes(tenantId: string): Promise<string[]> {

@@ -22,6 +22,7 @@
     "prisma:migrate": "prisma migrate dev",
     "db:migrate": "prisma migrate deploy",
     "db:seed": "prisma db seed",
+    "db:seed:features": "ts-node --transpile-only scripts/seed-feature-catalog.ts",
     "db:setup": "prisma migrate deploy && prisma db seed",
     "db:indexes:tenants": "ts-node scripts/apply-performance-indexes-migration.ts",
     "db:expenses:tenants": "ts-node scripts/apply-expenses-migration.ts",
