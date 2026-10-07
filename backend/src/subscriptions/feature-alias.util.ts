@@ -3,6 +3,10 @@
  * Plan access is never hardcoded here — only code equivalence for runtime checks.
  */
 const FEATURE_ALIASES: Record<string, readonly string[]> = {
+  SALES_REPORTS: [],
+  EMPLOYEE_REPORTS: [],
+  INVENTORY_REPORTS: [],
+  REPORTS: ['SALES_REPORTS', 'EMPLOYEE_REPORTS', 'INVENTORY_REPORTS'],
   MULTI_BRANCH: ['BRANCH_MANAGEMENT'],
   BRANCH_MANAGEMENT: ['MULTI_BRANCH'],
   STAFF_MANAGEMENT: ['ROLE_MANAGEMENT'],
@@ -11,6 +15,10 @@ const FEATURE_ALIASES: Record<string, readonly string[]> = {
 
 export function featureCodesEquivalent(required: string, granted: string): boolean {
   if (required === granted) {
+    return true;
+  }
+
+  if (granted === 'REPORTS' && ['SALES_REPORTS', 'EMPLOYEE_REPORTS', 'INVENTORY_REPORTS'].includes(required)) {
     return true;
   }
 

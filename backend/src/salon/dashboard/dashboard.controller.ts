@@ -31,11 +31,11 @@ export class DashboardController {
 
 @Controller('tenant/reports')
 @UseGuards(JwtAuthGuard, TenantContextGuard, FeatureGuard, PermissionGuard)
-@RequireFeature('REPORTS')
 export class ReportsController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get('sales-report')
+  @RequireFeature('SALES_REPORTS')
   @RequirePermission('SALE_VIEW')
   salesReport(
     @CurrentTenant() tenant: TenantContext,
@@ -54,6 +54,7 @@ export class ReportsController {
   }
 
   @Get('daily-sales')
+  @RequireFeature('SALES_REPORTS')
   @RequirePermission('SALE_VIEW')
   dailySales(
     @CurrentTenant() tenant: TenantContext,
@@ -70,6 +71,7 @@ export class ReportsController {
   }
 
   @Get('branch-sales')
+  @RequireFeature('SALES_REPORTS')
   @RequirePermission('SALE_VIEW')
   branchSales(
     @CurrentTenant() tenant: TenantContext,
@@ -80,6 +82,7 @@ export class ReportsController {
   }
 
   @Get('service-sales')
+  @RequireFeature('SALES_REPORTS')
   @RequirePermission('SALE_VIEW')
   serviceSales(
     @CurrentTenant() tenant: TenantContext,
@@ -96,6 +99,7 @@ export class ReportsController {
   }
 
   @Get('product-sales')
+  @RequireFeature('SALES_REPORTS')
   @RequirePermission('SALE_VIEW')
   productSales(
     @CurrentTenant() tenant: TenantContext,
@@ -112,6 +116,7 @@ export class ReportsController {
   }
 
   @Get('employee-performance')
+  @RequireFeature('EMPLOYEE_REPORTS')
   @RequirePermission('SALE_VIEW')
   employeePerformance(
     @CurrentTenant() tenant: TenantContext,
@@ -130,6 +135,7 @@ export class ReportsController {
   }
 
   @Get('inventory-report')
+  @RequireFeature('INVENTORY_REPORTS')
   @RequirePermission('PRODUCT_VIEW')
   inventoryReport(
     @CurrentTenant() tenant: TenantContext,
@@ -152,6 +158,7 @@ export class ReportsController {
   }
 
   @Get('low-stock')
+  @RequireFeature('INVENTORY_REPORTS')
   @RequirePermission('PRODUCT_VIEW')
   lowStock(
     @CurrentTenant() tenant: TenantContext,
