@@ -288,10 +288,19 @@ export class PaymentOrdersService {
     }
 
     const gatewayAdapter = this.gatewayRegistry.getConfigured(gateway);
-    const apiBase = this.configService.get<string>('API_PUBLIC_URL') ?? 'http://localhost:3000/api';
-    const notifyUrl =
-      checkout.notifyUrl ??
-      `${apiBase.replace(/\/$/, '')}/payments/webhooks/${gateway.toLowerCase()}`;
+    let notifyUrl: string;
+    if (gateway === PaymentGatewayProvider.PAYHERE) {
+      notifyUrl =
+        this.configService.get<string>('payhere.notifyUrl') ||
+        process.env.PAYHERE_NOTIFY_URL ||
+        checkout.notifyUrl ||
+        '';
+    } else {
+      const apiBase = this.configService.get<string>('API_PUBLIC_URL') ?? 'http://localhost:3000/api';
+      notifyUrl =
+        checkout.notifyUrl ??
+        `${apiBase.replace(/\/$/, '')}/payments/webhooks/${gateway.toLowerCase()}`;
+    }
 
     const sessionInput: CreateCheckoutInput = {
       orderReference: order.reference,

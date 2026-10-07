@@ -84,7 +84,8 @@ export class PublicAddonPaymentsController {
 
     const notifyUrl =
       this.configService.get<string>('payhere.notifyUrl') ||
-      `${backendUrl}/api/payments/webhooks/payhere`;
+      process.env.PAYHERE_NOTIFY_URL ||
+      '';
 
     const returnUrl = `${frontendUrl}/pay/add-on/${token}?status=verifying`;
     const cancelUrl = `${frontendUrl}/pay/add-on/${token}?status=cancelled`;

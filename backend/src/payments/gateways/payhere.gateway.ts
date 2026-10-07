@@ -32,7 +32,7 @@ export class PayHereGateway implements PaymentGateway {
       city: input.customer.city,
       returnUrl: input.returnUrl,
       cancelUrl: input.cancelUrl,
-      notifyUrl: input.notifyUrl,
+      notifyUrl: this.payHereService.notifyUrl || input.notifyUrl,
     });
 
     return {
