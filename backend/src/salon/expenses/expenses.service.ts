@@ -44,6 +44,8 @@ export interface ExpenseRecord {
   createdByName: string | null;
   createdAt: Date;
   updatedAt: Date;
+  supplierPaymentId: string | null;
+  isSystemGenerated: boolean;
 }
 
 @Injectable()
@@ -70,7 +72,9 @@ export class ExpensesService {
                    e.created_by AS "createdBy",
                    u.name AS "createdByName",
                    e.created_at AS "createdAt",
-                   e.updated_at AS "updatedAt"
+                   e.updated_at AS "updatedAt",
+                   e.supplier_payment_id AS "supplierPaymentId",
+                   COALESCE(e.is_system_generated, false) AS "isSystemGenerated"
             FROM ${expenses} e
             INNER JOIN ${branches} b ON b.id = e.branch_id
             LEFT JOIN ${categories} c ON c.id = e.category_id
@@ -232,6 +236,10 @@ export class ExpensesService {
         throw new NotFoundException('Expense category not found');
       }
 
+      if (existing[0].code === 'SUPPLIER_PAYMENT') {
+        throw new BadRequestException('Cannot delete the system "Supplier Payments" category.');
+      }
+
       await tx.$queryRawUnsafe(`DELETE FROM ${table} WHERE id = $1::uuid`, id);
 
       await logAudit(tx, schemaName, {
@@ -377,6 +385,12 @@ export class ExpensesService {
     const table = tenantTable(schemaName, 'expenses');
     const existing = await this.findById(schemaName, id);
 
+    if (existing.isSystemGenerated || existing.supplierPaymentId) {
+      throw new BadRequestException(
+        'Cannot manually edit a system-generated supplier payment expense. Please manage it from the Supplier Payments module.',
+      );
+    }
+
     if (existing.status === 'VOID') {
       throw new BadRequestException('Cannot update a voided expense');
     }
@@ -441,7 +455,13 @@ export class ExpensesService {
     userId: string,
   ): Promise<ExpenseRecord> {
     const table = tenantTable(schemaName, 'expenses');
-    await this.findById(schemaName, id);
+    const existing = await this.findById(schemaName, id);
+
+    if (existing.isSystemGenerated || existing.supplierPaymentId) {
+      throw new BadRequestException(
+        'Cannot manually change the status of a system-generated supplier payment expense. Please manage it from the Supplier Payments module.',
+      );
+    }
 
     return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
       await tx.$queryRawUnsafe(
@@ -471,6 +491,12 @@ export class ExpensesService {
   async delete(schemaName: string, id: string, userId: string): Promise<{ id: string; success: boolean }> {
     const table = tenantTable(schemaName, 'expenses');
     const existing = await this.findById(schemaName, id);
+
+    if (existing.isSystemGenerated || existing.supplierPaymentId) {
+      throw new BadRequestException(
+        'Cannot manually delete a system-generated supplier payment expense. Please manage it from the Supplier Payments module.',
+      );
+    }
 
     return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
       await tx.$queryRawUnsafe(`DELETE FROM ${table} WHERE id = $1::uuid`, id);

@@ -616,7 +616,7 @@ export class SignupService {
     for (let attempt = 0; attempt < MAX_CODE_GENERATION_ATTEMPTS; attempt++) {
       try {
         const tenantCode = await this.generateTenantCode(tx);
-        const schemaName = await this.provisioning.generateSchemaName();
+        const schemaName = await this.provisioning.generateSchemaName(dto.salon.name, tenantCode);
 
         return tx.tenant.create({
           data: {

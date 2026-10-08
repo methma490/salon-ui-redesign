@@ -49,6 +49,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { OpsLoading, OpsError, getErrorMessage } from './salon-ops-ui';
+import { printReportDocument } from '@/lib/print-report';
 import './reports-page.css';
 
 type ReportTab = 'sales' | 'employee-performance' | 'inventory';
@@ -329,15 +330,26 @@ export default function ReportsPage() {
   // Export Handlers
   const handleExportPDF = () => {
     setExportMenuOpen(false);
-    if (activeTab === 'employee-performance') {
-      document.body.classList.add('employee-performance-print');
-      window.addEventListener(
-        'afterprint',
-        () => document.body.classList.remove('employee-performance-print'),
-        { once: true },
+    const branchSlug = branchId === 'all'
+      ? 'All_Branches'
+      : (branches.find((b) => b.id === branchId)?.name?.replace(/[^a-zA-Z0-9_-]/g, '_') ?? 'Branch');
+
+    if (activeTab === 'sales') {
+      printReportDocument(
+        'sales-printable-report',
+        `Sales_Report_${breakdownTab.toUpperCase()}_${branchSlug}_${startDate}_to_${endDate}`,
+      );
+    } else if (activeTab === 'inventory') {
+      printReportDocument(
+        'inventory-printable-report',
+        `Inventory_Report_${branchSlug}_${startDate}_to_${endDate}`,
+      );
+    } else if (activeTab === 'employee-performance') {
+      printReportDocument(
+        'employee-printable-report',
+        `Employee_Performance_Report_${branchSlug}_${startDate}_to_${endDate}`,
       );
     }
-    window.print();
   };
 
   const handleExportCSV = () => {
@@ -448,16 +460,268 @@ export default function ReportsPage() {
 
   return (
     <div className="reports-container" ref={printRef}>
+      {/* ========================================================================= */}
+      {/* PRINTABLE REPORT: SALES */}
+      {/* ========================================================================= */}
+      {activeTab === 'sales' && (
+        <section
+          id="sales-printable-report"
+          className="reports-print-document"
+          aria-label="Sales printable report"
+        >
+          <header className="reports-print-header">
+            <div>
+              <p className="reports-print-eyebrow">Dart Smart Salon</p>
+              <h1>Sales Report ({breakdownTab === 'service' ? 'Service Sales' : 'Product Sales'})</h1>
+              <p>
+                Period: {formatDateDisplay(startDate)} – {formatDateDisplay(endDate)}
+                {' · '}
+                Branch: {branchId === 'all' ? 'All Branches' : branches.find((b) => b.id === branchId)?.name ?? 'Selected Branch'}
+                {salesPaymentMethod !== 'all' ? ` · Payment Method: ${salesPaymentMethod}` : ''}
+              </p>
+            </div>
+            <span className="reports-print-generated">Generated {formatDateDisplay(getTodayStr())}</span>
+          </header>
+
+          <div className="reports-print-summary">
+            <div><span>Total Sales</span><strong>LKR {formatMoneyAmount(salesData?.summary?.totalSales ?? 0)}</strong></div>
+            <div><span>Service Sales</span><strong>LKR {formatMoneyAmount(salesData?.summary?.serviceSales ?? 0)}</strong></div>
+            <div><span>Product Sales</span><strong>LKR {formatMoneyAmount(salesData?.summary?.productSales ?? 0)}</strong></div>
+            <div><span>Total Discounts</span><strong>LKR {formatMoneyAmount(salesData?.summary?.totalDiscounts ?? 0)}</strong></div>
+            <div><span>Service Sales %</span><strong>{salesData?.summary?.serviceSalesPct ?? 0}%</strong></div>
+            <div><span>Product Sales %</span><strong>{salesData?.summary?.productSalesPct ?? 0}%</strong></div>
+          </div>
+
+          {breakdownTab === 'service' ? (
+            <>
+              <div className="reports-print-section-title">
+                Service Sales Transactions ({salesData?.serviceTransactions?.length ?? 0} records)
+              </div>
+              <table className="reports-print-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '32px' }}>#</th>
+                    <th>Date & Time</th>
+                    <th>Invoice No</th>
+                    <th>Staff / Employee</th>
+                    <th>Customer Name</th>
+                    <th>Phone</th>
+                    <th>Service</th>
+                    <th>Gross (LKR)</th>
+                    <th>Discount (LKR)</th>
+                    <th>Net Amount (LKR)</th>
+                    <th>Payment Method</th>
+                    <th>Branch</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {salesData?.serviceTransactions && salesData.serviceTransactions.length > 0 ? (
+                    salesData.serviceTransactions.map((t, idx) => (
+                      <tr key={t.id || idx}>
+                        <td>{idx + 1}</td>
+                        <td>{t.createdAt}</td>
+                        <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{t.invoiceNo}</td>
+                        <td>{t.employeeName}</td>
+                        <td>{t.customerName}</td>
+                        <td>{t.customerPhone}</td>
+                        <td>{t.serviceName}</td>
+                        <td>{formatMoneyAmount(t.grossAmount)}</td>
+                        <td>{formatMoneyAmount(t.discountAmount)}</td>
+                        <td style={{ fontWeight: 700 }}>{formatMoneyAmount(t.netAmount)}</td>
+                        <td>{t.paymentMethod}</td>
+                        <td>{t.branchName}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={12} style={{ textAlign: 'center', padding: '16px' }}>
+                        No service transactions found for the selected period.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <th colSpan={7}>Total ({salesData?.serviceTransactions?.length ?? 0} transactions)</th>
+                    <th>{formatMoneyAmount(salesData?.serviceTransactions?.reduce((sum, t) => sum + (t.grossAmount || 0), 0) ?? 0)}</th>
+                    <th>{formatMoneyAmount(salesData?.serviceTransactions?.reduce((sum, t) => sum + (t.discountAmount || 0), 0) ?? 0)}</th>
+                    <th>{formatMoneyAmount(salesData?.serviceTransactions?.reduce((sum, t) => sum + (t.netAmount || 0), 0) ?? 0)}</th>
+                    <th colSpan={2}></th>
+                  </tr>
+                </tfoot>
+              </table>
+            </>
+          ) : (
+            <>
+              <div className="reports-print-section-title">
+                Product Sales Transactions ({salesData?.productTransactions?.length ?? 0} records)
+              </div>
+              <table className="reports-print-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '32px' }}>#</th>
+                    <th>Date & Time</th>
+                    <th>Invoice No</th>
+                    <th>Customer Name</th>
+                    <th>Phone</th>
+                    <th>Product Item</th>
+                    <th>Qty</th>
+                    <th>Gross (LKR)</th>
+                    <th>Discount (LKR)</th>
+                    <th>Net Amount (LKR)</th>
+                    <th>Payment Method</th>
+                    <th>Branch</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {salesData?.productTransactions && salesData.productTransactions.length > 0 ? (
+                    salesData.productTransactions.map((t, idx) => (
+                      <tr key={t.id || idx}>
+                        <td>{idx + 1}</td>
+                        <td>{t.createdAt}</td>
+                        <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{t.invoiceNo}</td>
+                        <td>{t.customerName}</td>
+                        <td>{t.customerPhone}</td>
+                        <td>{t.productName}</td>
+                        <td>{t.quantity}</td>
+                        <td>{formatMoneyAmount(t.grossAmount)}</td>
+                        <td>{formatMoneyAmount(t.discountAmount)}</td>
+                        <td style={{ fontWeight: 700 }}>{formatMoneyAmount(t.netAmount)}</td>
+                        <td>{t.paymentMethod}</td>
+                        <td>{t.branchName}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={12} style={{ textAlign: 'center', padding: '16px' }}>
+                        No product transactions found for the selected period.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <th colSpan={6}>Total ({salesData?.productTransactions?.length ?? 0} transactions)</th>
+                    <th>{salesData?.productTransactions?.reduce((sum, t) => sum + (t.quantity || 0), 0) ?? 0}</th>
+                    <th>{formatMoneyAmount(salesData?.productTransactions?.reduce((sum, t) => sum + (t.grossAmount || 0), 0) ?? 0)}</th>
+                    <th>{formatMoneyAmount(salesData?.productTransactions?.reduce((sum, t) => sum + (t.discountAmount || 0), 0) ?? 0)}</th>
+                    <th>{formatMoneyAmount(salesData?.productTransactions?.reduce((sum, t) => sum + (t.netAmount || 0), 0) ?? 0)}</th>
+                    <th colSpan={2}></th>
+                  </tr>
+                </tfoot>
+              </table>
+            </>
+          )}
+        </section>
+      )}
+
+      {/* ========================================================================= */}
+      {/* PRINTABLE REPORT: INVENTORY */}
+      {/* ========================================================================= */}
+      {activeTab === 'inventory' && (
+        <section
+          id="inventory-printable-report"
+          className="reports-print-document"
+          aria-label="Inventory printable report"
+        >
+          <header className="reports-print-header">
+            <div>
+              <p className="reports-print-eyebrow">Dart Smart Salon</p>
+              <h1>Inventory Valuation & Stock Report</h1>
+              <p>
+                Period: {formatDateDisplay(startDate)} – {formatDateDisplay(endDate)}
+                {' · '}
+                Branch: {branchId === 'all' ? 'All Branches' : branches.find((b) => b.id === branchId)?.name ?? 'Selected Branch'}
+                {inventoryCategory !== 'all' ? ` · Category: ${categories.find((c: any) => c.id === inventoryCategory)?.name ?? 'Selected'}` : ''}
+                {inventoryStatus !== 'all' ? ` · Status: ${inventoryStatus}` : ''}
+              </p>
+            </div>
+            <span className="reports-print-generated">Generated {formatDateDisplay(getTodayStr())}</span>
+          </header>
+
+          <div className="reports-print-summary">
+            <div><span>Total Products</span><strong>{inventoryData?.summary?.totalProducts ?? 0}</strong></div>
+            <div><span>Total Stock Units</span><strong>{(inventoryData?.summary?.totalStockUnits ?? 0).toLocaleString()}</strong></div>
+            <div><span>Total Stock Value</span><strong>LKR {formatMoneyAmount(inventoryData?.summary?.totalStockValue ?? 0)}</strong></div>
+            <div><span>Low Stock Items</span><strong>{inventoryData?.summary?.lowStockCount ?? 0}</strong></div>
+            <div><span>Out of Stock Items</span><strong>{inventoryData?.summary?.outOfStockCount ?? 0}</strong></div>
+          </div>
+
+          <table className="reports-print-table">
+            <thead>
+              <tr>
+                <th style={{ width: '32px' }}>#</th>
+                <th>Product Name</th>
+                <th>SKU</th>
+                <th>Category</th>
+                <th>Current Stock</th>
+                <th>Stock Value (LKR)</th>
+                <th>Stock In</th>
+                <th>Stock Out</th>
+                <th>Adjustments</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {inventoryData?.products && inventoryData.products.length > 0 ? (
+                inventoryData.products.map((p, idx) => (
+                  <tr key={p.id || idx}>
+                    <td>{idx + 1}</td>
+                    <td style={{ fontWeight: 600 }}>{p.name}</td>
+                    <td style={{ fontFamily: 'monospace', color: '#475569' }}>{p.sku}</td>
+                    <td>{p.categoryName}</td>
+                    <td style={{ fontWeight: 700 }}>{p.currentStock}</td>
+                    <td>{formatMoneyAmount(p.stockValue)}</td>
+                    <td>{p.stockIn}</td>
+                    <td>{p.stockOut}</td>
+                    <td>{p.adjustments}</td>
+                    <td>
+                      <span className={`reports-print-badge ${p.status === 'In Stock' ? 'in-stock' : p.status === 'Low Stock' ? 'low-stock' : 'out-of-stock'}`}>
+                        {p.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={10} style={{ textAlign: 'center', padding: '16px' }}>
+                    No product inventory records found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th colSpan={4}>Total ({inventoryData?.products?.length ?? 0} products)</th>
+                <th>{inventoryData?.summaryTotals?.currentStock ?? 0}</th>
+                <th>{formatMoneyAmount(inventoryData?.summaryTotals?.stockValue ?? 0)}</th>
+                <th>{inventoryData?.summaryTotals?.stockIn ?? 0}</th>
+                <th>{inventoryData?.summaryTotals?.stockOut ?? 0}</th>
+                <th>{inventoryData?.summaryTotals?.adjustments ?? 0}</th>
+                <th></th>
+              </tr>
+            </tfoot>
+          </table>
+        </section>
+      )}
+
+      {/* ========================================================================= */}
+      {/* PRINTABLE REPORT: EMPLOYEE PERFORMANCE */}
+      {/* ========================================================================= */}
       {activeTab === 'employee-performance' && (
-        <section className="reports-print-document" aria-label="Employee performance printable report">
+        <section
+          id="employee-printable-report"
+          className="reports-print-document"
+          aria-label="Employee performance printable report"
+        >
           <header className="reports-print-header">
             <div>
               <p className="reports-print-eyebrow">Dart Smart Salon</p>
               <h1>Employee Performance Report</h1>
               <p>
-                {formatDateDisplay(startDate)} – {formatDateDisplay(endDate)}
+                Period: {formatDateDisplay(startDate)} – {formatDateDisplay(endDate)}
                 {' · '}
-                {branchId === 'all'
+                Branch: {branchId === 'all'
                   ? 'All Branches'
                   : branches.find((branch) => branch.id === branchId)?.name ?? 'Selected Branch'}
               </p>
@@ -477,7 +741,7 @@ export default function ReportsPage() {
           <table className="reports-print-table">
             <thead>
               <tr>
-                <th>#</th>
+                <th style={{ width: '32px' }}>#</th>
                 <th>Employee</th>
                 <th>Branch</th>
                 <th>Services Completed</th>

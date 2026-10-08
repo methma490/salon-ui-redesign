@@ -41,7 +41,7 @@ export class BranchesController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreateBranchDto,
   ) {
-    return this.branchesService.create(tenant.schemaName, dto, user.id);
+    return this.branchesService.create(tenant.schemaName, dto, user.id, tenant.tenantId);
   }
 
   @Patch(':id')

@@ -712,11 +712,11 @@ export class SuppliersService {
                      payment_status = $4::text::"${schemaName}".grn_payment_status, updated_at = NOW()
                  WHERE id = $1::uuid`,
                 grnId,
-                paidAmount,
-                outstandingAmount,
-                paymentStatus,
               );
             }
+
+            // Sync with expenses module
+            await this.syncSupplierPaymentExpenseInTx(tx, schemaName, paymentId, userId);
           }
         }
       }
@@ -980,6 +980,9 @@ export class SuppliersService {
             outstandingAmount = Math.max(0, Math.round((totalAmount - paidAmount) * 100) / 100);
             paymentStatus = paidAmount >= totalAmount ? 'PAID' : (paidAmount > 0 ? 'PARTIALLY_PAID' : 'UNPAID');
           }
+
+          // Sync with expenses module
+          await this.syncSupplierPaymentExpenseInTx(tx, schemaName, paymentId, userId);
         }
       }
 
@@ -1393,6 +1396,9 @@ export class SuppliersService {
         }
       }
 
+      // Sync with expenses module
+      await this.syncSupplierPaymentExpenseInTx(tx, schemaName, paymentId, userId);
+
       await logAudit(tx, schemaName, {
         userId,
         action: 'SUPPLIER_PAYMENT_CREATE',
@@ -1474,6 +1480,9 @@ export class SuppliersService {
       for (const alloc of allocRows) {
         await this.recalculateGrnPaymentStatus(tx, schemaName, alloc.grn_id);
       }
+
+      // Sync with expenses module
+      await this.syncSupplierPaymentExpenseInTx(tx, schemaName, paymentId, userId);
 
       await logAudit(tx, schemaName, {
         userId,
@@ -1811,4 +1820,187 @@ export class SuppliersService {
       throw new NotFoundException(`Product with ID ${productId} not found`);
     }
   }
+
+  /**
+   * Synchronizes a supplier payment record with the expenses table within a transaction.
+   * - CASH / BANK_TRANSFER / CHEQUE CLEARED => Creates or sets ACTIVE expense
+   * - CHEQUE BOUNCED => Sets linked expense to VOID
+   * - CHEQUE PENDING => Does not create an active expense (sets VOID if previously existed)
+   */
+  async syncSupplierPaymentExpenseInTx(
+    tx: { $queryRawUnsafe: <T>(query: string, ...values: unknown[]) => Promise<T> },
+    schemaName: string,
+    paymentId: string,
+    userId: string,
+  ): Promise<void> {
+    const payments = tenantTable(schemaName, 'supplier_payments');
+    const allocations = tenantTable(schemaName, 'supplier_payment_allocations');
+    const grns = tenantTable(schemaName, 'grns');
+    const suppliers = tenantTable(schemaName, 'suppliers');
+    const expenses = tenantTable(schemaName, 'expenses');
+    const categories = tenantTable(schemaName, 'expense_categories');
+    const branches = tenantTable(schemaName, 'branches');
+
+    // 1. Fetch payment details
+    const paymentRows = await tx.$queryRawUnsafe<Array<any>>(
+      `SELECT sp.id, sp.supplier_id AS "supplierId", sp.payment_date AS "paymentDate",
+              sp.amount::numeric AS "amount", sp.payment_method AS "paymentMethod",
+              sp.reference_number AS "referenceNumber", sp.cheque_number AS "chequeNumber",
+              sp.cheque_status AS "chequeStatus", sp.notes, sp.created_by AS "createdBy",
+              s.name AS "supplierName"
+       FROM ${payments} sp
+       INNER JOIN ${suppliers} s ON sp.supplier_id = s.id
+       WHERE sp.id = $1::uuid
+       LIMIT 1`,
+      paymentId,
+    );
+
+    if (paymentRows.length === 0) return;
+    const payment = paymentRows[0];
+    const paymentAmount = Number(payment.amount);
+    const paymentMethod = String(payment.paymentMethod);
+    const chequeStatus = String(payment.chequeStatus);
+    const supplierName = payment.supplierName ?? 'Supplier';
+
+    // 2. Determine target expense status
+    const isConfirmed =
+      paymentMethod === 'CASH' ||
+      paymentMethod === 'BANK_TRANSFER' ||
+      (paymentMethod === 'CHEQUE' && chequeStatus === 'CLEARED');
+    const isBounced = paymentMethod === 'CHEQUE' && chequeStatus === 'BOUNCED';
+    const isPending = paymentMethod === 'CHEQUE' && chequeStatus === 'PENDING';
+
+    // 3. Fetch existing linked expense
+    const existingExpense = await tx.$queryRawUnsafe<Array<{ id: string; status: string }>>(
+      `SELECT id, status::text AS status FROM ${expenses} WHERE supplier_payment_id = $1::uuid LIMIT 1`,
+      paymentId,
+    );
+
+    if (existingExpense.length > 0) {
+      const expId = existingExpense[0].id;
+      if (isConfirmed) {
+        // Reactivate / update existing expense
+        await tx.$queryRawUnsafe(
+          `UPDATE ${expenses}
+           SET amount = $2::numeric,
+               expense_date = $3::date,
+               payment_method = $4,
+               status = 'ACTIVE'::"${schemaName}".expense_status,
+               notes = $5,
+               updated_at = NOW()
+           WHERE id = $1::uuid`,
+          expId,
+          paymentAmount,
+          payment.paymentDate,
+          paymentMethod,
+          this.buildSupplierPaymentExpenseNotes(supplierName, payment.referenceNumber, payment.chequeNumber, payment.notes),
+        );
+      } else if (isBounced || isPending) {
+        // Void the expense
+        await tx.$queryRawUnsafe(
+          `UPDATE ${expenses}
+           SET status = 'VOID'::"${schemaName}".expense_status,
+               updated_at = NOW()
+           WHERE id = $1::uuid`,
+          expId,
+        );
+      }
+      return;
+    }
+
+    // If no existing expense and not confirmed (e.g. pending cheque or bounced cheque from the start), do nothing
+    if (!isConfirmed) {
+      return;
+    }
+
+    // 4. Ensure SUPPLIER_PAYMENT category exists
+    const categoryRows = await tx.$queryRawUnsafe<Array<{ id: string }>>(
+      `SELECT id FROM ${categories} WHERE code = 'SUPPLIER_PAYMENT' LIMIT 1`,
+    );
+    let categoryId: string;
+    if (categoryRows.length > 0) {
+      categoryId = categoryRows[0].id;
+    } else {
+      const insertedCat = await tx.$queryRawUnsafe<Array<{ id: string }>>(
+        `INSERT INTO ${categories} (code, name, description)
+         VALUES ('SUPPLIER_PAYMENT', 'Supplier Payments', 'Payments made to suppliers for stock purchases')
+         RETURNING id`,
+      );
+      categoryId = insertedCat[0].id;
+    }
+
+    // 5. Determine branchId (from allocated GRN or first branch)
+    const branchRows = await tx.$queryRawUnsafe<Array<{ branch_id: string }>>(
+      `SELECT g.branch_id
+       FROM ${allocations} spa
+       INNER JOIN ${grns} g ON spa.grn_id = g.id
+       WHERE spa.payment_id = $1::uuid
+       LIMIT 1`,
+      paymentId,
+    );
+    let branchId: string;
+    if (branchRows.length > 0 && branchRows[0].branch_id) {
+      branchId = branchRows[0].branch_id;
+    } else {
+      const defaultBranch = await tx.$queryRawUnsafe<Array<{ id: string }>>(
+        `SELECT id FROM ${branches} ORDER BY created_at ASC LIMIT 1`,
+      );
+      if (defaultBranch.length === 0) {
+        throw new BadRequestException('Cannot create supplier payment expense: no branch exists for tenant');
+      }
+      branchId = defaultBranch[0].id;
+    }
+
+    // 6. Generate sequential expense code
+    const expCodeRows = await tx.$queryRawUnsafe<Array<{ maxNum: string | null }>>(
+      `SELECT MAX(NULLIF(regexp_replace(code, '^EXP-', ''), '')::bigint)::text AS "maxNum" FROM ${expenses}`,
+    );
+    const nextExpNum = (Number(expCodeRows[0]?.maxNum) || 0) + 1;
+    const expCode = `EXP-${String(nextExpNum).padStart(6, '0')}`;
+
+    const expTitle = `Supplier Payment - ${supplierName}`;
+    const expNotes = this.buildSupplierPaymentExpenseNotes(
+      supplierName,
+      payment.referenceNumber,
+      payment.chequeNumber,
+      payment.notes,
+    );
+
+    // 7. Insert active expense record
+    await tx.$queryRawUnsafe(
+      `INSERT INTO ${expenses}
+         (code, branch_id, category_id, title, amount, expense_date, payment_method, notes,
+          status, created_by, supplier_payment_id, is_system_generated)
+       VALUES (
+         $1, $2::uuid, $3::uuid, $4, $5::numeric, $6::date, $7, $8,
+         'ACTIVE'::"${schemaName}".expense_status, $9::uuid, $10::uuid, true
+       )`,
+      expCode,
+      branchId,
+      categoryId,
+      expTitle,
+      paymentAmount,
+      payment.paymentDate,
+      paymentMethod,
+      expNotes,
+      userId || payment.createdBy,
+      paymentId,
+    );
+  }
+
+  private buildSupplierPaymentExpenseNotes(
+    supplierName: string,
+    referenceNumber?: string | null,
+    chequeNumber?: string | null,
+    notes?: string | null,
+  ): string {
+    const parts = [
+      `Supplier: ${supplierName}`,
+      referenceNumber ? `Payment Reference: ${referenceNumber}` : null,
+      chequeNumber ? `Cheque Number: ${chequeNumber}` : null,
+      notes ? `Notes: ${notes}` : null,
+    ].filter(Boolean);
+    return parts.join('\n');
+  }
 }
+

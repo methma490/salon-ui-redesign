@@ -8,6 +8,7 @@ import { TenantSchemaService } from '../../tenant/services/tenant-schema.service
 import { tenantTable, tenantType } from '../../tenant/utils/schema-name.util';
 import { logAudit } from '../utils/audit.util';
 import { CreateBranchDto, UpdateBranchDto, UpdateBranchStatusDto } from './dto/branch.dto';
+import { PrismaService } from '../../database/prisma.service';
 
 export interface BranchRecord {
   id: string;
@@ -26,7 +27,10 @@ export interface BranchRecord {
 
 @Injectable()
 export class BranchesService {
-  constructor(private readonly tenantSchemaService: TenantSchemaService) {}
+  constructor(
+    private readonly tenantSchemaService: TenantSchemaService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async list(schemaName: string): Promise<BranchRecord[]> {
     const table = tenantTable(schemaName, 'branches');
@@ -71,8 +75,40 @@ export class BranchesService {
     });
   }
 
-  async create(schemaName: string, dto: CreateBranchDto, userId: string): Promise<BranchRecord> {
+  async create(
+    schemaName: string,
+    dto: CreateBranchDto,
+    userId: string,
+    tenantId?: string,
+  ): Promise<BranchRecord> {
     const table = tenantTable(schemaName, 'branches');
+
+    if (tenantId) {
+      const sub = await this.prisma.subscription.findFirst({
+        where: {
+          tenantId,
+          status: { in: ['ACTIVE', 'TRIAL'] },
+        },
+        include: { plan: true },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (sub?.plan?.code === 'GOLD') {
+        const branchCount = await this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+          const res = await tx.$queryRawUnsafe<Array<{ count: string | number }>>(
+            `SELECT COUNT(*)::int AS count FROM ${table}`,
+          );
+          return Number(res[0]?.count ?? 0);
+        });
+
+        if (branchCount >= 2) {
+          throw new BadRequestException(
+            'The Gold plan allows a maximum of 2 branches. Please upgrade to the Platinum plan to add more branches.',
+          );
+        }
+      }
+    }
+
     const code = dto.code && dto.code.trim()
       ? dto.code.trim().toUpperCase()
       : await this.generateBranchCode(schemaName, dto.name);

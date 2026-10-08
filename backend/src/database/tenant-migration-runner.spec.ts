@@ -33,7 +33,7 @@ describe('TenantMigrationRunner', () => {
 
       // Verify first and last migrations
       expect(fileNames[0]).toBe('001_core.sql');
-      expect(fileNames[fileNames.length - 1]).toBe('026_suppliers_grn_module.sql');
+      expect(fileNames[fileNames.length - 1]).toBe('027_supplier_payment_expenses.sql');
 
       // Verify each migration file has a valid SHA256 checksum
       for (const file of files) {

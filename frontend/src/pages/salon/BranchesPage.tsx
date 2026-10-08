@@ -29,6 +29,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { tenantApi, type Branch } from '@/api/tenant.api';
+import { useTenantSubscription } from '@/features/subscriptions/hooks/useTenantSubscription';
 import { useSalonBranch } from '@/contexts/SalonBranchContext';
 import { formatMoneyAmount } from '@/lib/money';
 import {
@@ -868,6 +869,10 @@ export default function BranchesPage() {
     queryFn: tenantApi.features,
   });
 
+  const { data: tenantSubscription } = useTenantSubscription();
+  const isGoldPlan = tenantSubscription?.subscription?.planCode === 'GOLD';
+  const isGoldPlanLimitReached = isGoldPlan && branches.length >= 2;
+
   const canManageBranches = features.includes('MULTI_BRANCH');
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -1004,23 +1009,39 @@ export default function BranchesPage() {
         </div>
 
         {canManageBranches ? (
-          <Button
-            className="w-full sm:w-auto gap-2 bg-[var(--brand-primary,#0d5c3d)] hover:bg-[var(--brand-hover,#0a4a31)] text-white font-semibold rounded-lg px-4 h-10 shadow-xs transition-colors"
-            onClick={() => {
-              setFormError(null);
-              setForm({
-                ...emptyForm,
-                code: generateLocalBranchCode('', branches.length + 1),
-              });
-              setCreateOpen(true);
-            }}
-          >
-            <Plus className="h-4 w-4" />
-            Add Branch
-          </Button>
+          isGoldPlanLimitReached ? (
+            <div className="flex flex-col sm:flex-row items-center gap-2">
+              <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg font-medium">
+                Gold Plan Branch Limit (2/2) Reached
+              </span>
+              <Button
+                disabled
+                className="w-full sm:w-auto gap-2 bg-slate-200 text-slate-500 font-semibold rounded-lg px-4 h-10 shadow-xs cursor-not-allowed opacity-60"
+                title="Gold plan allows a maximum of 2 branches. Upgrade to Platinum for more."
+              >
+                <Plus className="h-4 w-4" />
+                Add Branch
+              </Button>
+            </div>
+          ) : (
+            <Button
+              className="w-full sm:w-auto gap-2 bg-[var(--brand-primary,#0d5c3d)] hover:bg-[var(--brand-hover,#0a4a31)] text-white font-semibold rounded-lg px-4 h-10 shadow-xs transition-colors"
+              onClick={() => {
+                setFormError(null);
+                setForm({
+                  ...emptyForm,
+                  code: generateLocalBranchCode('', branches.length + 1),
+                });
+                setCreateOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4" />
+              Add Branch
+            </Button>
+          )
         ) : (
           <div className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground bg-muted/20">
-            Multi-branch management requires the <strong className="text-foreground">Platinum</strong> plan.
+            Multi-branch management requires the <strong className="text-foreground">Gold or Platinum</strong> plan.
           </div>
         )}
       </div>

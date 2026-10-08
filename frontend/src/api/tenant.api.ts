@@ -269,6 +269,8 @@ export interface Expense {
   createdByName: string | null;
   createdAt: string;
   updatedAt: string;
+  supplierPaymentId?: string | null;
+  isSystemGenerated?: boolean;
 }
 
 export interface ExpensesListResponse {
