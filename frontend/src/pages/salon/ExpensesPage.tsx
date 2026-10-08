@@ -474,29 +474,37 @@ export default function ExpensesPage() {
                   )}
 
                   <div className="expense-card-actions">
-                    {expense.status === 'ACTIVE' && (
-                      <OpsEditButton onClick={() => openEdit(expense)} />
+                    {expense.isSystemGenerated || expense.supplierPaymentId ? (
+                      <span style={{ fontSize: '0.75rem', color: '#6366f1', fontWeight: 600 }}>
+                        Auto-synced from Supplier Payment
+                      </span>
+                    ) : (
+                      <>
+                        {expense.status === 'ACTIVE' && (
+                          <OpsEditButton onClick={() => openEdit(expense)} />
+                        )}
+                        <button
+                          type="button"
+                          className="emp-btn emp-btn-secondary"
+                          onClick={() =>
+                            statusMutation.mutate({
+                              id: expense.id,
+                              nextStatus: expense.status === 'ACTIVE' ? 'VOID' : 'ACTIVE',
+                            })
+                          }
+                        >
+                          {expense.status === 'ACTIVE' ? 'Void' : 'Restore'}
+                        </button>
+                        <button
+                          type="button"
+                          className="emp-btn emp-btn-danger"
+                          style={{ color: '#dc2626', borderColor: '#fecaca', background: '#fef2f2' }}
+                          onClick={() => setDeleteExpense(expense)}
+                        >
+                          Delete
+                        </button>
+                      </>
                     )}
-                    <button
-                      type="button"
-                      className="emp-btn emp-btn-secondary"
-                      onClick={() =>
-                        statusMutation.mutate({
-                          id: expense.id,
-                          nextStatus: expense.status === 'ACTIVE' ? 'VOID' : 'ACTIVE',
-                        })
-                      }
-                    >
-                      {expense.status === 'ACTIVE' ? 'Void' : 'Restore'}
-                    </button>
-                    <button
-                      type="button"
-                      className="emp-btn emp-btn-danger"
-                      style={{ color: '#dc2626', borderColor: '#fecaca', background: '#fef2f2' }}
-                      onClick={() => setDeleteExpense(expense)}
-                    >
-                      Delete
-                    </button>
                   </div>
                 </article>
               ))}
@@ -520,7 +528,25 @@ export default function ExpensesPage() {
                 <tbody>
                   {expenses.map((expense) => (
                     <tr key={expense.id}>
-                      <td className="emp-code">{expense.code}</td>
+                      <td className="emp-code">
+                        {expense.code}
+                        {(expense.isSystemGenerated || expense.supplierPaymentId) && (
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              marginLeft: 6,
+                              fontSize: '0.7rem',
+                              background: '#e0e7ff',
+                              color: '#3730a3',
+                              padding: '1px 6px',
+                              borderRadius: '4px',
+                              fontWeight: 600,
+                            }}
+                          >
+                            Supplier Payment
+                          </span>
+                        )}
+                      </td>
                       <td>
                         <div className="emp-name-cell">{expense.title}</div>
                         {expense.notes && <div className="emp-code">{expense.notes}</div>}
@@ -537,29 +563,37 @@ export default function ExpensesPage() {
                       </td>
                       <td>
                         <div className="emp-actions">
-                          {expense.status === 'ACTIVE' && (
-                            <OpsEditButton onClick={() => openEdit(expense)} />
+                          {expense.isSystemGenerated || expense.supplierPaymentId ? (
+                            <span style={{ fontSize: '0.75rem', color: '#6366f1', fontWeight: 500, fontStyle: 'italic' }}>
+                              Auto-synced
+                            </span>
+                          ) : (
+                            <>
+                              {expense.status === 'ACTIVE' && (
+                                <OpsEditButton onClick={() => openEdit(expense)} />
+                              )}
+                              <button
+                                type="button"
+                                className="emp-link-btn"
+                                onClick={() =>
+                                  statusMutation.mutate({
+                                    id: expense.id,
+                                    nextStatus: expense.status === 'ACTIVE' ? 'VOID' : 'ACTIVE',
+                                  })
+                                }
+                              >
+                                {expense.status === 'ACTIVE' ? 'Void' : 'Restore'}
+                              </button>
+                              <button
+                                type="button"
+                                className="emp-link-btn"
+                                style={{ color: '#dc2626' }}
+                                onClick={() => setDeleteExpense(expense)}
+                              >
+                                Delete
+                              </button>
+                            </>
                           )}
-                          <button
-                            type="button"
-                            className="emp-link-btn"
-                            onClick={() =>
-                              statusMutation.mutate({
-                                id: expense.id,
-                                nextStatus: expense.status === 'ACTIVE' ? 'VOID' : 'ACTIVE',
-                              })
-                            }
-                          >
-                            {expense.status === 'ACTIVE' ? 'Void' : 'Restore'}
-                          </button>
-                          <button
-                            type="button"
-                            className="emp-link-btn"
-                            style={{ color: '#dc2626' }}
-                            onClick={() => setDeleteExpense(expense)}
-                          >
-                            Delete
-                          </button>
                         </div>
                       </td>
                     </tr>

@@ -169,6 +169,7 @@ export class DashboardService {
            FROM ${expensesTable}
            WHERE expense_date >= $1::date
              AND expense_date <= $2::date
+             AND status = 'ACTIVE'
              ${expBranchCond}`,
           ...periodParams,
         ).catch(() => [{ total: '0' }]),
@@ -189,6 +190,7 @@ export class DashboardService {
            FROM ${expensesTable}
            WHERE expense_date >= $1::date
              AND expense_date <= $2::date
+             AND status = 'ACTIVE'
              ${expBranchCond}
            GROUP BY payment_method`,
           ...periodParams,
@@ -198,6 +200,7 @@ export class DashboardService {
            FROM ${expensesTable}
            WHERE expense_date >= ($1::date - INTERVAL '1 month')
              AND expense_date < $1::date
+             AND status = 'ACTIVE'
              ${branchId ? 'AND branch_id = $2::uuid' : ''}`,
           ...(branchId ? [start, branchId] : [start]),
         ).catch(() => [{ total: '0' }]),
@@ -473,7 +476,7 @@ export class DashboardService {
            ), daily_expenses AS (
              SELECT expense_date AS day, SUM(amount) AS amount
              FROM ${expensesTable}
-             WHERE expense_date >= $1::date AND expense_date <= $2::date
+             WHERE expense_date >= $1::date AND expense_date <= $2::date AND status = 'ACTIVE'
                ${branchId ? 'AND branch_id = $3::uuid' : ''}
              GROUP BY expense_date
            ), daily_salaries AS (
@@ -504,7 +507,7 @@ export class DashboardService {
       }>>(
         `SELECT
            COALESCE((SELECT SUM(total) FROM ${sales} WHERE status = 'COMPLETED'), 0)::text AS revenue,
-           COALESCE((SELECT SUM(amount) FROM ${expensesTable}), 0)::text AS expenses,
+           COALESCE((SELECT SUM(amount) FROM ${expensesTable} WHERE status = 'ACTIVE'), 0)::text AS expenses,
            COALESCE((SELECT SUM(total_net) FROM ${payrollRunsTable}), 0)::text AS salaries`,
       );
 

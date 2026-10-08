@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   CreditCard,
   FileText,
   LayoutDashboard,
@@ -23,6 +24,7 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { to: '/super-admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/super-admin/salons', label: 'Salons', icon: Store },
+  { to: '/super-admin/salon-analytics', label: 'Salon Analytics', icon: BarChart3 },
   { to: '/super-admin/plans', label: 'Plans', icon: CreditCard },
   { to: '/super-admin/subscriptions', label: 'Subscriptions', icon: Repeat },
   { to: '/super-admin/payments', label: 'Payments', icon: Receipt },

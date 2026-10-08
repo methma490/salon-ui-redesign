@@ -3,6 +3,12 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import { Logger } from '@nestjs/common';
 import { Prisma, PrismaClient } from '@prisma/client';
+import {
+  isValidTenantSchemaName,
+  validateTenantSchemaName,
+} from '../tenant/utils/schema-name.util';
+
+export { isValidTenantSchemaName, validateTenantSchemaName };
 
 const logger = new Logger('TenantMigrationRunner');
 
@@ -31,17 +37,6 @@ export interface TenantMigrationStatus {
   missingCount: number;
   missingMigrations: string[];
   isUpToDate: boolean;
-}
-
-/**
- * Validates tenant schema name against strict alphanumeric pattern (^tenant_[0-9]{6}$)
- * to completely eliminate any SQL injection vector.
- */
-export function validateTenantSchemaName(schemaName: string): string {
-  if (!schemaName || !/^tenant_[0-9]{6}$/.test(schemaName)) {
-    throw new Error(`Invalid tenant schema name: "${schemaName}". Must match format tenant_XXXXXX (e.g. tenant_000001)`);
-  }
-  return schemaName;
 }
 
 /**
@@ -363,29 +358,34 @@ export async function runMigrationsForTenant(
 
 /**
  * Discovers all valid tenant schemas physically existing in PostgreSQL.
+ * Discovers schemas registered in public.tenants as well as physical PostgreSQL schemata,
+ * supporting both legacy (tenant_000001) and new readable (tenant_studio_zee_000004) formats.
  */
 export async function discoverTenantSchemas(prisma: PrismaClient): Promise<string[]> {
   const [schemaRows, tenantRows] = await Promise.all([
     prisma.$queryRaw<Array<{ schema_name: string }>>`
       SELECT schema_name
       FROM information_schema.schemata
-      WHERE schema_name ~ '^tenant_[0-9]{6}$'
+      WHERE schema_name ~ '^tenant_(?:[0-9]{6}|[a-z0-9]+(?:_[a-z0-9]+)*_[0-9]{6})$'
       ORDER BY schema_name ASC
     `,
     prisma.$queryRaw<Array<{ schemaName: string }>>`
       SELECT "schemaName"
       FROM tenants
-      WHERE "schemaName" IS NOT NULL AND "schemaName" ~ '^tenant_[0-9]{6}$'
+      WHERE "schemaName" IS NOT NULL
     `,
   ]);
 
-  const physicallyExisting = new Set(schemaRows.map((r) => r.schema_name));
+  const physicallyExisting = new Set(
+    schemaRows.map((r) => r.schema_name).filter((s) => isValidTenantSchemaName(s)),
+  );
+
   const combined = Array.from(
     new Set([
       ...schemaRows.map((r) => r.schema_name),
       ...tenantRows.map((r) => r.schemaName),
     ]),
-  ).filter((s) => Boolean(s) && physicallyExisting.has(s));
+  ).filter((s) => Boolean(s) && isValidTenantSchemaName(s) && physicallyExisting.has(s));
 
   return combined.sort();
 }

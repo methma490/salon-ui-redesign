@@ -120,6 +120,7 @@ export const PLAN_SEED_DEFINITIONS: PlanSeedDefinition[] = [
       'EMPLOYEE_REPORTS',
       'INVENTORY_REPORTS',
       'STAFF_MANAGEMENT',
+      'MULTI_BRANCH',
     ],
     prices: readPlanPrices('SEED_GOLD', { monthly: 15000, yearly: 150000, trial: 14 }),
   },

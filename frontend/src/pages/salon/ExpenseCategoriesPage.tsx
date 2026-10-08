@@ -163,7 +163,25 @@ export default function ExpenseCategoriesPage() {
                 <tbody>
                   {categories.map((category) => (
                     <tr key={category.id}>
-                      <td className="emp-code">{category.code}</td>
+                      <td className="emp-code">
+                        {category.code}
+                        {category.code === 'SUPPLIER_PAYMENT' && (
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              marginLeft: 6,
+                              fontSize: '0.7rem',
+                              background: '#e0e7ff',
+                              color: '#3730a3',
+                              padding: '1px 6px',
+                              borderRadius: '4px',
+                              fontWeight: 600,
+                            }}
+                          >
+                            System
+                          </span>
+                        )}
+                      </td>
                       <td className="emp-name-cell">{category.name}</td>
                       <td>{category.description || '—'}</td>
                       <td>
@@ -178,7 +196,9 @@ export default function ExpenseCategoriesPage() {
                               });
                             }}
                           />
-                          <OpsDeleteButton onClick={() => setDeleteCategoryItem(category)} />
+                          {category.code !== 'SUPPLIER_PAYMENT' && (
+                            <OpsDeleteButton onClick={() => setDeleteCategoryItem(category)} />
+                          )}
                         </div>
                       </td>
                     </tr>

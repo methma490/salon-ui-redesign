@@ -468,6 +468,8 @@ export default function PosPage() {
       setCreateCustomerOpen(false);
       setNewCustomerForm({ name: '', phone: '', email: '' });
       setNewCustomerError(null);
+      setFormError(null);
+      setMobileWizardStep(2);
       qc.invalidateQueries({ queryKey: ['customers'] });
       qc.invalidateQueries({ queryKey: ['customer-search'] });
     },
@@ -1499,7 +1501,6 @@ export default function PosPage() {
           className="pos-assign-dialog pos-draft-history-sheet sm:max-w-xl"
           style={{ maxHeight: '85vh', overflowY: 'auto' }}
         >
-          <span className="pos-employee-sheet-handle" aria-hidden="true" />
           <DialogHeader>
             <DialogTitle>POS draft history</DialogTitle>
           </DialogHeader>
@@ -1568,12 +1569,20 @@ export default function PosPage() {
                   setCustomerName(null);
                   setCustomerPhone(null);
                   setCustomerSearch('');
+                  setFormError(null);
+                  setMobileWizardStep(2);
                 }}
               ><strong>Walk-in</strong><span>Quick sale for walk-in customer</span></button>
               <button
                 type="button"
                 className={`pos-wizard-choice ${customerMode === 'registered' ? 'is-selected' : ''}`}
-                onClick={() => setCustomerMode('registered')}
+                onClick={() => {
+                  setCustomerMode('registered');
+                  if (customerId) {
+                    setFormError(null);
+                    setMobileWizardStep(2);
+                  }
+                }}
               ><strong>Registered</strong><span>Search or create customer</span></button>
             </div>
             {customerMode === 'registered' && (
@@ -1605,6 +1614,8 @@ export default function PosPage() {
                       setCustomerName(customer.name);
                       setCustomerPhone(customer.phone || null);
                       setCustomerSearch(customer.name);
+                      setFormError(null);
+                      setMobileWizardStep(2);
                     }}
                   >
                     <span className="pos-wizard-customer-initials">{userInitials(customer.name)}</span>
@@ -1620,7 +1631,14 @@ export default function PosPage() {
                 </button>
               </div>
             )}
-            <div className="pos-wizard-selected-customer">
+            <div
+              className="pos-wizard-selected-customer"
+              style={{ cursor: 'pointer' }}
+              onClick={() => {
+                setFormError(null);
+                setMobileWizardStep(2);
+              }}
+            >
               <strong>Selected Customer</strong>
               <span>{customerName || (customerMode === 'walkin' ? 'Walk-in customer' : 'None selected')}</span>
             </div>
@@ -1691,18 +1709,20 @@ export default function PosPage() {
 
         {formError && <div className="pos-alert pos-alert-error pos-wizard-error">{formError}</div>}
 
-        <footer className="pos-wizard-footer">
+        <footer className={`pos-wizard-footer ${mobileWizardStep === 1 ? 'is-step-1' : ''}`}>
           {mobileWizardStep > 1 && <button type="button" className="pos-wizard-back" onClick={() => setMobileWizardStep((mobileWizardStep - 1) as 1 | 2 | 3 | 4)}>← <span>Back</span></button>}
           <button type="button" className="pos-wizard-save" disabled={draftDisabled} onClick={saveDraftSale}><FileText size={17} /> Save Draft</button>
-          {mobileWizardStep < 4 ? (
-            <button
-              type="button"
-              className="pos-wizard-continue"
-              disabled={(mobileWizardStep === 2 || mobileWizardStep === 3) && cartCount === 0}
-              onClick={() => { setFormError(null); setMobileWizardStep((mobileWizardStep + 1) as 2 | 3 | 4); }}
-            >{mobileWizardStep === 1 ? 'Continue to Services' : mobileWizardStep === 2 ? 'Continue to Details' : 'Continue to Payment'} <span>→</span></button>
-          ) : (
-            <button type="button" className="pos-wizard-continue" disabled={completeDisabled} onClick={completeSale}>{createSaleMutation.isPending ? 'Processing…' : `Complete Sale · ${formatMoneyLkr(total)}`} <span>→</span></button>
+          {mobileWizardStep > 1 && (
+            mobileWizardStep < 4 ? (
+              <button
+                type="button"
+                className="pos-wizard-continue"
+                disabled={(mobileWizardStep === 2 || mobileWizardStep === 3) && cartCount === 0}
+                onClick={() => { setFormError(null); setMobileWizardStep((mobileWizardStep + 1) as 2 | 3 | 4); }}
+              >{mobileWizardStep === 2 ? 'Continue to Details' : 'Continue to Payment'} <span>→</span></button>
+            ) : (
+              <button type="button" className="pos-wizard-continue" disabled={completeDisabled} onClick={completeSale}>{createSaleMutation.isPending ? 'Processing…' : `Complete Sale · ${formatMoneyLkr(total)}`} <span>→</span></button>
+            )
           )}
         </footer>
       </main>
@@ -2036,8 +2056,7 @@ export default function PosPage() {
       </Dialog>
 
       <Dialog open={mixPaymentSheetOpen} onOpenChange={setMixPaymentSheetOpen}>
-        <DialogContent className="pos-mix-sheet">
-          <span className="pos-employee-sheet-handle" aria-hidden="true" />
+        <DialogContent className="pos-mix-sheet sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Split payment</DialogTitle>
             <p className="pos-mix-sheet-description">Add payment methods until the total is covered.</p>
@@ -2101,7 +2120,6 @@ export default function PosPage() {
         }}
       >
         <DialogContent className="pos-assign-dialog pos-employee-sheet sm:max-w-md">
-          <span className="pos-employee-sheet-handle" aria-hidden="true" />
           <DialogHeader>
             <DialogTitle>Assign employee</DialogTitle>
           </DialogHeader>

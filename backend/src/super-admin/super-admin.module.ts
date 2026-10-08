@@ -7,8 +7,10 @@ import { SalonsModule } from './salons/salons.module';
 import { SuperAdminController } from './super-admin.controller';
 import { DiagnosticController } from './diagnostic.controller';
 
+import { SuperAdminSalonAnalyticsModule } from './salon-analytics/super-admin-salon-analytics.module';
+
 @Module({
-  imports: [AuthModule, DatabaseModule, SalonsModule],
+  imports: [AuthModule, DatabaseModule, SalonsModule, SuperAdminSalonAnalyticsModule],
   controllers: [SuperAdminController, DiagnosticController, SuperAdminDashboardController],
   providers: [SuperAdminDashboardService],
 })

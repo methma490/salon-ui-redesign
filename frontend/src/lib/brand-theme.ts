@@ -1,13 +1,14 @@
 /** Tenant brand palette generation from a single HEX color. */
 
-export const DEFAULT_PRIMARY_COLOR = '#A44A5C';
+export const DEFAULT_PRIMARY_COLOR = '#134434';
 
 export const BRAND_COLOR_PRESETS: Array<{ id: string; label: string; color: string }> = [
-  { id: 'burgundy', label: 'Burgundy', color: '#A44A5C' },
-  { id: 'gold', label: 'Gold', color: '#D4AF7C' },
-  { id: 'green', label: 'Green', color: '#16A34A' },
+  { id: 'pine', label: 'Dark Pine', color: '#134434' },
   { id: 'emerald', label: 'Emerald', color: '#059669' },
   { id: 'teal', label: 'Teal', color: '#0D9488' },
+  { id: 'green', label: 'Green', color: '#16A34A' },
+  { id: 'gold', label: 'Gold', color: '#D4AF7C' },
+  { id: 'burgundy', label: 'Burgundy', color: '#A44A5C' },
   { id: 'blue', label: 'Blue', color: '#2563EB' },
   { id: 'indigo', label: 'Indigo', color: '#4F46E5' },
   { id: 'purple', label: 'Purple', color: '#9333EA' },
@@ -85,14 +86,13 @@ export function buildBrandPalette(primaryInput: string): BrandPalette {
   const primary = isValidHexColor(primaryInput)
     ? normalizeHexColor(primaryInput)
     : DEFAULT_PRIMARY_COLOR;
-  const isWebsiteDefault = primary === DEFAULT_PRIMARY_COLOR;
-  const hover = isWebsiteDefault ? '#8A3D4D' : mix(primary, '#000000', 0.12);
-  const active = isWebsiteDefault ? '#71313F' : mix(primary, '#000000', 0.22);
-  const soft = isWebsiteDefault ? '#F5E8EB' : mix(primary, '#FFFFFF', 0.92);
-  const softStrong = isWebsiteDefault ? '#ECD2D8' : mix(primary, '#FFFFFF', 0.82);
-  const border = isWebsiteDefault ? '#D9AAB3' : mix(primary, '#FFFFFF', 0.7);
-  const focus = isWebsiteDefault ? '#D4AF7C' : mix(primary, '#FFFFFF', 0.45);
-  const ring = isWebsiteDefault ? '#D4AF7C' : mix(primary, '#FFFFFF', 0.35);
+  const hover = mix(primary, '#000000', 0.15);
+  const active = mix(primary, '#000000', 0.25);
+  const soft = mix(primary, '#FFFFFF', 0.92);
+  const softStrong = mix(primary, '#FFFFFF', 0.82);
+  const border = mix(primary, '#FFFFFF', 0.70);
+  const focus = primary;
+  const ring = mix(primary, '#FFFFFF', 0.40);
 
   return {
     primary,
@@ -190,7 +190,14 @@ const CACHE_KEY = 'salon_theme_primary_color';
 export function readCachedPrimaryColor(): string | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
-    if (raw && isValidHexColor(raw)) return normalizeHexColor(raw);
+    if (raw && isValidHexColor(raw)) {
+      const normalized = normalizeHexColor(raw);
+      if (normalized === '#A44A5C') {
+        localStorage.setItem(CACHE_KEY, DEFAULT_PRIMARY_COLOR);
+        return DEFAULT_PRIMARY_COLOR;
+      }
+      return normalized;
+    }
   } catch {
     /* ignore */
   }

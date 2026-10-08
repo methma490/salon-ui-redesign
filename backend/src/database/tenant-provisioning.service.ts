@@ -7,6 +7,10 @@ import {
   runMigrationsForTenant,
   validateTenantSchemaName,
 } from './tenant-migration-runner';
+import {
+  buildTenantSchemaName,
+  extractTenantNumericId,
+} from '../tenant/utils/schema-name.util';
 
 export interface TenantProvisioningData {
   tenantCode: string;
@@ -512,27 +516,33 @@ export class TenantProvisioningService {
   }
 
   /**
-   * Generate next tenant schema name (e.g. tenant_000001)
+   * Generate next tenant schema name using new readable format:
+   * tenant_<sanitized_salon_name>_<6_digit_tenant_id> (e.g. tenant_studio_zee_000004)
+   * Guaranteed unique and non-colliding.
    */
-  async generateSchemaName(): Promise<string> {
+  async generateSchemaName(
+    salonName?: string,
+    explicitTenantId?: number | string,
+  ): Promise<string> {
     await this.prisma.$executeRawUnsafe(`SET search_path TO public`);
 
     const [schemaRows, tenantRows] = await Promise.all([
       this.prisma.$queryRaw<{ schema_name: string }[]>`
         SELECT schema_name
         FROM information_schema.schemata
-        WHERE schema_name ~ '^tenant_[0-9]+$'
+        WHERE schema_name LIKE 'tenant_%'
       `,
-      this.prisma.$queryRaw<{ schema_name: string }[]>`
-        SELECT "schemaName" as schema_name
+      this.prisma.$queryRaw<{ schema_name: string; code?: string }[]>`
+        SELECT "schemaName" as schema_name, "code"
         FROM tenants
-        WHERE "schemaName" ~ '^tenant_[0-9]+$'
+        WHERE "schemaName" IS NOT NULL
       `,
     ]);
 
     let maxNum = 0;
-    for (const row of [...schemaRows, ...tenantRows]) {
-      const match = row.schema_name?.match(/^tenant_(\d+)$/);
+    // Extract 6-digit numeric sequence across all existing schemata and tenant codes
+    for (const row of schemaRows) {
+      const match = row.schema_name?.match(/^tenant_.*_?(\d{6})$/);
       if (match) {
         const num = parseInt(match[1], 10);
         if (!isNaN(num) && num > maxNum) {
@@ -541,13 +551,44 @@ export class TenantProvisioningService {
       }
     }
 
-    let candidateNum = maxNum + 1;
-    let candidateName = `tenant_${String(candidateNum).padStart(6, '0')}`;
+    for (const row of tenantRows) {
+      if (row.schema_name) {
+        const match = row.schema_name.match(/^tenant_.*_?(\d{6})$/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (!isNaN(num) && num > maxNum) {
+            maxNum = num;
+          }
+        }
+      }
+      if (row.code) {
+        const match = row.code.match(/^SAL-?(\d+)$/i);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (!isNaN(num) && num > maxNum) {
+            maxNum = num;
+          }
+        }
+      }
+    }
+
+    let candidateNum: number;
+    if (explicitTenantId !== undefined && explicitTenantId !== null) {
+      try {
+        candidateNum = extractTenantNumericId(explicitTenantId);
+      } catch {
+        candidateNum = maxNum + 1;
+      }
+    } else {
+      candidateNum = maxNum + 1;
+    }
+
+    let candidateName = buildTenantSchemaName(salonName || 'salon', candidateNum);
 
     // Guarantee that the chosen schema name does not physically exist
     while (await this.schemaExists(candidateName)) {
       candidateNum++;
-      candidateName = `tenant_${String(candidateNum).padStart(6, '0')}`;
+      candidateName = buildTenantSchemaName(salonName || 'salon', candidateNum);
     }
 
     return candidateName;

@@ -21,12 +21,15 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "db:migrate": "prisma migrate deploy",
+    "db:deploy": "ts-node --transpile-only scripts/db-deploy.ts",
     "db:seed": "prisma db seed",
     "db:seed:features": "ts-node --transpile-only scripts/seed-feature-catalog.ts",
     "db:setup": "ts-node --transpile-only scripts/db-setup.ts",
     "db:status": "ts-node --transpile-only scripts/db-status.ts",
     "db:tenant:migrate": "ts-node --transpile-only scripts/db-tenant-migrate.ts",
-    "db:tenant:seed": "ts-node --transpile-only scripts/db-tenant-seed.ts"
+    "db:tenant:seed": "ts-node --transpile-only scripts/db-tenant-seed.ts",
+    "db:tenant:verify": "ts-node --transpile-only scripts/db-tenant-verify.ts",
+    "db:tenant-schema-rename": "ts-node --transpile-only scripts/db-tenant-schema-rename.ts"
   },
   "prisma": {
     "seed": "node prisma/seed-runner.js"

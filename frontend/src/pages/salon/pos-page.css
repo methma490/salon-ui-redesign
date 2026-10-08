@@ -3181,84 +3181,38 @@
   .pos-wizard-back { flex: 0 0 auto; border: 1px solid #dce3ed; background: #fff; color: #15213a; }
   .pos-wizard-save { flex: 0 0 auto; border: 1px solid color-mix(in srgb, var(--pos-primary) 24%, white); background: var(--pos-primary-light); color: var(--pos-primary); }
   .pos-wizard-save:disabled { opacity: 0.45; }
+  .pos-wizard-footer.is-step-1 .pos-wizard-save { flex: 1; }
   .pos-wizard-continue { min-width: 0; flex: 1; border: 0; background: var(--pos-primary); color: #fff; }
   .pos-wizard-continue:disabled { opacity: 0.48; }
   .pos-wizard-continue span { font-size: 1.1rem; }
 
-  .pos-employee-sheet {
-    top: auto !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    max-width: none !important;
-    max-height: min(78dvh, 640px);
-    margin: 0 !important;
-    padding: 1.15rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px)) !important;
-    border-radius: 20px 20px 0 0 !important;
-    transform: none !important;
-    translate: none !important;
-    overflow-y: auto;
-  }
-  .pos-employee-sheet-handle { position: absolute; top: 0.45rem; left: calc(50% - 1.2rem); width: 2.4rem; height: 0.25rem; border-radius: 999px; background: #c7cfdb; }
-  .pos-employee-sheet .pos-assign-list { max-height: 48dvh; padding-bottom: 0.2rem; }
-  .pos-employee-sheet .pos-assign-option { min-height: 3.75rem; border-radius: 13px; }
-
-  .pos-mix-sheet {
-    top: auto !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    max-width: none !important;
-    max-height: min(82dvh, 680px);
-    margin: 0 !important;
-    padding: 1.2rem 1rem calc(0.85rem + env(safe-area-inset-bottom, 0px)) !important;
-    border-radius: 20px 20px 0 0 !important;
-    transform: none !important;
-    translate: none !important;
-    overflow-y: auto;
-  }
-  .pos-new-customer-sheet {
-    top: auto !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    max-width: none !important;
-    max-height: min(82dvh, 680px) !important;
-    margin: 0 !important;
-    padding: 1.35rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px)) !important;
-    border-radius: 20px 20px 0 0 !important;
-    transform: none !important;
-    translate: none !important;
-    overflow-y: auto;
-  }
-  .pos-new-customer-sheet::before {
-    position: absolute;
-    top: 0.45rem;
-    left: calc(50% - 1.2rem);
-    width: 2.4rem;
-    height: 0.25rem;
-    border-radius: 999px;
-    background: #c7cfdb;
-    content: '';
-  }
+  .pos-employee-sheet,
+  .pos-mix-sheet,
+  .pos-new-customer-sheet,
   .pos-draft-history-sheet {
-    top: auto !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    max-width: none !important;
-    max-height: min(82dvh, 680px) !important;
-    margin: 0 !important;
-    padding: 1.35rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px)) !important;
-    border-radius: 20px 20px 0 0 !important;
-    transform: none !important;
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) !important;
+    --tw-translate-x: -50% !important;
+    --tw-translate-y: -50% !important;
     translate: none !important;
+    width: calc(100% - 2rem) !important;
+    max-width: 28rem !important;
+    max-height: min(85vh, 640px) !important;
+    margin: 0 !important;
+    padding: 1.5rem 1.25rem !important;
+    border-radius: 18px !important;
+    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.22) !important;
     overflow-y: auto !important;
+    box-sizing: border-box !important;
   }
+  .pos-employee-sheet-handle { display: none !important; }
+  .pos-new-customer-sheet::before { display: none !important; }
+  .pos-employee-sheet .pos-assign-list { max-height: 48dvh; padding-bottom: 0.2rem; }
+  .pos-employee-sheet .pos-assign-option { min-height: 3.5rem; border-radius: 13px; }
   .pos-mix-sheet .pos-employee-sheet-handle { top: 0.45rem; }
   .pos-mix-sheet-description { margin: 0.1rem 0 0; color: #687992; font-size: 0.75rem; }
   .pos-mix-sheet-body { padding-top: 0.8rem; }

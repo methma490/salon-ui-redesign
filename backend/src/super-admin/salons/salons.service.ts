@@ -284,7 +284,7 @@ export class SalonsService {
         try {
           // 1. Create tenant record with PROVISIONING status
           const tenantCode = await this.generateTenantCode();
-          const schemaName = await this.provisioning.generateSchemaName();
+          const schemaName = await this.provisioning.generateSchemaName(dto.name, tenantCode);
 
           tenant = await this.prisma.tenant.create({
             data: {
