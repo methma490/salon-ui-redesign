@@ -25,6 +25,8 @@ import { UpdateSalonFeaturesDto } from './dto/update-salon-features.dto';
 import { UpdateSalonStatusDto } from './dto/update-salon-status.dto';
 import { SalonsService } from './salons.service';
 
+import { DemoResetService } from '../../database/demo/demo-reset.service';
+
 const getClientIp = (req: Request): string => {
   const forwarded = req.headers['x-forwarded-for'];
   if (typeof forwarded === 'string') return forwarded.split(',')[0].trim();
@@ -38,7 +40,25 @@ export class SalonsController {
   constructor(
     private readonly salonsService: SalonsService,
     private readonly auditLogsService: SuperAdminAuditLogsService,
+    private readonly demoResetService: DemoResetService,
   ) {}
+
+  @Post(':salonId/reset-demo')
+  async resetDemo(
+    @Param('salonId', ParseUUIDPipe) salonId: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() req: Request,
+  ) {
+    const result = await this.demoResetService.resetDemoTenant(salonId, {
+      performedBy: user.email,
+      ipAddress: getClientIp(req),
+      userAgent: req.headers['user-agent'],
+    });
+    return {
+      message: 'Demo salon data restored successfully.',
+      ...result,
+    };
+  }
 
   @Get()
   findAll(@Query() query: ListSalonsQueryDto) {

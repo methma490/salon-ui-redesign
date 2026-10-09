@@ -19,10 +19,11 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "moduleResolution": "node",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "types": ["jest", "node"]
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "test", "scripts", "prisma", "**/*spec.ts"],
+  "include": ["src/**/*", "test/**/*"],
+  "exclude": ["node_modules", "dist", "scripts", "prisma"],
   "ts-node": {
     "transpileOnly": true,
     "compilerOptions": {

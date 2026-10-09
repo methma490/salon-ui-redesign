@@ -35,6 +35,10 @@ export interface AuthUserResponse {
   tenant?: {
     id: string;
     name: string;
+    logoUrl?: string | null;
+    isDemo?: boolean;
+    demoProfile?: string | null;
+    lastDemoResetAt?: Date | null;
   } | null;
   subscription?: {
     plan: string;

@@ -15,7 +15,7 @@ import {
   User,
 } from 'lucide-react';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -29,11 +29,19 @@ import {
 } from '@/features/plans/lib/plan-utils';
 import { usePublicPlans } from '@/features/plans/hooks/usePlans';
 import { websiteHomeUrl, websitePricingUrl } from '@/config/website-url';
+import type { BillingCycle } from '@/features/plans/types/plan.types';
 
 export default function SignupPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { planId } = useParams<{ planId: string }>();
   const { data: plans = [], isLoading } = usePublicPlans();
+
+  const [selectedCycle, setSelectedCycle] = useState<BillingCycle>(() => {
+    const cycleParam = searchParams.get('cycle') || searchParams.get('billingCycle');
+    return cycleParam?.toUpperCase() === 'YEARLY' ? 'YEARLY' : 'MONTHLY';
+  });
+
   const plan = useMemo(() => {
     if (!planId || !plans.length) return undefined;
     const trimmed = planId.trim();
@@ -60,6 +68,21 @@ export default function SignupPage() {
 
     return undefined;
   }, [plans, planId]);
+
+  const activePlanPrice = useMemo(() => {
+    if (!plan) return undefined;
+    if (plan.prices && plan.prices.length > 0) {
+      const match = plan.prices.find((p) => p.billingCycle === selectedCycle);
+      if (match) return match;
+    }
+    return {
+      id: undefined,
+      billingCycle: selectedCycle,
+      price: plan.price,
+      currency: plan.currency,
+      trialDays: 21,
+    };
+  }, [plan, selectedCycle]);
 
   // Stepper: 1: Salon details, 2: Admin account, 3: Payment
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -194,7 +217,8 @@ export default function SignupPage() {
     try {
       const result = await signupApi.trialSignup({
         planId: plan.id,
-        billingCycle: plan.billingCycle as 'MONTHLY' | 'YEARLY',
+        planPriceId: activePlanPrice?.id,
+        billingCycle: selectedCycle,
         salon: {
           name: salonName.trim(),
           email: salonEmail.trim() || undefined,
@@ -257,7 +281,7 @@ export default function SignupPage() {
             <span>{plan.name}</span>
             <span className="text-emerald-400">·</span>
             <span className="font-bold text-emerald-700">
-              {formatPrice(plan.price, plan.currency)}
+              {formatPrice(activePlanPrice?.price ?? plan.price, activePlanPrice?.currency ?? plan.currency)} / {billingCycleLabel(selectedCycle)}
             </span>
           </div>
         )}
@@ -289,11 +313,37 @@ export default function SignupPage() {
                         {plan.name}
                       </h2>
                       <p className="mt-1 text-base font-semibold text-white/95">
-                        {formatPrice(plan.price, plan.currency)}{' '}
+                        {formatPrice(activePlanPrice?.price ?? plan.price, activePlanPrice?.currency ?? plan.currency)}{' '}
                         <span className="text-sm font-normal text-white/75">
-                          / {billingCycleLabel(plan.billingCycle)}
+                          / {billingCycleLabel(selectedCycle)}
                         </span>
                       </p>
+
+                      {/* Billing Cycle Toggle on Card */}
+                      <div className="mt-4 flex items-center gap-1 rounded-xl bg-black/40 p-1 backdrop-blur-sm">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCycle('MONTHLY')}
+                          className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all ${
+                            selectedCycle === 'MONTHLY'
+                              ? 'bg-emerald-600 text-white shadow'
+                              : 'text-white/70 hover:text-white'
+                          }`}
+                        >
+                          Monthly
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCycle('YEARLY')}
+                          className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all ${
+                            selectedCycle === 'YEARLY'
+                              ? 'bg-emerald-600 text-white shadow'
+                              : 'text-white/70 hover:text-white'
+                          }`}
+                        >
+                          Yearly
+                        </button>
+                      </div>
                     </>
                   ) : (
                     <div className="mt-2 h-8 w-32 animate-pulse rounded bg-white/20" />
@@ -779,7 +829,7 @@ export default function SignupPage() {
                       <div className="flex items-center justify-between pt-1 text-xs text-slate-500">
                         <span>Price after trial</span>
                         <span>
-                          {formatPrice(plan.price, plan.currency)} / {billingCycleLabel(plan.billingCycle)}
+                          {formatPrice(activePlanPrice?.price ?? plan.price, activePlanPrice?.currency ?? plan.currency)} / {billingCycleLabel(selectedCycle)}
                         </span>
                       </div>
                     </div>

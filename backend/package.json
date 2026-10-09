@@ -29,7 +29,9 @@
     "db:tenant:migrate": "ts-node --transpile-only scripts/db-tenant-migrate.ts",
     "db:tenant:seed": "ts-node --transpile-only scripts/db-tenant-seed.ts",
     "db:tenant:verify": "ts-node --transpile-only scripts/db-tenant-verify.ts",
-    "db:tenant-schema-rename": "ts-node --transpile-only scripts/db-tenant-schema-rename.ts"
+    "db:tenant-schema-rename": "ts-node --transpile-only scripts/db-tenant-schema-rename.ts",
+    "db:demo:provision": "ts-node --transpile-only scripts/db-demo-provision.ts",
+    "db:demo:reset": "ts-node --transpile-only scripts/db-demo-reset.ts"
   },
   "prisma": {
     "seed": "node prisma/seed-runner.js"

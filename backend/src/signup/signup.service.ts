@@ -162,7 +162,20 @@ export class SignupService {
       throw new BadRequestException('Custom plans require platform admin setup');
     }
 
-    const planPrice = this.plansService.getDefaultPlanPrice(plan);
+    let planPrice = dto.planPriceId
+      ? await this.prisma.planPrice.findFirst({
+          where: { id: dto.planPriceId, planId: plan.id, isActive: true },
+        })
+      : dto.billingCycle
+        ? await this.prisma.planPrice.findFirst({
+            where: { planId: plan.id, billingCycle: dto.billingCycle, isActive: true },
+          })
+        : null;
+
+    if (!planPrice) {
+      planPrice = this.plansService.getDefaultPlanPrice(plan);
+    }
+
     const price = Number(planPrice.price);
     if (price <= 0) {
       throw new BadRequestException('This plan requires custom pricing');

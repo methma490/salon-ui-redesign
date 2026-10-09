@@ -2,6 +2,8 @@ import api from '@/api/axios';
 
 export interface SignupPayload {
   planId: string;
+  planPriceId?: string;
+  billingCycle?: 'MONTHLY' | 'YEARLY';
   salon: {
     name: string;
     email?: string;

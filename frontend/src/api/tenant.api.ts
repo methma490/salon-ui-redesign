@@ -900,6 +900,13 @@ export interface DashboardData {
 }
 
 export const tenantApi = {
+  demo: {
+    reset: () =>
+      api
+        .post<{ success: boolean; message: string; lastDemoResetAt: string }>('/tenant/demo/reset')
+        .then((r) => r.data),
+  },
+
   features: Object.assign(
     () => api.get<string[]>('/tenant/features').then((r) => r.data),
     {

@@ -235,6 +235,8 @@ export const salonsApi = {
     api.patch<SalonDetails>(`/super-admin/salons/${id}/status`, { status }).then((r) => r.data),
   updateFeatures: (id: string, features: string[]) =>
     api.put<SalonDetails>(`/super-admin/salons/${id}/features`, { features }).then((r) => r.data),
+  resetDemo: (id: string) =>
+    api.post<{ success: boolean; message: string }>(`/super-admin/salons/${id}/reset-demo`).then((r) => r.data),
 };
 
 export const featuresApi = {

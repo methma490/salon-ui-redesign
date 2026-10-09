@@ -3,15 +3,18 @@ import {
   ArrowLeft,
   Check,
   CheckCircle2,
+  ChevronRight,
   Eye,
   FileText,
   History,
   Plus,
   Printer,
   Scissors,
+  Search,
   Send,
   ShoppingCart,
   Trash2,
+  UserCheck,
   X,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -21,9 +24,12 @@ import { useDebouncedSearch } from '@/hooks/useDebounce';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -207,6 +213,17 @@ export default function PosPage() {
   const [catalogSearch, setCatalogSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
 
+  const hasInventory = useMemo(
+    () => user?.features?.includes('INVENTORY') ?? false,
+    [user?.features],
+  );
+
+  useEffect(() => {
+    if (!hasInventory && catalogTab === 'products') {
+      setCatalogTab('services');
+    }
+  }, [hasInventory, catalogTab]);
+
   const [branchId, setBranchId] = useState<string>(() =>
     ribbonBranchId !== 'all' ? ribbonBranchId : activeBranches[0]?.id || '',
   );
@@ -249,6 +266,7 @@ export default function PosPage() {
   const [draftHistoryOpen, setDraftHistoryOpen] = useState(false);
   const [loadingDraftId, setLoadingDraftId] = useState<string | null>(null);
   const [pendingServiceId, setPendingServiceId] = useState('');
+  const [assignEmployeeSearch, setAssignEmployeeSearch] = useState('');
 
   const { data: settings } = useQuery({
     queryKey: ['tenant-settings'],
@@ -317,6 +335,17 @@ export default function PosPage() {
   const hasMultipleEmployees = employees.length > 1;
   const hasNoEmployees = employees.length === 0;
 
+  const filteredAssignEmployees = useMemo(() => {
+    const q = assignEmployeeSearch.trim().toLowerCase();
+    if (!q) return employees;
+    return employees.filter(
+      (e) =>
+        e.name.toLowerCase().includes(q) ||
+        (e.designation && e.designation.toLowerCase().includes(q)) ||
+        (e.code && e.code.toLowerCase().includes(q)),
+    );
+  }, [employees, assignEmployeeSearch]);
+
   /** Distinct performers on cart services — used only for backend sale roster (not commission). */
   const derivedSaleEmployees = useMemo(() => {
     const ids: string[] = [];
@@ -350,6 +379,7 @@ export default function PosPage() {
   const { data: products = [] } = useQuery({
     queryKey: ['products', branchId],
     queryFn: () => tenantApi.products.list(branchId ? { branchId, all: true } : { all: true }),
+    enabled: hasInventory,
   });
 
   const { data: posDrafts = [], isLoading: draftsLoading } = useQuery({
@@ -1653,7 +1683,9 @@ export default function PosPage() {
             </div>
             <div className="pos-wizard-catalog-tabs">
               <button type="button" className={catalogTab === 'services' ? 'is-selected' : ''} onClick={() => { setCatalogTab('services'); setCatalogSearch(''); }}>Services ({activeServices.length})</button>
-              <button type="button" className={catalogTab === 'products' ? 'is-selected' : ''} onClick={() => { setCatalogTab('products'); setCatalogSearch(''); }}>Products ({activeProducts.length})</button>
+              {hasInventory && (
+                <button type="button" className={catalogTab === 'products' ? 'is-selected' : ''} onClick={() => { setCatalogTab('products'); setCatalogSearch(''); }}>Products ({activeProducts.length})</button>
+              )}
             </div>
             <input className="pos-wizard-search" type="search" placeholder={`Search ${catalogTab}…`} value={catalogSearch} onChange={(event) => setCatalogSearch(event.target.value)} />
             <div className="pos-wizard-categories">
@@ -1850,17 +1882,19 @@ export default function PosPage() {
                 Services
                 <span className="pos-tab-count">{activeServices.length}</span>
               </button>
-              <button
-                type="button"
-                className={`pos-catalog-tab ${catalogTab === 'products' ? 'pos-catalog-tab-active' : ''}`}
-                onClick={() => {
-                  setCatalogTab('products');
-                  setCatalogSearch('');
-                }}
-              >
-                Products
-                <span className="pos-tab-count">{activeProducts.length}</span>
-              </button>
+              {hasInventory && (
+                <button
+                  type="button"
+                  className={`pos-catalog-tab ${catalogTab === 'products' ? 'pos-catalog-tab-active' : ''}`}
+                  onClick={() => {
+                    setCatalogTab('products');
+                    setCatalogSearch('');
+                  }}
+                >
+                  Products
+                  <span className="pos-tab-count">{activeProducts.length}</span>
+                </button>
+              )}
             </div>
             <div className="pos-search">
               <input
@@ -2116,51 +2150,139 @@ export default function PosPage() {
       <Dialog
         open={!!pendingService && hasMultipleEmployees}
         onOpenChange={(open) => {
-          if (!open) setPendingServiceId('');
+          if (!open) {
+            setPendingServiceId('');
+            setAssignEmployeeSearch('');
+          }
         }}
       >
-        <DialogContent className="pos-assign-dialog pos-employee-sheet sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Assign employee</DialogTitle>
-          </DialogHeader>
-          {pendingService && (
-            <div className="pos-assign-body">
-              <div className="pos-assign-service">
-                <span className="pos-assign-service-icon">✂️</span>
-                <div>
-                  <div className="pos-assign-service-name">{pendingService.name}</div>
-                  <div className="pos-assign-service-price">
-                    {formatMoneyLkr(pendingService.price)}
-                    {pendingService.categoryName ? ` · ${pendingService.categoryName}` : ''}
-                  </div>
-                </div>
+        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-md p-0 overflow-hidden border border-border/80 shadow-2xl rounded-2xl bg-card">
+          <DialogHeader className="p-5 pb-3 sm:p-6 sm:pb-4 border-b border-border/60 bg-muted/20 text-left">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-medium shrink-0">
+                <UserCheck className="w-5 h-5 text-primary" />
               </div>
-              <p className="pos-assign-hint">Select who performed this service</p>
-              <div className="pos-assign-list">
-                {employees.map((e) => (
-                  <button
-                    key={e.id}
-                    type="button"
-                    className="pos-assign-option"
-                    onClick={() => addServiceToCart(pendingService.id, e.id)}
-                  >
-                    <span className="pos-assign-option-avatar">
-                      {e.name
-                        .split(' ')
-                        .map((p) => p[0])
-                        .join('')
-                        .slice(0, 2)
-                        .toUpperCase()}
-                    </span>
-                    <span className="pos-assign-option-text">
-                      <strong>{e.name}</strong>
-                      <span>{e.designation || e.code}</span>
-                    </span>
-                  </button>
-                ))}
+              <div>
+                <DialogTitle className="text-base sm:text-lg font-bold text-foreground">
+                  Assign Stylist
+                </DialogTitle>
+                <DialogDescription className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                  Select who performed this service
+                </DialogDescription>
               </div>
             </div>
-          )}
+
+            {pendingService && (
+              <div className="mt-3.5 flex items-center justify-between gap-3 p-3 rounded-xl bg-background border border-border/80 shadow-xs">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-200/60 dark:border-emerald-800/40">
+                    <Scissors className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-foreground truncate">
+                      {pendingService.name}
+                    </div>
+                    {pendingService.categoryName && (
+                      <div className="text-xs text-muted-foreground truncate">
+                        {pendingService.categoryName}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <Badge variant="secondary" className="font-semibold text-xs px-2.5 py-0.5 bg-primary/10 text-primary border-primary/20">
+                    {formatMoneyLkr(pendingService.price)}
+                  </Badge>
+                </div>
+              </div>
+            )}
+          </DialogHeader>
+
+          <div className="p-5 pt-3 sm:p-6 sm:pt-4 space-y-3">
+            {employees.length > 3 && (
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  placeholder="Search stylist by name or role..."
+                  value={assignEmployeeSearch}
+                  onChange={(e) => setAssignEmployeeSearch(e.target.value)}
+                  className="pl-9 pr-8 h-9 text-xs sm:text-sm rounded-lg bg-background"
+                  autoFocus={false}
+                />
+                {assignEmployeeSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setAssignEmployeeSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs p-1"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
+
+            <div className="space-y-1.5 max-h-[48vh] sm:max-h-[280px] overflow-y-auto pr-1">
+              {filteredAssignEmployees.length === 0 ? (
+                <div className="py-8 text-center text-xs sm:text-sm text-muted-foreground">
+                  No stylists found matching "{assignEmployeeSearch}"
+                </div>
+              ) : (
+                filteredAssignEmployees.map((e) => {
+                  const initials = e.name
+                    .split(' ')
+                    .map((p: string) => p[0])
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase();
+                  return (
+                    <button
+                      key={e.id}
+                      type="button"
+                      onClick={() => {
+                        addServiceToCart(pendingService!.id, e.id);
+                        setAssignEmployeeSearch('');
+                      }}
+                      className="w-full flex items-center justify-between p-3 rounded-xl border border-border/70 hover:border-primary/50 bg-background hover:bg-primary/5 active:scale-[0.99] transition-all duration-150 text-left group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-full bg-linear-to-br from-primary/80 to-primary text-primary-foreground flex items-center justify-center font-bold text-xs shrink-0 shadow-xs ring-2 ring-background">
+                          {initials}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                            {e.name}
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-xs text-muted-foreground truncate">
+                              {e.designation || e.code || 'Stylist'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all">
+                        <ChevronRight className="w-4 h-4" />
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="p-4 sm:p-5 pt-0 sm:pt-0 flex items-center justify-end gap-2 border-t border-border/40 bg-muted/10">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-xs sm:text-sm rounded-lg"
+              onClick={() => {
+                setPendingServiceId('');
+                setAssignEmployeeSearch('');
+              }}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

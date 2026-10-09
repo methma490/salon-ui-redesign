@@ -18,6 +18,9 @@ import { useSalons } from '@/features/salons/hooks/useSalons';
 import { useDebouncedSearch } from '@/hooks/useDebounce';
 import type { SalonFilters, SalonListItem, SalonStatus } from '@/features/salons/types/salon.types';
 import { ManageSubscriptionDialog } from '@/features/subscriptions/components/ManageSubscriptionDialog';
+import { RotateCcw } from 'lucide-react';
+import { toast } from 'sonner';
+import { salonsApi } from '@/api/axios';
 import {
   OpsEditButton,
   OpsError,
@@ -176,9 +179,16 @@ export default function SalonListPage() {
                 <article key={salon.id} className="emp-card">
                   <div className="emp-card-top">
                     <div>
-                      <Link to={`/super-admin/salons/${salon.id}`} className="emp-name-cell">
-                        {salon.name}
-                      </Link>
+                      <div className="flex items-center gap-1.5">
+                        <Link to={`/super-admin/salons/${salon.id}`} className="emp-name-cell">
+                          {salon.name}
+                        </Link>
+                        {salon.isDemo && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider bg-amber-500/20 text-amber-500 border border-amber-500/40">
+                            DEMO
+                          </span>
+                        )}
+                      </div>
                       <div className="emp-code">{salon.code}</div>
                     </div>
                     <StatusBadge status={salon.status} />
@@ -220,6 +230,27 @@ export default function SalonListPage() {
                     >
                       Features
                     </button>
+                    {salon.isDemo && (
+                      <button
+                        type="button"
+                        className="emp-btn emp-btn-secondary text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                        title="Reset demo tenant data to initial baseline"
+                        onClick={async () => {
+                          if (window.confirm(`Reset Demo Data for "${salon.name}"? All demonstration changes will be reverted to baseline.`)) {
+                            try {
+                              await salonsApi.resetDemo(salon.id);
+                              toast.success(`Demo data for ${salon.name} restored to baseline.`);
+                              void refetch();
+                            } catch (e: any) {
+                              toast.error(e?.response?.data?.message || 'Failed to reset demo data');
+                            }
+                          }
+                        }}
+                      >
+                        <RotateCcw className="h-3 w-3 mr-1 inline" />
+                        Reset
+                      </button>
+                    )}
                     <OpsToggleStatusButton
                       isActive={salon.status === 'ACTIVE'}
                       onClick={() => {
@@ -250,9 +281,16 @@ export default function SalonListPage() {
                   {salons.map((salon) => (
                     <tr key={salon.id}>
                       <td>
-                        <Link to={`/super-admin/salons/${salon.id}`} className="emp-name-cell">
-                          {salon.name}
-                        </Link>
+                        <div className="flex items-center gap-1.5">
+                          <Link to={`/super-admin/salons/${salon.id}`} className="emp-name-cell">
+                            {salon.name}
+                          </Link>
+                          {salon.isDemo && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wider bg-amber-500/20 text-amber-500 border border-amber-500/40">
+                              DEMO
+                            </span>
+                          )}
+                        </div>
                         <div className="emp-code">{salon.code}</div>
                       </td>
                       <td>
@@ -284,6 +322,26 @@ export default function SalonListPage() {
                       <td>{new Date(salon.createdAt).toLocaleDateString()}</td>
                       <td>
                         <div className="emp-actions">
+                          {salon.isDemo && (
+                            <button
+                              type="button"
+                              className="emp-link-btn text-amber-600 hover:text-amber-700"
+                              title="Reset demo salon data"
+                              onClick={async () => {
+                                if (window.confirm(`Reset Demo Data for "${salon.name}"? All demonstration changes will be reverted to baseline.`)) {
+                                  try {
+                                    await salonsApi.resetDemo(salon.id);
+                                    toast.success(`Demo data for ${salon.name} restored.`);
+                                    void refetch();
+                                  } catch (e: any) {
+                                    toast.error(e?.response?.data?.message || 'Failed to reset demo data');
+                                  }
+                                }
+                              }}
+                            >
+                              Reset
+                            </button>
+                          )}
                           <button
                             type="button"
                             className="emp-link-btn"

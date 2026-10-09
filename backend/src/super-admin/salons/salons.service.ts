@@ -521,6 +521,9 @@ export class SalonsService {
       email: salon.email,
       phone: salon.phone,
       status: salon.status,
+      isDemo: salon.isDemo,
+      demoProfile: salon.demoProfile,
+      lastDemoResetAt: salon.lastDemoResetAt,
       awaitingActivation,
       mainBranch: mainBranch
         ? {
@@ -566,6 +569,9 @@ export class SalonsService {
       email: salon.email,
       phone: salon.phone,
       status: salon.status,
+      isDemo: salon.isDemo,
+      demoProfile: salon.demoProfile,
+      lastDemoResetAt: salon.lastDemoResetAt,
       awaitingActivation,
       createdAt: salon.createdAt,
       updatedAt: salon.updatedAt,

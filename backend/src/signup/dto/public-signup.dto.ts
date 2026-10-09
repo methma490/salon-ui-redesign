@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsEmail,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -52,6 +53,14 @@ export class PublicSignupDto {
   @IsUUID()
   planId!: string;
 
+  @IsOptional()
+  @IsUUID()
+  planPriceId?: string;
+
+  @IsOptional()
+  @IsEnum(['MONTHLY', 'YEARLY'])
+  billingCycle?: 'MONTHLY' | 'YEARLY';
+
   @ValidateNested()
   @Type(() => SignupSalonDto)
   salon!: SignupSalonDto;
@@ -60,3 +69,4 @@ export class PublicSignupDto {
   @Type(() => SignupAdminDto)
   admin!: SignupAdminDto;
 }
+

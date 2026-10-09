@@ -26,6 +26,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { SmsModule } from './sms/sms.module';
 import { StorageModule } from './common/storage/storage.module';
 import { SuperAdminAuditLogsModule } from './super-admin/audit-logs/super-admin-audit-logs.module';
+import { DemoModule } from './database/demo/demo.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { SuperAdminAuditLogsModule } from './super-admin/audit-logs/super-admin-
     InvoicesModule,
     NotificationsModule,
     SmsModule,
+    DemoModule,
   ],
   controllers: [AppController],
   providers: [

@@ -44,6 +44,14 @@ export class CreateTrialSubscriptionForTenantDto extends CreateTrialSubscription
 
 export class ActivateSubscriptionDto {
   @IsOptional()
+  @IsUUID()
+  planPriceId?: string;
+
+  @IsOptional()
+  @IsEnum(['MONTHLY', 'YEARLY'])
+  billingCycle?: 'MONTHLY' | 'YEARLY';
+
+  @IsOptional()
   @IsString()
   @MaxLength(50)
   paymentMethod?: string;
@@ -60,6 +68,14 @@ export class ActivateSubscriptionForTenantDto extends ActivateSubscriptionDto {
 }
 
 export class RenewSubscriptionDto {
+  @IsOptional()
+  @IsUUID()
+  planPriceId?: string;
+
+  @IsOptional()
+  @IsEnum(['MONTHLY', 'YEARLY'])
+  billingCycle?: 'MONTHLY' | 'YEARLY';
+
   @IsOptional()
   @IsString()
   @MaxLength(50)

@@ -301,29 +301,45 @@ export class PaymentProcessorService {
         // Signup fulfillment is handled by SignupService via callback registration
         return;
 
-      case PaymentPurpose.SUBSCRIPTION_ACTIVATE:
+      case PaymentPurpose.SUBSCRIPTION_ACTIVATE: {
+        const metadata = order.metadata as {
+          planPriceId?: string;
+          billingCycle?: 'MONTHLY' | 'YEARLY';
+        } | null;
+
         await this.subscriptionsService.activateSubscription(
           order.subscriptionId,
           order.tenantId,
           {
+            planPriceId: metadata?.planPriceId,
+            billingCycle: metadata?.billingCycle,
             paymentMethod: order.gateway,
             paymentReference: transactionId,
           },
           { fromPaymentProcessor: true },
         );
         return;
+      }
 
-      case PaymentPurpose.SUBSCRIPTION_RENEW:
+      case PaymentPurpose.SUBSCRIPTION_RENEW: {
+        const metadata = order.metadata as {
+          planPriceId?: string;
+          billingCycle?: 'MONTHLY' | 'YEARLY';
+        } | null;
+
         await this.subscriptionsService.renewSubscription(
           order.subscriptionId,
           order.tenantId,
           {
+            planPriceId: metadata?.planPriceId,
+            billingCycle: metadata?.billingCycle,
             paymentMethod: order.gateway,
             paymentReference: transactionId,
           },
           { fromPaymentProcessor: true },
         );
         return;
+      }
 
       case PaymentPurpose.SUBSCRIPTION_UPGRADE: {
         const metadata = order.metadata as {

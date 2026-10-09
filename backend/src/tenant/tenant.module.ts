@@ -9,10 +9,11 @@ import { TenantFeatureService } from './services/tenant-feature.service';
 import { TenantPermissionService } from './services/tenant-permission.service';
 import { TenantSchemaService } from './services/tenant-schema.service';
 import { TenantTestController } from './tenant-test.controller';
+import { TenantDemoController } from './tenant-demo.controller';
 
 @Module({
   imports: [forwardRef(() => SubscriptionsModule)],
-  controllers: [TenantTestController],
+  controllers: [TenantTestController, TenantDemoController],
   providers: [
     TenantContextService,
     TenantSchemaService,
