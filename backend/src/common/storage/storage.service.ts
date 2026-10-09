@@ -103,25 +103,34 @@ export class StorageService {
   async deleteFile(fileUrlOrPath: string | null | undefined): Promise<void> {
     if (!fileUrlOrPath) return;
 
-    if (
-      this.s3Client &&
-      (fileUrlOrPath.startsWith('http://') || fileUrlOrPath.startsWith('https://'))
-    ) {
+    if (this.s3Client) {
       try {
-        const url = new URL(fileUrlOrPath);
-        const key = url.pathname.replace(/^\/+/, '');
-        await this.s3Client.send(
-          new DeleteObjectCommand({
-            Bucket: this.bucket,
-            Key: key,
-          }),
-        );
+        let key: string | null = null;
+        if (fileUrlOrPath.startsWith('http://') || fileUrlOrPath.startsWith('https://')) {
+          const url = new URL(fileUrlOrPath);
+          let rawKey = url.pathname.replace(/^\/+/, '');
+          if (rawKey.startsWith(`${this.bucket}/`)) {
+            rawKey = rawKey.slice(this.bucket.length + 1);
+          }
+          key = rawKey;
+        } else if (fileUrlOrPath.startsWith(this.prefix)) {
+          key = fileUrlOrPath.replace(/^\/+/, '');
+        }
+
+        if (key) {
+          await this.s3Client.send(
+            new DeleteObjectCommand({
+              Bucket: this.bucket,
+              Key: key,
+            }),
+          );
+          return;
+        }
       } catch (err) {
         this.logger.warn(
           `Failed to delete file from DigitalOcean Spaces (${fileUrlOrPath}): ${(err as Error).message}`,
         );
       }
-      return;
     }
 
     // Local file cleanup

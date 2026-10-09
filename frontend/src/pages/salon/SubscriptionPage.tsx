@@ -495,7 +495,7 @@ export default function SubscriptionPage() {
 
   const handlePayHereCheckout = async (
     purpose: 'SUBSCRIPTION_ACTIVATE' | 'SUBSCRIPTION_RENEW' | 'SUBSCRIPTION_UPGRADE',
-    options?: { planId?: string; planPriceId?: string },
+    options?: { planId?: string; planPriceId?: string; billingCycle?: 'MONTHLY' | 'YEARLY' },
   ) => {
     if (!subscription || !isSalonAdmin) return;
     setCheckoutLoading(true);
@@ -507,6 +507,7 @@ export default function SubscriptionPage() {
         purpose,
         planId: options?.planId,
         planPriceId: options?.planPriceId,
+        billingCycle: options?.billingCycle,
       });
       redirectToPayHereCheckout(result.checkout);
     } catch (err) {
@@ -515,8 +516,6 @@ export default function SubscriptionPage() {
       setCheckoutLoading(false);
     }
   };
-
-
 
   const handleCancel = async () => {
     if (!subscription || !isSalonAdmin) return;
@@ -541,17 +540,21 @@ export default function SubscriptionPage() {
     }
   };
 
-  const handlePlanChange = async (planId: string) => {
+  const handlePlanChange = async (options: {
+    planId: string;
+    planPriceId?: string;
+    billingCycle?: 'MONTHLY' | 'YEARLY';
+  }) => {
     if (!subscription || !isSalonAdmin || !planAction) return;
 
     try {
       if (planAction === 'upgrade') {
         setPlanAction(null);
-        await handlePayHereCheckout('SUBSCRIPTION_UPGRADE', { planId });
+        await handlePayHereCheckout('SUBSCRIPTION_UPGRADE', options);
         return;
       }
 
-      await mutations.scheduleDowngrade.mutateAsync({ planId });
+      await mutations.scheduleDowngrade.mutateAsync(options);
       toast.success('Downgrade scheduled for end of billing period.');
       setPlanAction(null);
     } catch (err) {
@@ -1254,49 +1257,29 @@ export default function SubscriptionPage() {
 
 
       <PlanChangeDialog
-
         open={planAction === 'upgrade'}
-
         onOpenChange={(open) => !open && setPlanAction(null)}
-
         title="Upgrade Plan"
-
         description="Choose a higher plan. You will pay the prorated difference via PayHere."
-
         plans={publicPlans}
-
         currentPlanCode={subscription?.planCode ?? ''}
-
+        currentBillingCycle={(subscription?.billingCycle as 'MONTHLY' | 'YEARLY') ?? 'MONTHLY'}
         mode="upgrade"
-
         isPending={checkoutLoading}
-
-        onConfirm={(planId) => void handlePlanChange(planId)}
-
+        onConfirm={(options) => void handlePlanChange(options)}
       />
 
-
-
       <PlanChangeDialog
-
         open={planAction === 'downgrade'}
-
         onOpenChange={(open) => !open && setPlanAction(null)}
-
         title="Downgrade Plan"
-
         description="Choose a lower plan. The change applies at the end of your billing period."
-
         plans={publicPlans}
-
         currentPlanCode={subscription?.planCode ?? ''}
-
+        currentBillingCycle={(subscription?.billingCycle as 'MONTHLY' | 'YEARLY') ?? 'MONTHLY'}
         mode="downgrade"
-
         isPending={mutations.scheduleDowngrade.isPending}
-
-        onConfirm={(planId) => void handlePlanChange(planId)}
-
+        onConfirm={(options) => void handlePlanChange(options)}
       />
 
     </div>

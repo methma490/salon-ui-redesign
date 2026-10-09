@@ -599,6 +599,14 @@ export class EmployeesService {
         }
       }
 
+      if (dto.photoUrl !== undefined && employee.photoUrl && employee.photoUrl !== dto.photoUrl) {
+        try {
+          await this.storageService.deleteFile(employee.photoUrl);
+        } catch {
+          // Non-fatal cleanup
+        }
+      }
+
       await tx.$queryRawUnsafe(
         `UPDATE ${employees}
          SET name = COALESCE($2, name),
@@ -612,7 +620,7 @@ export class EmployeesService {
              epf_enabled = COALESCE($10::boolean, epf_enabled),
              etf_enabled = COALESCE($11::boolean, etf_enabled),
              max_advance_percentage = COALESCE($12::numeric, max_advance_percentage),
-             photo_url = COALESCE($13, photo_url),
+             photo_url = CASE WHEN $13::boolean THEN $14 ELSE photo_url END,
              updated_at = NOW()
          WHERE id = $1::uuid`,
         id,
@@ -627,7 +635,8 @@ export class EmployeesService {
         dto.epfEnabled ?? null,
         dto.etfEnabled ?? null,
         dto.maxAdvancePercentage ?? null,
-        dto.photoUrl ?? null,
+        dto.photoUrl !== undefined,
+        dto.photoUrl ? dto.photoUrl : null,
       );
 
       await logAudit(tx, schemaName, {
@@ -749,6 +758,14 @@ export class EmployeesService {
       }
 
       await tx.$queryRawUnsafe(`DELETE FROM ${employees} WHERE id = $1::uuid`, id);
+
+      if (emp.photoUrl) {
+        try {
+          await this.storageService.deleteFile(emp.photoUrl);
+        } catch {
+          // Non-fatal cleanup
+        }
+      }
 
       await logAudit(tx, schemaName, {
         userId,

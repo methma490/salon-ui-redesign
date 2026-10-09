@@ -75,8 +75,15 @@ export type PaymentPurpose =
 export const tenantSubscriptionsApi = {
   getMe: () => api.get<TenantSubscriptionContext>('/subscriptions/me').then((r) => r.data),
 
-  renew: (subscriptionId: string, data?: { paymentMethod?: string; paymentReference?: string }) =>
-    api.post(`/subscriptions/${subscriptionId}/renew`, data ?? {}).then((r) => r.data),
+  renew: (
+    subscriptionId: string,
+    data?: {
+      paymentMethod?: string;
+      paymentReference?: string;
+      planPriceId?: string;
+      billingCycle?: 'MONTHLY' | 'YEARLY';
+    },
+  ) => api.post(`/subscriptions/${subscriptionId}/renew`, data ?? {}).then((r) => r.data),
 
   cancel: (subscriptionId: string) =>
     api.post(`/subscriptions/${subscriptionId}/cancel`).then((r) => r.data),
@@ -103,6 +110,7 @@ export const tenantSubscriptionsApi = {
     purpose: PaymentPurpose;
     planId?: string;
     planPriceId?: string;
+    billingCycle?: 'MONTHLY' | 'YEARLY';
   }) =>
     api
       .post<{

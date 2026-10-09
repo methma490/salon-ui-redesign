@@ -231,10 +231,21 @@ export class SubscriptionsService {
       }
     }
 
+    const planPrice = await this.resolvePlanPrice(
+      subscription.planId,
+      dto.planPriceId,
+      dto.billingCycle ?? (subscription.billingCycle as BillingCycle),
+    ).catch(() => null);
+
+    const price = planPrice?.price ?? subscription.price;
+    const currency = planPrice?.currency ?? subscription.currency;
+    const cycle = planPrice?.billingCycle ?? (subscription.billingCycle as BillingCycle);
+    const planPriceId = planPrice?.id ?? subscription.planPriceId;
+
     const paidAt = new Date();
     const fromStatus = subscription.status;
     const startDate = paidAt;
-    const endDate = extendBillingPeriod(paidAt, subscription.billingCycle);
+    const endDate = extendBillingPeriod(paidAt, cycle);
 
     const { subscription: updated, recordedPayment } = await this.prisma.$transaction(async (tx) => {
       let paymentInfo: {
@@ -246,8 +257,8 @@ export class SubscriptionsService {
         paymentInfo = await this.recordSubscriptionPayment(tx, {
           tenantId,
           subscriptionId,
-          amount: subscription.price,
-          currency: subscription.currency,
+          amount: price,
+          currency,
           purpose: PaymentPurpose.SUBSCRIPTION_ACTIVATE,
           paymentMethod: dto.paymentMethod ?? 'MANUAL',
           paymentReference: dto.paymentReference,
@@ -263,6 +274,10 @@ export class SubscriptionsService {
       const result = await tx.subscription.update({
         where: { id: subscriptionId },
         data: {
+          planPriceId,
+          billingCycle: cycle,
+          price,
+          currency,
           status: SubscriptionStatus.ACTIVE,
           startDate,
           endDate,
@@ -282,8 +297,8 @@ export class SubscriptionsService {
         fromStatus,
         toStatus: SubscriptionStatus.ACTIVE,
         toPlanId: subscription.planId,
-        toPlanPriceId: subscription.planPriceId,
-        metadata: { startDate, endDate },
+        toPlanPriceId: planPriceId,
+        metadata: { startDate, endDate, billingCycle: cycle },
       });
 
       return { subscription: result, recordedPayment: paymentInfo };
@@ -342,13 +357,24 @@ export class SubscriptionsService {
       return this.renewWithPendingPlanChange(subscription, tenantId, dto, options);
     }
 
+    const planPrice = await this.resolvePlanPrice(
+      subscription.planId,
+      dto.planPriceId,
+      dto.billingCycle ?? (subscription.billingCycle as BillingCycle),
+    ).catch(() => null);
+
+    const price = planPrice?.price ?? subscription.price;
+    const currency = planPrice?.currency ?? subscription.currency;
+    const cycle = planPrice?.billingCycle ?? (subscription.billingCycle as BillingCycle);
+    const planPriceId = planPrice?.id ?? subscription.planPriceId;
+
     const paidAt = new Date();
     const previousEnd = subscription.endDate ?? paidAt;
     const anchorEnd =
       subscription.status === SubscriptionStatus.SUSPENDED || isPastDate(previousEnd)
         ? paidAt
         : previousEnd;
-    const newEndDate = extendBillingPeriod(anchorEnd, subscription.billingCycle);
+    const newEndDate = extendBillingPeriod(anchorEnd, cycle);
 
     const { subscription: updated, recordedPayment } = await this.prisma.$transaction(async (tx) => {
       let paymentInfo: {
@@ -374,14 +400,14 @@ export class SubscriptionsService {
           : []) ?? [];
         const planFeatureIds = new Set((planFeatures ?? []).map((f: any) => f.featureId));
         const totals = calculateSubscriptionRecurringTotals(
-          subscription.price,
+          price,
           (activeAddons ?? []).map((a) => ({
             featureId: a.featureId,
             status: a.status,
             recurringAmount: a.recurringAmount,
             currency: a.currency,
           })),
-          subscription.currency,
+          currency,
           planFeatureIds,
         );
 
@@ -389,7 +415,7 @@ export class SubscriptionsService {
           tenantId,
           subscriptionId,
           amount: totals.nextRenewalTotal,
-          currency: subscription.currency,
+          currency,
           purpose: PaymentPurpose.SUBSCRIPTION_RENEW,
           paymentMethod: dto.paymentMethod ?? 'MANUAL',
           paymentReference: dto.paymentReference,
@@ -400,6 +426,10 @@ export class SubscriptionsService {
       const result = await tx.subscription.update({
         where: { id: subscriptionId },
         data: {
+          planPriceId,
+          billingCycle: cycle,
+          price,
+          currency,
           endDate: newEndDate,
           nextBillingDate: newEndDate,
           status: SubscriptionStatus.ACTIVE,
@@ -412,10 +442,12 @@ export class SubscriptionsService {
         action: SubscriptionHistoryAction.RENEWED,
         fromStatus: subscription.status,
         toStatus: SubscriptionStatus.ACTIVE,
+        toPlanPriceId: planPriceId,
         metadata: {
           previousEndDate: previousEnd,
           newEndDate,
           startDateUnchanged: subscription.startDate,
+          billingCycle: cycle,
         },
       });
 
@@ -1109,6 +1141,9 @@ export class SubscriptionsService {
         id: tenant.id,
         name: tenant.name,
         logoUrl: tenant.logoUrl,
+        isDemo: tenant.isDemo,
+        demoProfile: tenant.demoProfile,
+        lastDemoResetAt: tenant.lastDemoResetAt,
       },
       subscription: subscription
         ? {

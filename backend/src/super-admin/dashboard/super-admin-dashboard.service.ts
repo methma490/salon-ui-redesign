@@ -79,39 +79,56 @@ export class SuperAdminDashboardService {
     ] = await Promise.all([
       this.prisma.tenant.groupBy({
         by: ['status'],
+        where: { isDemo: false },
         _count: { _all: true },
       }),
-      this.prisma.tenant.count(),
-      this.prisma.tenant.count({ where: { createdAt: { gte: monthStart } } }),
+      this.prisma.tenant.count({ where: { isDemo: false } }),
+      this.prisma.tenant.count({ where: { isDemo: false, createdAt: { gte: monthStart } } }),
       this.prisma.tenant.count({
         where: {
+          isDemo: false,
           createdAt: {
             gte: new Date(monthStart.getFullYear(), monthStart.getMonth() - 1, 1),
             lt: monthStart,
           },
         },
       }),
-      this.prisma.subscription.count({ where: { status: SubscriptionStatus.TRIAL } }),
       this.prisma.subscription.count({
-        where: { status: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL] } },
+        where: { status: SubscriptionStatus.TRIAL, tenant: { isDemo: false } },
+      }),
+      this.prisma.subscription.count({
+        where: {
+          status: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL] },
+          tenant: { isDemo: false },
+        },
       }),
       this.prisma.subscription.groupBy({
         by: ['planId'],
-        where: { status: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL] } },
+        where: {
+          status: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL] },
+          tenant: { isDemo: false },
+        },
         _count: { _all: true },
       }),
       this.prisma.subscription.findMany({
-        where: { status: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL] } },
+        where: {
+          status: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL] },
+          tenant: { isDemo: false },
+        },
         select: { price: true, billingCycle: true, currency: true },
       }),
       this.prisma.paymentOrder.groupBy({
         by: ['status'],
-        where: { createdAt: { gte: rangeStart } },
+        where: { createdAt: { gte: rangeStart }, tenant: { isDemo: false } },
         _count: { _all: true },
         _sum: { amount: true },
       }),
       this.prisma.paymentOrder.findMany({
-        where: { status: PaymentOrderStatus.PAID, createdAt: { gte: rangeStart } },
+        where: {
+          status: PaymentOrderStatus.PAID,
+          createdAt: { gte: rangeStart },
+          tenant: { isDemo: false },
+        },
         select: { amount: true, currency: true },
       }),
       this.prisma.tenant.findMany({
@@ -131,14 +148,14 @@ export class SuperAdminDashboardService {
         include: {
           subscription: {
             include: {
-              tenant: { select: { name: true } },
+              tenant: { select: { name: true, isDemo: true } },
               plan: { select: { name: true } },
             },
           },
         },
       }),
       this.prisma.paymentOrder.findMany({
-        where: { status: PaymentOrderStatus.PAID },
+        where: { status: PaymentOrderStatus.PAID, tenant: { isDemo: false } },
         take: 5,
         orderBy: { updatedAt: 'desc' },
         include: { tenant: { select: { name: true } } },
@@ -146,6 +163,7 @@ export class SuperAdminDashboardService {
       this.prisma.subscription.count({
         where: {
           status: { in: [SubscriptionStatus.ACTIVE, SubscriptionStatus.TRIAL] },
+          tenant: { isDemo: false },
           endDate: {
             gte: new Date(),
             lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
@@ -155,23 +173,26 @@ export class SuperAdminDashboardService {
       this.prisma.paymentOrder.count({
         where: {
           status: PaymentOrderStatus.FAILED,
+          tenant: { isDemo: false },
           createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
         },
       }),
-      this.prisma.tenant.count({ where: { status: TenantStatus.PROVISIONING } }),
+      this.prisma.tenant.count({ where: { isDemo: false, status: TenantStatus.PROVISIONING } }),
       this.prisma.tenant.findMany({
-        where: { createdAt: { gte: bucketStart } },
+        where: { isDemo: false, createdAt: { gte: bucketStart } },
         select: { createdAt: true },
       }),
       this.prisma.subscriptionHistory.findMany({
         where: {
           action: SubscriptionHistoryAction.CANCELLED,
           createdAt: { gte: bucketStart },
+          subscription: { tenant: { isDemo: false } },
         },
         select: { createdAt: true },
       }),
       this.prisma.tenant.findMany({
         where: {
+          isDemo: false,
           status: TenantStatus.ARCHIVED,
           updatedAt: { gte: bucketStart },
         },
@@ -180,12 +201,13 @@ export class SuperAdminDashboardService {
       this.prisma.paymentOrder.findMany({
         where: {
           status: PaymentOrderStatus.PAID,
+          tenant: { isDemo: false },
           createdAt: { gte: bucketStart },
         },
         select: { createdAt: true, amount: true, purpose: true },
       }),
       this.prisma.subscription.findMany({
-        where: { createdAt: { gte: bucketStart } },
+        where: { tenant: { isDemo: false }, createdAt: { gte: bucketStart } },
         select: { createdAt: true },
       }),
     ]);

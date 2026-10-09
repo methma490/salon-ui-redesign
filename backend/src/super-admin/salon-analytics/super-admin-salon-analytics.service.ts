@@ -84,7 +84,9 @@ export class SuperAdminSalonAnalyticsService {
     const limit = query.limit ?? 10;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.TenantWhereInput = {};
+    const where: Prisma.TenantWhereInput = {
+      isDemo: false,
+    };
     if (query.status === 'TRIAL') {
       where.subscriptions = {
         some: {
@@ -97,6 +99,7 @@ export class SuperAdminSalonAnalyticsService {
 
     if (query.search?.trim()) {
       const s = query.search.trim();
+      delete where.isDemo; // Allow finding demo salon if specifically searching by name/code
       where.OR = [
         { name: { contains: s, mode: 'insensitive' } },
         { code: { contains: s, mode: 'insensitive' } },
@@ -114,6 +117,8 @@ export class SuperAdminSalonAnalyticsService {
           code: true,
           status: true,
           schemaName: true,
+          isDemo: true,
+          demoProfile: true,
           subscriptions: {
             take: 1,
             orderBy: { createdAt: 'desc' },

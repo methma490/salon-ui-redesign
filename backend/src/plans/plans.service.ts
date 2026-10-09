@@ -172,12 +172,10 @@ export class PlansService {
         billingCycle: defaultPrice?.billingCycle ?? BillingCycle.MONTHLY,
 
         prices: plan.planPrices.map((p) => ({
+          id: p.id,
           billingCycle: p.billingCycle,
-
           price: Number(p.price),
-
           currency: p.currency,
-
           trialDays: p.trialDays,
         })),
 

@@ -48,4 +48,8 @@ export class CreateSubscriptionCheckoutDto {
   @IsOptional()
   @IsUUID()
   planPriceId?: string;
+
+  @IsOptional()
+  @IsEnum(['MONTHLY', 'YEARLY'])
+  billingCycle?: 'MONTHLY' | 'YEARLY';
 }

@@ -93,13 +93,11 @@ export class PaymentsController {
       subscriptionId: dto.subscriptionId,
       gateway: dto.gateway,
       purpose: dto.purpose,
-      metadata:
-        dto.purpose === 'SUBSCRIPTION_UPGRADE'
-          ? {
-              planId: dto.planId,
-              planPriceId: dto.planPriceId,
-            }
-          : undefined,
+      metadata: {
+        ...(dto.planId ? { planId: dto.planId } : {}),
+        ...(dto.planPriceId ? { planPriceId: dto.planPriceId } : {}),
+        ...(dto.billingCycle ? { billingCycle: dto.billingCycle } : {}),
+      },
     });
 
     // Fetch actual tenant contact info for payment gateway

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -16,8 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { formatPrice } from '@/features/plans/lib/plan-utils';
-import type { PublicPlan } from '@/features/plans/types/plan.types';
+import { billingCycleLabel, formatPrice } from '@/features/plans/lib/plan-utils';
+import type { BillingCycle, PublicPlan } from '@/features/plans/types/plan.types';
 
 interface PlanChangeDialogProps {
   open: boolean;
@@ -26,9 +26,14 @@ interface PlanChangeDialogProps {
   description: string;
   plans: PublicPlan[];
   currentPlanCode: string;
+  currentBillingCycle?: BillingCycle;
   mode: 'upgrade' | 'downgrade';
   isPending: boolean;
-  onConfirm: (planId: string) => void;
+  onConfirm: (options: {
+    planId: string;
+    planPriceId?: string;
+    billingCycle?: BillingCycle;
+  }) => void;
 }
 
 export function PlanChangeDialog({
@@ -38,6 +43,7 @@ export function PlanChangeDialog({
   description,
   plans,
   currentPlanCode,
+  currentBillingCycle = 'MONTHLY',
   mode,
   isPending,
   onConfirm,
@@ -49,11 +55,31 @@ export function PlanChangeDialog({
   });
 
   const [selectedPlanId, setSelectedPlanId] = useState('');
+  const [selectedCycle, setSelectedCycle] = useState<BillingCycle>(currentBillingCycle);
+
+  useEffect(() => {
+    if (open) {
+      setSelectedCycle(currentBillingCycle);
+    }
+  }, [open, currentBillingCycle]);
+
   const selectedPlan = eligiblePlans.find((p) => p.id === selectedPlanId);
+  const activePrice = selectedPlan?.prices.find((p) => p.billingCycle === selectedCycle);
 
   const handleOpenChange = (next: boolean) => {
-    if (!next) setSelectedPlanId('');
+    if (!next) {
+      setSelectedPlanId('');
+    }
     onOpenChange(next);
+  };
+
+  const handleConfirm = () => {
+    if (!selectedPlanId) return;
+    onConfirm({
+      planId: selectedPlanId,
+      planPriceId: activePrice?.id,
+      billingCycle: selectedCycle,
+    });
   };
 
   return (
@@ -69,7 +95,7 @@ export function PlanChangeDialog({
             No {mode === 'upgrade' ? 'higher' : 'lower'} plans are available.
           </p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label>Select plan</Label>
               <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
@@ -78,14 +104,14 @@ export function PlanChangeDialog({
                 </SelectTrigger>
                 <SelectContent>
                   {eligiblePlans.map((plan) => {
-                    const monthly = plan.prices.find((p) => p.billingCycle === 'MONTHLY');
+                    const priceForCycle = plan.prices.find((p) => p.billingCycle === selectedCycle);
                     return (
                       <SelectItem key={plan.id} value={plan.id}>
                         {plan.name} —{' '}
-                        {monthly
-                          ? formatPrice(monthly.price, monthly.currency)
-                          : formatPrice(plan.price, plan.currency)}
-                        /mo
+                        {priceForCycle
+                          ? formatPrice(priceForCycle.price, priceForCycle.currency)
+                          : formatPrice(plan.price, plan.currency)}{' '}
+                        / {selectedCycle === 'MONTHLY' ? 'mo' : 'yr'}
                       </SelectItem>
                     );
                   })}
@@ -94,11 +120,45 @@ export function PlanChangeDialog({
             </div>
 
             {selectedPlan && (
-              <p className="rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
-                {mode === 'downgrade'
-                  ? 'Downgrade takes effect at the end of your current billing period. You will pay the new plan price when you renew.'
-                  : 'You will be redirected to PayHere to pay the prorated upgrade amount. Features update after payment succeeds.'}
-              </p>
+              <div className="space-y-2">
+                <Label>Billing Cycle</Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={selectedCycle === 'MONTHLY' ? 'default' : 'outline'}
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => setSelectedCycle('MONTHLY')}
+                  >
+                    Monthly
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={selectedCycle === 'YEARLY' ? 'default' : 'outline'}
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => setSelectedCycle('YEARLY')}
+                  >
+                    Yearly
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {selectedPlan && (
+              <div className="rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground space-y-1">
+                <div className="font-semibold text-foreground">
+                  Selected Price:{' '}
+                  {activePrice
+                    ? `${formatPrice(activePrice.price, activePrice.currency)} / ${billingCycleLabel(selectedCycle)}`
+                    : `${formatPrice(selectedPlan.price, selectedPlan.currency)} / ${billingCycleLabel(selectedCycle)}`}
+                </div>
+                <p>
+                  {mode === 'downgrade'
+                    ? 'Downgrade takes effect at the end of your current billing period. You will pay the new plan price when you renew.'
+                    : 'You will be redirected to PayHere to pay the prorated upgrade amount. Features update after payment succeeds.'}
+                </p>
+              </div>
             )}
           </div>
         )}
@@ -109,7 +169,7 @@ export function PlanChangeDialog({
           </Button>
           <Button
             disabled={!selectedPlanId || isPending || eligiblePlans.length === 0}
-            onClick={() => onConfirm(selectedPlanId)}
+            onClick={handleConfirm}
           >
             {isPending ? 'Processing…' : mode === 'upgrade' ? 'Pay & Upgrade' : 'Schedule Downgrade'}
           </Button>
@@ -118,3 +178,4 @@ export function PlanChangeDialog({
     </Dialog>
   );
 }
+

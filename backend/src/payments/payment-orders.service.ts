@@ -124,11 +124,47 @@ export class PaymentOrdersService {
       return this.resolveUpgradePricing(subscription, metadata);
     }
 
-    if (purpose === PaymentPurpose.SUBSCRIPTION_RENEW) {
-      let basePrice = Number(subscription.price);
-      let currency = subscription.currency;
+    if (purpose === PaymentPurpose.SUBSCRIPTION_ACTIVATE) {
+      const meta = metadata as { planPriceId?: string; billingCycle?: BillingCycle } | undefined;
+      let activePrice = null;
+      if (this.prisma.planPrice?.findFirst) {
+        activePrice = meta?.planPriceId
+          ? await this.prisma.planPrice.findFirst({
+              where: { id: meta.planPriceId, planId: subscription.planId, isActive: true },
+            })
+          : await this.prisma.planPrice.findFirst({
+              where: {
+                planId: subscription.planId,
+                billingCycle: meta?.billingCycle ?? subscription.billingCycle,
+                isActive: true,
+              },
+            });
+      }
 
-      if (subscription.pendingPlanPriceId) {
+      const amount = activePrice ? Number(activePrice.price) : Number(subscription.price);
+      const currency = activePrice?.currency ?? subscription.currency;
+
+      return {
+        amount,
+        currency,
+        metadata: {
+          ...(typeof metadata === 'object' && metadata !== null && !Array.isArray(metadata)
+            ? metadata
+            : {}),
+          planPriceId: activePrice?.id ?? subscription.planPriceId,
+          billingCycle: activePrice?.billingCycle ?? subscription.billingCycle,
+        },
+      };
+    }
+
+    if (purpose === PaymentPurpose.SUBSCRIPTION_RENEW) {
+      const meta = metadata as { planPriceId?: string; billingCycle?: BillingCycle } | undefined;
+      let basePrice: number;
+      let currency: string;
+      let targetPlanPriceId: string | null = null;
+      let targetBillingCycle: BillingCycle = subscription.billingCycle;
+
+      if (subscription.pendingPlanPriceId && this.prisma.planPrice?.findUnique) {
         const pendingPrice = await this.prisma.planPrice.findUnique({
           where: { id: subscription.pendingPlanPriceId },
         });
@@ -139,6 +175,28 @@ export class PaymentOrdersService {
 
         basePrice = Number(pendingPrice.price);
         currency = pendingPrice.currency;
+        targetPlanPriceId = pendingPrice.id;
+        targetBillingCycle = pendingPrice.billingCycle;
+      } else {
+        let activePrice = null;
+        if (this.prisma.planPrice?.findFirst) {
+          activePrice = meta?.planPriceId
+            ? await this.prisma.planPrice.findFirst({
+                where: { id: meta.planPriceId, planId: subscription.planId, isActive: true },
+              })
+            : await this.prisma.planPrice.findFirst({
+                where: {
+                  planId: subscription.planId,
+                  billingCycle: meta?.billingCycle ?? subscription.billingCycle,
+                  isActive: true,
+                },
+              });
+        }
+
+        basePrice = activePrice ? Number(activePrice.price) : Number(subscription.price);
+        currency = activePrice?.currency ?? subscription.currency;
+        targetPlanPriceId = activePrice?.id ?? subscription.planPriceId;
+        targetBillingCycle = activePrice?.billingCycle ?? subscription.billingCycle;
       }
 
       // Include strictly renewing ACTIVE add-ons in renewal recurring total (explicitly excluding CANCEL_AT_PERIOD_END)
@@ -181,6 +239,8 @@ export class PaymentOrdersService {
                 pendingPlanPriceId: subscription.pendingPlanPriceId,
               }
             : {}),
+          planPriceId: targetPlanPriceId,
+          billingCycle: targetBillingCycle,
           basePlanPrice: totals.basePlanPrice,
           activeAddonsTotal: totals.activeRenewingAddonsTotal,
           nextRenewalTotal: totals.nextRenewalTotal,

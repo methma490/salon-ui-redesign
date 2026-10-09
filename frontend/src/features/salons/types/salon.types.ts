@@ -19,6 +19,14 @@ export interface AuthUser {
   tenantId: string | null;
   roles: string[];
   permissions?: string[];
+  tenant?: {
+    id: string;
+    name: string;
+    logoUrl?: string | null;
+    isDemo?: boolean;
+    demoProfile?: string | null;
+    lastDemoResetAt?: string | null;
+  } | null;
   subscription?: {
     plan: string;
     planCode: string;
@@ -42,6 +50,9 @@ export interface SalonListItem {
   email: string | null;
   phone: string | null;
   status: SalonStatus;
+  isDemo?: boolean;
+  demoProfile?: string | null;
+  lastDemoResetAt?: string | null;
   mainBranch: {
     id: string;
     code: string;
@@ -71,6 +82,9 @@ export interface SalonDetails {
   email: string | null;
   phone: string | null;
   status: SalonStatus;
+  isDemo?: boolean;
+  demoProfile?: string | null;
+  lastDemoResetAt?: string | null;
   createdAt: string;
   updatedAt: string;
   subscription: SalonSubscriptionSummary | null;

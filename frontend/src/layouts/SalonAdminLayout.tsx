@@ -42,6 +42,7 @@ import { resolveNavAccess, type NavAccessState } from '@/lib/salon-access';
 import SalonPermissionGate from '@/routes/SalonPermissionGate';
 import { formatRoleLabel } from '@/pages/salon/settings-feature-modules';
 import { SubscriptionBanner } from '@/components/salon/SubscriptionBanner';
+import { DemoBanner } from '@/components/salon/DemoBanner';
 import { APP_NAME } from '@/config/brand';
 import './salon-admin-sidebar.css';
 import './salon-brand-overrides.css';
@@ -899,6 +900,7 @@ function SalonAdminLayoutInner() {
       </aside>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <DemoBanner />
         <SubscriptionBanner />
         <SalonAdminHeader
           salonName={salonName}

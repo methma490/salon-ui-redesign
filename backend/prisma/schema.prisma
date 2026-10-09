@@ -20,6 +20,10 @@ model Tenant {
   logoUrl               String?
   primaryColor          String?
   openingBankBalance    Decimal?               @map("opening_bank_balance") @db.Decimal(10, 2)
+  isDemo                Boolean                @default(false) @map("is_demo")
+  demoProfile           String?                @map("demo_profile")
+  lastDemoResetAt       DateTime?              @map("last_demo_reset_at")
+  demoResetInProgress   Boolean                @default(false) @map("demo_reset_in_progress")
   invoiceLinks          InvoiceLink[]
   invoices              Invoice[]
   notificationLogs      NotificationLog[]
@@ -29,6 +33,8 @@ model Tenant {
   subscriptions         Subscription[]
   tenantFeatures        TenantFeature[]
 
+  @@index([isDemo])
+  @@index([demoProfile])
   @@map("tenants")
 }
 

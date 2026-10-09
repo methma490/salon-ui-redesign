@@ -6,6 +6,7 @@ export interface PlanFeature {
 }
 
 export interface PlanPriceOption {
+  id?: string;
   billingCycle: BillingCycle;
   price: number;
   currency: string;
