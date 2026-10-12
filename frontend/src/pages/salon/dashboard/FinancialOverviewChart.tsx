@@ -34,7 +34,7 @@ interface FinancialOverviewChartProps {
 export function FinancialOverviewChart({ data, timeframe, onTimeframeChange }: FinancialOverviewChartProps) {
   const [chartWidth, setChartWidth] = useState(0);
   const theme = useTenantTheme();
-  const primaryColor = theme?.palette?.primary ?? '#2563eb';
+  const primaryColor = theme?.palette?.primary ?? '#7C3AED';
   const chartColors = getDashboardChartColors(primaryColor);
 
   const chartData = data && data.length > 0 ? data : [];

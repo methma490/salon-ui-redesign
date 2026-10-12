@@ -19,6 +19,7 @@ import {
   ShoppingCart,
   Sparkles,
   Truck,
+  TrendingUp,
   User,
   Users,
   UserSquare2,
@@ -41,7 +42,7 @@ import { cn } from '@/lib/utils';
 import { resolveNavAccess, type NavAccessState } from '@/lib/salon-access';
 import SalonPermissionGate from '@/routes/SalonPermissionGate';
 import { formatRoleLabel } from '@/pages/salon/settings-feature-modules';
-import { SubscriptionBanner } from '@/components/salon/SubscriptionBanner';
+import { SubscriptionBanner, HeaderSubscriptionPill } from '@/components/salon/SubscriptionBanner';
 import { DemoBanner } from '@/components/salon/DemoBanner';
 import { APP_NAME } from '@/config/brand';
 import './salon-admin-sidebar.css';
@@ -343,6 +344,11 @@ const navGroups: NavGroup[] = [
     icon: BarChart3,
     children: [
       {
+        to: '/salon/reports?tab=profit-loss',
+        label: 'Profit & Loss',
+        icon: TrendingUp,
+      },
+      {
         to: '/salon/reports?tab=sales',
         label: 'Sales Report',
         icon: Receipt,
@@ -629,6 +635,7 @@ function SalonAdminHeader({
 
   const headerActions = (
     <>
+      <HeaderSubscriptionPill />
       <NotificationBell />
 
       <div className="relative" ref={profileRef}>
@@ -900,8 +907,6 @@ function SalonAdminLayoutInner() {
       </aside>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        <DemoBanner />
-        <SubscriptionBanner />
         <SalonAdminHeader
           salonName={salonName}
           salonLogoUrl={salonLogoUrl}
@@ -912,6 +917,8 @@ function SalonAdminLayoutInner() {
           collapsed={collapsed}
           onToggleCollapse={toggleCollapsed}
         />
+        <DemoBanner />
+        <SubscriptionBanner />
 
         <main
           ref={mainRef}

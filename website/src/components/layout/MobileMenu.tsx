@@ -12,7 +12,6 @@ import {
   CreditCard,
   HelpCircle,
   Phone,
-  Mail,
   ArrowRight,
   LogIn,
   MessageCircle,
@@ -22,7 +21,6 @@ import { loginUrl } from '@/lib/api';
 import {
   CONTACT_PHONE,
   CONTACT_PHONE_RAW,
-  CONTACT_EMAIL,
   WHATSAPP_URL,
 } from '@/lib/constants';
 
@@ -41,7 +39,7 @@ const MENU_ITEMS: NavItem[] = [
     icon: Home,
   },
   {
-    href: '/features',
+    href: '/#features',
     label: 'Product & Features',
     description: 'Appointments, POS, staff & inventory',
     icon: Sparkles,
@@ -53,13 +51,13 @@ const MENU_ITEMS: NavItem[] = [
     icon: Layers,
   },
   {
-    href: '/pricing',
+    href: '/#pricing',
     label: 'Pricing & Plans',
     description: 'Transparent plans starting from Silver',
     icon: CreditCard,
   },
   {
-    href: '/faq',
+    href: '/#faq',
     label: 'Resources & FAQ',
     description: 'Answers, onboarding & system guides',
     icon: HelpCircle,
@@ -91,7 +89,6 @@ export function MobileMenu() {
     };
   }, [open]);
 
-  // Close on Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false);
@@ -111,16 +108,16 @@ export function MobileMenu() {
       }`}
       aria-hidden={!open}
     >
-      {/* ── Backdrop Overlay ── */}
+      {/* Backdrop Overlay */}
       <div
-        className={`fixed inset-0 bg-slate-950/60 backdrop-blur-sm transition-opacity duration-300 ${
+        className={`fixed inset-0 bg-[#0F172A]/50 backdrop-blur-sm transition-opacity duration-300 ${
           open ? 'opacity-100' : 'opacity-0'
         }`}
         onClick={() => setOpen(false)}
         aria-hidden="true"
       />
 
-      {/* ── Slide-Over Drawer Panel ── */}
+      {/* Slide-Over Drawer Panel */}
       <div
         className={`fixed inset-y-0 right-0 z-[10000] flex h-full w-full max-w-[340px] sm:max-w-[380px] flex-col justify-between bg-white shadow-2xl transition-transform duration-300 ease-out ${
           open ? 'translate-x-0' : 'translate-x-full'
@@ -129,12 +126,12 @@ export function MobileMenu() {
         aria-modal="true"
         aria-label="Mobile Navigation"
       >
-        {/* Drawer Header with Logo & Close Button */}
-        <div className="flex h-18 shrink-0 items-center justify-between border-b border-slate-100 px-6 bg-slate-50/50">
+        {/* Drawer Header */}
+        <div className="flex h-18 shrink-0 items-center justify-between border-b border-[#DDD6FE]/60 px-6 bg-[#F5F3FF]/40">
           <Logo />
           <button
             type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-2xs hover:bg-slate-100 hover:text-slate-900 active:scale-95 transition-all"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-[#DDD6FE] bg-white text-[#0F172A] shadow-xs hover:bg-[#F5F3FF] hover:text-[#7C3AED] active:scale-95 transition-all"
             onClick={() => setOpen(false)}
             aria-label="Close navigation menu"
           >
@@ -142,10 +139,10 @@ export function MobileMenu() {
           </button>
         </div>
 
-        {/* Drawer Navigation Links */}
+        {/* Drawer Links */}
         <div className="flex-1 overflow-y-auto px-4 py-5 space-y-1.5">
-          <p className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            Navigation Menu
+          <p className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-[#64748B]">
+            Navigation
           </p>
 
           {MENU_ITEMS.map((item) => {
@@ -155,38 +152,38 @@ export function MobileMenu() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className="group flex items-center gap-3.5 rounded-2xl px-3.5 py-3 transition-all hover:bg-[#e8f6f0] active:bg-[#d5f0e3]"
+                className="group flex items-center gap-3.5 rounded-2xl px-3.5 py-3 transition-all hover:bg-[#F5F3FF] active:bg-[#EDE9FE]"
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 group-hover:bg-[#0b6842] group-hover:text-white transition-colors shadow-2xs">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EDE9FE] text-[#7C3AED] group-hover:bg-[#7C3AED] group-hover:text-white transition-colors shadow-xs">
                   <Icon className="h-5 w-5" />
                 </span>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-bold text-slate-900 group-hover:text-[#0b6842] transition-colors">
+                  <div className="text-sm font-bold text-[#0F172A] group-hover:text-[#7C3AED] transition-colors">
                     {item.label}
                   </div>
-                  <div className="text-xs text-slate-500 truncate">
+                  <div className="text-xs text-[#64748B] truncate">
                     {item.description}
                   </div>
                 </div>
-                <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-[#0b6842] group-hover:translate-x-0.5 transition-all" />
+                <ArrowRight className="h-4 w-4 text-[#DDD6FE] group-hover:text-[#7C3AED] group-hover:translate-x-0.5 transition-all" />
               </Link>
             );
           })}
 
-          {/* Quick Contact Box inside drawer */}
-          <div className="mt-4 pt-4 border-t border-slate-100 px-1">
-            <p className="px-2 pb-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Need Quick Help?
+          {/* Quick Contact Box */}
+          <div className="mt-4 pt-4 border-t border-[#DDD6FE]/60 px-1">
+            <p className="px-2 pb-2 text-[11px] font-bold uppercase tracking-wider text-[#64748B]">
+              Quick Support
             </p>
             <div className="grid grid-cols-2 gap-2">
               <a
                 href={`tel:${CONTACT_PHONE_RAW}`}
-                className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200/80 bg-slate-50 hover:bg-[#e8f6f0] hover:border-[#bbf0d8] transition-all group"
+                className="flex items-center gap-2 p-2.5 rounded-xl border border-[#DDD6FE] bg-[#F9FAFB] hover:bg-[#F5F3FF] hover:border-[#A855F7] transition-all group"
               >
-                <Phone className="h-4 w-4 text-[#0b6842]" />
+                <Phone className="h-4 w-4 text-[#7C3AED]" />
                 <div className="min-w-0">
-                  <div className="text-[10px] uppercase font-bold text-slate-400">Call Us</div>
-                  <div className="text-xs font-bold text-slate-800 truncate group-hover:text-[#0b6842]">
+                  <div className="text-[10px] uppercase font-bold text-[#64748B]">Call Us</div>
+                  <div className="text-xs font-bold text-[#0F172A] truncate group-hover:text-[#7C3AED]">
                     {CONTACT_PHONE}
                   </div>
                 </div>
@@ -196,12 +193,12 @@ export function MobileMenu() {
                 href={WHATSAPP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200/80 bg-slate-50 hover:bg-[#e8f6f0] hover:border-[#bbf0d8] transition-all group"
+                className="flex items-center gap-2 p-2.5 rounded-xl border border-[#DDD6FE] bg-[#F9FAFB] hover:bg-[#F5F3FF] hover:border-[#A855F7] transition-all group"
               >
-                <MessageCircle className="h-4 w-4 text-[#0b6842]" />
+                <MessageCircle className="h-4 w-4 text-[#7C3AED]" />
                 <div className="min-w-0">
-                  <div className="text-[10px] uppercase font-bold text-slate-400">Chat Live</div>
-                  <div className="text-xs font-bold text-slate-800 group-hover:text-[#0b6842]">
+                  <div className="text-[10px] uppercase font-bold text-[#64748B]">Chat Live</div>
+                  <div className="text-xs font-bold text-[#0F172A] group-hover:text-[#7C3AED]">
                     WhatsApp
                   </div>
                 </div>
@@ -210,23 +207,23 @@ export function MobileMenu() {
           </div>
         </div>
 
-        {/* Drawer Action Buttons */}
-        <div className="border-t border-slate-100 bg-slate-50/80 p-5 space-y-2.5 shrink-0">
+        {/* Drawer CTAs */}
+        <div className="border-t border-[#DDD6FE]/60 bg-[#F5F3FF]/50 p-5 space-y-2.5 shrink-0">
           <Link
             href={loginUrl()}
             onClick={() => setOpen(false)}
-            className="flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-800 shadow-2xs hover:bg-slate-50 hover:text-[#0b6842] transition-all"
+            className="flex w-full items-center justify-center gap-2 rounded-full border border-[#DDD6FE] bg-white px-5 py-3 text-sm font-bold text-[#0F172A] shadow-xs hover:bg-[#F9FAFB] hover:text-[#7C3AED] transition-all"
           >
-            <LogIn className="h-4 w-4 text-slate-500" />
+            <LogIn className="h-4 w-4 text-[#64748B]" />
             <span>Salon Admin Log In</span>
           </Link>
 
           <Link
-            href="/contact"
+            href="/#pricing"
             onClick={() => setOpen(false)}
-            className="flex w-full items-center justify-center gap-2 rounded-full bg-[#0b6842] hover:bg-[#07472c] px-5 py-3 text-sm font-bold text-white shadow-md transition-all active:scale-98"
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#7C3AED] to-[#D946EF] px-5 py-3 text-sm font-bold text-white shadow-md shadow-purple-500/20 hover:opacity-95 transition-all active:scale-98"
           >
-            <span>Book a Free Demo</span>
+            <span>Get Started Free</span>
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
@@ -236,10 +233,9 @@ export function MobileMenu() {
 
   return (
     <div className="lg:hidden">
-      {/* Hamburger Toggle Button in Header */}
       <button
         type="button"
-        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-800 shadow-2xs hover:bg-slate-50 hover:text-[#0b6842] active:scale-95 transition-all"
+        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#DDD6FE] bg-white text-[#0F172A] shadow-xs hover:bg-[#F5F3FF] hover:text-[#7C3AED] active:scale-95 transition-all"
         aria-expanded={open}
         aria-label={open ? 'Close menu' : 'Open menu'}
         onClick={() => setOpen((prev) => !prev)}
@@ -247,7 +243,6 @@ export function MobileMenu() {
         <Menu className="h-5 w-5" />
       </button>
 
-      {/* Render Slide-Over via Portal to guarantee body-level escape from stacking context */}
       {mounted && createPortal(drawerContent, document.body)}
     </div>
   );

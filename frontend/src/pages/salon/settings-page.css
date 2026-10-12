@@ -974,9 +974,9 @@ body:has(.admin-panel-root) main .settings-hero-text h1 {
 }
 
 .settings-swatch.is-selected {
-  border-color: var(--brand-primary, #0d5c3d);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-primary, #0d5c3d) 25%, transparent);
-  background: var(--brand-soft, #ecfdf3);
+  border-color: var(--brand-primary, #7c3aed);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-primary, #7c3aed) 25%, transparent);
+  background: var(--brand-soft, #f5f3ff);
 }
 
 .settings-swatch-color {
@@ -1028,7 +1028,7 @@ body:has(.admin-panel-root) main .settings-hero-text h1 {
   border: 1px solid var(--emp-border);
   border-radius: 0.9rem;
   padding: 1rem;
-  background: #f8fafc;
+  background: #ffffff;
 }
 
 .settings-preview-title {
@@ -1057,11 +1057,11 @@ body:has(.admin-panel-root) main .settings-hero-text h1 {
 }
 
 .settings-preview-nav span.is-active {
-  background: var(--brand-soft, #ecfdf3);
-  color: var(--brand-primary, #0d5c3d);
+  background: var(--brand-soft, #f5f3ff);
+  color: var(--brand-primary, #7c3aed);
   border-color: transparent;
   font-weight: 650;
-  box-shadow: inset 3px 0 0 var(--brand-primary, #0d5c3d);
+  box-shadow: inset 3px 0 0 var(--brand-primary, #7c3aed);
 }
 
 .settings-preview-btn {

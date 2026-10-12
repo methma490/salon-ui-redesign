@@ -1,25 +1,31 @@
-/** Tenant brand palette generation from a single HEX color. */
+/**
+ * Centralized dynamic theme engine & brand palette generator.
+ * Default primary: #7C3AED (Vibrant Purple)
+ * Default background: #FFFFFF (Pure White)
+ */
 
-export const DEFAULT_PRIMARY_COLOR = '#134434';
+export const DEFAULT_PRIMARY_COLOR = '#7C3AED';
 
-export const BRAND_COLOR_PRESETS: Array<{ id: string; label: string; color: string }> = [
-  { id: 'pine', label: 'Dark Pine', color: '#134434' },
-  { id: 'emerald', label: 'Emerald', color: '#059669' },
-  { id: 'teal', label: 'Teal', color: '#0D9488' },
-  { id: 'green', label: 'Green', color: '#16A34A' },
-  { id: 'gold', label: 'Gold', color: '#D4AF7C' },
-  { id: 'burgundy', label: 'Burgundy', color: '#A44A5C' },
+export const BRAND_COLOR_PRESETS: Array<{
+  id: string;
+  label: string;
+  color: string;
+  isDefault?: boolean;
+}> = [
+  { id: 'purple', label: 'Purple (Default)', color: '#7C3AED', isDefault: true },
   { id: 'blue', label: 'Blue', color: '#2563EB' },
-  { id: 'indigo', label: 'Indigo', color: '#4F46E5' },
-  { id: 'purple', label: 'Purple', color: '#9333EA' },
-  { id: 'rose', label: 'Rose', color: '#E11D48' },
+  { id: 'green', label: 'Green', color: '#16A34A' },
   { id: 'orange', label: 'Orange', color: '#EA580C' },
+  { id: 'pink', label: 'Pink', color: '#DB2777' },
   { id: 'red', label: 'Red', color: '#DC2626' },
+  { id: 'teal', label: 'Teal', color: '#0D9488' },
+  { id: 'indigo', label: 'Indigo', color: '#4F46E5' },
 ];
 
 const HEX_RE = /^#[0-9A-Fa-f]{6}$/;
 
-export function isValidHexColor(value: string): boolean {
+export function isValidHexColor(value: string | null | undefined): value is string {
+  if (!value || typeof value !== 'string') return false;
   return HEX_RE.test(value.trim());
 }
 
@@ -67,7 +73,8 @@ function relativeLuminance(hex: string): number {
 }
 
 export function readableOn(hex: string): '#FFFFFF' | '#0F172A' {
-  return relativeLuminance(hex) > 0.55 ? '#0F172A' : '#FFFFFF';
+  // WCAG contrast check: return dark text if background is sufficiently bright
+  return relativeLuminance(hex) > 0.52 ? '#0F172A' : '#FFFFFF';
 }
 
 export interface BrandPalette {
@@ -82,17 +89,35 @@ export interface BrandPalette {
   ring: string;
 }
 
-export function buildBrandPalette(primaryInput: string): BrandPalette {
+export function buildBrandPalette(primaryInput: string | null | undefined): BrandPalette {
   const primary = isValidHexColor(primaryInput)
     ? normalizeHexColor(primaryInput)
     : DEFAULT_PRIMARY_COLOR;
-  const hover = mix(primary, '#000000', 0.15);
-  const active = mix(primary, '#000000', 0.25);
-  const soft = mix(primary, '#FFFFFF', 0.92);
+
+  // Exact hand-tuned tokens for the default Vibrant Purple
+  if (primary === '#7C3AED') {
+    return {
+      primary: '#7C3AED',
+      hover: '#6D28D9',
+      active: '#5B21B6',
+      soft: '#F5F3FF',
+      softStrong: '#EDE9FE',
+      border: '#DDD6FE',
+      focus: '#7C3AED',
+      foreground: '#FFFFFF',
+      ring: '#7C3AED',
+    };
+  }
+
+  // Harmonic perceptual shade generation for custom admin colors
+  const hover = mix(primary, '#000000', 0.14);
+  const active = mix(primary, '#000000', 0.26);
+  const soft = mix(primary, '#FFFFFF', 0.93);
   const softStrong = mix(primary, '#FFFFFF', 0.82);
-  const border = mix(primary, '#FFFFFF', 0.70);
+  const border = mix(primary, '#FFFFFF', 0.68);
   const focus = primary;
-  const ring = mix(primary, '#FFFFFF', 0.40);
+  const ring = primary;
+  const foreground = readableOn(primary);
 
   return {
     primary,
@@ -102,16 +127,83 @@ export function buildBrandPalette(primaryInput: string): BrandPalette {
     softStrong,
     border,
     focus,
-    foreground: readableOn(primary),
+    foreground,
     ring,
   };
 }
 
 export type BrandCssVars = Record<string, string>;
 
-/** CSS custom properties applied to salon workspace root. */
+/** Comprehensive semantic theme tokens exported to CSS custom properties. */
 export function brandPaletteToCssVars(palette: BrandPalette): BrandCssVars {
   return {
+    /* ── Semantic Design Tokens ── */
+    '--primary': palette.primary,
+    '--primary-foreground': palette.foreground,
+    '--primary-hover': palette.hover,
+    '--primary-active': palette.active,
+    '--primary-light': palette.softStrong,
+    '--primary-soft': palette.soft,
+    '--primary-border': palette.border,
+
+    '--background': '#FFFFFF',
+    '--foreground': '#0F172A',
+    '--surface': '#FFFFFF',
+    '--surface-foreground': '#0F172A',
+    '--muted': '#F9FAFB',
+    '--muted-foreground': '#64748B',
+    '--border': '#E2E8F0',
+    '--input': '#E2E8F0',
+    '--input-border': '#E2E8F0',
+    '--ring': palette.ring,
+
+    /* ── Tailwind v4 Theme Variables ── */
+    '--color-primary': palette.primary,
+    '--color-primary-foreground': palette.foreground,
+    '--color-primary-hover': palette.hover,
+    '--color-primary-active': palette.active,
+    '--color-primary-light': palette.softStrong,
+    '--color-primary-soft': palette.soft,
+    '--color-primary-border': palette.border,
+
+    '--color-background': '#FFFFFF',
+    '--color-foreground': '#0F172A',
+    '--color-card': '#FFFFFF',
+    '--color-card-foreground': '#0F172A',
+    '--color-popover': '#FFFFFF',
+    '--color-popover-foreground': '#0F172A',
+    '--color-border': '#E2E8F0',
+    '--color-input': '#E2E8F0',
+    '--color-ring': palette.ring,
+    '--color-accent': palette.soft,
+    '--color-accent-foreground': palette.primary,
+    '--color-secondary': palette.soft,
+    '--color-secondary-foreground': palette.primary,
+    '--color-muted': '#F9FAFB',
+    '--color-muted-foreground': '#64748B',
+
+    /* ── Sidebar & Navigation Tokens ── */
+    '--sidebar-background': '#FFFFFF',
+    '--sidebar-foreground': '#0F172A',
+    '--sidebar-primary': palette.primary,
+    '--sidebar-primary-foreground': palette.foreground,
+    '--sidebar-accent': palette.soft,
+    '--sidebar-accent-foreground': palette.primary,
+    '--sidebar-active': palette.softStrong,
+    '--sidebar-active-foreground': palette.primary,
+    '--sidebar-hover': palette.soft,
+    '--sidebar-border': '#E2E8F0',
+    '--sidebar-ring': palette.ring,
+    '--navigation-background': '#FFFFFF',
+    '--navigation-active': palette.softStrong,
+
+    /* ── Button & Interaction Tokens ── */
+    '--button-primary': palette.primary,
+    '--button-primary-hover': palette.hover,
+    '--button-secondary': palette.soft,
+    '--selected-state': palette.softStrong,
+
+    /* ── Workspace / Page Aliases ── */
     '--brand-primary': palette.primary,
     '--brand-hover': palette.hover,
     '--brand-active': palette.active,
@@ -121,30 +213,16 @@ export function brandPaletteToCssVars(palette: BrandPalette): BrandCssVars {
     '--brand-focus': palette.focus,
     '--brand-ring': palette.ring,
     '--brand-foreground': palette.foreground,
+    '--brand-soft-bg': palette.soft,
+    '--brand-light': palette.softStrong,
 
-    /* Base semantic tokens used by UI components & Tailwind v4 */
-    '--primary': palette.primary,
-    '--primary-foreground': palette.foreground,
-    '--color-primary': palette.primary,
-    '--color-primary-foreground': palette.foreground,
-    '--ring': palette.ring,
-    '--color-ring': palette.ring,
-    '--accent': palette.soft,
-    '--accent-foreground': palette.primary,
-    '--color-accent': palette.soft,
-    '--color-accent-foreground': palette.primary,
-    '--secondary': palette.soft,
-    '--secondary-foreground': palette.primary,
-    '--color-secondary': palette.soft,
-    '--color-secondary-foreground': palette.primary,
-
-    /* Shared dashboard accents */
+    /* ── Dashboard & Shared Widget Accents ── */
     '--s360-brand': palette.primary,
     '--s360-brand-hover': palette.hover,
     '--s360-brand-soft': palette.soft,
     '--s360-brand-dot': palette.primary,
 
-    /* Alias page-scoped tokens used across Salon Admin CSS */
+    /* ── Module Specific Variable Aliases ── */
     '--emp-primary': palette.primary,
     '--emp-primary-hover': palette.hover,
     '--pos-primary': palette.primary,
@@ -161,20 +239,13 @@ export function brandPaletteToCssVars(palette: BrandPalette): BrandCssVars {
     '--dash-primary': palette.primary,
     '--pr-brand': palette.primary,
     '--pr-brand-soft': palette.soft,
-
-    /* Soft surfaces used by sidebar / pages */
-    '--brand-soft-bg': palette.soft,
-    '--sidebar-primary': palette.primary,
-    '--sidebar-primary-foreground': palette.foreground,
-    '--sidebar-accent': palette.soft,
-    '--sidebar-accent-foreground': palette.primary,
-    '--sidebar-ring': palette.ring,
   };
 }
 
+/** Injects theme CSS custom properties to an element or DOM root. */
 export function applyBrandCssVars(
   el: HTMLElement | null,
-  primaryColor: string,
+  primaryColor: string | null | undefined,
 ): BrandPalette {
   const palette = buildBrandPalette(primaryColor);
   if (!el) return palette;
@@ -186,27 +257,41 @@ export function applyBrandCssVars(
 }
 
 const CACHE_KEY = 'salon_theme_primary_color';
+const THEME_CHANNEL_NAME = 'salon_theme_sync_channel';
 
 export function readCachedPrimaryColor(): string | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (raw && isValidHexColor(raw)) {
       const normalized = normalizeHexColor(raw);
-      if (normalized === '#A44A5C') {
+      // Migrate old hardcoded legacy greens / burgundies to the default vibrant purple
+      if (
+        normalized === '#A44A5C' ||
+        normalized === '#134434' ||
+        normalized === '#0D5C3D' ||
+        normalized === '#14532D'
+      ) {
         localStorage.setItem(CACHE_KEY, DEFAULT_PRIMARY_COLOR);
         return DEFAULT_PRIMARY_COLOR;
       }
       return normalized;
     }
   } catch {
-    /* ignore */
+    /* ignore storage access restrictions */
   }
   return null;
 }
 
 export function writeCachedPrimaryColor(color: string) {
   try {
-    localStorage.setItem(CACHE_KEY, normalizeHexColor(color));
+    const normalized = normalizeHexColor(color);
+    localStorage.setItem(CACHE_KEY, normalized);
+    // Broadcast change to other open browser tabs
+    if (typeof BroadcastChannel !== 'undefined') {
+      const bc = new BroadcastChannel(THEME_CHANNEL_NAME);
+      bc.postMessage({ type: 'THEME_SAVED', primaryColor: normalized });
+      bc.close();
+    }
   } catch {
     /* ignore */
   }
@@ -215,7 +300,14 @@ export function writeCachedPrimaryColor(color: string) {
 export function clearCachedPrimaryColor() {
   try {
     localStorage.removeItem(CACHE_KEY);
+    if (typeof BroadcastChannel !== 'undefined') {
+      const bc = new BroadcastChannel(THEME_CHANNEL_NAME);
+      bc.postMessage({ type: 'THEME_RESET', primaryColor: DEFAULT_PRIMARY_COLOR });
+      bc.close();
+    }
   } catch {
     /* ignore */
   }
 }
+
+export { THEME_CHANNEL_NAME };

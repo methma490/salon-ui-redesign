@@ -1,96 +1,98 @@
 /**
  * Salon Admin brand color overrides.
- * Shared s360-* styles (also used by Super Admin) stay green there;
- * inside .salon-theme-root they follow the tenant brand tokens.
+ * Inside .salon-theme-root all elements follow the dynamic tenant brand tokens.
+ * Default primary: #7C3AED (Vibrant Purple).
  */
 
 .salon-theme-root {
-  --sd-primary: var(--brand-primary, #0d5c3d);
-  --sd-primary-light: var(--brand-soft, #ecfdf3);
-  --sd-primary-dark: var(--brand-hover, #0a4a31);
-  --sd-info: var(--brand-primary, #0d5c3d);
-  --sd-info-light: var(--brand-soft, #ecfdf3);
-  --pos-primary-light: var(--brand-soft, #ecfdf3);
-  --sale-primary-light: var(--brand-soft, #ecfdf3);
-  --sub-primary-soft: var(--brand-soft, #ecfdf3);
-  --s360-brand: var(--brand-primary, #0d5c3d);
-  --s360-brand-hover: var(--brand-hover, #0a4a31);
-  --s360-brand-soft: var(--brand-soft, #ecfdf3);
-  --s360-brand-dot: var(--brand-primary, #0d5c3d);
+  --sd-primary: var(--brand-primary, #7c3aed);
+  --sd-primary-light: var(--brand-soft, #f5f3ff);
+  --sd-primary-dark: var(--brand-hover, #6d28d9);
+  --sd-info: var(--brand-primary, #7c3aed);
+  --sd-info-light: var(--brand-soft, #f5f3ff);
+  --pos-primary-light: var(--brand-soft, #f5f3ff);
+  --sale-primary-light: var(--brand-soft, #f5f3ff);
+  --sub-primary-soft: var(--brand-soft, #f5f3ff);
+  --s360-brand: var(--brand-primary, #7c3aed);
+  --s360-brand-hover: var(--brand-hover, #6d28d9);
+  --s360-brand-soft: var(--brand-soft, #f5f3ff);
+  --s360-brand-dot: var(--brand-primary, #7c3aed);
 }
 
-/* Header profile chip — avoid Tailwind primary/10 which ignores hex tokens */
+/* Header profile chip */
 .salon-theme-root .salon-brand-avatar {
-  background: var(--brand-soft, #ecfdf3) !important;
-  color: var(--brand-primary, #0d5c3d) !important;
+  background: var(--brand-soft, #f5f3ff) !important;
+  color: var(--brand-primary, #7c3aed) !important;
+  border: 1px solid var(--brand-border, #ddd6fe) !important;
 }
 
 .salon-theme-root .salon-brand-text {
-  color: var(--brand-primary, #0d5c3d) !important;
+  color: var(--brand-primary, #7c3aed) !important;
 }
 
 /* Period filters + primary buttons from shared dashboard CSS */
 .salon-theme-root .s360-period-btn.active,
 .salon-theme-root .sd-filter-btn.active {
-  background: var(--brand-primary, #0d5c3d) !important;
-  border-color: var(--brand-primary, #0d5c3d) !important;
-  color: var(--brand-foreground, #fff) !important;
+  background: var(--brand-primary, #7c3aed) !important;
+  border-color: var(--brand-primary, #7c3aed) !important;
+  color: var(--brand-foreground, #ffffff) !important;
 }
 
 .salon-theme-root .s360-period-btn:hover:not(.active) {
-  border-color: var(--brand-primary, #0d5c3d);
-  color: var(--brand-primary, #0d5c3d);
+  border-color: var(--brand-primary, #7c3aed);
+  color: var(--brand-primary, #7c3aed);
+  background: var(--brand-soft, #f5f3ff);
 }
 
 .salon-theme-root .s360-kpi-value.green {
-  color: var(--brand-primary, #0d5c3d) !important;
+  color: var(--brand-primary, #7c3aed) !important;
 }
 
 .salon-theme-root .s360-btn-primary,
 .salon-theme-root .s360-btn-primary:visited {
-  background: var(--brand-primary, #0d5c3d) !important;
-  color: var(--brand-foreground, #fff) !important;
+  background: var(--brand-primary, #7c3aed) !important;
+  color: var(--brand-foreground, #ffffff) !important;
 }
 
 .salon-theme-root .s360-btn-primary:hover {
-  background: var(--brand-hover, #0a4a31) !important;
+  background: var(--brand-hover, #6d28d9) !important;
 }
 
-/* Brand “green” utility classes used as accent (not semantic success) */
+/* Brand utility classes used as accent */
 .salon-theme-root .s360-dot.green,
 .salon-theme-root .sd360-kpi-compact-value.green {
-  color: var(--brand-primary, #0d5c3d);
+  color: var(--brand-primary, #7c3aed);
 }
 
 .salon-theme-root .s360-dot.green {
-  background: var(--brand-primary, #0d5c3d) !important;
+  background: var(--brand-primary, #7c3aed) !important;
   color: transparent;
 }
 
 .salon-theme-root .sd360-kpi-icon {
-  background: var(--brand-soft, #ecfdf3) !important;
-  color: var(--brand-primary, #0d5c3d) !important;
+  background: var(--brand-soft, #f5f3ff) !important;
+  color: var(--brand-primary, #7c3aed) !important;
 }
 
 .salon-theme-root .sd360-kpi-compact-value.green {
-  color: var(--brand-primary, #0d5c3d) !important;
+  color: var(--brand-primary, #7c3aed) !important;
 }
 
 .salon-theme-root .sd360-appt-time {
-  color: var(--brand-primary, #0d5c3d) !important;
+  color: var(--brand-primary, #7c3aed) !important;
 }
 
 .salon-theme-root .s360-kpi-value,
 .salon-theme-root .s360-link,
 .salon-theme-root .s360-stat-up {
-  color: var(--brand-primary, #0d5c3d);
+  color: var(--brand-primary, #7c3aed);
 }
 
 .salon-theme-root .s360-alert-icon.info,
 .salon-theme-root .s360-timeline-icon.info,
 .salon-theme-root .s360-pay-icon.info {
-  background: var(--brand-soft, #ecfdf3) !important;
-  color: var(--brand-primary, #0d5c3d) !important;
+  background: var(--brand-soft, #f5f3ff) !important;
+  color: var(--brand-primary, #7c3aed) !important;
 }
 
 /* Keep true success icons semantic green */
@@ -100,19 +102,17 @@
   /* intentional semantic green */
 }
 
-/* Common emp / settings / ops buttons already use --emp-primary */
-
 .salon-theme-root .sd-kpi-icon.purple,
 .salon-theme-root .sd-kpi-icon.blue {
-  background: var(--brand-soft, #ecfdf3) !important;
-  color: var(--brand-primary, #0d5c3d) !important;
+  background: var(--brand-soft, #f5f3ff) !important;
+  color: var(--brand-primary, #7c3aed) !important;
 }
 
 .salon-theme-root .sd-quick-action-icon.green,
 .salon-theme-root .sd-quick-action-icon.purple,
 .salon-theme-root .sd-quick-action-icon.blue {
-  background: var(--brand-soft, #ecfdf3) !important;
-  color: var(--brand-primary, #0d5c3d) !important;
+  background: var(--brand-soft, #f5f3ff) !important;
+  color: var(--brand-primary, #7c3aed) !important;
 }
 
 /* ── Universal primary button & accent overrides in salon workspace ── */
@@ -120,7 +120,7 @@
 .salon-theme-root button.bg-primary,
 .salon-theme-root a.bg-primary,
 .salon-theme-root [data-slot='button'].bg-primary {
-  background-color: var(--brand-primary) !important;
+  background-color: var(--brand-primary, #7c3aed) !important;
   color: var(--brand-foreground, #ffffff) !important;
 }
 
@@ -128,15 +128,18 @@
 .salon-theme-root button.bg-primary:hover:not(:disabled),
 .salon-theme-root a.bg-primary:hover,
 .salon-theme-root [data-slot='button'].bg-primary:hover:not(:disabled) {
-  background-color: var(--brand-hover, var(--brand-primary)) !important;
+  background-color: var(--brand-hover, #6d28d9) !important;
   color: var(--brand-foreground, #ffffff) !important;
 }
 
 .salon-theme-root .text-primary {
-  color: var(--brand-primary) !important;
+  color: var(--brand-primary, #7c3aed) !important;
 }
 
 .salon-theme-root .border-primary {
-  border-color: var(--brand-primary) !important;
+  border-color: var(--brand-primary, #7c3aed) !important;
 }
 
+.salon-theme-root .ring-primary {
+  --tw-ring-color: var(--brand-ring, #7c3aed) !important;
+}

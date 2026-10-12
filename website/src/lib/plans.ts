@@ -96,8 +96,8 @@ export const DEFAULT_FALLBACK_PLANS: PublicPlan[] = [
     price: 5000,
     billingCycle: 'MONTHLY',
     prices: [
-      { billingCycle: 'MONTHLY', price: 5000, currency: 'LKR', trialDays: 14 },
-      { billingCycle: 'YEARLY', price: 50000, currency: 'LKR', trialDays: 14 },
+      { billingCycle: 'MONTHLY', price: 5000, currency: 'LKR', trialDays: 21 },
+      { billingCycle: 'YEARLY', price: 50000, currency: 'LKR', trialDays: 21 },
     ],
     features: [
       { code: 'APPOINTMENTS', name: 'Appointments' },
@@ -116,8 +116,8 @@ export const DEFAULT_FALLBACK_PLANS: PublicPlan[] = [
     price: 15000,
     billingCycle: 'MONTHLY',
     prices: [
-      { billingCycle: 'MONTHLY', price: 15000, currency: 'LKR', trialDays: 14 },
-      { billingCycle: 'YEARLY', price: 150000, currency: 'LKR', trialDays: 14 },
+      { billingCycle: 'MONTHLY', price: 15000, currency: 'LKR', trialDays: 21 },
+      { billingCycle: 'YEARLY', price: 150000, currency: 'LKR', trialDays: 21 },
     ],
     features: [
       { code: 'APPOINTMENTS', name: 'Appointments' },
@@ -141,8 +141,8 @@ export const DEFAULT_FALLBACK_PLANS: PublicPlan[] = [
     price: 25000,
     billingCycle: 'MONTHLY',
     prices: [
-      { billingCycle: 'MONTHLY', price: 25000, currency: 'LKR', trialDays: 14 },
-      { billingCycle: 'YEARLY', price: 250000, currency: 'LKR', trialDays: 14 },
+      { billingCycle: 'MONTHLY', price: 25000, currency: 'LKR', trialDays: 21 },
+      { billingCycle: 'YEARLY', price: 250000, currency: 'LKR', trialDays: 21 },
     ],
     features: [
       { code: 'ANALYTICS', name: 'Analytics' },
@@ -157,7 +157,7 @@ export const DEFAULT_FALLBACK_PLANS: PublicPlan[] = [
       { code: 'QUOTATIONS', name: 'Quotations' },
       { code: 'REPORTS', name: 'Reports' },
       { code: 'SERVICES', name: 'Services' },
-      { code: 'SMS_NOTIFICATIONS', name: 'SMS Notifications' },
+      { code: 'SMS_NOTIFICATIONS', name: 'Staff Notifications' },
       { code: 'STAFF_MANAGEMENT', name: 'Staff Management' },
     ],
   },

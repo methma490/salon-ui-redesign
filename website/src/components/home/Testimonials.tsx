@@ -83,7 +83,7 @@ export function Testimonials() {
                         />
                       ))}
                     </div>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-[#f0f9f5] px-2.5 py-0.5 text-[11px] font-bold text-[#0b6842] border border-[#d1fae5]">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[#EDE9FE] px-2.5 py-0.5 text-[11px] font-bold text-[#7C3AED] border border-[#DDD6FE]">
                       <CheckCircle className="h-3 w-3" />
                       Verified Salon
                     </span>
@@ -99,7 +99,7 @@ export function Testimonials() {
 
                 <div className="mt-8 pt-6 border-t border-slate-100">
                   {/* Metric Pill */}
-                  <div className="mb-4 inline-flex items-center gap-2 rounded-xl bg-[#e8f6f0] px-3 py-1.5 text-xs font-bold text-[#0b6842]">
+                  <div className="mb-4 inline-flex items-center gap-2 rounded-xl bg-[#EDE9FE] px-3 py-1.5 text-xs font-bold text-[#7C3AED]">
                     <Icon className="h-3.5 w-3.5" />
                     <span>
                       {t.metric} {t.metricLabel}
@@ -108,7 +108,7 @@ export function Testimonials() {
 
                   {/* Author Details */}
                   <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#0b6842] to-[#07472c] text-sm font-bold text-white shadow-xs">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#7C3AED] to-[#D946EF] text-sm font-bold text-white shadow-xs">
                       {t.initials}
                     </div>
                     <div>

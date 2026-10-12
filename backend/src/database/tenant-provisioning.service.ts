@@ -148,8 +148,8 @@ export class TenantProvisioningService {
           return { mainBranchId: branchId, adminUserId: userId };
         },
         {
-          timeout: 120000,
-          maxWait: 15000,
+          timeout: 600000,
+          maxWait: 30000,
         },
       );
 

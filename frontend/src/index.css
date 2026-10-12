@@ -1,26 +1,26 @@
 @import 'tailwindcss';
 
 @theme inline {
-  /* Warm burgundy and gold palette shared with the public website */
-  --color-background: #faf7f4;
-  --color-foreground: #111111;
-  --color-card: oklch(1 0 0);
-  --color-card-foreground: #111111;
-  --color-popover: oklch(1 0 0);
-  --color-popover-foreground: #111111;
-  --color-primary: #a44a5c;
+  /* Dynamic Purple and White Design System */
+  --color-background: #ffffff;
+  --color-foreground: #0f172a;
+  --color-card: #ffffff;
+  --color-card-foreground: #0f172a;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0f172a;
+  --color-primary: #7c3aed;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #f5e8eb;
-  --color-secondary-foreground: #8a3d4d;
-  --color-muted: #f3ebe1;
-  --color-muted-foreground: #6b6b6b;
-  --color-accent: #f5e8eb;
-  --color-accent-foreground: #8a3d4d;
+  --color-secondary: #f5f3ff;
+  --color-secondary-foreground: #7c3aed;
+  --color-muted: #f9fafb;
+  --color-muted-foreground: #64748b;
+  --color-accent: #f5f3ff;
+  --color-accent-foreground: #7c3aed;
   --color-destructive: oklch(0.55 0.2 25);
   --color-destructive-foreground: oklch(0.99 0 0);
-  --color-border: #e8e2dc;
-  --color-input: #e8e2dc;
-  --color-ring: #d4af7c;
+  --color-border: #e2e8f0;
+  --color-input: #e2e8f0;
+  --color-ring: #7c3aed;
   --color-success: oklch(0.62 0.17 155);
   --color-warning: oklch(0.68 0.16 55);
   --radius-lg: 0.75rem;
@@ -46,21 +46,22 @@
   }
 }
 
-/* Salon Admin brand tokens — overridden at runtime by TenantThemeProvider */
+/* Salon Admin brand tokens — overridden dynamically at runtime by TenantThemeProvider */
 .salon-theme-root {
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  --brand-primary: #134434;
-  --brand-hover: #0e3327;
-  --brand-active: #09221a;
-  --brand-soft: #eef6f3;
-  --brand-soft-strong: #dbeee6;
-  --brand-border: #bcdcd0;
-  --brand-focus: #134434;
-  --brand-ring: #134434;
+  --brand-primary: #7c3aed;
+  --brand-hover: #6d28d9;
+  --brand-active: #5b21b6;
+  --brand-soft: #f5f3ff;
+  --brand-soft-strong: #ede9fe;
+  --brand-border: #ddd6fe;
+  --brand-focus: #7c3aed;
+  --brand-ring: #7c3aed;
   --brand-foreground: #ffffff;
-  --brand-soft-bg: #eef6f3;
+  --brand-soft-bg: #f5f3ff;
+  --brand-light: #ede9fe;
 
-  /* Shared s360-* dashboard accents (also used by Super Admin with green defaults) */
+  /* Shared dashboard accents */
   --s360-brand: var(--brand-primary);
   --s360-brand-hover: var(--brand-hover);
   --s360-brand-soft: var(--brand-soft);
@@ -75,7 +76,7 @@
   --dash-primary: var(--brand-primary);
   --pr-brand: var(--brand-primary);
 
-  /* Tailwind semantic primary follows brand inside salon workspace only */
+  /* Tailwind semantic primary follows brand inside salon workspace */
   --color-primary: var(--brand-primary);
   --color-primary-foreground: var(--brand-foreground);
   --color-ring: var(--brand-ring);
@@ -107,6 +108,10 @@
 
 .salon-theme-root .border-primary {
   border-color: var(--brand-primary) !important;
+}
+
+.salon-theme-root .ring-primary {
+  --tw-ring-color: var(--brand-ring, var(--brand-primary)) !important;
 }
 
 /* Keep primary page titles consistent across both admin workspaces. */

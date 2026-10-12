@@ -232,7 +232,7 @@
 }
 
 .dash-pill-btn.active {
-  background-color: var(--brand-primary, #2563eb);
+  background-color: var(--brand-primary, #7c3aed);
   color: var(--brand-foreground, #ffffff);
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
@@ -464,7 +464,7 @@
 
 .dash-kpi-icon-blue {
   background-color: var(--brand-soft, #eff6ff);
-  color: var(--brand-primary, #2563eb);
+  color: var(--brand-primary, #7c3aed);
 }
 
 .dash-kpi-icon-red {
@@ -1061,7 +1061,7 @@
 }
 
 .dash-legend-dot.blue {
-  background-color: var(--brand-primary, #2563eb);
+  background-color: var(--brand-primary, #7c3aed);
 }
 
 .dash-legend-dot.red {
@@ -1277,7 +1277,7 @@
   font-size: 0.7rem;
   font-weight: 700;
   color: var(--brand-foreground, #ffffff);
-  background-color: var(--brand-primary, #2563eb);
+  background-color: var(--brand-primary, #7c3aed);
   object-fit: cover;
   flex-shrink: 0;
 }
@@ -1341,7 +1341,7 @@
 
 .dash-mini-bar-fill {
   height: 100%;
-  background-color: var(--brand-primary, #2563eb);
+  background-color: var(--brand-primary, #7c3aed);
   border-radius: 9999px;
 }
 
@@ -1571,7 +1571,7 @@
   height: 32px;
   border-radius: 0.5rem;
   background-color: var(--brand-soft, #eff6ff);
-  color: var(--brand-primary, #2563eb);
+  color: var(--brand-primary, #7c3aed);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1688,7 +1688,7 @@
 
 .dash-status-pill.salary {
   background-color: var(--brand-soft, #eff6ff);
-  color: var(--brand-primary, #2563eb);
+  color: var(--brand-primary, #7c3aed);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -1788,7 +1788,7 @@
   gap: 0.35rem;
   font-size: 0.775rem;
   font-weight: 600;
-  color: var(--brand-primary, #2563eb);
+  color: var(--brand-primary, #7c3aed);
   text-decoration: none;
   transition: opacity 0.15s ease;
   touch-action: manipulation;
@@ -1812,7 +1812,7 @@
   gap: 0.25rem;
   font-size: 0.725rem;
   font-weight: 600;
-  color: var(--brand-primary, #2563eb);
+  color: var(--brand-primary, #7c3aed);
   text-decoration: none;
   touch-action: manipulation;
 }

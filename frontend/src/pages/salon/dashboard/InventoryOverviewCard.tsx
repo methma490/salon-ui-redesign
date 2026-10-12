@@ -21,7 +21,7 @@ interface InventoryOverviewCardProps {
 
 export function InventoryOverviewCard({ data }: InventoryOverviewCardProps) {
   const theme = useTenantTheme();
-  const primaryColor = theme?.palette?.primary ?? '#2563eb';
+  const primaryColor = theme?.palette?.primary ?? '#7C3AED';
   const chartColors = getDashboardChartColors(primaryColor);
 
   const totalProducts = data?.totalProducts || 0;

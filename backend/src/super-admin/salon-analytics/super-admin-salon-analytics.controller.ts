@@ -118,4 +118,30 @@ export class SuperAdminSalonAnalyticsController {
   ) {
     return this.salonAnalyticsService.getSalonFinance(tenantId, query);
   }
+
+  @Get(':tenantId/branches')
+  getSalonBranches(@Param('tenantId', ParseUUIDPipe) tenantId: string) {
+    return this.salonAnalyticsService.getSalonBranches(tenantId);
+  }
+
+  @Get(':tenantId/profit-loss')
+  async getSalonProfitLoss(
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
+    @Query() query: SalonAnalyticsDateRangeDto,
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() req: Request,
+  ) {
+    const result = await this.salonAnalyticsService.getSalonProfitLoss(tenantId, query, user);
+    await this.auditLogsService.logAction({
+      adminUserId: user.id,
+      action: 'SUPER_ADMIN_VIEW_SALON_PROFIT_LOSS',
+      entityType: 'TENANT_PROFIT_LOSS',
+      tenantId,
+      metadata: { from: query.from, to: query.to, branchId: query.branchId },
+      ipAddress: getClientIp(req),
+      userAgent: req.headers['user-agent'],
+    });
+    return result;
+  }
 }
+

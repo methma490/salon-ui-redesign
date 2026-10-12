@@ -138,10 +138,8 @@ export const SALON_ROUTE_ACCESS: Array<{
     module: 'PAYROLL',
   },
   { match: (p) => p.startsWith('/salon/employees'), feature: 'EMPLOYEES' },
-  {
-    match: (p) => p.startsWith('/salon/reports'),
-    anyFeature: ['SALES_REPORTS', 'EMPLOYEE_REPORTS', 'INVENTORY_REPORTS', 'REPORTS'],
-  },
+  { match: (p) => p.startsWith('/salon/reports') },
+
   { match: (p) => p.startsWith('/salon/branches'), module: 'MULTI_BRANCH' },
   { match: (p) => p.startsWith('/salon/subscription'), adminOnly: true },
   { match: (p) => p.startsWith('/salon/settings'), adminOnly: true },

@@ -10,6 +10,7 @@ import {
   Scissors,
   ShieldAlert,
   Store,
+  TrendingUp,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -25,6 +26,7 @@ const navItems = [
   { to: '/super-admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/super-admin/salons', label: 'Salons', icon: Store },
   { to: '/super-admin/salon-analytics', label: 'Salon Analytics', icon: BarChart3 },
+  { to: '/super-admin/salon-pnl', label: 'Salon P&L', icon: TrendingUp },
   { to: '/super-admin/plans', label: 'Plans', icon: CreditCard },
   { to: '/super-admin/subscriptions', label: 'Subscriptions', icon: Repeat },
   { to: '/super-admin/payments', label: 'Payments', icon: Receipt },

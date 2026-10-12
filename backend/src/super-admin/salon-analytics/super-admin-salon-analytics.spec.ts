@@ -27,7 +27,11 @@ describe('SuperAdminSalonAnalyticsService', () => {
       },
     };
 
-    service = new SuperAdminSalonAnalyticsService(mockPrisma, mockTenantSchemaService);
+    const mockProfitLossService = {
+      getProfitLoss: jest.fn(),
+    } as any;
+
+    service = new SuperAdminSalonAnalyticsService(mockPrisma, mockTenantSchemaService, mockProfitLossService);
   });
 
   describe('resolveTenantContext & Multi-Tenant Security', () => {

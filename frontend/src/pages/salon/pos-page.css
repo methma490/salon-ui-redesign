@@ -861,8 +861,8 @@
 }
 
 .pos-item-card-selected {
-  border-color: #2563eb;
-  background: #eff6ff;
+  border-color: var(--brand-primary, #7c3aed);
+  background: var(--brand-soft, #f5f3ff);
 }
 
 .pos-card-add-icon {
@@ -872,9 +872,9 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  border: 1.5px solid #3b82f6;
+  border: 1.5px solid var(--brand-primary, #7c3aed);
   background: #ffffff;
-  color: #3b82f6;
+  color: var(--brand-primary, #7c3aed);
   display: flex;
   align-items: center;
   justify-content: center;

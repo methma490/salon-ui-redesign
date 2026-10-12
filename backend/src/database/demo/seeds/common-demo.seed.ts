@@ -327,7 +327,7 @@ export async function seedCommonDemoData(
     },
   ];
 
-  const seededProducts: Array<{ id: string; name: string; code: string; sellingPrice: number }> = [];
+  const seededProducts: Array<{ id: string; name: string; code: string; sellingPrice: number; costPrice: number }> = [];
   for (const pCat of demoProductCategories) {
     const pCatInserted = await client.$queryRawUnsafe<Array<{ id: string }>>(
       `INSERT INTO "${schemaName}".product_categories (code, name, description, is_active)
@@ -378,6 +378,7 @@ export async function seedCommonDemoData(
         name: prod.name,
         code: prod.code,
         sellingPrice: prod.sell,
+        costPrice: prod.cost,
       });
     }
   }
@@ -725,12 +726,13 @@ export async function seedCommonDemoData(
     if (prod) {
       await client.$executeRawUnsafe(
         `INSERT INTO "${schemaName}".sale_items (
-           sale_id, item_type, service_id, product_id, quantity, unit_price, discount, total, created_at
+           sale_id, item_type, service_id, product_id, quantity, unit_price, discount, total, cost_price, created_at
          )
-         VALUES ($1::uuid, 'product', NULL, $2::uuid, 1, $3, 0, $3, NOW() - ($4 || ' days')::INTERVAL)`,
+         VALUES ($1::uuid, 'product', NULL, $2::uuid, 1, $3, 0, $3, $4, NOW() - ($5 || ' days')::INTERVAL)`,
         saleId,
         prod.id,
         prod.sellingPrice,
+        prod.costPrice ?? 0,
         s.daysAgo,
       );
 
