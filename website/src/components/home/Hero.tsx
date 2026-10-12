@@ -1,254 +1,299 @@
+'use client';
+
+import * as React from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
+  ArrowRight,
+  Play,
+  Check,
+  TrendingUp,
+  LayoutDashboard,
   Calendar,
+  CreditCard,
   Package,
   Users,
   BarChart3,
-  ArrowRight,
-  Play,
-  ShieldCheck,
-  Store,
-  Headphones,
+  X,
+  Sparkles,
 } from 'lucide-react';
 
+interface FeatureNavItem {
+  id: string;
+  icon: typeof LayoutDashboard;
+  title: string;
+  label: string;
+}
+
+const HERO_FEATURES: FeatureNavItem[] = [
+  {
+    id: 'dashboard',
+    icon: LayoutDashboard,
+    title: 'Dashboard',
+    label: 'Business insights',
+  },
+  {
+    id: 'appointments',
+    icon: Calendar,
+    title: 'Appointments',
+    label: 'Bookings & scheduling',
+  },
+  {
+    id: 'pos',
+    icon: CreditCard,
+    title: 'POS & Billing',
+    label: 'Sales made simple',
+  },
+  {
+    id: 'inventory',
+    icon: Package,
+    title: 'Inventory',
+    label: 'Stock management',
+  },
+  {
+    id: 'staff',
+    icon: Users,
+    title: 'Staff & Customers',
+    label: 'People management',
+  },
+  {
+    id: 'reports',
+    icon: BarChart3,
+    title: 'Reports',
+    label: 'Data-driven growth',
+  },
+];
 
 export function Hero() {
+  const [activeFeature, setActiveFeature] = useState<string>('dashboard');
+  const [isDemoModalOpen, setIsDemoModalOpen] = useState<boolean>(false);
+
   return (
-    <section 
+    <section
       id="hero"
-      aria-label="Dart Smart Salon introduction"
-      className="relative w-full overflow-hidden bg-white lg:h-[calc(100vh-72px)] lg:min-h-[660px] flex flex-col justify-between"
+      aria-label="Dart Smart Salon Introduction"
+      className="relative w-full overflow-hidden min-h-[92vh] flex flex-col justify-between pt-6 sm:pt-10 lg:pt-12 pb-8 sm:pb-12"
+      style={{
+        backgroundImage: "url('/assets/landing/hero-background.png')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }}
     >
-      {/* ── Layer 1: Full-Screen Salon Background Image ── */}
-      <div 
-        className="pointer-events-none absolute inset-0 z-0 select-none overflow-hidden"
+      {/* ── Soft Ambient Glow Overlays (Preserves background curves & stage) ── */}
+      <div
+        className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-r from-white/90 via-white/40 to-transparent lg:from-white/80 lg:via-white/30 lg:to-transparent"
         aria-hidden="true"
-      >
-        <Image
-          src="/images/hero-reference/salon-fullscreen-bg.jpg"
-          alt="Dart Smart Salon Ambience"
-          fill
-          priority
-          unoptimized
-          sizes="100vw"
-          className="object-cover object-[right_top] lg:object-[82%_top]"
-        />
-        {/* Soft horizontal gradient overlay for crisp text contrast */}
-        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-white/20 lg:from-white lg:via-white/70 lg:to-transparent" />
-      </div>
+      />
 
-      {/* ── Main Layout Container (Full Viewport Height) ── */}
-      <div className="relative z-10 w-full max-w-[1720px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 flex-1 flex flex-col justify-between pt-4 sm:pt-5 lg:pt-5 pb-6 sm:pb-8 lg:pb-10 xl:pb-12">
-        <div className="grid grid-cols-1 lg:grid-cols-12 items-end gap-6 lg:gap-4 xl:gap-6 w-full flex-1 min-h-0">
+      {/* ── Main Two-Column Hero Container ── */}
+      <div className="relative z-10 w-full max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-14 flex-1 flex flex-col justify-between">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-6 xl:gap-10 items-center flex-1">
           
-          {/* ── Left Column: Distributed vertically to fill screen height with bottom breathing room ── */}
-          <div className="lg:col-span-6 xl:col-span-5 flex flex-col justify-between h-full z-10 max-w-xl xl:max-w-2xl pt-1 lg:pt-2 pb-4 lg:pb-6 xl:pb-8">
-            
-            {/* Top Group: Badge, Headline, Subtitle, Action Buttons */}
-            <div className="flex flex-col items-start">
-              {/* Pill Badge */}
-              <div className="inline-flex items-center gap-2 rounded-full bg-[#e8f6f0] border border-[#c6ecd9] px-3.5 py-1 text-xs font-semibold text-[#0b6842] shadow-2xs mb-3 xl:mb-4">
-                <span className="size-1.5 shrink-0 rounded-full bg-[#0b6842]" aria-hidden="true" />
-                <span>Built for modern salons</span>
-              </div>
-
-              {/* Main Headline */}
-              <h1 className="text-3xl sm:text-4xl lg:text-[2.85rem] xl:text-[3.5rem] 2xl:text-[3.75rem] font-extrabold tracking-tight text-slate-900 leading-[1.08]">
-                <span className="block">Complete Salon</span>
-                <span className="block">Management.</span>
-                <span className="text-[#0b6842]">Simplified.</span>
-              </h1>
-
-              {/* Subtitle */}
-              <p className="mt-3 xl:mt-3.5 max-w-[30rem] text-sm sm:text-base lg:text-[1.025rem] leading-relaxed text-slate-600">
-                Manage appointments, staff, customers, sales, inventory and business insights through one intelligent platform.
-              </p>
-
-              {/* CTA Action Buttons (Pill shaped like reference) */}
-              <div className="mt-5 xl:mt-5.5 flex flex-wrap items-center gap-3 sm:gap-3.5 w-full sm:w-auto">
-                <Link
-                  href="/contact"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#0b6842] hover:bg-[#07472c] text-white px-6 sm:px-7 py-3 text-sm font-semibold shadow-md hover:shadow-lg transition-all active:scale-98"
-                >
-                  <span>Book a Demo</span>
-                  <ArrowRight className="size-4" />
-                </Link>
-
-                <Link
-                  href="/contact"
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white/95 hover:bg-white text-slate-900 px-5 sm:px-6 py-3 text-sm font-semibold shadow-2xs hover:shadow-xs transition-all"
-                >
-                  <span className="flex size-4.5 items-center justify-center rounded-full bg-slate-900 text-white">
-                    <Play className="size-2 fill-current ml-0.5" />
-                  </span>
-                  <span>Watch Video</span>
-                </Link>
-              </div>
-
-              {/* ── Mobile/Tablet Mockup Placement ── */}
-              <div className="w-full relative overflow-hidden mt-6 mb-2 lg:hidden flex items-end justify-center px-1">
-                <div className="relative w-full max-w-[360px] sm:max-w-[480px] md:max-w-[560px] flex items-end justify-center">
-                  {/* Laptop */}
-                  <div className="relative w-[75%] max-w-[300px] sm:max-w-[380px] md:max-w-[440px]">
-                    <div className="relative rounded-t-[10px] sm:rounded-t-[14px] bg-[#1a1c1e] p-[4px] sm:p-[6px] border border-slate-700/60 shadow-xl ring-1 ring-white/10">
-                      <div className="relative w-full aspect-[1024/540] bg-white rounded-[3px] sm:rounded-[5px] overflow-hidden">
-                        <Image
-                          src="/images/hero-reference/desktop-dashboard-raw.png"
-                          alt="Desktop Dashboard Screenshot"
-                          fill
-                          unoptimized
-                          sizes="(max-width: 640px) 70vw, (max-width: 1024px) 55vw, 440px"
-                          className="object-cover object-top"
-                        />
-                      </div>
-                    </div>
-                    <div className="relative w-[106%] -ml-[3%] h-[8px] sm:h-[11px] bg-gradient-to-b from-[#e2e8f0] via-[#cbd5e1] to-[#94a3b8] rounded-b-md sm:rounded-b-lg shadow-lg flex justify-center items-start border-t border-slate-300">
-                      <div className="w-12 sm:w-16 h-1 bg-[#475569] rounded-b-xs" />
-                    </div>
-                  </div>
-
-                  {/* Mobile */}
-                  <div className="relative -ml-4 sm:-ml-6 -mb-1 z-20 w-[26%] max-w-[105px] sm:max-w-[130px] md:max-w-[150px]">
-                    <div className="relative rounded-[16px] sm:rounded-[22px] bg-[#1a1c1e] p-[2.5px] sm:p-[3.5px] border-2 border-slate-700 shadow-2xl">
-                      <div className="relative w-full aspect-[340/574] bg-white rounded-[13px] sm:rounded-[18px] overflow-hidden">
-                        <Image
-                          src="/images/hero-reference/mobile-dashboard-raw.png"
-                          alt="Mobile App Screenshot"
-                          fill
-                          unoptimized
-                          sizes="(max-width: 640px) 30vw, (max-width: 1024px) 25vw, 150px"
-                          className="object-cover object-top"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          {/* ════ LEFT COLUMN: Marketing Content ════ */}
+          <div className="lg:col-span-6 xl:col-span-5 flex flex-col items-start z-10 max-w-xl xl:max-w-2xl">
+            {/* Small Pill Badge */}
+            <div className="inline-flex items-center gap-2 rounded-full bg-[#EDE9FE]/85 border border-[#DDD6FE] px-3.5 py-1 text-xs font-semibold text-[#7C3AED] shadow-xs mb-4 sm:mb-5 backdrop-blur-sm">
+              <span className="size-2 shrink-0 rounded-full bg-[#7C3AED] animate-pulse" aria-hidden="true" />
+              <span>Built for modern salons</span>
             </div>
 
-            {/* Bottom Group: 4 Feature Items + 3 Trust Metrics */}
-            <div className="mt-6 lg:mt-4 xl:mt-6 w-full flex flex-col gap-4 xl:gap-5 mb-2 lg:mb-4 xl:mb-6">
-              {/* 4 Feature Items (Icon box on top, 2-line title below matching reference) */}
-              <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-2.5 xl:gap-3">
-                <div className="flex flex-col items-start gap-1.5">
-                  <span className="flex size-9 items-center justify-center rounded-xl bg-[#eaf8f1] text-[#0b6842] shrink-0 border border-[#d1fae5] shadow-2xs">
-                    <Calendar className="size-4" strokeWidth={2.2} />
-                  </span>
-                  <span className="text-[11px] sm:text-xs font-bold text-slate-800 leading-tight">
-                    Appointments &<br />Scheduling
-                  </span>
-                </div>
+            {/* Primary Headline — EXACT WORDS REQUIRED */}
+            <h1 className="text-4xl sm:text-5xl lg:text-[3.25rem] xl:text-[3.85rem] font-extrabold tracking-tight text-[#0F172A] leading-[1.08]">
+              <span className="block">Everything You Need to</span>
+              <span className="block mt-1">
+                Run Your Business.{' '}
+                <span className="bg-gradient-to-r from-[#7C3AED] to-[#D946EF] bg-clip-text text-transparent">
+                  Smarter.
+                </span>
+              </span>
+            </h1>
 
-                <div className="flex flex-col items-start gap-1.5">
-                  <span className="flex size-9 items-center justify-center rounded-xl bg-[#eaf8f1] text-[#0b6842] shrink-0 border border-[#d1fae5] shadow-2xs">
-                    <Package className="size-4" strokeWidth={2.2} />
-                  </span>
-                  <span className="text-[11px] sm:text-xs font-bold text-slate-800 leading-tight">
-                    POS, Inventory &<br />Billing
-                  </span>
-                </div>
+            {/* Subtitle / Description */}
+            <p className="mt-4 sm:mt-5 text-base sm:text-lg text-[#64748B] leading-relaxed max-w-xl">
+              Manage appointments, customers, employees, sales, inventory, and reports in one beautifully simple platform. Spend less time managing and more time growing your salon.
+            </p>
 
-                <div className="flex flex-col items-start gap-1.5">
-                  <span className="flex size-9 items-center justify-center rounded-xl bg-[#eaf8f1] text-[#0b6842] shrink-0 border border-[#d1fae5] shadow-2xs">
-                    <Users className="size-4" strokeWidth={2.2} />
-                  </span>
-                  <span className="text-[11px] sm:text-xs font-bold text-slate-800 leading-tight">
-                    Staff &<br />Customers
-                  </span>
-                </div>
+            {/* CTA Buttons */}
+            <div className="mt-6 sm:mt-7 flex flex-wrap items-center gap-3.5 sm:gap-4 w-full sm:w-auto">
+              {/* Primary Pill Button with Purple Gradient */}
+              <Link
+                href="/#pricing"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#7C3AED] to-[#D946EF] px-7 py-3.5 text-sm sm:text-base font-semibold text-white shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/35 hover:scale-[1.02] active:scale-[0.98] transition-all"
+              >
+                <span>Get Started Free</span>
+                <ArrowRight className="size-4.5" />
+              </Link>
 
-                <div className="flex flex-col items-start gap-1.5">
-                  <span className="flex size-9 items-center justify-center rounded-xl bg-[#eaf8f1] text-[#0b6842] shrink-0 border border-[#d1fae5] shadow-2xs">
-                    <BarChart3 className="size-4" strokeWidth={2.2} />
-                  </span>
-                  <span className="text-[11px] sm:text-xs font-bold text-slate-800 leading-tight">
-                    Reports &<br />Analytics
-                  </span>
-                </div>
-              </div>
-
-              {/* 3 Trust Metrics */}
-              <div className="pt-3 border-t border-slate-200/80 w-full grid grid-cols-1 sm:grid-cols-3 lg:flex lg:items-center lg:justify-between gap-2.5 sm:gap-3 xl:gap-4 text-xs">
-                <div className="flex items-center gap-1.5 xl:gap-2">
-                  <Store className="size-4 text-[#0b6842] shrink-0" />
-                  <div className="whitespace-nowrap">
-                    <span className="font-bold text-slate-900">100+</span>{' '}
-                    <span className="text-slate-500">Salons Trust Us</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1.5 xl:gap-2">
-                  <ShieldCheck className="size-4 text-[#0b6842] shrink-0" />
-                  <div className="whitespace-nowrap">
-                    <span className="font-bold text-slate-900">99.9%</span>{' '}
-                    <span className="text-slate-500">Uptime & Security</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1.5 xl:gap-2">
-                  <Headphones className="size-4 text-[#0b6842] shrink-0" />
-                  <div className="whitespace-nowrap">
-                    <span className="font-bold text-slate-900">24/7</span>{' '}
-                    <span className="text-slate-500">Customer Support</span>
-                  </div>
-                </div>
-              </div>
+              {/* Secondary Button with Translucent Surface */}
+              <button
+                type="button"
+                onClick={() => setIsDemoModalOpen(true)}
+                className="inline-flex items-center justify-center gap-2.5 rounded-full border border-[#DDD6FE] bg-white/90 backdrop-blur-md px-6 py-3.5 text-sm sm:text-base font-semibold text-[#0F172A] shadow-xs hover:bg-white hover:border-[#A855F7] hover:shadow-md transition-all active:scale-[0.98]"
+              >
+                <span className="flex size-6 items-center justify-center rounded-full bg-[#0F172A] text-white">
+                  <Play className="size-2.5 fill-current ml-0.5" />
+                </span>
+                <span>Watch Demo</span>
+              </button>
             </div>
 
+            {/* Compact Trust / Policy Indicators */}
+            <div className="mt-6 sm:mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs sm:text-sm font-medium text-[#64748B]">
+              <div className="flex items-center gap-1.5">
+                <span className="flex size-4 items-center justify-center rounded-full bg-[#EDE9FE] text-[#7C3AED]">
+                  <Check className="size-2.5" strokeWidth={3} />
+                </span>
+                <span>No credit card required</span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <span className="flex size-4 items-center justify-center rounded-full bg-[#EDE9FE] text-[#7C3AED]">
+                  <Check className="size-2.5" strokeWidth={3} />
+                </span>
+                <span>Free 14-day trial</span>
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <span className="flex size-4 items-center justify-center rounded-full bg-[#EDE9FE] text-[#7C3AED]">
+                  <Check className="size-2.5" strokeWidth={3} />
+                </span>
+                <span>Cancel anytime</span>
+              </div>
+            </div>
           </div>
 
-          {/* ── Right Column: Grounded Device Mockups resting flush on bottom ── */}
-          <div className="hidden lg:flex lg:col-span-6 xl:col-span-7 relative flex-col items-end justify-end self-end w-full h-full pb-0 pr-0">
-            <div className="relative z-10 w-full max-w-[620px] xl:max-w-[700px] 2xl:max-w-[780px] flex items-end justify-end pb-0 pr-0">
-              
-              {/* ── Laptop Mockup (Grounded at bottom) ── */}
-              <div className="relative w-full max-w-[490px] xl:max-w-[560px] 2xl:max-w-[630px] mr-6 xl:mr-8 mb-0">
-                {/* Laptop Lid / Screen */}
-                <div className="relative rounded-t-[12px] xl:rounded-t-[16px] bg-[#1a1c1e] p-[5px] xl:p-[7px] border border-slate-700/60 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.4)] ring-1 ring-white/10">
-                  {/* Camera Dot */}
-                  <div className="absolute top-[3px] left-1/2 -translate-x-1/2 size-1.5 rounded-full bg-black/80 flex items-center justify-center z-20">
-                    <span className="size-0.5 rounded-full bg-[#3b82f6]/40" />
+          {/* ════ RIGHT COLUMN: Layered Laptop & Mobile Showcase ════ */}
+          <div className="lg:col-span-6 xl:col-span-7 relative flex flex-col items-center lg:items-end justify-center w-full mt-4 lg:mt-0">
+            <div className="relative w-full max-w-[620px] xl:max-w-[700px] 2xl:max-w-[760px]">
+
+              {/* ── Decorative Floating Handwritten Text & Arrow ── */}
+              <div className="hidden sm:flex absolute -top-12 lg:-top-14 left-8 lg:left-14 z-30 items-center gap-2 pointer-events-none select-none">
+                <span className="font-handwriting text-2xl lg:text-[1.7rem] text-[#7C3AED] font-bold tracking-wide transform -rotate-6 drop-shadow-xs">
+                  More bookings, happier clients ♡
+                </span>
+                <svg
+                  className="w-12 h-10 text-[#7C3AED] transform rotate-12 -mt-2"
+                  viewBox="0 0 50 40"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M5 5 C 20 20, 25 35, 45 30" />
+                  <polyline points="35 32 45 30 42 20" />
+                </svg>
+              </div>
+
+              {/* ── Floating Top Card: 100+ Salons Trust Us ── */}
+              <div className="absolute -top-6 sm:-top-8 right-6 sm:right-12 z-30 animate-float-slow">
+                <div className="glass-card rounded-2xl py-2 px-3.5 sm:px-4 flex items-center gap-3 border border-[#DDD6FE]/80 shadow-xl shadow-purple-900/10">
+                  {/* Avatar stack */}
+                  <div className="flex -space-x-2 overflow-hidden">
+                    <div className="inline-block size-7 sm:size-8 rounded-full ring-2 ring-white overflow-hidden bg-purple-200">
+                      <Image
+                        src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&h=80&q=80"
+                        alt="Salon Owner"
+                        width={32}
+                        height={32}
+                        className="size-full object-cover"
+                        unoptimized
+                      />
+                    </div>
+                    <div className="inline-block size-7 sm:size-8 rounded-full ring-2 ring-white overflow-hidden bg-purple-300">
+                      <Image
+                        src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&h=80&q=80"
+                        alt="Salon Manager"
+                        width={32}
+                        height={32}
+                        className="size-full object-cover"
+                        unoptimized
+                      />
+                    </div>
+                    <div className="inline-block size-7 sm:size-8 rounded-full ring-2 ring-white overflow-hidden bg-purple-400">
+                      <Image
+                        src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=80&h=80&q=80"
+                        alt="Lead Stylist"
+                        width={32}
+                        height={32}
+                        className="size-full object-cover"
+                        unoptimized
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs sm:text-sm font-bold text-[#0F172A]">100+</div>
+                    <div className="text-[10px] sm:text-[11px] font-medium text-[#64748B]">Salons trust us</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Floating Upper Right Card: Revenue Analytics Preview ── */}
+              <div className="absolute top-16 sm:top-18 -right-3 sm:-right-6 z-30 animate-float-gentle">
+                <div className="glass-card rounded-2xl p-3 sm:p-3.5 flex items-center gap-3 border border-[#DDD6FE]/80 shadow-xl shadow-purple-900/10">
+                  <div className="flex size-9 sm:size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#7C3AED] to-[#D946EF] text-white shadow-sm shadow-purple-500/25">
+                    <TrendingUp className="size-4.5 sm:size-5" />
+                  </div>
+                  <div>
+                    <div className="text-xs sm:text-sm font-extrabold text-[#0F172A] leading-tight">
+                      LKR 53,000
+                    </div>
+                    <div className="text-[10px] sm:text-[11px] text-[#64748B] flex items-center gap-1">
+                      <span>This month revenue</span>
+                      <span className="text-emerald-600 font-bold">↗ +12%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Main Laptop Device Presentation ── */}
+              <div className="relative w-full max-w-[530px] xl:max-w-[610px] 2xl:max-w-[660px] mx-auto lg:mr-10">
+                {/* Laptop Screen Bezel */}
+                <div className="relative rounded-t-[14px] sm:rounded-t-[18px] bg-[#18181B] p-[6px] sm:p-[8px] border border-slate-700/80 shadow-[0_25px_60px_-15px_rgba(124,58,237,0.25)] ring-1 ring-white/10">
+                  {/* Laptop Camera dot */}
+                  <div className="absolute top-[3.5px] left-1/2 -translate-x-1/2 size-1.5 rounded-full bg-black flex items-center justify-center z-20">
+                    <span className="size-0.5 rounded-full bg-[#7C3AED]" />
                   </div>
 
-                  {/* High-Res Original Desktop Screenshot Frame */}
-                  <div className="relative w-full aspect-[1024/540] bg-white rounded-[4px] xl:rounded-[6px] overflow-hidden">
+                  {/* Desktop Live Dashboard Screen Frame */}
+                  <div className="relative w-full aspect-[16/9.8] bg-white rounded-[6px] sm:rounded-[10px] overflow-hidden">
                     <Image
-                      src="/images/hero-reference/desktop-dashboard-raw.png"
-                      alt="Dart Smart Salon Desktop Dashboard Live Screenshot"
+                      src="/assets/landing/desktop-dashboard.png"
+                      alt="Dart Smart Salon Live Desktop Dashboard"
                       fill
                       priority
                       unoptimized
-                      sizes="(max-width: 1280px) 45vw, 630px"
+                      sizes="(max-width: 1024px) 90vw, 660px"
                       className="object-cover object-top"
                     />
                   </div>
                 </div>
 
-                {/* Laptop Base / Chassis */}
-                <div className="relative w-[106%] -ml-[3%] h-[12px] xl:h-[14px] bg-gradient-to-b from-[#e2e8f0] via-[#cbd5e1] to-[#94a3b8] rounded-b-xl shadow-2xl flex justify-center items-start border-t border-slate-300">
-                  {/* Display Opening Notch */}
-                  <div className="w-14 xl:w-18 h-1 bg-[#475569] rounded-b-xs shadow-inner" />
+                {/* Laptop Base / Aluminum Chin */}
+                <div className="relative w-[106%] -ml-[3%] h-[11px] sm:h-[14px] bg-gradient-to-b from-[#E2E8F0] via-[#CBD5E1] to-[#94A3B8] rounded-b-xl shadow-2xl flex justify-center items-start border-t border-slate-300">
+                  <div className="w-14 sm:w-20 h-1 bg-[#475569] rounded-b-xs shadow-inner" />
                 </div>
               </div>
 
-              {/* ── Mobile Mockup (Grounded at bottom beside laptop) ── */}
-              <div className="absolute right-0 bottom-0 z-20 w-[120px] xl:w-[145px] 2xl:w-[165px]">
-                <div className="relative rounded-[24px] xl:rounded-[32px] bg-[#1a1c1e] p-[4px] xl:p-[5px] border-2 border-slate-700/80 shadow-[0_20px_50px_rgba(0,0,0,0.45)] ring-1 ring-white/10">
-                  {/* Dynamic Island */}
-                  <div className="absolute top-[7px] xl:top-[9px] left-1/2 -translate-x-1/2 w-9 xl:w-11 h-2 xl:h-2.5 bg-black rounded-full z-30 flex items-center justify-end px-1">
-                    <span className="size-0.5 rounded-full bg-[#1e293b]" />
+              {/* ── Smartphone Overlapping Lower-Right Side of Laptop ── */}
+              <div className="absolute -right-2 sm:-right-4 -bottom-6 sm:-bottom-8 z-20 w-[125px] sm:w-[155px] xl:w-[175px]">
+                <div className="relative rounded-[26px] sm:rounded-[34px] bg-[#18181B] p-[4px] sm:p-[5px] border-2 border-slate-700/90 shadow-[0_25px_50px_rgba(0,0,0,0.45)] ring-1 ring-white/10">
+                  {/* Dynamic Island Notch */}
+                  <div className="absolute top-[6px] sm:top-[8px] left-1/2 -translate-x-1/2 w-8 sm:w-11 h-2 sm:h-2.5 bg-black rounded-full z-30 flex items-center justify-end px-1">
+                    <span className="size-0.5 rounded-full bg-slate-700" />
                   </div>
 
-                  {/* High-Res Original Mobile Screenshot Frame */}
-                  <div className="relative w-full aspect-[340/574] bg-white rounded-[20px] xl:rounded-[26px] overflow-hidden">
+                  {/* Mobile Live Dashboard Screen Frame */}
+                  <div className="relative w-full aspect-[9/18.5] bg-white rounded-[22px] sm:rounded-[28px] overflow-hidden">
                     <Image
-                      src="/images/hero-reference/mobile-dashboard-raw.png"
-                      alt="Dart Smart Salon Mobile App Live Screenshot"
+                      src="/assets/landing/mobile-dashboard.png"
+                      alt="Dart Smart Salon Live Mobile App"
                       fill
                       priority
                       unoptimized
-                      sizes="(max-width: 1280px) 15vw, 165px"
+                      sizes="(max-width: 1024px) 30vw, 175px"
                       className="object-cover object-top"
                     />
                   </div>
@@ -256,11 +301,177 @@ export function Hero() {
               </div>
 
             </div>
-
           </div>
 
         </div>
+
+        {/* ════ BOTTOM FEATURE NAVIGATION BAR (Matching Reference 2 UI) ════ */}
+        <div className="w-full mt-10 lg:mt-14 flex flex-col items-center">
+          {/* Glass Feature Bar */}
+          <div className="w-full max-w-[1360px] rounded-full bg-white/95 backdrop-blur-xl border border-[#DDD6FE]/80 p-1.5 sm:p-2 shadow-[0_15px_45px_rgba(124,58,237,0.08),_0_2px_8px_rgba(0,0,0,0.03)]">
+            <div className="flex items-center justify-between overflow-x-auto no-scrollbar scroll-smooth gap-1 sm:gap-1.5">
+              {HERO_FEATURES.map((item, index) => {
+                const Icon = item.icon;
+                const isActive = activeFeature === item.id;
+                const isNextActive = HERO_FEATURES[index + 1]?.id === activeFeature;
+
+                return (
+                  <React.Fragment key={item.id}>
+                    <button
+                      type="button"
+                      onClick={() => setActiveFeature(item.id)}
+                      className={`group flex flex-1 items-center gap-3 rounded-full py-2 sm:py-2.5 px-3 sm:px-4 lg:px-5 text-left transition-all duration-300 shrink-0 cursor-pointer min-w-[180px] xl:min-w-0 ${
+                        isActive
+                          ? 'bg-gradient-to-r from-[#7C3AED] to-[#8B5CF6] text-white shadow-md shadow-purple-600/30'
+                          : 'hover:bg-[#F5F3FF]/80 text-[#0F172A]'
+                      }`}
+                    >
+                      {/* Squircle Icon Badge */}
+                      <span
+                        className={`flex size-10 items-center justify-center rounded-2xl transition-all duration-300 shrink-0 ${
+                          isActive
+                            ? 'bg-white/20 text-white backdrop-blur-xs'
+                            : 'bg-[#F3EEFF] text-[#7C3AED] group-hover:bg-[#EDE9FE]'
+                        }`}
+                      >
+                        <Icon className="size-5" strokeWidth={2.2} />
+                      </span>
+
+                      {/* Text Stack */}
+                      <div className="min-w-0 flex-1">
+                        <div
+                          className={`text-xs sm:text-[13px] font-bold leading-tight transition-colors whitespace-nowrap ${
+                            isActive ? 'text-white' : 'text-[#0F172A] group-hover:text-[#7C3AED]'
+                          }`}
+                        >
+                          {item.title}
+                        </div>
+                        <div
+                          className={`text-[10px] sm:text-[11px] leading-tight whitespace-nowrap mt-0.5 ${
+                            isActive ? 'text-white/80 font-normal' : 'text-[#64748B] font-medium'
+                          }`}
+                        >
+                          {item.label}
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Vertical Divider line between items (hidden adjacent to active item) */}
+                    {index < HERO_FEATURES.length - 1 && (
+                      <span
+                        className={`hidden xl:block h-7 w-px shrink-0 transition-opacity duration-200 ${
+                          isActive || isNextActive ? 'opacity-0' : 'bg-slate-200/70'
+                        }`}
+                        aria-hidden="true"
+                      />
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Carousel Pagination Dots */}
+          <div className="flex items-center gap-1.5 mt-4" aria-hidden="true">
+            {HERO_FEATURES.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setActiveFeature(item.id)}
+                aria-label={`Select ${item.title}`}
+                className={`transition-all duration-300 cursor-pointer ${
+                  activeFeature === item.id
+                    ? 'w-7 h-2 bg-[#7C3AED] rounded-full shadow-xs'
+                    : 'size-2 bg-[#DDD6FE] hover:bg-[#A855F7] rounded-full'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+
       </div>
+
+      {/* ════ Interactive Video Demo Modal ════ */}
+      {isDemoModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0F172A]/70 backdrop-blur-md animate-in fade-in duration-200"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Platform Video Demo"
+        >
+          <div className="relative w-full max-w-4xl rounded-3xl bg-white border border-[#DDD6FE] shadow-2xl overflow-hidden p-6 sm:p-8 animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-[#FCE7F3]">
+              <div className="flex items-center gap-2.5">
+                <span className="flex size-8 items-center justify-center rounded-xl bg-[#EDE9FE] text-[#7C3AED]">
+                  <Sparkles className="size-4" />
+                </span>
+                <div>
+                  <h3 className="text-lg font-bold text-[#0F172A]">
+                    Dart Smart Salon Product Walkthrough
+                  </h3>
+                  <p className="text-xs text-[#64748B]">
+                    See how modern salons streamline appointments, sales, and analytics
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDemoModalOpen(false)}
+                className="flex size-9 items-center justify-center rounded-full bg-[#F5F3FF] text-[#0F172A] hover:bg-[#EDE9FE] hover:text-[#7C3AED] transition-colors"
+                aria-label="Close modal"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            {/* Modal Media Showcase */}
+            <div className="mt-6 relative w-full aspect-video rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 shadow-inner group">
+              <Image
+                src="/assets/landing/desktop-dashboard.png"
+                alt="Product Demo Preview"
+                fill
+                unoptimized
+                className="object-cover object-top opacity-90 group-hover:scale-102 transition-transform duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#7C3AED] text-white px-3 py-1 text-xs font-semibold w-fit mb-2 shadow-sm">
+                  <Play className="size-3 fill-current" /> Live Demo Showcase
+                </span>
+                <h4 className="text-white text-lg font-bold">
+                  Complete Salon Operations in 60 Seconds
+                </h4>
+                <p className="text-slate-300 text-xs max-w-lg mt-1">
+                  Watch how receptionists book appointments, staff process express POS checkouts, and owners monitor live revenue across branches.
+                </p>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-[#FCE7F3]">
+              <div className="text-xs font-medium text-[#64748B]">
+                Want a personalized session for your salon?
+              </div>
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/contact"
+                  onClick={() => setIsDemoModalOpen(false)}
+                  className="rounded-full border border-[#DDD6FE] px-5 py-2.5 text-xs font-bold text-[#0F172A] hover:bg-[#F5F3FF] hover:text-[#7C3AED] transition-colors"
+                >
+                  Book 1-on-1 Call
+                </Link>
+                <Link
+                  href="/#pricing"
+                  onClick={() => setIsDemoModalOpen(false)}
+                  className="rounded-full bg-gradient-to-r from-[#7C3AED] to-[#D946EF] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:opacity-95 transition-all"
+                >
+                  Start Free 14-Day Trial
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

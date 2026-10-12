@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter, Playfair_Display } from 'next/font/google';
+import { Inter, Plus_Jakarta_Sans, Caveat } from 'next/font/google';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { APP_NAME, SITE_DESCRIPTION } from '@/lib/constants';
 import {
@@ -16,9 +16,15 @@ const inter = Inter({
   display: 'swap',
 });
 
-const playfair = Playfair_Display({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
-  variable: '--font-playfair',
+  variable: '--font-jakarta',
+  display: 'swap',
+});
+
+const caveat = Caveat({
+  subsets: ['latin'],
+  variable: '--font-caveat',
   display: 'swap',
 });
 
@@ -30,8 +36,11 @@ export const metadata: Metadata = buildMetadata({
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${playfair.variable} h-full`}>
-      <body className="min-h-full antialiased">
+    <html
+      lang="en"
+      className={`${inter.variable} ${plusJakartaSans.variable} ${caveat.variable} h-full scroll-smooth`}
+    >
+      <body className="min-h-full font-sans antialiased bg-[#F9FAFB] text-[#0F172A] selection:bg-[#E9D5FF] selection:text-[#7C3AED]">
         <JsonLd
           data={[organizationJsonLd(), webSiteJsonLd(), softwareApplicationJsonLd()]}
         />

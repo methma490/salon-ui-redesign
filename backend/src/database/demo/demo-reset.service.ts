@@ -130,8 +130,8 @@ export class DemoResetService {
           return now;
         },
         {
-          timeout: 60000,
-          maxWait: 15000,
+          timeout: 180000,
+          maxWait: 30000,
         },
       );
 

@@ -118,33 +118,57 @@ export class DemoProvisionService {
         });
 
         if (existingTenant) {
-          this.logger.log(
-            `Demo salon for profile ${def.profile} already exists: "${existingTenant.name}" (${existingTenant.schemaName}).`,
-          );
+          if (existingTenant.status === TenantStatus.ACTIVE) {
+            this.logger.log(
+              `Demo salon for profile ${def.profile} already exists: "${existingTenant.name}" (${existingTenant.schemaName}).`,
+            );
 
-          // Ensure demo flags are properly set
-          if (!existingTenant.isDemo || existingTenant.demoProfile !== def.profile) {
-            await this.prisma.tenant.update({
-              where: { id: existingTenant.id },
-              data: {
-                isDemo: true,
-                demoProfile: def.profile,
-              },
+            // Ensure demo flags are properly set
+            if (!existingTenant.isDemo || existingTenant.demoProfile !== def.profile) {
+              await this.prisma.tenant.update({
+                where: { id: existingTenant.id },
+                data: {
+                  isDemo: true,
+                  demoProfile: def.profile,
+                },
+              });
+            }
+
+            results.push({
+              profile: def.profile,
+              tenantId: existingTenant.id,
+              tenantCode: existingTenant.code,
+              schemaName: existingTenant.schemaName,
+              salonName: existingTenant.name,
+              planCode: def.plan.code,
+              planName: def.plan.name,
+              adminEmail: def.email,
+              status: 'ALREADY_EXISTS',
             });
+            continue;
+          } else {
+            this.logger.warn(
+              `Demo salon for profile ${def.profile} was in state ${existingTenant.status}. Cleaning up previous failed attempt...`,
+            );
+            await this.prisma.subscriptionFeature.deleteMany({
+              where: { subscription: { tenantId: existingTenant.id } },
+            }).catch(() => {});
+            await this.prisma.subscriptionHistory.deleteMany({
+              where: { subscription: { tenantId: existingTenant.id } },
+            }).catch(() => {});
+            await this.prisma.subscription.deleteMany({
+              where: { tenantId: existingTenant.id },
+            }).catch(() => {});
+            await this.prisma.tenantFeature.deleteMany({
+              where: { tenantId: existingTenant.id },
+            }).catch(() => {});
+            await this.prisma.tenant.delete({
+              where: { id: existingTenant.id },
+            }).catch(() => {});
+            try {
+              await this.prisma.$executeRawUnsafe(`DROP SCHEMA IF EXISTS "${existingTenant.schemaName}" CASCADE`);
+            } catch {}
           }
-
-          results.push({
-            profile: def.profile,
-            tenantId: existingTenant.id,
-            tenantCode: existingTenant.code,
-            schemaName: existingTenant.schemaName,
-            salonName: existingTenant.name,
-            planCode: def.plan.code,
-            planName: def.plan.name,
-            adminEmail: def.email,
-            status: 'ALREADY_EXISTS',
-          });
-          continue;
         }
 
         // 2. Generate unique tenant code & schema name
@@ -265,6 +289,26 @@ export class DemoProvisionService {
         });
       } catch (err: any) {
         this.logger.error(`Error provisioning demo tenant ${def.name}:`, err);
+        try {
+          const stuckTenant = await this.prisma.tenant.findFirst({
+            where: { email: def.email.toLowerCase(), status: TenantStatus.PROVISIONING },
+          });
+          if (stuckTenant) {
+            await this.prisma.subscriptionFeature.deleteMany({
+              where: { subscription: { tenantId: stuckTenant.id } },
+            }).catch(() => {});
+            await this.prisma.subscriptionHistory.deleteMany({
+              where: { subscription: { tenantId: stuckTenant.id } },
+            }).catch(() => {});
+            await this.prisma.subscription.deleteMany({
+              where: { tenantId: stuckTenant.id },
+            }).catch(() => {});
+            await this.prisma.tenantFeature.deleteMany({
+              where: { tenantId: stuckTenant.id },
+            }).catch(() => {});
+            await this.prisma.tenant.delete({ where: { id: stuckTenant.id } }).catch(() => {});
+          }
+        } catch {}
         results.push({
           profile: def.profile,
           tenantId: '',

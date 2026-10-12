@@ -24,59 +24,77 @@ export function PricingCard({ plan, billingCycle }: PricingCardProps) {
   const highlight = PLAN_HIGHLIGHTS[plan.code];
   const trialDays = priceOption?.trialDays;
 
-  const shell = popular
-    ? 'bg-gradient-to-b from-[#0b6842] to-[#07472c] text-white border-[#0b6842] ring-2 ring-[#10b981]/40 shadow-xl'
-    : 'bg-white text-slate-900 border-slate-200 hover:border-slate-300';
-
-  const muted = popular ? 'text-emerald-100/80' : 'text-slate-500';
-  const checkColor = popular ? 'text-[#34d399]' : 'text-[#0b6842]';
-
   return (
     <article
-      className={`relative flex flex-col rounded-3xl border p-6 sm:p-8 ${shell} card-shadow`}
+      className={`relative flex flex-col rounded-3xl p-6 sm:p-8 transition-all duration-300 ${
+        popular
+          ? 'bg-gradient-to-b from-[#FAF5FF] via-white to-[#F5F3FF] border-2 border-[#7C3AED] ring-4 ring-[#A855F7]/15 shadow-2xl shadow-purple-900/10 -translate-y-1'
+          : 'bg-white border border-[#FCE7F3] hover:border-[#DDD6FE] shadow-lg shadow-purple-900/5 hover:-translate-y-0.5'
+      }`}
     >
       {popular ? (
-        <span className="absolute -top-3.5 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-amber-400 px-3.5 py-1 text-xs font-bold text-slate-900 shadow-md">
+        <span className="absolute -top-3.5 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-gradient-to-r from-[#7C3AED] to-[#D946EF] px-4 py-1 text-xs font-bold text-white shadow-md shadow-purple-500/30">
           <Sparkles className="h-3.5 w-3.5" aria-hidden />
           Most Popular
         </span>
       ) : null}
 
-      <h3 className={`text-2xl font-bold tracking-tight ${popular ? 'text-white' : 'text-slate-900'}`}>
-        {plan.name.replace(/ Plan$/i, '')}
-      </h3>
-      {highlight ? <p className={`mt-1 text-sm font-medium ${muted}`}>{highlight}</p> : null}
-      {plan.description ? (
-        <p className={`mt-3 text-sm leading-relaxed ${muted}`}>{plan.description}</p>
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-2xl font-bold tracking-tight text-[#0F172A]">
+          {plan.name.replace(/ Plan$/i, '')}
+        </h3>
+        {trialDays && trialDays > 0 ? (
+          <span className="rounded-full bg-[#EDE9FE] px-2.5 py-0.5 text-[11px] font-semibold text-[#7C3AED]">
+            {trialDays}-Day Free Trial
+          </span>
+        ) : null}
+      </div>
+
+      {highlight ? (
+        <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-[#7C3AED]">
+          {highlight}
+        </p>
       ) : null}
 
-      <div className="mt-6 flex items-baseline gap-1">
-        <span className={`text-4xl font-extrabold tracking-tight ${popular ? 'text-white' : 'text-slate-900'}`}>
+      {plan.description ? (
+        <p className="mt-2.5 text-sm leading-relaxed text-[#64748B]">
+          {plan.description}
+        </p>
+      ) : null}
+
+      <div className="mt-6 flex items-baseline gap-1.5 pt-4 border-t border-[#FCE7F3]">
+        <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[#0F172A]">
           {formatPrice(amount, currency)}
         </span>
-        <span className={`text-sm ${muted}`}>/{billingCycleLabel(billingCycle)}</span>
+        <span className="text-sm font-medium text-[#64748B]">
+          /{billingCycleLabel(billingCycle)}
+        </span>
       </div>
-      {trialDays && trialDays > 0 ? (
-        <p className={`mt-2 text-xs font-semibold ${muted}`}>{trialDays}-day trial included</p>
-      ) : null}
 
-      <ul className={`mt-6 flex-1 space-y-3 text-sm font-medium ${popular ? 'text-white/90' : 'text-slate-700'}`}>
-        {features.map((feature) => (
-          <li key={feature} className="flex items-start gap-2">
-            <Check className={`mt-0.5 h-4 w-4 shrink-0 ${checkColor}`} strokeWidth={2.5} aria-hidden />
-            <span>{feature}</span>
-          </li>
-        ))}
-      </ul>
+      <div className="mt-6 flex-1">
+        <p className="text-xs font-bold uppercase tracking-wider text-[#64748B] mb-3">
+          What&apos;s Included:
+        </p>
+        <ul className="space-y-3 text-sm font-medium text-[#0F172A]">
+          {features.map((feature) => (
+            <li key={feature} className="flex items-start gap-2.5">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#EDE9FE] text-[#7C3AED] mt-0.5">
+                <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />
+              </span>
+              <span className="leading-tight">{feature}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
 
-      <div className="mt-8">
+      <div className="mt-8 pt-4 border-t border-[#FCE7F3]">
         <Button
           href={signupUrl(plan.id, billingCycle)}
-          variant={popular ? 'secondary' : 'primary'}
-          className={`w-full ${popular ? 'bg-white text-[#0b6842] hover:bg-emerald-50 border-transparent shadow-md' : ''}`}
+          variant="primary"
+          className="w-full justify-center py-3 text-sm font-bold shadow-md hover:shadow-lg"
           showArrow
         >
-          Get Started
+          Start 14-Day Free Trial
         </Button>
       </div>
     </article>
