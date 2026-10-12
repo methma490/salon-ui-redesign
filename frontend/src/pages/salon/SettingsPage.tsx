@@ -870,22 +870,26 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* ── Appearance ── */}
+      {/* ── Appearance & Branding (Dynamic Theme Customization) ── */}
       {activeTab === 'appearance' && (
         <section className="settings-panel">
           <div className="settings-panel-header">
-            <h2>Appearance</h2>
+            <h2>Appearance & Branding</h2>
             <p>
               {isSalonAdmin
-                ? 'Customize the primary brand color used across your salon workspace. Neutral backgrounds stay white.'
-                : 'View-only — only Salon Admin can change appearance'}
+                ? "Customize your application's colors to match your brand identity. The entire system updates dynamically."
+                : 'View-only — only Salon Admin can change appearance settings.'}
             </p>
           </div>
 
           <div className="settings-appearance-layout">
             <div className="settings-appearance-controls">
+              {/* Presets */}
               <div className="settings-field">
-                <label>Brand color presets</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-sm font-semibold text-slate-800">Preset Brand Colors</label>
+                  <span className="text-xs text-slate-500">Default: #7C3AED</span>
+                </div>
                 <div className="settings-swatch-grid" role="listbox" aria-label="Brand color presets">
                   {BRAND_COLOR_PRESETS.map((preset) => {
                     const selected =
@@ -899,7 +903,7 @@ export default function SettingsPage() {
                         aria-selected={selected}
                         className={`settings-swatch${selected ? ' is-selected' : ''}`}
                         disabled={!isSalonAdmin}
-                        title={preset.label}
+                        title={`${preset.label} (${preset.color})`}
                         onClick={() => {
                           if (!isSalonAdmin) return;
                           theme.setPreviewColor(preset.color);
@@ -911,14 +915,20 @@ export default function SettingsPage() {
                           style={{ background: preset.color }}
                         />
                         <span className="settings-swatch-label">{preset.label}</span>
+                        {preset.isDefault && (
+                          <span className="text-[10px] font-bold text-[#7C3AED] -mt-1">Default</span>
+                        )}
                       </button>
                     );
                   })}
                 </div>
               </div>
 
+              {/* Primary Color Picker */}
               <div className="settings-field">
-                <label htmlFor="appearance-custom-hex">Custom color</label>
+                <label htmlFor="appearance-custom-hex" className="text-sm font-semibold text-slate-800">
+                  Primary Brand Color
+                </label>
                 <div className="settings-custom-color">
                   <input
                     type="color"
@@ -935,26 +945,62 @@ export default function SettingsPage() {
                       setCustomHex(next);
                     }}
                   />
-                  <input
-                    id="appearance-custom-hex"
-                    className="settings-input"
-                    value={customHex}
-                    disabled={!isSalonAdmin}
-                    placeholder="#A44A5C"
-                    onChange={(e) => {
-                      const raw = e.target.value;
-                      setCustomHex(raw);
-                      if (isValidHexColor(raw)) {
-                        theme.setPreviewColor(normalizeHexColor(raw));
-                      }
-                    }}
-                  />
+                  <div className="flex-1">
+                    <input
+                      id="appearance-custom-hex"
+                      className="settings-input w-full font-mono font-semibold"
+                      value={customHex}
+                      disabled={!isSalonAdmin}
+                      placeholder="#7C3AED"
+                      maxLength={7}
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        setCustomHex(raw);
+                        if (isValidHexColor(raw)) {
+                          theme.setPreviewColor(normalizeHexColor(raw));
+                        }
+                      }}
+                    />
+                    {Boolean(customHex) && !isValidHexColor(customHex) && (
+                      <p className="text-xs text-rose-500 font-medium mt-1">
+                        Please enter a valid 6-digit hex color (#RRGGBB).
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <p className="settings-field-hint">Use #RRGGBB format (example #2563EB).</p>
+                <p className="settings-field-hint">
+                  Supports standard hex colors (e.g. #7C3AED, #2563EB, #16A34A).
+                </p>
               </div>
 
+              {/* Auto-Generated Shades Summary */}
+              <div className="rounded-xl border border-slate-200/90 bg-slate-50/70 p-3.5 space-y-2">
+                <div className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  Generated Theme Tokens
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  <div className="flex items-center gap-2 p-1.5 rounded-lg bg-white border border-slate-200">
+                    <span className="size-4 rounded-md shrink-0 border" style={{ background: theme.palette.primary }} />
+                    <span className="truncate text-slate-700">Primary</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-1.5 rounded-lg bg-white border border-slate-200">
+                    <span className="size-4 rounded-md shrink-0 border" style={{ background: theme.palette.hover }} />
+                    <span className="truncate text-slate-700">Hover</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-1.5 rounded-lg bg-white border border-slate-200">
+                    <span className="size-4 rounded-md shrink-0 border" style={{ background: theme.palette.soft }} />
+                    <span className="truncate text-slate-700">Soft BG</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-1.5 rounded-lg bg-white border border-slate-200">
+                    <span className="size-4 rounded-md shrink-0 border" style={{ background: theme.palette.softStrong }} />
+                    <span className="truncate text-slate-700">Light BG</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
               {isSalonAdmin && (
-                <div className="settings-form-actions settings-appearance-actions">
+                <div className="settings-form-actions settings-appearance-actions pt-2">
                   <button
                     type="button"
                     className="emp-btn emp-btn-secondary"
@@ -977,7 +1023,7 @@ export default function SettingsPage() {
                     onClick={() => {
                       if (
                         window.confirm(
-                          'Reset brand color to the website burgundy?',
+                          'Reset brand color to the default Vibrant Purple (#7C3AED)?',
                         )
                       ) {
                         resetAppearanceMutation.mutate();
@@ -1004,48 +1050,152 @@ export default function SettingsPage() {
               )}
             </div>
 
+            {/* Live Theme Preview */}
             <div className="settings-appearance-preview">
-              <div className="settings-preview-card">
-                <div className="settings-preview-title">Live preview</div>
-                <div className="settings-preview-nav">
-                  <span className="is-active">Dashboard</span>
-                  <span>POS</span>
-                  <span>Customers</span>
-                </div>
-                <button
-                  type="button"
-                  className="settings-preview-btn"
-                  style={{
-                    background: draftAppearanceColor,
-                    color: theme.palette.foreground,
-                  }}
-                >
-                  Primary button
-                </button>
-                <div className="settings-preview-row">
+              <div className="settings-preview-card bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Live UI Preview
+                  </span>
                   <span
-                    className="settings-preview-badge"
+                    className="text-xs font-mono font-bold px-2 py-0.5 rounded-full"
+                    style={{
+                      background: theme.palette.soft,
+                      color: draftAppearanceColor,
+                    }}
+                  >
+                    {draftAppearanceColor}
+                  </span>
+                </div>
+
+                {/* Mock Header & Navigation */}
+                <div className="rounded-xl border border-slate-200 bg-white p-3 space-y-2.5">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="size-6 rounded-lg flex items-center justify-center text-white text-xs font-bold"
+                        style={{ background: draftAppearanceColor }}
+                      >
+                        S
+                      </span>
+                      <span className="text-xs font-bold text-slate-800">Salon Workspace</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className="size-5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                        style={{ background: draftAppearanceColor }}
+                      >
+                        3
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className="px-2.5 py-1 rounded-md text-xs font-semibold"
+                      style={{
+                        background: theme.palette.softStrong,
+                        color: draftAppearanceColor,
+                      }}
+                    >
+                      Dashboard
+                    </span>
+                    <span className="px-2.5 py-1 rounded-md text-xs font-medium text-slate-600 hover:bg-slate-50">
+                      POS
+                    </span>
+                    <span className="px-2.5 py-1 rounded-md text-xs font-medium text-slate-600 hover:bg-slate-50">
+                      Appointments
+                    </span>
+                  </div>
+                </div>
+
+                {/* Mock Metric Card */}
+                <div className="rounded-xl border border-slate-200 bg-white p-3 flex items-center justify-between">
+                  <div>
+                    <div className="text-[11px] font-medium text-slate-500">Monthly Revenue</div>
+                    <div className="text-lg font-bold text-slate-900 mt-0.5">LKR 53,000</div>
+                    <div className="text-[11px] font-medium text-emerald-600 mt-0.5">↗ +12% vs last month</div>
+                  </div>
+                  <span
+                    className="size-10 rounded-xl flex items-center justify-center text-white"
+                    style={{ background: draftAppearanceColor }}
+                  >
+                    ★
+                  </span>
+                </div>
+
+                {/* Primary & Secondary Buttons */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    className="w-full py-2 px-3 rounded-lg text-xs font-semibold shadow-xs transition-opacity hover:opacity-90"
+                    style={{
+                      background: draftAppearanceColor,
+                      color: theme.palette.foreground,
+                    }}
+                  >
+                    Primary Button
+                  </button>
+                  <button
+                    type="button"
+                    className="w-full py-2 px-3 rounded-lg text-xs font-semibold border transition-colors"
                     style={{
                       background: theme.palette.soft,
                       color: draftAppearanceColor,
                       borderColor: theme.palette.border,
                     }}
                   >
-                    Brand badge
-                  </span>
-                  <span className="settings-preview-success">Success stays green</span>
-                  <span className="settings-preview-error">Error stays red</span>
+                    Secondary
+                  </button>
                 </div>
-                <input
-                  className="settings-preview-input"
-                  readOnly
-                  value="Focus ring uses brand color"
-                  style={{
-                    borderColor: draftAppearanceColor,
-                    boxShadow: `0 0 0 3px ${theme.palette.softStrong}`,
-                  }}
-                />
-                <p className="settings-preview-hex">{draftAppearanceColor}</p>
+
+                {/* Input with dynamic focus ring */}
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-600 mb-1">
+                    Input Field (Focused State)
+                  </label>
+                  <input
+                    className="w-full h-9 rounded-lg border px-3 text-xs outline-none bg-white font-medium"
+                    readOnly
+                    value="Active input element"
+                    style={{
+                      borderColor: draftAppearanceColor,
+                      boxShadow: `0 0 0 3px ${theme.palette.softStrong}`,
+                    }}
+                  />
+                </div>
+
+                {/* Badges & Pagination */}
+                <div className="flex items-center justify-between pt-1">
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className="px-2 py-0.5 rounded-full text-[11px] font-semibold"
+                      style={{
+                        background: theme.palette.soft,
+                        color: draftAppearanceColor,
+                        border: `1px solid ${theme.palette.border}`,
+                      }}
+                    >
+                      Active Filter
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      Paid
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1 text-xs">
+                    <span className="size-6 flex items-center justify-center rounded text-slate-400">‹</span>
+                    <span
+                      className="size-6 flex items-center justify-center rounded-md font-bold text-white"
+                      style={{ background: draftAppearanceColor }}
+                    >
+                      1
+                    </span>
+                    <span className="size-6 flex items-center justify-center rounded text-slate-600">2</span>
+                    <span className="size-6 flex items-center justify-center rounded text-slate-400">›</span>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>

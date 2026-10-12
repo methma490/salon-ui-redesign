@@ -7,12 +7,12 @@ export async function PricingPreview() {
   const plans = await fetchPublicPlans();
 
   return (
-    <div id="pricing-preview" className="bg-white">
+    <div id="pricing-preview" className="relative bg-[#F1EAFF]">
       <PricingSection plans={plans} compact />
-      <div className="section-container -mt-4 pb-16 text-center">
+      <div className="section-container pb-16 text-center">
         <Link
           href="/pricing"
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#7C3AED] hover:text-[#A855F7] hover:underline"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#7C3AED] hover:text-[#9333EA] hover:underline"
         >
           View detailed plan comparison & features
           <ArrowRight className="h-4 w-4" strokeWidth={2} aria-hidden />

@@ -11,6 +11,8 @@ import {
   SalonAnalyticsSalesQueryDto,
   SalonAnalyticsServicesQueryDto,
 } from './dto/salon-analytics.dto';
+import { ProfitLossService } from '../../salon/reports/profit-loss.service';
+import { AuthenticatedUser } from '../../auth/interfaces/auth.interface';
 
 function resolveDateRange(from?: string, to?: string): { start: string; end: string } {
   const toDateString = (d: Date) =>
@@ -41,6 +43,7 @@ export class SuperAdminSalonAnalyticsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tenantSchemaService: TenantSchemaService,
+    private readonly profitLossService: ProfitLossService,
   ) {}
 
   /**
@@ -1434,4 +1437,35 @@ export class SuperAdminSalonAnalyticsService {
       };
     });
   }
+
+  async getSalonBranches(tenantId: string) {
+    const { tenant } = await this.resolveTenantContext(tenantId);
+    const branchesTable = tenantTable(tenant.schemaName, 'branches');
+    return this.prisma.$transaction(async (tx) => {
+      const branches = await tx.$queryRawUnsafe<Array<{ id: string; name: string; is_main: boolean }>>(
+        `SELECT id, name, is_main FROM ${branchesTable} WHERE status = 'ACTIVE' ORDER BY is_main DESC, name ASC`,
+      ).catch(() => []);
+      return branches.map((b) => ({ id: b.id, name: b.name, isMain: Boolean(b.is_main) }));
+    });
+  }
+
+  async getSalonProfitLoss(
+    tenantId: string,
+    query: SalonAnalyticsDateRangeDto,
+    user: AuthenticatedUser,
+  ) {
+    const { tenant } = await this.resolveTenantContext(tenantId);
+    return this.profitLossService.getProfitLoss(
+      tenant.schemaName,
+      {
+        startDate: query.from,
+        endDate: query.to,
+        from: query.from,
+        to: query.to,
+        branchId: query.branchId,
+      },
+      user,
+    );
+  }
 }
+

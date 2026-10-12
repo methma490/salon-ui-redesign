@@ -267,4 +267,19 @@ export const salonAnalyticsApi = {
 
   getFinance: (tenantId: string, params?: { from?: string; to?: string }) =>
     api.get<SalonFinanceTabResponse>(`/super-admin/salon-analytics/${tenantId}/finance`, { params }).then((r) => r.data),
+
+  getBranches: (tenantId: string) =>
+    api.get<Array<{ id: string; name: string; isMain: boolean }>>(`/super-admin/salon-analytics/${tenantId}/branches`).then((r) => r.data),
+
+  getSalonProfitLoss: (
+    tenantId: string,
+    params?: { from?: string; to?: string; startDate?: string; endDate?: string; branchId?: string },
+  ) =>
+    api
+      .get<import('@/api/tenant.api').ProfitLossReportResponse>(
+        `/super-admin/salon-analytics/${tenantId}/profit-loss`,
+        { params },
+      )
+      .then((r) => r.data),
 };
+

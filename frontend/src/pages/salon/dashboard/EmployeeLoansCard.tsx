@@ -25,7 +25,7 @@ interface EmployeeLoansCardProps {
 
 export function EmployeeLoansCard({ data }: EmployeeLoansCardProps) {
   const theme = useTenantTheme();
-  const primaryColor = theme?.palette?.primary ?? '#2563eb';
+  const primaryColor = theme?.palette?.primary ?? '#7C3AED';
 
   const activeCount = data?.activeCount || 0;
   const totalOutstanding = data?.totalOutstanding || 0;

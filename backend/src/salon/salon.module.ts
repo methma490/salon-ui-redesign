@@ -40,6 +40,9 @@ import { InvoiceLinksService } from './sales/invoice-links.service';
 import { MailModule } from '../mail/mail.module';
 import { SuppliersModule } from './suppliers/suppliers.module';
 
+import { ProfitLossController } from './reports/profit-loss.controller';
+import { ProfitLossService } from './reports/profit-loss.service';
+
 @Module({
   imports: [TenantModule, SubscriptionsModule, DatabaseModule, MailModule, SuppliersModule],
   controllers: [
@@ -55,6 +58,7 @@ import { SuppliersModule } from './suppliers/suppliers.module';
     SalesAnalyticsController,
     DashboardController,
     ReportsController,
+    ProfitLossController,
     TenantFeaturesController,
     SettingsController,
     AppointmentsController,
@@ -75,6 +79,7 @@ import { SuppliersModule } from './suppliers/suppliers.module';
     SalesAnalyticsService,
     DashboardService,
     DashboardCacheInterceptor,
+    ProfitLossService,
     SettingsService,
     AppointmentsService,
     ExpensesService,
@@ -82,6 +87,6 @@ import { SuppliersModule } from './suppliers/suppliers.module';
     QuotationsService,
     MessagingService,
   ],
-  exports: [InvoiceLinksService],
+  exports: [InvoiceLinksService, ProfitLossService],
 })
 export class SalonModule {}

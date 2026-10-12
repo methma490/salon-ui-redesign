@@ -6,12 +6,15 @@ import { SuperAdminAuditLogsModule } from '../audit-logs/super-admin-audit-logs.
 import { SuperAdminSalonAnalyticsController } from './super-admin-salon-analytics.controller';
 import { SuperAdminSalonAnalyticsService } from './super-admin-salon-analytics.service';
 
+import { SalonModule } from '../../salon/salon.module';
+
 @Module({
   imports: [
     DatabaseModule,
     TenantModule,
     AuthModule,
     SuperAdminAuditLogsModule,
+    SalonModule,
   ],
   controllers: [SuperAdminSalonAnalyticsController],
   providers: [SuperAdminSalonAnalyticsService],

@@ -61,6 +61,10 @@ export class SalonAnalyticsDateRangeDto {
   @IsString()
   @Matches(DATE_REGEX, { message: 'to date must be a valid date or timestamp' })
   to?: string;
+
+  @IsOptional()
+  @IsString()
+  branchId?: string;
 }
 
 export class SalonAnalyticsCustomersQueryDto extends SalonAnalyticsDateRangeDto {

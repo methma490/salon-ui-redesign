@@ -152,7 +152,7 @@ export function Hero() {
                 <span className="flex size-4 items-center justify-center rounded-full bg-[#EDE9FE] text-[#7C3AED]">
                   <Check className="size-2.5" strokeWidth={3} />
                 </span>
-                <span>Free 14-day trial</span>
+                <span>Free 21-day trial</span>
               </div>
 
               <div className="flex items-center gap-1.5">
@@ -465,7 +465,7 @@ export function Hero() {
                   onClick={() => setIsDemoModalOpen(false)}
                   className="rounded-full bg-gradient-to-r from-[#7C3AED] to-[#D946EF] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:opacity-95 transition-all"
                 >
-                  Start Free 14-Day Trial
+                  Start Free 21-Day Trial
                 </Link>
               </div>
             </div>

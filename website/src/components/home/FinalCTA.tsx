@@ -54,7 +54,7 @@ export function FinalCTA() {
                 href="/#pricing"
                 className="inline-flex items-center justify-center gap-2.5 rounded-full bg-white text-[#7C3AED] hover:bg-[#F5F3FF] px-8 py-4 text-base font-bold shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
-                <span>Start Free 14-Day Trial</span>
+                <span>Start Free 21-Day Trial</span>
                 <ArrowRight className="size-4.5" />
               </Link>
 
@@ -78,7 +78,7 @@ export function FinalCTA() {
               </div>
               <div className="flex items-center gap-1.5">
                 <Check className="size-4 text-white" strokeWidth={3} />
-                <span>Full access for 14 days</span>
+                <span>Full access for 21 days</span>
               </div>
             </div>
           </div>

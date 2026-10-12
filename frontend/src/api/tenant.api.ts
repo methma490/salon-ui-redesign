@@ -1498,6 +1498,8 @@ export const tenantApi = {
         .then((r) => r.data),
     lowStock: (params?: Record<string, string>) =>
       api.get('/tenant/reports/low-stock', { params }).then((r) => r.data),
+    profitLoss: (params?: { startDate?: string; endDate?: string; from?: string; to?: string; branchId?: string }) =>
+      api.get<ProfitLossReportResponse>('/reports/profit-loss', { params }).then((r) => r.data),
   },
 
   notifications: {
@@ -1635,3 +1637,53 @@ export interface InventoryReportResponse {
     adjustments: number;
   };
 }
+
+export interface ProfitLossReportResponse {
+  period: {
+    startDate: string;
+    endDate: string;
+  };
+  branch: {
+    id: string | null;
+    name: string;
+  };
+  summary: {
+    totalRevenue: number;
+    cogs: number;
+    grossProfit: number;
+    grossProfitMargin: number;
+    totalExpenses: number;
+    netProfit: number;
+    netProfitMargin: number;
+  };
+  income: {
+    serviceRevenue: number;
+    productRevenue: number;
+    grossSales: number;
+    discounts: number;
+    refunds: number;
+    netRevenue: number;
+  };
+  costOfSales: {
+    productCogs: number;
+    totalCostOfSales: number;
+  };
+  operatingExpenses: {
+    categories: Array<{
+      categoryCode: string;
+      categoryName: string;
+      amount: number;
+      percentage: number;
+    }>;
+    totalExpenses: number;
+  };
+  monthlyTrend: Array<{
+    month: string;
+    revenue: number;
+    cogs: number;
+    grossProfit: number;
+    expenses: number;
+    netProfit: number;
+  }>;
+}
+

@@ -16,9 +16,9 @@ const STEPS: StepItem[] = [
     number: '01',
     title: 'Create Your Salon Account',
     description:
-      'Sign up in under two minutes with no upfront credit card required. Choose your plan and enjoy full 14-day free access.',
+      'Sign up in under two minutes with no upfront credit card required. Choose your plan and enjoy full 21-day free access.',
     icon: UserPlus,
-    details: ['Instant tenant workspace setup', '14-day full feature trial', 'Zero software installation'],
+    details: ['Instant tenant workspace setup', '21-day full feature trial', 'Zero software installation'],
   },
   {
     step: 'Step 2',
@@ -124,7 +124,7 @@ export function HowItWorks() {
         {/* Bottom Action */}
         <div className="mt-14 text-center">
           <Button href="/#pricing" variant="primary" showArrow className="rounded-full px-8 py-3.5 text-base shadow-lg">
-            Start Your Free 14-Day Trial Today
+            Start Your Free 21-Day Trial Today
           </Button>
         </div>
       </div>

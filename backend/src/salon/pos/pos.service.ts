@@ -451,6 +451,7 @@ export class PosService {
         employeeId?: string;
         quantity: number;
         unitPrice: number;
+        costPrice?: number;
         discount: number;
         total: number;
       }> = [];
@@ -473,14 +474,15 @@ export class PosService {
           employeeId: item.employeeId,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
+          costPrice: 0,
           discount,
           total,
         });
       }
 
       for (const item of input.products) {
-        const prod = await tx.$queryRawUnsafe<Array<{ id: string }>>(
-          `SELECT id FROM ${products} WHERE id = $1::uuid LIMIT 1`,
+        const prod = await tx.$queryRawUnsafe<Array<{ id: string; costPrice: number }>>(
+          `SELECT id, COALESCE(cost_price, 0)::float AS "costPrice" FROM ${products} WHERE id = $1::uuid LIMIT 1`,
           item.productId,
         );
         if (!prod.length) throw new NotFoundException(`Product not found: ${item.productId}`);
@@ -492,6 +494,7 @@ export class PosService {
           productId: item.productId,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
+          costPrice: prod[0].costPrice ?? 0,
           discount,
           total,
         });
@@ -553,8 +556,8 @@ export class PosService {
       for (const line of lineItems) {
         const itemRows = await tx.$queryRawUnsafe<Array<{ id: string }>>(
           `INSERT INTO ${saleItems}
-             (sale_id, item_type, service_id, product_id, quantity, unit_price, discount, total)
-           VALUES ($1::uuid, $2, $3::uuid, $4::uuid, $5, $6, $7, $8)
+             (sale_id, item_type, service_id, product_id, quantity, unit_price, discount, total, cost_price)
+           VALUES ($1::uuid, $2, $3::uuid, $4::uuid, $5, $6, $7, $8, $9)
            RETURNING id`,
           saleId,
           line.itemType,
@@ -564,6 +567,7 @@ export class PosService {
           line.unitPrice,
           line.discount,
           line.total,
+          line.costPrice ?? 0,
         );
         if (line.itemType === 'service' && line.employeeId) {
           await tx.$queryRawUnsafe(

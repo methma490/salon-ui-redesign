@@ -20,7 +20,7 @@ interface TopEmployeesCardProps {
 
 export function TopEmployeesCard({ employees }: TopEmployeesCardProps) {
   const theme = useTenantTheme();
-  const primaryColor = theme?.palette?.primary ?? '#2563eb';
+  const primaryColor = theme?.palette?.primary ?? '#7C3AED';
 
   const list = employees ?? [];
 

@@ -50,9 +50,10 @@ import {
 } from '@/components/ui/select';
 import { OpsLoading, OpsError, getErrorMessage } from './salon-ops-ui';
 import { printReportDocument } from '@/lib/print-report';
+import { ProfitLossReportView, type PnLQuickFilter } from './ProfitLossReportView';
 import './reports-page.css';
 
-type ReportTab = 'sales' | 'employee-performance' | 'inventory';
+type ReportTab = 'profit-loss' | 'sales' | 'employee-performance' | 'inventory';
 type QuickFilterType = 'today' | 'this_week' | 'this_month' | 'custom';
 
 function ReportPagination({
@@ -158,18 +159,19 @@ export default function ReportsPage() {
   const primaryColor = theme?.palette?.primary ?? '#2563eb';
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = (searchParams.get('tab') as ReportTab) || 'sales';
+  const activeTab = (searchParams.get('tab') as ReportTab) || 'profit-loss';
   const { data: enabledFeatures = [] } = useQuery({
     queryKey: ['tenant-features'],
     queryFn: tenantApi.features,
     staleTime: 60_000,
   });
-  const reportTabs: Array<{ id: ReportTab; feature: string }> = [
+  const reportTabs: Array<{ id: ReportTab; feature?: string }> = [
+    { id: 'profit-loss' },
     { id: 'sales', feature: 'SALES_REPORTS' },
     { id: 'employee-performance', feature: 'EMPLOYEE_REPORTS' },
     { id: 'inventory', feature: 'INVENTORY_REPORTS' },
   ];
-  const availableReportTabs = reportTabs.filter((tab) => enabledFeatures.includes(tab.feature));
+  const availableReportTabs = reportTabs.filter((tab) => !tab.feature || enabledFeatures.includes(tab.feature));
 
   useEffect(() => {
     if (availableReportTabs.length > 0 && !availableReportTabs.some((tab) => tab.id === activeTab)) {
@@ -252,6 +254,54 @@ export default function ReportsPage() {
       setEndDate(getTodayStr());
     }
   };
+
+  // Profit & Loss State & Query
+  const [pnlQuickFilter, setPnlQuickFilter] = useState<PnLQuickFilter>('this_month');
+  const [pnlStartDate, setPnlStartDate] = useState(getMonthStartStr());
+  const [pnlEndDate, setPnlEndDate] = useState(getTodayStr());
+
+  const handlePnlQuickFilter = (type: PnLQuickFilter) => {
+    setPnlQuickFilter(type);
+    const today = getTodayStr();
+    if (type === 'today') {
+      setPnlStartDate(today);
+      setPnlEndDate(today);
+    } else if (type === 'this_week') {
+      setPnlStartDate(getWeekStartStr());
+      setPnlEndDate(today);
+    } else if (type === 'this_month') {
+      setPnlStartDate(getMonthStartStr());
+      setPnlEndDate(today);
+    } else if (type === 'last_month') {
+      const d = new Date();
+      const first = new Date(d.getFullYear(), d.getMonth() - 1, 1).toISOString().slice(0, 10);
+      const last = new Date(d.getFullYear(), d.getMonth(), 0).toISOString().slice(0, 10);
+      setPnlStartDate(first);
+      setPnlEndDate(last);
+    } else if (type === 'this_year') {
+      const d = new Date();
+      setPnlStartDate(new Date(d.getFullYear(), 0, 1).toISOString().slice(0, 10));
+      setPnlEndDate(today);
+    }
+  };
+
+  const {
+    data: pnlData,
+    isLoading: pnlLoading,
+    isError: pnlError,
+    error: pnlQueryError,
+    refetch: refetchPnl,
+  } = useQuery({
+    queryKey: ['report-profit-loss', pnlStartDate, pnlEndDate, branchId],
+    queryFn: () =>
+      tenantApi.reports.profitLoss({
+        startDate: pnlStartDate,
+        endDate: pnlEndDate,
+        ...(branchId !== 'all' ? { branchId } : {}),
+      }),
+    enabled: activeTab === 'profit-loss',
+    staleTime: 30_000,
+  });
 
   // Queries
   const {
@@ -784,6 +834,14 @@ export default function ReportsPage() {
       {/* Top Main Navigation Tabs */}
       <div className="reports-nav-header">
         <div className="reports-main-tabs">
+          <button
+            type="button"
+            className={`reports-main-tab-btn ${activeTab === 'profit-loss' ? 'active' : ''}`}
+            onClick={() => setActiveTab('profit-loss')}
+          >
+            <TrendingUp className="h-4 w-4" />
+            <span>Profit & Loss</span>
+          </button>
           {enabledFeatures.includes('SALES_REPORTS') && <button
             type="button"
             className={`reports-main-tab-btn ${activeTab === 'sales' ? 'active' : ''}`}
@@ -843,6 +901,36 @@ export default function ReportsPage() {
           )}
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* TAB 0: PROFIT & LOSS REPORT */}
+      {/* ========================================================================= */}
+      {activeTab === 'profit-loss' && (
+        <>
+          <div className="reports-hero">
+            <div className="reports-hero-title-group">
+              <h1>Profit & Loss Statement</h1>
+              <p>Income, cost of goods sold, gross profit, operating expenses, and net profit analysis.</p>
+            </div>
+          </div>
+          <ProfitLossReportView
+            data={pnlData}
+            isLoading={pnlLoading}
+            isError={pnlError}
+            error={pnlQueryError}
+            refetch={refetchPnl}
+            quickFilter={pnlQuickFilter}
+            onQuickFilterChange={handlePnlQuickFilter}
+            startDate={pnlStartDate}
+            endDate={pnlEndDate}
+            onStartDateChange={setPnlStartDate}
+            onEndDateChange={setPnlEndDate}
+            branchId={branchId}
+            onBranchChange={setBranchId}
+            branches={branches}
+          />
+        </>
+      )}
 
       {/* ========================================================================= */}
       {/* TAB 1: SALES REPORT (Screenshot 1) */}
