@@ -175,6 +175,7 @@ export class PlansService {
           id: p.id,
           billingCycle: p.billingCycle,
           price: Number(p.price),
+          compareAtPrice: p.compareAtPrice != null ? Number(p.compareAtPrice) : null,
           currency: p.currency,
           trialDays: p.trialDays,
         })),
@@ -367,74 +368,84 @@ export class PlansService {
 
   private async syncPlanPrices(
     planId: string,
-
     currency: string,
-
-    dto: {
-      monthlyPrice?: number;
-
-      yearlyPrice?: number;
-
-      trialDays?: number;
-    },
+    dto: UpdatePlanPricingDto,
   ) {
     const trialDays = dto.trialDays ?? 0;
 
-    if (dto.monthlyPrice !== undefined) {
+    if (dto.monthlyPrice !== undefined || dto.monthlyCompareAtPrice !== undefined) {
+      const updateData: Record<string, any> = {
+        trialDays,
+        isActive: true,
+      };
+      if (dto.monthlyPrice !== undefined) {
+        updateData.price = dto.monthlyPrice;
+      }
+      if (dto.monthlyCompareAtPrice !== undefined) {
+        updateData.compareAtPrice =
+          dto.monthlyCompareAtPrice != null && dto.monthlyCompareAtPrice > 0
+            ? dto.monthlyCompareAtPrice
+            : null;
+      }
+
       await this.prisma.planPrice.upsert({
         where: {
           planId_billingCycle_currency: {
             planId,
-
             billingCycle: BillingCycle.MONTHLY,
-
             currency,
           },
         },
-
-        update: { price: dto.monthlyPrice, trialDays, isActive: true },
-
+        update: updateData,
         create: {
           planId,
-
           billingCycle: BillingCycle.MONTHLY,
-
-          price: dto.monthlyPrice,
-
+          price: dto.monthlyPrice ?? 0,
+          compareAtPrice:
+            dto.monthlyCompareAtPrice != null && dto.monthlyCompareAtPrice > 0
+              ? dto.monthlyCompareAtPrice
+              : null,
           currency,
-
           trialDays,
-
           isActive: true,
         },
       });
     }
 
-    if (dto.yearlyPrice !== undefined) {
+    if (dto.yearlyPrice !== undefined || dto.yearlyCompareAtPrice !== undefined) {
+      const updateData: Record<string, any> = {
+        trialDays,
+        isActive: true,
+      };
+      if (dto.yearlyPrice !== undefined) {
+        updateData.price = dto.yearlyPrice;
+      }
+      if (dto.yearlyCompareAtPrice !== undefined) {
+        updateData.compareAtPrice =
+          dto.yearlyCompareAtPrice != null && dto.yearlyCompareAtPrice > 0
+            ? dto.yearlyCompareAtPrice
+            : null;
+      }
+
       await this.prisma.planPrice.upsert({
         where: {
           planId_billingCycle_currency: {
             planId,
-
             billingCycle: BillingCycle.YEARLY,
-
             currency,
           },
         },
-
-        update: { price: dto.yearlyPrice, trialDays, isActive: true },
-
+        update: updateData,
         create: {
           planId,
-
           billingCycle: BillingCycle.YEARLY,
-
-          price: dto.yearlyPrice,
-
+          price: dto.yearlyPrice ?? 0,
+          compareAtPrice:
+            dto.yearlyCompareAtPrice != null && dto.yearlyCompareAtPrice > 0
+              ? dto.yearlyCompareAtPrice
+              : null,
           currency,
-
           trialDays,
-
           isActive: true,
         },
       });

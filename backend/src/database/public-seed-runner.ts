@@ -131,10 +131,10 @@ async function upsertPlanPrices(
   prisma: PrismaClient,
   planId: string,
   currency: string,
-  prices: Array<{ billingCycle: BillingCycle; price: number; trialDays: number }>,
+  prices: Array<{ billingCycle: BillingCycle; price: number; compareAtPrice?: number; trialDays: number }>,
 ) {
   for (const priceDef of prices) {
-    await prisma.planPrice.upsert({
+    const existingPrice = await prisma.planPrice.findUnique({
       where: {
         planId_billingCycle_currency: {
           planId,
@@ -142,20 +142,29 @@ async function upsertPlanPrices(
           currency,
         },
       },
-      update: {
-        price: priceDef.price,
-        trialDays: priceDef.trialDays,
-        isActive: true,
-      },
-      create: {
-        planId,
-        billingCycle: priceDef.billingCycle,
-        price: priceDef.price,
-        currency,
-        trialDays: priceDef.trialDays,
-        isActive: true,
-      },
     });
+
+    if (!existingPrice) {
+      await prisma.planPrice.create({
+        data: {
+          planId,
+          billingCycle: priceDef.billingCycle,
+          price: priceDef.price,
+          compareAtPrice: priceDef.compareAtPrice ?? null,
+          currency,
+          trialDays: priceDef.trialDays,
+          isActive: true,
+        },
+      });
+    } else if (existingPrice.compareAtPrice === null && priceDef.compareAtPrice !== undefined) {
+      // Backfill compareAtPrice if not yet set
+      await prisma.planPrice.update({
+        where: { id: existingPrice.id },
+        data: {
+          compareAtPrice: priceDef.compareAtPrice,
+        },
+      });
+    }
   }
 }
 
@@ -169,7 +178,6 @@ export async function seedPublicPlans(prisma: PrismaClient): Promise<void> {
         name: planDef.name,
         description: planDef.description,
         displayOrder: planDef.displayOrder,
-        status: PlanStatus.ACTIVE,
       },
       create: {
         ...(planDef.id ? { id: planDef.id } : {}),

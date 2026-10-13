@@ -3188,7 +3188,6 @@
 
   .pos-employee-sheet,
   .pos-mix-sheet,
-  .pos-new-customer-sheet,
   .pos-draft-history-sheet {
     position: fixed !important;
     top: 50% !important;
@@ -3372,4 +3371,72 @@
     break-inside: avoid;
     page-break-inside: avoid;
   }
+}
+
+/* Dedicated POS New Customer Modal */
+.pos-new-customer-modal {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  --tw-translate-x: -50% !important;
+  --tw-translate-y: -50% !important;
+  width: calc(100vw - 2rem) !important;
+  max-width: 440px !important;
+  margin: 0 !important;
+  padding: 1.5rem !important;
+  border-radius: 1rem !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25) !important;
+  z-index: 100 !important;
+  box-sizing: border-box !important;
+  max-height: 90vh !important;
+  overflow-y: auto !important;
+}
+
+.pos-new-customer-modal .pos-field {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.35rem !important;
+  margin-bottom: 0.85rem !important;
+}
+
+.pos-new-customer-modal .pos-field label {
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  color: #334155 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+.pos-new-customer-modal .pos-field input {
+  width: 100% !important;
+  min-height: 2.75rem !important;
+  padding: 0.6rem 0.85rem !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 0.5rem !important;
+  font-size: 0.875rem !important;
+  color: #0f172a !important;
+  background: #ffffff !important;
+  box-sizing: border-box !important;
+}
+
+.pos-new-customer-modal .pos-field input:focus {
+  border-color: var(--brand-primary, #0d5c3d) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-primary, #0d5c3d) 20%, transparent) !important;
+}
+
+.pos-new-customer-modal .pos-customer-submit {
+  min-height: 2.75rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 700 !important;
+  border-radius: 0.5rem !important;
+  margin-top: 0.5rem !important;
+  background: var(--brand-primary, #0d5c3d) !important;
+  color: #ffffff !important;
 }

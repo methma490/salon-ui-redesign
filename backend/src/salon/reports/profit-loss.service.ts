@@ -5,6 +5,7 @@ import { AuthenticatedUser } from '../../auth/interfaces/auth.interface';
 import { ProfitLossQueryDto, ProfitLossReportResponse } from './dto/profit-loss.dto';
 
 const STANDARD_CATEGORIES: Array<{ code: string; name: string }> = [
+  { code: 'SUPPLIER_PAYMENT', name: 'Supplier Payments' },
   { code: 'RENT', name: 'Rent' },
   { code: 'UTILITIES', name: 'Utilities' },
   { code: 'MARKETING', name: 'Marketing' },
@@ -148,6 +149,7 @@ export class ProfitLossService {
       const grossProfitMargin = totalRevenue > 0 ? Number(((grossProfit / totalRevenue) * 100).toFixed(2)) : 0;
 
       // 3. Query Operating Expenses (excluding VOID and CANCELLED)
+      // Note: Supplier payments recorded as expenses are included in Operating Expenses
       const expenseRows = await tx.$queryRawUnsafe<
         Array<{
           categoryCode: string;
@@ -243,6 +245,7 @@ export class ProfitLossService {
              TO_CHAR(DATE_TRUNC('month', e.expense_date), 'YYYY-MM') AS "month",
              COALESCE(SUM(e.amount), 0)::float AS "expenses"
            FROM ${expenses} e
+           LEFT JOIN ${expenseCategories} c ON c.id = e.category_id
            WHERE e.status::text NOT IN ('VOID', 'CANCELLED')
              AND e.expense_date >= ($1::date - INTERVAL '6 months')
              AND e.expense_date <= $2::date

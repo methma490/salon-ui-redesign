@@ -165,6 +165,85 @@ body {
   animation: pulseGlow 4s ease-in-out infinite;
 }
 
+/* Handwritten Live Scripting Animation */
+@keyframes handwritingWrite {
+  0% {
+    clip-path: inset(0 100% 0 0);
+    opacity: 0;
+    transform: translateY(2px) rotate(-6deg);
+  }
+  15% {
+    opacity: 1;
+  }
+  60% {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+    transform: translateY(0px) rotate(-6deg);
+  }
+  85% {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+    transform: translateY(0px) rotate(-6deg);
+  }
+  100% {
+    clip-path: inset(0 100% 0 0);
+    opacity: 0;
+    transform: translateY(2px) rotate(-6deg);
+  }
+}
+
+@keyframes drawArrow {
+  0% {
+    stroke-dashoffset: 120;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  65% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  85% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 120;
+    opacity: 0;
+  }
+}
+
+.animate-handwriting {
+  animation: handwritingWrite 7s ease-in-out infinite;
+}
+
+.animate-draw-arrow {
+  stroke-dasharray: 120;
+  stroke-dashoffset: 120;
+  animation: drawArrow 7s ease-in-out infinite;
+}
+
+/* Infinite Marquee Ticker Animations */
+@keyframes marqueeScroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marqueeScroll 28s linear infinite;
+}
+
+.pause-hover:hover {
+  animation-play-state: paused;
+}
+
 /* Hide scrollbar for clean horizontal swipeable lists */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

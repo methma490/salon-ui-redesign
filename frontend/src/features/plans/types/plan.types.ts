@@ -9,6 +9,7 @@ export interface PlanPriceOption {
   id?: string;
   billingCycle: BillingCycle;
   price: number;
+  compareAtPrice?: number | null;
   currency: string;
   trialDays: number;
 }
@@ -32,6 +33,7 @@ export interface AdminPlanPrice {
   id: string;
   billingCycle: BillingCycle;
   price: number | string;
+  compareAtPrice?: number | string | null;
   currency: string;
   trialDays: number;
   isActive: boolean;
@@ -64,7 +66,9 @@ export interface CreatePlanPayload {
 export interface UpdatePlanPricingPayload {
   currency?: string;
   monthlyPrice?: number;
+  monthlyCompareAtPrice?: number | null;
   yearlyPrice?: number;
+  yearlyCompareAtPrice?: number | null;
   trialDays?: number;
 }
 

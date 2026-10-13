@@ -933,7 +933,9 @@
 
 /* Notes Section */
 .ps-notes {
-  margin-top: 1.5rem;
+  margin-top: 0.85rem;
+  break-inside: avoid;
+  page-break-inside: avoid;
   font-size: 0.75rem;
   color: #475569;
   line-height: 1.6;
@@ -956,29 +958,59 @@
 }
 
 @media print {
-  body * {
-    visibility: hidden;
+  @page {
+    margin: 8mm 10mm;
+    size: auto;
   }
 
-  .payslip-modern,
-  .payslip-modern * {
-    visibility: visible;
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
   }
 
-  .payslip-modern {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    max-width: 100%;
-    border: none;
-    box-shadow: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  .payslip-no-print {
+  /* Hide app navigation and shell */
+  header, nav, aside, .emp-page-header, .emp-filter-card, .emp-table-wrap, .emp-pagination,
+  .payslip-no-print, [role="dialog"] > button:last-child {
     display: none !important;
+  }
+
+  /* Reset Radix Dialog container so it flows onto pages naturally */
+  [role="dialog"],
+  [data-radix-portal],
+  [data-radix-popper-content-wrapper],
+  .fixed,
+  .inset-0 {
+    position: static !important;
+    transform: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Ensure the payslip modern element prints cleanly */
+  .payslip-modern {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+    background: #ffffff !important;
+  }
+
+  .payslip-modern * {
+    visibility: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }
 

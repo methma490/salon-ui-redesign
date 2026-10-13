@@ -10,7 +10,7 @@ import { FinalCTA } from '@/components/home/FinalCTA';
 export default function HomePage() {
   return (
     <MarketingShell>
-      {/* 1. Hero Section with 3D background, layered laptop & mobile, and bottom feature bar */}
+      {/* 1. Hero Section with 3D background, layered laptop & mobile, bottom feature bar, and system features ticker */}
       <Hero />
 
       {/* 2. Value Proposition & Business Benefits */}

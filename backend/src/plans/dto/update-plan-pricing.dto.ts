@@ -14,7 +14,17 @@ export class UpdatePlanPricingDto {
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
+  monthlyCompareAtPrice?: number | null;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
   yearlyPrice?: number;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  yearlyCompareAtPrice?: number | null;
 
   @IsOptional()
   @IsInt()

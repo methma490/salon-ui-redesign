@@ -28,7 +28,7 @@ export default function FeaturesPage() {
           align="left"
           eyebrow="Product"
           title="Features Built for Salon Operations"
-          description="Every module connects to your tenant workspace — from daily bookings to month-end payroll."
+          description="Every module connects to your salon dashboard — from daily bookings to month-end payroll."
         />
       </section>
       <SystemUIShowcase />

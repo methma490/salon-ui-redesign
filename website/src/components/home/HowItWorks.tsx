@@ -18,7 +18,7 @@ const STEPS: StepItem[] = [
     description:
       'Sign up in under two minutes with no upfront credit card required. Choose your plan and enjoy full 21-day free access.',
     icon: UserPlus,
-    details: ['Instant tenant workspace setup', '21-day full feature trial', 'Zero software installation'],
+    details: ['Instant salon workspace setup', '21-day full feature trial', 'Zero software installation'],
   },
   {
     step: 'Step 2',

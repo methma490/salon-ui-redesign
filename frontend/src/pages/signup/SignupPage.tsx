@@ -135,7 +135,7 @@ export default function SignupPage() {
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-50">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -144,7 +144,7 @@ export default function SignupPage() {
     return (
       <div className="flex h-screen flex-col items-center justify-center gap-4 bg-slate-50 px-4">
         <p className="text-lg font-medium text-slate-900">Plan not found</p>
-        <Button asChild className="bg-[#064e3b] text-white">
+        <Button asChild className="bg-primary text-white hover:bg-primary/90">
           <a href={websitePricingUrl()}>Back to pricing</a>
         </Button>
       </div>
@@ -266,7 +266,7 @@ export default function SignupPage() {
           </Button>
 
           <a href={websiteHomeUrl()} className="flex items-center gap-2.5">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#064e3b] text-white shadow-sm">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-white shadow-sm">
               <Scissors className="h-4 w-4" />
             </span>
             <span className="text-sm font-bold tracking-tight text-slate-900">
@@ -276,11 +276,11 @@ export default function SignupPage() {
         </div>
 
         {plan && (
-          <div className="flex items-center gap-1.5 rounded-full border border-emerald-200/80 bg-emerald-50/80 px-3 py-1 text-xs font-semibold text-emerald-900 shadow-sm">
-            <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
+          <div className="flex items-center gap-1.5 rounded-full border border-purple-200/80 bg-purple-50/80 px-3 py-1 text-xs font-semibold text-purple-900 shadow-sm">
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
             <span>{plan.name}</span>
-            <span className="text-emerald-400">·</span>
-            <span className="font-bold text-emerald-700">
+            <span className="text-purple-400">·</span>
+            <span className="font-bold text-primary">
               {formatPrice(activePlanPrice?.price ?? plan.price, activePlanPrice?.currency ?? plan.currency)} / {billingCycleLabel(selectedCycle)}
             </span>
           </div>
@@ -326,7 +326,7 @@ export default function SignupPage() {
                           onClick={() => setSelectedCycle('MONTHLY')}
                           className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all ${
                             selectedCycle === 'MONTHLY'
-                              ? 'bg-emerald-600 text-white shadow'
+                              ? 'bg-primary text-white shadow'
                               : 'text-white/70 hover:text-white'
                           }`}
                         >
@@ -337,7 +337,7 @@ export default function SignupPage() {
                           onClick={() => setSelectedCycle('YEARLY')}
                           className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all ${
                             selectedCycle === 'YEARLY'
-                              ? 'bg-emerald-600 text-white shadow'
+                              ? 'bg-primary text-white shadow'
                               : 'text-white/70 hover:text-white'
                           }`}
                         >
@@ -359,7 +359,7 @@ export default function SignupPage() {
                 <ul className="mt-4 space-y-3">
                   {planFeatures.slice(0, 6).map((featureName, idx) => (
                     <li key={idx} className="flex items-center gap-3">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-purple-100 text-primary">
                         <Check className="h-3 w-3 stroke-[3]" />
                       </span>
                       <span className="text-sm font-medium text-slate-700">{featureName}</span>
@@ -371,7 +371,7 @@ export default function SignupPage() {
 
             {/* Security Notice */}
             <div className="flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-purple-50 text-primary">
                 <Lock className="h-5 w-5" />
               </span>
               <div>
@@ -386,7 +386,7 @@ export default function SignupPage() {
             {/* Heading */}
             <div>
               <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl lg:text-4xl">
-                Create your <span className="text-[#064e3b]">salon account</span>
+                Create your <span className="text-primary">salon account</span>
               </h1>
               <p className="mt-1.5 text-sm text-slate-500">
                 Fill in your salon and admin details, then pay to activate your portal.
@@ -400,9 +400,9 @@ export default function SignupPage() {
                 <div
                   className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-colors ${
                     step > 1
-                      ? 'bg-emerald-600 text-white'
+                      ? 'bg-primary text-white'
                       : step === 1
-                        ? 'bg-[#064e3b] text-white shadow-sm'
+                        ? 'bg-primary text-white shadow-sm'
                         : 'bg-slate-100 text-slate-500'
                   }`}
                 >
@@ -424,9 +424,9 @@ export default function SignupPage() {
                 <div
                   className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-colors ${
                     step > 2
-                      ? 'bg-emerald-600 text-white'
+                      ? 'bg-primary text-white'
                       : step === 2
-                        ? 'bg-[#064e3b] text-white shadow-sm'
+                        ? 'bg-primary text-white shadow-sm'
                         : 'bg-slate-100 text-slate-500'
                   }`}
                 >
@@ -448,7 +448,7 @@ export default function SignupPage() {
                 <div
                   className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-colors ${
                     step === 3
-                      ? 'bg-[#064e3b] text-white shadow-sm'
+                      ? 'bg-primary text-white shadow-sm'
                       : 'bg-slate-100 text-slate-500'
                   }`}
                 >
@@ -467,7 +467,7 @@ export default function SignupPage() {
               {step === 1 && (
                 <form onSubmit={handleNextFromStep1} className="space-y-6">
                   <div className="flex items-center gap-3.5">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-purple-50 text-primary">
                       <Building2 className="h-6 w-6" />
                     </div>
                     <div>
@@ -492,7 +492,7 @@ export default function SignupPage() {
                           value={salonName}
                           onChange={(e) => setSalonName(e.target.value)}
                           placeholder="e.g. Hair Avenue or Glamour Studio"
-                          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/10"
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/10"
                           required
                           autoFocus
                         />
@@ -516,7 +516,7 @@ export default function SignupPage() {
                             value={salonEmail}
                             onChange={(e) => setSalonEmail(e.target.value)}
                             placeholder="salon@example.com"
-                            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/10"
+                            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/10"
                           />
                         </div>
                       </div>
@@ -536,7 +536,7 @@ export default function SignupPage() {
                             value={salonPhone}
                             onChange={(e) => setSalonPhone(e.target.value)}
                             placeholder="077 123 4567"
-                            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/10"
+                            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/10"
                           />
                         </div>
                       </div>
@@ -594,7 +594,7 @@ export default function SignupPage() {
 
                     <Button
                       type="submit"
-                      className="h-11 w-full rounded-xl bg-[#064e3b] px-6 font-semibold text-white shadow-sm hover:bg-[#047857] sm:w-auto"
+                      className="h-11 w-full rounded-xl bg-primary px-6 font-semibold text-white shadow-md shadow-purple-500/25 hover:bg-primary/90 transition-all cursor-pointer sm:w-auto"
                     >
                       Continue to admin account
                       <ArrowRight className="ml-2 h-4 w-4" />
@@ -608,7 +608,7 @@ export default function SignupPage() {
                 <form onSubmit={handleNextFromStep2} className="space-y-6">
                   {/* Header */}
                   <div className="flex items-center gap-3.5">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-purple-50 text-primary">
                       <User className="h-6 w-6" />
                     </div>
                     <div>
@@ -633,7 +633,7 @@ export default function SignupPage() {
                           value={adminName}
                           onChange={(e) => setAdminName(e.target.value)}
                           placeholder="Your name"
-                          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/10"
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/10"
                           required
                           autoFocus
                         />
@@ -657,7 +657,7 @@ export default function SignupPage() {
                             value={adminEmail}
                             onChange={(e) => setAdminEmail(e.target.value)}
                             placeholder="you@email.com"
-                            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/10"
+                            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/10"
                             required
                           />
                         </div>
@@ -678,7 +678,7 @@ export default function SignupPage() {
                             value={adminPhone}
                             onChange={(e) => setAdminPhone(e.target.value)}
                             placeholder="077 123 4567"
-                            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/10"
+                            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/10"
                           />
                         </div>
                       </div>
@@ -701,7 +701,7 @@ export default function SignupPage() {
                             value={adminPassword}
                             onChange={(e) => setAdminPassword(e.target.value)}
                             placeholder="Create a password"
-                            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-10 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/10"
+                            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-10 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/10"
                             required
                             minLength={8}
                           />
@@ -735,7 +735,7 @@ export default function SignupPage() {
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             placeholder="Re-enter your password"
-                            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-10 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/10"
+                            className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-10 text-sm text-slate-900 transition-colors placeholder:text-slate-400 hover:border-slate-300 focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/10"
                             required
                             minLength={8}
                           />
@@ -770,7 +770,7 @@ export default function SignupPage() {
 
                     <Button
                       type="submit"
-                      className="h-11 w-full rounded-xl bg-[#064e3b] px-6 font-semibold text-white shadow-sm hover:bg-[#047857] sm:w-auto"
+                      className="h-11 w-full rounded-xl bg-primary px-6 font-semibold text-white shadow-md shadow-purple-500/25 hover:bg-primary/90 transition-all cursor-pointer sm:w-auto"
                     >
                       Continue to review
                       <ArrowRight className="ml-2 h-4 w-4" />
@@ -783,7 +783,7 @@ export default function SignupPage() {
               {step === 3 && (
                 <div className="space-y-6">
                   <div className="flex items-center gap-3.5">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-purple-50 text-primary">
                       <Sparkles className="h-6 w-6" />
                     </div>
                     <div>
@@ -816,13 +816,13 @@ export default function SignupPage() {
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-semibold text-slate-700">Trial Period</span>
-                        <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+                        <span className="inline-flex items-center rounded-md bg-purple-50 px-2 py-0.5 text-xs font-bold text-primary ring-1 ring-inset ring-purple-600/20">
                           21 Days Free (Full Access)
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-semibold text-slate-700">Payable Today</span>
-                        <span className="text-base font-extrabold text-emerald-700">
+                        <span className="text-base font-extrabold text-primary">
                           Rs. 0 (Free Trial)
                         </span>
                       </div>
@@ -836,8 +836,8 @@ export default function SignupPage() {
                   </div>
 
                   {/* Security Notice */}
-                  <div className="flex items-center gap-2.5 rounded-xl border border-emerald-200/60 bg-emerald-50/50 p-3 text-xs text-emerald-900">
-                    <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />
+                  <div className="flex items-center gap-2.5 rounded-xl border border-purple-200/60 bg-purple-50/50 p-3 text-xs text-purple-900">
+                    <ShieldCheck className="h-4 w-4 shrink-0 text-primary" />
                     <span>
                       Instant activation. No credit card or upfront payment required. You can subscribe or pay anytime during your 21-day trial.
                     </span>
@@ -860,7 +860,7 @@ export default function SignupPage() {
                       type="button"
                       onClick={() => handleFinalSubmit()}
                       disabled={submitting}
-                      className="h-11 w-full rounded-xl bg-[#064e3b] px-7 font-semibold text-white shadow-sm hover:bg-[#047857] sm:w-auto"
+                      className="h-11 w-full rounded-xl bg-primary px-7 font-semibold text-white shadow-md shadow-purple-500/25 hover:bg-primary/90 transition-all cursor-pointer sm:w-auto"
                     >
                       {submitting ? (
                         <>

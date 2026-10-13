@@ -9,7 +9,6 @@ import {
   Building2,
   Printer,
   Minus,
-  Sparkles,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -187,7 +186,7 @@ export function ProfitLossReportView({
       {!isLoading && !isError && data && (
         <>
           {/* KPI CARDS */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* 1. TOTAL REVENUE */}
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-start gap-4">
               <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center shrink-0 text-purple-600">
@@ -213,28 +212,7 @@ export function ProfitLossReportView({
               </div>
             </div>
 
-            {/* 2. GROSS PROFIT */}
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 text-emerald-600">
-                <TrendingUp className="h-6 w-6" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  Gross Profit
-                </p>
-                <h3 className="text-2xl font-bold text-emerald-600 mt-1">
-                  {formatMoneyAmount(data.summary.grossProfit)}
-                </h3>
-                <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-500">
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800">
-                    {data.summary.grossProfitMargin.toFixed(1)}% margin
-                  </span>
-                  <span>COGS: {formatMoneyAmount(data.costOfSales.productCogs)}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 3. TOTAL EXPENSES */}
+            {/* 2. TOTAL EXPENSES (Including Supplier Payments) */}
             <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-start gap-4">
               <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center shrink-0 text-rose-600">
                 <Receipt className="h-6 w-6" />
@@ -247,12 +225,12 @@ export function ProfitLossReportView({
                   {formatMoneyAmount(data.summary.totalExpenses)}
                 </h3>
                 <div className="flex items-center gap-1.5 mt-1.5 text-xs text-slate-500">
-                  <span>Operating costs across {data.operatingExpenses.categories.length} categories</span>
+                  <span>Across {data.operatingExpenses.categories.length} categories (inc. supplier payments)</span>
                 </div>
               </div>
             </div>
 
-            {/* 4. NET PROFIT / LOSS */}
+            {/* 3. NET PROFIT / LOSS */}
             <div
               className={`p-5 rounded-xl border shadow-sm flex items-start gap-4 ${
                 netProfitPositive
@@ -316,10 +294,10 @@ export function ProfitLossReportView({
                     {data.branch.name || 'All Branches'} &bull; {data.period.startDate} to {data.period.endDate}
                   </p>
                 </div>
-                <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                {/* <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
                   <Sparkles className="h-3 w-3" />
                   Real-time
-                </div>
+                </div> */}
               </div>
 
               <div className="divide-y divide-slate-100 overflow-x-auto text-sm">
@@ -413,61 +391,11 @@ export function ProfitLossReportView({
                   </div>
                 </div>
 
-                {/* 2. COST OF SALES (COGS) */}
+                {/* 2. OPERATING EXPENSES (Including Supplier Payments) */}
                 <div className="p-4 bg-slate-50/20">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                      2. Cost of Sales (COGS)
-                    </span>
-                    <span className="text-xs font-semibold text-slate-500">% Rev</span>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-slate-700 pl-3">
-                      <span>Product COGS (Sale-Time Cost Snapshot)</span>
-                      <div className="flex items-center gap-4">
-                        <span className="font-medium">{formatMoneyAmount(data.costOfSales.productCogs)}</span>
-                        <span className="text-xs text-slate-400 w-12 text-right">
-                          {data.summary.totalRevenue > 0
-                            ? ((data.costOfSales.productCogs / data.summary.totalRevenue) * 100).toFixed(1)
-                            : 0}%
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 pt-2 border-t border-slate-200 flex items-center justify-between font-bold text-slate-900 bg-slate-100 px-3 py-1.5 rounded-lg">
-                    <span>Total Cost of Sales</span>
-                    <div className="flex items-center gap-4">
-                      <span className="text-slate-800">{formatMoneyAmount(data.costOfSales.totalCostOfSales)}</span>
-                      <span className="text-xs text-slate-500 w-12 text-right">
-                        {data.summary.totalRevenue > 0
-                          ? ((data.costOfSales.totalCostOfSales / data.summary.totalRevenue) * 100).toFixed(1)
-                          : 0}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 3. GROSS PROFIT HIGHLIGHT */}
-                <div className="p-4 bg-emerald-50/50 flex items-center justify-between font-extrabold text-emerald-950 text-base">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-emerald-600" />
-                    <span>GROSS PROFIT</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-emerald-700">{formatMoneyAmount(data.summary.grossProfit)}</span>
-                    <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                      {data.summary.grossProfitMargin.toFixed(1)}% margin
-                    </span>
-                  </div>
-                </div>
-
-                {/* 4. OPERATING EXPENSES */}
-                <div className="p-4 bg-slate-50/20">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                      4. Operating Expenses
+                      2. Operating Expenses
                     </span>
                     <span className="text-xs font-semibold text-slate-500">% Rev</span>
                   </div>
@@ -490,7 +418,7 @@ export function ProfitLossReportView({
                   </div>
 
                   <div className="mt-3 pt-2 border-t border-rose-100 flex items-center justify-between font-bold text-slate-900 bg-rose-50/60 px-3 py-1.5 rounded-lg">
-                    <span className="text-rose-900">Total Operating Expenses</span>
+                    <span className="text-rose-900">Total Expenses</span>
                     <div className="flex items-center gap-4">
                       <span className="text-rose-700">
                         {formatMoneyAmount(data.operatingExpenses.totalExpenses)}
@@ -645,8 +573,6 @@ export function ProfitLossReportView({
 
             <div className="reports-print-summary">
               <div><span>Total Revenue</span><strong>{formatMoneyAmount(data.summary.totalRevenue)}</strong></div>
-              <div><span>COGS</span><strong>{formatMoneyAmount(data.summary.cogs)}</strong></div>
-              <div><span>Gross Profit</span><strong>{formatMoneyAmount(data.summary.grossProfit)} ({data.summary.grossProfitMargin.toFixed(1)}%)</strong></div>
               <div><span>Total Expenses</span><strong>{formatMoneyAmount(data.summary.totalExpenses)}</strong></div>
               <div><span>Net Profit</span><strong>{formatMoneyAmount(data.summary.netProfit)} ({data.summary.netProfitMargin.toFixed(1)}%)</strong></div>
             </div>
@@ -667,13 +593,7 @@ export function ProfitLossReportView({
                 {data.income.refunds > 0 && <tr><td>Returns / Refunds</td><td style={{ textAlign: 'right', color: '#dc2626' }}>-{formatMoneyAmount(data.income.refunds)}</td><td style={{ textAlign: 'right' }}>-</td></tr>}
                 <tr style={{ fontWeight: 700, background: '#f1f5f9' }}><td>Total Net Revenue</td><td style={{ textAlign: 'right' }}>{formatMoneyAmount(data.summary.totalRevenue)}</td><td style={{ textAlign: 'right' }}>100.0%</td></tr>
 
-                <tr style={{ background: '#f8fafc', fontWeight: 700 }}><td colSpan={3}>2. COST OF GOODS SOLD (COGS)</td></tr>
-                <tr><td>Cost of Products Sold (Sale-Time Snapshot)</td><td style={{ textAlign: 'right' }}>{formatMoneyAmount(data.costOfSales.productCogs)}</td><td style={{ textAlign: 'right' }}>{data.summary.totalRevenue > 0 ? ((data.costOfSales.productCogs / data.summary.totalRevenue) * 100).toFixed(1) : 0}%</td></tr>
-                <tr style={{ fontWeight: 700, background: '#f1f5f9' }}><td>Total Cost of Goods Sold</td><td style={{ textAlign: 'right' }}>{formatMoneyAmount(data.costOfSales.totalCostOfSales)}</td><td style={{ textAlign: 'right' }}>{data.summary.totalRevenue > 0 ? ((data.costOfSales.totalCostOfSales / data.summary.totalRevenue) * 100).toFixed(1) : 0}%</td></tr>
-
-                <tr style={{ fontWeight: 800, background: '#ecfdf5' }}><td>GROSS PROFIT</td><td style={{ textAlign: 'right', color: '#047857' }}>{formatMoneyAmount(data.summary.grossProfit)}</td><td style={{ textAlign: 'right', color: '#047857' }}>{data.summary.grossProfitMargin.toFixed(1)}%</td></tr>
-
-                <tr style={{ background: '#f8fafc', fontWeight: 700 }}><td colSpan={3}>3. OPERATING EXPENSES</td></tr>
+                <tr style={{ background: '#f8fafc', fontWeight: 700 }}><td colSpan={3}>2. OPERATING EXPENSES (INC. SUPPLIER PAYMENTS)</td></tr>
                 {data.operatingExpenses.categories.map((c) => (
                   <tr key={c.categoryCode}><td>{c.categoryName}</td><td style={{ textAlign: 'right' }}>{formatMoneyAmount(c.amount)}</td><td style={{ textAlign: 'right' }}>{c.percentage.toFixed(1)}%</td></tr>
                 ))}

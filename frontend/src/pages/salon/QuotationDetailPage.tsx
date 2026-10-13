@@ -174,20 +174,50 @@ export default function QuotationDetailPage() {
   const printQuotation = () => {
     const token = authStorage.getAccessToken();
     const url = tenantApi.quotations.printUrl(id);
+
+    // Pre-open window synchronously to prevent browser popup blockers on mobile/desktop
+    const w = window.open('', '_blank');
+    if (w) {
+      w.document.write('<p style="font-family:sans-serif;padding:24px;color:#64748b;">Loading printable quotation...</p>');
+    }
+
     void fetch(url, {
       credentials: 'include',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
       .then((r) => r.text())
       .then((html) => {
-        const w = window.open('', '_blank');
-        if (!w) return;
-        w.document.write(html);
-        w.document.close();
-        w.focus();
-        w.print();
+        if (w) {
+          w.document.open();
+          w.document.write(html);
+          w.document.close();
+          setTimeout(() => {
+            w.focus();
+            w.print();
+          }, 250);
+        } else {
+          // Fallback if popup was blocked completely
+          const iframe = document.createElement('iframe');
+          iframe.style.position = 'fixed';
+          iframe.style.right = '0';
+          iframe.style.bottom = '0';
+          iframe.style.width = '0';
+          iframe.style.height = '0';
+          iframe.style.border = '0';
+          document.body.appendChild(iframe);
+          iframe.contentWindow?.document.open();
+          iframe.contentWindow?.document.write(html);
+          iframe.contentWindow?.document.close();
+          setTimeout(() => {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+          }, 250);
+        }
       })
-      .catch((err) => setError(getErrorMessage(err)));
+      .catch((err) => {
+        if (w) w.close();
+        setError(getErrorMessage(err));
+      });
   };
 
   const canEdit = ['DRAFT', 'SENT'].includes(detail.status);

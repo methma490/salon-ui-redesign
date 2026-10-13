@@ -2290,7 +2290,7 @@ export default function PosPage() {
         open={createCustomerOpen}
         onOpenChange={handleCloseCreateCustomer}
         title="New Customer"
-        className="pos-new-customer-sheet"
+        className="pos-new-customer-modal"
       >
         <SimpleForm
           onSubmit={(e) => {

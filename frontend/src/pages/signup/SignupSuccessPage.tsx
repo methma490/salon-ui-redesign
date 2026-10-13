@@ -75,7 +75,7 @@ export default function SignupSuccessPage() {
 
         {!loading && isTrial && (
           <div className="w-full max-w-md space-y-6 text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-purple-50 text-primary">
               <CheckCircle2 className="h-12 w-12" />
             </div>
             <div className="space-y-3">
@@ -92,8 +92,8 @@ export default function SignupSuccessPage() {
               </p>
               {planName && (
                 <div>
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
-                    <Sparkles className="h-3 w-3 text-emerald-600" />
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-semibold text-purple-900">
+                    <Sparkles className="h-3 w-3 text-primary" />
                     {planName} Plan — 21 Days Free
                   </span>
                 </div>
@@ -113,7 +113,7 @@ export default function SignupSuccessPage() {
               )}
             </div>
 
-            <Button asChild size="lg" className="w-full bg-[#064e3b] font-semibold text-white hover:bg-[#047857]">
+            <Button asChild size="lg" className="w-full bg-primary font-semibold text-white shadow-md shadow-purple-500/25 hover:bg-primary/90 transition-all cursor-pointer">
               <Link to="/salon/login">Go to Salon Login</Link>
             </Button>
           </div>

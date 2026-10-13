@@ -71,6 +71,7 @@ function getActivePlanPrices(plan: {
   planPrices?: Array<{
     billingCycle: string;
     price: unknown;
+    compareAtPrice?: unknown;
     currency?: string;
     trialDays?: number;
     isActive?: boolean;
@@ -95,6 +96,7 @@ export function getPlanPriceSummary(plan: {
   planPrices?: Array<{
     billingCycle: string;
     price: unknown;
+    compareAtPrice?: unknown;
     currency?: string;
     trialDays?: number;
     isActive?: boolean;
@@ -104,6 +106,8 @@ export function getPlanPriceSummary(plan: {
   yearly?: string;
   monthlyAmount?: number;
   yearlyAmount?: number;
+  monthlyCompareAtAmount?: number;
+  yearlyCompareAtAmount?: number;
   currency: string;
   trialDays?: number;
 } {
@@ -113,11 +117,15 @@ export function getPlanPriceSummary(plan: {
   const yearly = prices.find((p) => p.billingCycle === 'YEARLY');
   const monthlyAmount = monthly ? parseMoneyAmount(monthly.price) : NaN;
   const yearlyAmount = yearly ? parseMoneyAmount(yearly.price) : NaN;
+  const monthlyCompareAtAmount = monthly ? parseMoneyAmount(monthly.compareAtPrice) : NaN;
+  const yearlyCompareAtAmount = yearly ? parseMoneyAmount(yearly.compareAtPrice) : NaN;
 
   return {
     currency,
     monthlyAmount: Number.isFinite(monthlyAmount) ? monthlyAmount : undefined,
     yearlyAmount: Number.isFinite(yearlyAmount) ? yearlyAmount : undefined,
+    monthlyCompareAtAmount: Number.isFinite(monthlyCompareAtAmount) ? monthlyCompareAtAmount : undefined,
+    yearlyCompareAtAmount: Number.isFinite(yearlyCompareAtAmount) ? yearlyCompareAtAmount : undefined,
     monthly: monthly
       ? `${formatPrice(monthlyAmount, monthly.currency ?? currency)}/mo`
       : 'Not set',

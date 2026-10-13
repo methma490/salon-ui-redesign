@@ -960,33 +960,361 @@ export class QuotationsService {
   async getPrintHtml(schemaName: string, tenantId: string, id: string) {
     const detail = await this.getById(schemaName, id, tenantId);
     const salonName = detail.salonNameSnapshot || detail.salon.name;
+    const brandColor = detail.salon.primaryColor || '#0f766e';
+    const statusText = detail.displayStatus || detail.status;
+
     const rows = detail.items
       .map(
-        (i) =>
-          `<tr><td>${escapeHtml(i.descriptionSnapshot)}</td><td style="text-align:right">${i.quantity}</td><td style="text-align:right">${formatMoneyNumber(i.quotationUnitPrice)}</td><td style="text-align:right">${formatMoneyNumber(i.lineTotal)}</td></tr>`,
+        (i, idx) =>
+          `<tr>
+            <td style="color:#64748b;font-weight:600;width:32px;text-align:center;">${idx + 1}</td>
+            <td style="font-weight:600;color:#0f172a;">${escapeHtml(i.descriptionSnapshot)}</td>
+            <td style="text-align:center;color:#334155;">${i.quantity}</td>
+            <td style="text-align:right;color:#334155;">${formatMoneyNumber(i.quotationUnitPrice)}</td>
+            <td style="text-align:right;font-weight:700;color:#0f172a;">${formatMoneyNumber(i.lineTotal)}</td>
+          </tr>`,
       )
       .join('');
 
-    return `<!doctype html><html><head><meta charset="utf-8"/><title>${escapeHtml(detail.quotationNo)}</title>
-<style>
-body{font-family:Segoe UI,Arial,sans-serif;color:#0f172a;padding:24px}
-h1{margin:0 0 4px;font-size:22px;color:${detail.salon.primaryColor || '#a44a5c'}}
-.muted{color:#64748b;font-size:13px}
-table{width:100%;border-collapse:collapse;margin-top:18px}
-th,td{border-bottom:1px solid #e2e8f0;padding:8px;font-size:13px;text-align:left}
-th.num,td.num{text-align:right}
-.total{font-size:18px;font-weight:700;margin-top:16px}
-.footer{margin-top:28px;font-size:11px;color:#94a3b8}
-</style></head><body>
-<h1>${escapeHtml(salonName)}</h1>
-<p class="muted">QUOTATION ${escapeHtml(detail.quotationNo)}</p>
-<p><strong>Customer:</strong> ${escapeHtml(detail.customerName)} · ${escapeHtml(detail.customerPhone || '')}</p>
-<p><strong>Date:</strong> ${escapeHtml(formatSriLankaDate(detail.quotationDate))} · <strong>Valid until:</strong> ${escapeHtml(detail.validUntil ? formatSriLankaDate(detail.validUntil) : '—')}</p>
-<table><thead><tr><th>Service</th><th style="text-align:right">Qty</th><th style="text-align:right">Price (LKR)</th><th style="text-align:right">Total (LKR)</th></tr></thead><tbody>${rows}</tbody></table>
-<p class="total">Total: ${formatLkr(detail.totalAmount)}</p>
-${detail.customerNotes ? `<p><strong>Notes:</strong> ${escapeHtml(detail.customerNotes)}</p>` : ''}
-<p class="footer">Powered by ${escapeHtml(APP_NAME_FALLBACK)}</p>
-</body></html>`;
+    return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quotation ${escapeHtml(detail.quotationNo)}</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 12mm 15mm;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #0f172a;
+      background: #ffffff;
+      margin: 0;
+      padding: 24px;
+      line-height: 1.5;
+      font-size: 13px;
+    }
+    .quote-container {
+      max-width: 780px;
+      margin: 0 auto;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+    }
+    .quote-header {
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border-bottom: 2px solid ${brandColor};
+      padding: 24px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+    }
+    .brand-title {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+    }
+    .brand-sub {
+      margin: 3px 0 0;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+    .brand-contact {
+      margin: 4px 0 0;
+      font-size: 11px;
+      color: #64748b;
+    }
+    .quote-meta {
+      text-align: right;
+    }
+    .quote-badge-title {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: ${brandColor};
+    }
+    .quote-number {
+      font-size: 17px;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 2px 0 6px;
+      letter-spacing: -0.01em;
+    }
+    .meta-line {
+      font-size: 11.5px;
+      color: #64748b;
+      margin: 1px 0;
+    }
+    .meta-line strong {
+      color: #1e293b;
+    }
+    .status-pill {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 3px 12px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+    .quote-body {
+      padding: 24px 28px;
+    }
+    .parties-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #f1f5f9;
+      margin-bottom: 20px;
+    }
+    .party-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 4px;
+    }
+    .party-name {
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .party-sub {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th {
+      border-bottom: 2px solid #cbd5e1;
+      padding: 8px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      text-align: left;
+    }
+    td {
+      border-bottom: 1px solid #f1f5f9;
+      padding: 10px 6px;
+      font-size: 12.5px;
+    }
+    .summary-section {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 18px;
+    }
+    .summary-card {
+      width: 280px;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12.5px;
+      color: #475569;
+      margin-bottom: 6px;
+    }
+    .grand-total-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: #f8fafc;
+      border: 1.5px solid ${brandColor};
+    }
+    .grand-total-label {
+      font-size: 15px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+    .grand-total-val {
+      font-size: 17px;
+      font-weight: 800;
+      color: ${brandColor};
+    }
+    .notes-box {
+      margin-top: 24px;
+      padding: 14px 16px;
+      border-radius: 8px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      font-size: 12px;
+    }
+    .notes-title {
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 4px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .quote-footer {
+      padding: 18px 28px;
+      border-top: 1px solid #e2e8f0;
+      background: #ffffff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #64748b;
+    }
+    .print-actions {
+      max-width: 780px;
+      margin: 0 auto 16px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #0f172a;
+    }
+    .btn-primary {
+      background: ${brandColor};
+      border-color: ${brandColor};
+      color: #ffffff;
+    }
+    @media print {
+      body {
+        padding: 0;
+      }
+      .print-actions {
+        display: none !important;
+      }
+      .quote-container {
+        border: none;
+        box-shadow: none;
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-actions">
+    <button class="btn btn-primary" onclick="window.print()">Print / Save PDF</button>
+  </div>
+
+  <div class="quote-container" id="quotation-print-card">
+    <header class="quote-header">
+      <div>
+        <h1 class="brand-title">${escapeHtml(salonName)}</h1>
+        <p class="brand-sub">Professional Salon &amp; Wellness Services</p>
+        ${detail.salon.phone ? `<p class="brand-contact">Phone: ${escapeHtml(detail.salon.phone)}</p>` : ''}
+        ${detail.salon.email ? `<p class="brand-contact">Email: ${escapeHtml(detail.salon.email)}</p>` : ''}
+      </div>
+      <div class="quote-meta">
+        <div class="quote-badge-title">Official Quotation</div>
+        <div class="quote-number">${escapeHtml(detail.quotationNo)}</div>
+        <div class="meta-line">Date: <strong>${escapeHtml(formatSriLankaDate(detail.quotationDate))}</strong></div>
+        <div class="meta-line">Valid Until: <strong>${escapeHtml(detail.validUntil ? formatSriLankaDate(detail.validUntil) : '30 Days')}</strong></div>
+        <div><span class="status-pill">${escapeHtml(statusText)}</span></div>
+      </div>
+    </header>
+
+    <div class="quote-body">
+      <div class="parties-grid">
+        <div>
+          <div class="party-title">QUOTATION FOR</div>
+          <div class="party-name">${escapeHtml(detail.customerName)}</div>
+          <div class="party-sub">${escapeHtml(detail.customerPhone || 'Valued Client')}</div>
+        </div>
+        <div>
+          <div class="party-title">ISSUED BY</div>
+          <div class="party-name">${escapeHtml(salonName)}</div>
+          <div class="party-sub">Service Estimation &bull; Subject to Final Appointment</div>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width:32px;text-align:center;">#</th>
+            <th>Service Description</th>
+            <th style="text-align:center;width:48px;">Qty</th>
+            <th style="text-align:right;width:110px;">Unit Price (LKR)</th>
+            <th style="text-align:right;width:120px;">Amount (LKR)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+
+      <div class="summary-section">
+        <div class="summary-card">
+          <div class="summary-row">
+            <span>Subtotal</span>
+            <span>LKR ${formatMoneyNumber(detail.subtotal)}</span>
+          </div>
+          ${
+            Number(detail.discountAmount) > 0
+              ? `<div class="summary-row">
+                  <span>Discount</span>
+                  <span>- LKR ${formatMoneyNumber(detail.discountAmount)}</span>
+                </div>`
+              : ''
+          }
+          <div class="grand-total-row">
+            <span class="grand-total-label">Total Estimate</span>
+            <span class="grand-total-val">LKR ${formatMoneyNumber(detail.totalAmount)}</span>
+          </div>
+        </div>
+      </div>
+
+      ${
+        detail.customerNotes
+          ? `<div class="notes-box">
+              <div class="notes-title">Notes / Terms</div>
+              <p style="margin:0;color:#475569;">${escapeHtml(detail.customerNotes)}</p>
+            </div>`
+          : ''
+      }
+    </div>
+
+    <footer class="quote-footer">
+      <div>Thank you for choosing ${escapeHtml(salonName)}!</div>
+      <div>Powered by ${escapeHtml(APP_NAME_FALLBACK)}</div>
+    </footer>
+  </div>
+</body>
+</html>`;
   }
 
   private async markSentIfDraft(schemaName: string, id: string, userId: string) {

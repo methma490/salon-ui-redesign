@@ -189,7 +189,7 @@ const ALL_FEATURES: FeatureItem[] = [
     icon: Building2,
     highlights: [
       'Unified multi-branch executive overview',
-      'Isolated PostgreSQL tenant data security',
+      'Dedicated salon data privacy & security',
       'Branch-by-branch revenue benchmarking',
     ],
     href: '/solutions',
@@ -243,9 +243,9 @@ const ALL_FEATURES: FeatureItem[] = [
     id: 'security',
     category: 'Operations',
     badge: 'Bank-Grade Security',
-    title: 'Audit Trails & Tenant Isolation',
+    title: 'Audit Trails & Data Privacy',
     description:
-      'Enterprise cloud infrastructure with isolated database schemas, role-based access control, and tamper-proof user activity audit logs.',
+      'Bank-grade cloud security with private salon data protection, role-based staff permissions, and tamper-proof user activity audit logs.',
     icon: ShieldCheck,
     highlights: [
       'Complete audit trail of user edits & actions',

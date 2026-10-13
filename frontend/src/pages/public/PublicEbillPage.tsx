@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Printer, Scissors } from 'lucide-react';
+import { Download, FileText, Loader2, Printer, Scissors } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { tenantApi } from '@/api/tenant.api';
 import { Button } from '@/components/ui/button';
@@ -67,15 +67,18 @@ function EbillLogo({ logoUrl, name, brandColor }: { logoUrl?: string | null; nam
   if (!resolved || imgError) {
     return (
       <div
+        className="ebill-logo-circle"
         style={{
-          width: 48,
-          height: 48,
-          borderRadius: '50%',
-          background: 'rgba(255,255,255,0.1)',
+          width: 52,
+          height: 52,
+          minWidth: 52,
+          borderRadius: 12,
+          background: '#ffffff',
+          border: '1px solid #e2e8f0',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          margin: '0 auto 12px auto',
+          boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
         }}
       >
         <Scissors size={24} color={brandColor || '#38bdf8'} />
@@ -88,13 +91,18 @@ function EbillLogo({ logoUrl, name, brandColor }: { logoUrl?: string | null; nam
       src={resolved}
       alt={name || 'Salon'}
       onError={() => setImgError(true)}
+      className="ebill-logo-img"
       style={{
-        maxHeight: 56,
-        maxWidth: 200,
-        margin: '0 auto 12px auto',
+        width: 52,
+        height: 52,
+        minWidth: 52,
         display: 'block',
-        borderRadius: 8,
+        borderRadius: 12,
+        border: '1px solid #e2e8f0',
         objectFit: 'contain',
+        background: '#ffffff',
+        padding: 2,
+        boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
       }}
     />
   );
@@ -103,6 +111,7 @@ function EbillLogo({ logoUrl, name, brandColor }: { logoUrl?: string | null; nam
 export default function PublicEbillPage() {
   const { token, id } = useParams<{ token?: string; id?: string }>();
   const activeIdentifier = token || id || '';
+  const [generatingPdf, setGeneratingPdf] = useState(false);
 
   const query = useQuery<PublicInvoiceData>({
     queryKey: ['public-ebill', activeIdentifier],
@@ -114,6 +123,69 @@ export default function PublicEbillPage() {
     },
     enabled: !!activeIdentifier,
   });
+
+  const handlePrintOrPdf = () => {
+    const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.print();
+    } else {
+      printReceipt('ebill-receipt-card');
+    }
+  };
+
+  const handleDownloadPdf = async (action: 'download' | 'preview' = 'download') => {
+    const cardEl = document.getElementById('ebill-receipt-card');
+    if (!cardEl) return;
+
+    try {
+      setGeneratingPdf(true);
+      // Dynamically import html2pdf.js for client-side execution
+      const html2pdfModule = await import('html2pdf.js');
+      const html2pdf = html2pdfModule.default || html2pdfModule;
+
+      const invoiceNum = query.data?.invoiceNumber || query.data?.saleNumber || 'RECEIPT';
+      const filename = `Invoice-${invoiceNum}.pdf`;
+
+      const opt = {
+        margin: [8, 8, 8, 8] as [number, number, number, number],
+        filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          scrollY: 0,
+        },
+        jsPDF: {
+          unit: 'mm',
+          format: 'a4',
+          orientation: 'portrait' as const,
+        },
+      };
+
+      const worker = (html2pdf as unknown as () => {
+        set: (o: unknown) => {
+          from: (el: HTMLElement) => {
+            output: (type: string) => Promise<Blob>;
+            save: () => Promise<void>;
+          };
+        };
+      })().set(opt).from(cardEl);
+
+      if (action === 'preview') {
+        const pdfBlob = await worker.output('blob');
+        const blobUrl = URL.createObjectURL(pdfBlob);
+        window.open(blobUrl, '_blank');
+      } else {
+        await worker.save();
+      }
+    } catch (err) {
+      console.error('Failed to generate PDF:', err);
+      window.print();
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
 
   if (query.isLoading) {
     return (
@@ -213,19 +285,75 @@ export default function PublicEbillPage() {
       style={{
         minHeight: '100vh',
         background: 'linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%)',
-        padding: '32px 16px',
+        padding: '24px 12px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         fontFamily: 'Inter, system-ui, sans-serif',
       }}
     >
+      {/* Action Toolbar Header (Visible for Quick Mobile/Desktop Download/Print) */}
+      <div
+        className="no-print ebill-top-actions"
+        style={{
+          width: '100%',
+          maxWidth: 620,
+          marginBottom: 16,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 10,
+          flexWrap: 'wrap',
+        }}
+      >
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#475569' }}>
+          Official Receipt
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={generatingPdf}
+            onClick={() => handleDownloadPdf('preview')}
+            style={{
+              height: 36,
+              borderRadius: 8,
+              fontSize: 12,
+              fontWeight: 600,
+              gap: 6,
+              background: '#ffffff',
+            }}
+          >
+            {generatingPdf ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
+            <span>Preview PDF</span>
+          </Button>
+          <Button
+            size="sm"
+            disabled={generatingPdf}
+            onClick={() => handleDownloadPdf('download')}
+            style={{
+              height: 36,
+              borderRadius: 8,
+              fontSize: 12,
+              fontWeight: 600,
+              gap: 6,
+              background: palette.primary,
+              borderColor: palette.primary,
+              color: '#ffffff',
+            }}
+          >
+            {generatingPdf ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+            <span>Download PDF</span>
+          </Button>
+        </div>
+      </div>
+
       <div
         className="ebill-receipt-card"
         id="ebill-receipt-card"
         style={{
           width: '100%',
-          maxWidth: 600,
+          maxWidth: 620,
           background: '#ffffff',
           borderRadius: 16,
           boxShadow: '0 20px 40px -15px rgba(15, 23, 42, 0.10)',
@@ -233,23 +361,23 @@ export default function PublicEbillPage() {
           border: `1px solid ${palette.border}`,
         }}
       >
-        {/* Salon Branding Header matching Image 1 with admin configured brand color */}
+        {/* Salon Branding Header - Fully responsive flex/grid */}
         <div
           className="ebill-header"
           style={{
             background: `linear-gradient(135deg, ${palette.soft} 0%, ${palette.softStrong} 45%, #ffffff 85%)`,
-            padding: '28px 24px 20px',
+            padding: '24px 20px 18px',
             position: 'relative',
             borderBottom: `1px solid ${palette.border}`,
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div className="ebill-header-content">
+            <div className="ebill-salon-info">
               <EbillLogo logoUrl={ebill.salon.logoUrl} name={ebill.salon.name} brandColor={palette.primary} />
-              <div>
+              <div className="ebill-salon-text">
                 <h1
                   className="ebill-header-title"
-                  style={{ margin: 0, fontSize: 22, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}
+                  style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em', lineHeight: 1.25 }}
                 >
                   {ebill.salon.name}
                 </h1>
@@ -262,21 +390,20 @@ export default function PublicEbillPage() {
               </div>
             </div>
 
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#94a3b8', textTransform: 'uppercase' }}>
+            <div className="ebill-invoice-meta">
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: '#94a3b8', textTransform: 'uppercase' }}>
                 TAX INVOICE
               </div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: '2px 0 4px', letterSpacing: '-0.01em' }}>
+              <div className="ebill-invoice-num" style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: '2px 0 3px', letterSpacing: '-0.01em', wordBreak: 'break-all' }}>
                 {invoiceNo}
               </div>
-              <div style={{ fontSize: 12, color: '#64748b' }}>
-                Date: <strong style={{ color: '#334155' }}>{formatSriLankaDate(invoiceDate)}</strong>
+              <div className="ebill-meta-dates" style={{ fontSize: 12, color: '#64748b', lineHeight: 1.4 }}>
+                <div>Date: <strong style={{ color: '#334155' }}>{formatSriLankaDate(invoiceDate)}</strong></div>
+                <div>Time: <strong style={{ color: '#334155' }}>{formatSriLankaTime(invoiceDate)}</strong></div>
               </div>
-              <div style={{ fontSize: 12, color: '#64748b', marginTop: 1 }}>
-                Time: <strong style={{ color: '#334155' }}>{formatSriLankaTime(invoiceDate)}</strong>
-              </div>
-              <div style={{ marginTop: 8 }}>
+              <div style={{ marginTop: 6 }}>
                 <span
+                  className="ebill-paid-badge"
                   style={{
                     display: 'inline-block',
                     background: palette.soft,
@@ -297,21 +424,19 @@ export default function PublicEbillPage() {
         </div>
 
         {/* Bill To & Sale Details Grid */}
-        <div style={{ padding: '24px 24px 12px' }}>
+        <div className="ebill-body-container" style={{ padding: '20px 20px 12px' }}>
           <div
+            className="ebill-parties-grid"
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: 20,
-              paddingBottom: 20,
+              paddingBottom: 16,
               borderBottom: '1px solid #f1f5f9',
             }}
           >
-            <div>
+            <div className="ebill-party-card">
               <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: '#94a3b8', textTransform: 'uppercase' }}>
                 BILL TO
               </div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', marginTop: 4, wordBreak: 'break-word' }}>
                 {customerName}
               </div>
               <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>Customer</div>
@@ -320,24 +445,26 @@ export default function PublicEbillPage() {
               </div>
             </div>
 
-            <div>
+            <div className="ebill-party-card">
               <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: '#94a3b8', textTransform: 'uppercase' }}>
                 SALE DETAILS
               </div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', marginTop: 4 }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', marginTop: 4, wordBreak: 'break-word' }}>
                 {ebill.branchName || 'Main Branch'}
               </div>
               <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>Branch location</div>
             </div>
           </div>
 
-          {/* Items Table */}
-          <div style={{ overflowX: 'auto', marginTop: 16 }}>
+          {/* Items Section - Responsive Table with Horizontal Scroll Protection */}
+          <div className="ebill-table-wrap" style={{ overflowX: 'auto', marginTop: 16, WebkitOverflowScrolling: 'touch' }}>
             <table
+              className="ebill-items-table"
               style={{
                 width: '100%',
                 borderCollapse: 'collapse',
                 fontSize: 13,
+                minWidth: 420,
               }}
             >
               <thead>
@@ -352,12 +479,12 @@ export default function PublicEbillPage() {
                     textAlign: 'left',
                   }}
                 >
-                  <th style={{ padding: '8px 4px', width: 28 }}>#</th>
-                  <th style={{ padding: '8px 4px' }}>DESCRIPTION</th>
-                  <th style={{ padding: '8px 4px' }}>TYPE</th>
-                  <th style={{ textAlign: 'center', padding: '8px 4px' }}>QTY</th>
-                  <th style={{ textAlign: 'right', padding: '8px 4px' }}>UNIT PRICE (LKR)</th>
-                  <th style={{ textAlign: 'right', padding: '8px 4px' }}>AMOUNT (LKR)</th>
+                  <th style={{ padding: '8px 4px', width: 24 }}>#</th>
+                  <th style={{ padding: '8px 6px' }}>DESCRIPTION</th>
+                  <th style={{ padding: '8px 4px', width: 68 }}>TYPE</th>
+                  <th style={{ textAlign: 'center', padding: '8px 4px', width: 36 }}>QTY</th>
+                  <th style={{ textAlign: 'right', padding: '8px 6px', whiteSpace: 'nowrap' }}>UNIT PRICE</th>
+                  <th style={{ textAlign: 'right', padding: '8px 4px', whiteSpace: 'nowrap' }}>AMOUNT (LKR)</th>
                 </tr>
               </thead>
               <tbody>
@@ -372,19 +499,20 @@ export default function PublicEbillPage() {
                       style={{ borderBottom: '1px solid #f1f5f9' }}
                     >
                       <td style={{ padding: '10px 4px', color: '#64748b', fontSize: 12 }}>{idx + 1}</td>
-                      <td style={{ padding: '10px 4px', color: '#0f172a', fontWeight: 600 }}>
+                      <td style={{ padding: '10px 6px', color: '#0f172a', fontWeight: 600, wordBreak: 'break-word' }}>
                         {displayName}
                       </td>
                       <td style={{ padding: '10px 4px' }}>
                         <span
                           style={{
-                            fontSize: 10,
+                            fontSize: 9,
                             fontWeight: 700,
                             color: isService ? palette.primary : '#1d4ed8',
                             background: isService ? palette.soft : '#eff6ff',
-                            padding: '2px 6px',
+                            padding: '2px 5px',
                             borderRadius: 4,
                             textTransform: 'uppercase',
+                            whiteSpace: 'nowrap',
                           }}
                         >
                           {isService ? 'SERVICE' : 'PRODUCT'}
@@ -393,7 +521,7 @@ export default function PublicEbillPage() {
                       <td style={{ textAlign: 'center', padding: '10px 4px', color: '#334155' }}>
                         {item.quantity}
                       </td>
-                      <td style={{ textAlign: 'right', padding: '10px 4px', color: '#334155' }}>
+                      <td style={{ textAlign: 'right', padding: '10px 6px', color: '#334155', whiteSpace: 'nowrap' }}>
                         {formatMoneyAmount(item.unitPrice)}
                       </td>
                       <td
@@ -402,6 +530,7 @@ export default function PublicEbillPage() {
                           padding: '10px 4px',
                           color: '#0f172a',
                           fontWeight: 700,
+                          whiteSpace: 'nowrap',
                         }}
                       >
                         {formatMoneyAmount(item.total)}
@@ -423,7 +552,7 @@ export default function PublicEbillPage() {
               paddingTop: 8,
             }}
           >
-            <div style={{ width: 260 }}>
+            <div className="ebill-totals-box" style={{ width: '100%', maxWidth: 280 }}>
               <div
                 style={{
                   display: 'flex',
@@ -477,8 +606,8 @@ export default function PublicEbillPage() {
                   border: `1px solid ${palette.border}`,
                 }}
               >
-                <span style={{ fontSize: 16, fontWeight: 800, color: '#0f172a' }}>Total paid</span>
-                <span style={{ fontSize: 18, fontWeight: 800, color: palette.primary }}>{formatMoneyLkr(ebill.total)}</span>
+                <span style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>Total paid</span>
+                <span style={{ fontSize: 17, fontWeight: 800, color: palette.primary }}>{formatMoneyLkr(ebill.total)}</span>
               </div>
             </div>
           </div>
@@ -487,7 +616,7 @@ export default function PublicEbillPage() {
           {Array.isArray(ebill.payments) && ebill.payments.length > 0 && (
             <div
               style={{
-                marginTop: 24,
+                marginTop: 22,
                 padding: '14px 16px',
                 borderRadius: 8,
                 border: `1px solid ${palette.border}`,
@@ -539,12 +668,11 @@ export default function PublicEbillPage() {
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="no-print" style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+          {/* Action Buttons (Print / PDF options) */}
+          <div className="no-print ebill-bottom-actions" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginTop: 22 }}>
             <Button
-              className="w-full"
               variant="outline"
-              onClick={() => printReceipt('ebill-receipt-card')}
+              onClick={handlePrintOrPdf}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -553,18 +681,57 @@ export default function PublicEbillPage() {
                 height: 42,
                 borderRadius: 10,
                 fontWeight: 600,
+                fontSize: 13,
               }}
             >
-              <Printer size={16} /> Print / Save PDF Receipt
+              <Printer size={16} /> Print Receipt
+            </Button>
+            <Button
+              variant="outline"
+              disabled={generatingPdf}
+              onClick={() => handleDownloadPdf('preview')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                height: 42,
+                borderRadius: 10,
+                fontWeight: 600,
+                fontSize: 13,
+              }}
+            >
+              {generatingPdf ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
+              View PDF Preview
+            </Button>
+            <Button
+              disabled={generatingPdf}
+              onClick={() => handleDownloadPdf('download')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                height: 42,
+                borderRadius: 10,
+                fontWeight: 600,
+                fontSize: 13,
+                background: palette.primary,
+                borderColor: palette.primary,
+                color: '#ffffff',
+              }}
+            >
+              {generatingPdf ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+              Save PDF Receipt
             </Button>
           </div>
         </div>
 
-        {/* Footer Note matching Image 1 */}
+        {/* Footer Note */}
         <div
           className="ebill-footer-note"
           style={{
-            padding: '20px 24px',
+            padding: '18px 20px',
             borderTop: '1px solid #e2e8f0',
             display: 'flex',
             justifyContent: 'space-between',
@@ -575,10 +742,10 @@ export default function PublicEbillPage() {
           }}
         >
           <div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a' }}>Thank You!</div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: '#0f172a' }}>Thank You!</div>
             <div style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>We appreciate your visit!</div>
           </div>
-          <div style={{ textAlign: 'right' }}>
+          <div className="ebill-footer-right" style={{ textAlign: 'right' }}>
             <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>{ebill.salon.name}</div>
             <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', color: '#94a3b8', textTransform: 'uppercase', marginTop: 2 }}>
               LOOK GOOD · FEEL GOOD · ALWAYS YOU
@@ -588,6 +755,91 @@ export default function PublicEbillPage() {
       </div>
 
       <style>{`
+        /* Responsive layout rules for eBill on Mobile and Tablet */
+        .ebill-header-content {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          flex-wrap: wrap;
+          gap: 16px;
+        }
+        .ebill-salon-info {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex: 1 1 auto;
+          min-width: 220px;
+        }
+        .ebill-invoice-meta {
+          text-align: right;
+          flex: 0 0 auto;
+        }
+        .ebill-parties-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 16px;
+        }
+
+        @media (max-width: 640px) {
+          .ebill-page-wrapper {
+            padding: 12px 8px !important;
+          }
+          .ebill-header {
+            padding: 20px 16px 16px !important;
+          }
+          .ebill-header-content {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 16px !important;
+          }
+          .ebill-salon-info {
+            width: 100% !important;
+          }
+          .ebill-invoice-meta {
+            width: 100% !important;
+            text-align: left !important;
+            padding-top: 12px !important;
+            border-top: 1px dashed #cbd5e1 !important;
+            display: grid !important;
+            grid-template-columns: 1fr auto !important;
+            align-items: center !important;
+            gap: 4px 12px !important;
+          }
+          .ebill-invoice-meta > div:first-child {
+            grid-column: 1 / -1 !important;
+          }
+          .ebill-invoice-num {
+            grid-column: 1 / -1 !important;
+            font-size: 16px !important;
+          }
+          .ebill-meta-dates {
+            grid-column: 1 / 2 !important;
+          }
+          .ebill-invoice-meta > div:last-child {
+            grid-column: 2 / 3 !important;
+            margin-top: 0 !important;
+            align-self: center !important;
+          }
+          .ebill-body-container {
+            padding: 16px 14px 12px !important;
+          }
+          .ebill-parties-grid {
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+          }
+          .ebill-totals-box {
+            max-width: 100% !important;
+          }
+          .ebill-footer-note {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 10px !important;
+          }
+          .ebill-footer-right {
+            text-align: left !important;
+          }
+        }
+
         @media print {
           @page {
             margin: 8mm;
@@ -603,7 +855,7 @@ export default function PublicEbillPage() {
             padding: 0 !important;
             width: 100% !important;
           }
-          .no-print {
+          .no-print, .ebill-top-actions, .ebill-bottom-actions {
             display: none !important;
           }
           .ebill-page-wrapper {
@@ -636,9 +888,6 @@ export default function PublicEbillPage() {
           }
           .ebill-header-title {
             color: #0f172a !important;
-          }
-          .ebill-header-contacts, .ebill-header-contacts span {
-            color: #475569 !important;
           }
           .ebill-paid-badge {
             background: #f0fdf4 !important;

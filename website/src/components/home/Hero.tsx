@@ -18,6 +18,7 @@ import {
   X,
   Sparkles,
 } from 'lucide-react';
+import { FeatureMarquee } from './FeatureMarquee';
 
 interface FeatureNavItem {
   id: string;
@@ -73,7 +74,7 @@ export function Hero() {
     <section
       id="hero"
       aria-label="Dart Smart Salon Introduction"
-      className="relative w-full overflow-hidden min-h-[92vh] flex flex-col justify-between pt-6 sm:pt-10 lg:pt-12 pb-8 sm:pb-12"
+      className="relative w-full overflow-hidden min-h-[92vh] flex flex-col justify-between pt-6 sm:pt-10 lg:pt-12 pb-0"
       style={{
         backgroundImage: "url('/assets/landing/hero-background.png')",
         backgroundSize: 'cover',
@@ -170,15 +171,15 @@ export function Hero() {
 
               {/* ── Decorative Floating Handwritten Text & Arrow ── */}
               <div className="hidden sm:flex absolute -top-12 lg:-top-14 left-8 lg:left-14 z-30 items-center gap-2 pointer-events-none select-none">
-                <span className="font-handwriting text-2xl lg:text-[1.7rem] text-[#7C3AED] font-bold tracking-wide transform -rotate-6 drop-shadow-xs">
+                <span className="font-handwriting text-2xl lg:text-[1.7rem] text-[#7C3AED] font-bold tracking-wide transform -rotate-6 drop-shadow-xs animate-handwriting whitespace-nowrap">
                   More bookings, happier clients ♡
                 </span>
                 <svg
-                  className="w-12 h-10 text-[#7C3AED] transform rotate-12 -mt-2"
+                  className="w-12 h-10 text-[#7C3AED] transform rotate-12 -mt-2 animate-draw-arrow"
                   viewBox="0 0 50 40"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="2.2"
+                  strokeWidth="2.4"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 >
@@ -249,9 +250,9 @@ export function Hero() {
               </div>
 
               {/* ── Main Laptop Device Presentation ── */}
-              <div className="relative w-full max-w-[530px] xl:max-w-[610px] 2xl:max-w-[660px] mx-auto lg:mr-10">
+              <div className="relative w-full max-w-[530px] xl:max-w-[610px] 2xl:max-w-[660px] mx-auto lg:mr-10 group/laptop cursor-pointer transition-all duration-500 ease-out hover:-translate-y-2 hover:scale-[1.015]">
                 {/* Laptop Screen Bezel */}
-                <div className="relative rounded-t-[14px] sm:rounded-t-[18px] bg-[#18181B] p-[6px] sm:p-[8px] border border-slate-700/80 shadow-[0_25px_60px_-15px_rgba(124,58,237,0.25)] ring-1 ring-white/10">
+                <div className="relative rounded-t-[14px] sm:rounded-t-[18px] bg-[#18181B] p-[6px] sm:p-[8px] border border-slate-700/80 shadow-[0_25px_60px_-15px_rgba(124,58,237,0.25)] group-hover/laptop:shadow-[0_35px_70px_-10px_rgba(124,58,237,0.38)] ring-1 ring-white/10 transition-shadow duration-500">
                   {/* Laptop Camera dot */}
                   <div className="absolute top-[3.5px] left-1/2 -translate-x-1/2 size-1.5 rounded-full bg-black flex items-center justify-center z-20">
                     <span className="size-0.5 rounded-full bg-[#7C3AED]" />
@@ -266,7 +267,7 @@ export function Hero() {
                       priority
                       unoptimized
                       sizes="(max-width: 1024px) 90vw, 660px"
-                      className="object-cover object-top"
+                      className="object-cover object-top transition-transform duration-700 ease-out group-hover/laptop:scale-[1.03]"
                     />
                   </div>
                 </div>
@@ -278,8 +279,8 @@ export function Hero() {
               </div>
 
               {/* ── Smartphone Overlapping Lower-Right Side of Laptop ── */}
-              <div className="absolute -right-2 sm:-right-4 -bottom-6 sm:-bottom-8 z-20 w-[125px] sm:w-[155px] xl:w-[175px]">
-                <div className="relative rounded-[26px] sm:rounded-[34px] bg-[#18181B] p-[4px] sm:p-[5px] border-2 border-slate-700/90 shadow-[0_25px_50px_rgba(0,0,0,0.45)] ring-1 ring-white/10">
+              <div className="absolute -right-2 sm:-right-4 -bottom-6 sm:-bottom-8 z-20 w-[125px] sm:w-[155px] xl:w-[175px] group/mobile cursor-pointer transition-all duration-500 ease-out hover:-translate-y-3 hover:scale-105 hover:rotate-[-1.5deg]">
+                <div className="relative rounded-[26px] sm:rounded-[34px] bg-[#18181B] p-[4px] sm:p-[5px] border-2 border-slate-700/90 shadow-[0_25px_50px_rgba(0,0,0,0.45)] group-hover/mobile:shadow-[0_30px_60px_rgba(124,58,237,0.35)] ring-1 ring-white/10 transition-shadow duration-500">
                   {/* Dynamic Island Notch */}
                   <div className="absolute top-[6px] sm:top-[8px] left-1/2 -translate-x-1/2 w-8 sm:w-11 h-2 sm:h-2.5 bg-black rounded-full z-30 flex items-center justify-end px-1">
                     <span className="size-0.5 rounded-full bg-slate-700" />
@@ -294,7 +295,7 @@ export function Hero() {
                       priority
                       unoptimized
                       sizes="(max-width: 1024px) 30vw, 175px"
-                      className="object-cover object-top"
+                      className="object-cover object-top transition-transform duration-700 ease-out group-hover/mobile:scale-105"
                     />
                   </div>
                 </div>
@@ -389,6 +390,11 @@ export function Hero() {
           </div>
         </div>
 
+      </div>
+
+      {/* ════ Infinite System Feature Marquee Ribbon (Separately designed in Hero) ════ */}
+      <div className="w-full mt-8 sm:mt-10">
+        <FeatureMarquee />
       </div>
 
       {/* ════ Interactive Video Demo Modal ════ */}

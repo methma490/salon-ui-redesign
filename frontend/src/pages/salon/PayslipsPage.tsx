@@ -18,9 +18,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Scissors } from 'lucide-react';
+import { Scissors, Printer, FileDown, Eye, FileCode } from 'lucide-react';
 import { formatMoneyAmount } from '@/lib/money';
 import { resolveUploadUrl } from '@/lib/upload-url';
+import { printReceipt } from '@/lib/print-receipt';
 import { getErrorMessage, OpsError, OpsLoading, OpsPageHeader } from './salon-ops-ui';
 import './employees-page.css';
 import './payroll-page.css';
@@ -243,10 +244,7 @@ function buildPayslipHtml(
         <tr><td>Employer ETF (3%)</td><td class="num">${formatMoney(detail.employerEtf)}</td></tr>
       </tbody>
     </table>
-    <div class="info-box">
-      ℹ Employer contributions are additional amounts paid by the company and are not deducted from the employee's salary.
     </div>
-  </div>
 
   <div class="notes">
     <h4>Notes:</h4>
@@ -521,20 +519,7 @@ function PayslipModernView({
             </tr>
           </tbody>
         </table>
-        <div className="ps-info-box">
-          <svg className="ps-info-icon" viewBox="0 0 20 20" fill="currentColor">
-            <path
-              fillRule="evenodd"
-              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-              clipRule="evenodd"
-            />
-          </svg>
-          <span>
-            Employer contributions are additional amounts paid by the company and are not deducted
-            from the employee&apos;s salary.
-          </span>
         </div>
-      </div>
 
       {/* Notes */}
       <div className="ps-notes">
@@ -616,7 +601,9 @@ export default function PayslipsPage() {
     email: employeeBranch?.email || settings?.salon.email || null,
   };
 
-  const handleDownloadPdf = async () => {
+  const [previewingPdf, setPreviewingPdf] = useState(false);
+
+  const handlePdfAction = async (action: 'download' | 'preview') => {
     const element = document.getElementById('payslip-modern-view');
     if (!element || !payslipDetail) return;
 
@@ -628,16 +615,39 @@ export default function PayslipsPage() {
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     };
 
-    setDownloadingPdf(true);
+    if (action === 'download') setDownloadingPdf(true);
+    else setPreviewingPdf(true);
+
     try {
       // @ts-expect-error html2pdf typing
-      await html2pdf().set(opt).from(element).save();
-      toast.success('Payslip PDF downloaded successfully');
+      const worker = html2pdf().set(opt).from(element);
+      if (action === 'preview') {
+        const pdfBlob = await worker.output('blob');
+        const blobUrl = URL.createObjectURL(pdfBlob);
+        window.open(blobUrl, '_blank');
+        toast.success('Payslip PDF preview opened in new tab');
+      } else {
+        await worker.save();
+        toast.success('Payslip PDF downloaded successfully');
+      }
     } catch (err) {
       console.error('PDF export failed:', err);
       toast.error('Failed to generate PDF');
     } finally {
       setDownloadingPdf(false);
+      setPreviewingPdf(false);
+    }
+  };
+
+  const handlePrint = () => {
+    const isMobile =
+      typeof window !== 'undefined' &&
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      window.print();
+    } else {
+      printReceipt('payslip-modern-view');
     }
   };
 
@@ -810,23 +820,39 @@ export default function PayslipsPage() {
                 <button
                   type="button"
                   className="emp-btn emp-btn-primary"
-                  onClick={handleDownloadPdf}
-                  disabled={downloadingPdf}
+                  onClick={() => handlePdfAction('preview')}
+                  disabled={previewingPdf || downloadingPdf}
+                  title="Open PDF Preview in a new tab"
                 >
-                  {downloadingPdf ? 'Generating PDF…' : 'Download PDF'}
+                  <Eye size={15} style={{ marginRight: 6 }} />
+                  {previewingPdf ? 'Opening Preview…' : 'Preview PDF'}
                 </button>
                 <button
                   type="button"
                   className="emp-btn emp-btn-secondary"
-                  onClick={() => window.print()}
+                  onClick={() => handlePdfAction('download')}
+                  disabled={downloadingPdf || previewingPdf}
+                  title="Download Payslip as PDF file"
                 >
+                  <FileDown size={15} style={{ marginRight: 6 }} />
+                  {downloadingPdf ? 'Downloading PDF…' : 'Download PDF'}
+                </button>
+                <button
+                  type="button"
+                  className="emp-btn emp-btn-secondary"
+                  onClick={handlePrint}
+                  title="Print Payslip directly"
+                >
+                  <Printer size={15} style={{ marginRight: 6 }} />
                   Print
                 </button>
                 <button
                   type="button"
                   className="emp-btn emp-btn-secondary"
                   onClick={() => downloadPayslipHtml(payslipDetail, salonInfo)}
+                  title="Download standalone HTML document"
                 >
+                  <FileCode size={15} style={{ marginRight: 6 }} />
                   Download HTML
                 </button>
               </div>

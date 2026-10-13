@@ -42,8 +42,8 @@ export function SolutionHighlight() {
                     <ShieldCheck className="size-4" />
                   </span>
                   <div>
-                    <h4 className="text-sm font-bold text-[#0F172A]">Isolated Tenants</h4>
-                    <p className="text-xs text-[#64748B] mt-0.5">PostgreSQL schemas for enterprise privacy</p>
+                    <h4 className="text-sm font-bold text-[#0F172A]">Private & Secure Data</h4>
+                    <p className="text-xs text-[#64748B] mt-0.5">Dedicated salon privacy with bank-grade security</p>
                   </div>
                 </div>
 

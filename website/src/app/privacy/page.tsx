@@ -29,7 +29,7 @@ export default function PrivacyPage() {
         <h2 className="mt-10 font-serif text-2xl text-black">Data we handle</h2>
         <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-muted">
           <li>Account and authentication details for salon administrators and staff</li>
-          <li>Customer, appointment, and transaction records within your tenant</li>
+          <li>Customer, appointment, and transaction records within your salon account</li>
           <li>Subscription and payment metadata processed via PayHere</li>
         </ul>
         <h2 className="mt-10 font-serif text-2xl text-black">Contact</h2>

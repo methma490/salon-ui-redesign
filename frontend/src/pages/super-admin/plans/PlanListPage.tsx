@@ -40,6 +40,11 @@ function PlanPricingBlock({ plan }: { plan: AdminPlan }) {
             ? formatPrice(pricing.monthlyAmount, pricing.currency)
             : 'Not set'}
         </div>
+        {pricing.monthlyCompareAtAmount != null && (
+          <div style={{ fontSize: '11px', color: '#94a3b8', textDecoration: 'line-through' }}>
+            Compare: {formatPrice(pricing.monthlyCompareAtAmount, pricing.currency)}
+          </div>
+        )}
       </div>
       <div className="plans-price-box">
         <div className="plans-price-label">Yearly</div>
@@ -48,6 +53,11 @@ function PlanPricingBlock({ plan }: { plan: AdminPlan }) {
             ? formatPrice(pricing.yearlyAmount, pricing.currency)
             : 'Not set'}
         </div>
+        {pricing.yearlyCompareAtAmount != null && (
+          <div style={{ fontSize: '11px', color: '#94a3b8', textDecoration: 'line-through' }}>
+            Compare: {formatPrice(pricing.yearlyCompareAtAmount, pricing.currency)}
+          </div>
+        )}
       </div>
       {pricing.trialDays !== undefined && (
         <div className="plans-price-meta" style={{ gridColumn: '1 / -1' }}>
