@@ -141,6 +141,7 @@ model PlanPrice {
   planId               String         @map("plan_id") @db.Uuid
   billingCycle         BillingCycle   @map("billing_cycle")
   price                Decimal        @db.Decimal(10, 2)
+  compareAtPrice       Decimal?       @map("compare_at_price") @db.Decimal(10, 2)
   currency             String         @default("LKR")
   trialDays            Int            @default(0) @map("trial_days")
   isActive             Boolean        @default(true) @map("is_active")

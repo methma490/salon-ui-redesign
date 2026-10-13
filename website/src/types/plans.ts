@@ -8,6 +8,7 @@ export interface PlanFeature {
 export interface PlanPriceOption {
   billingCycle: BillingCycle;
   price: number;
+  compareAtPrice?: number | null;
   currency: string;
   trialDays: number;
 }

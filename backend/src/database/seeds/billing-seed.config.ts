@@ -3,6 +3,7 @@ import { BillingCycle } from '@prisma/client';
 export interface PlanPriceSeed {
   billingCycle: BillingCycle;
   price: number;
+  compareAtPrice?: number;
   trialDays: number;
 }
 
@@ -30,16 +31,41 @@ function readNumber(envKey: string, fallback: number): number {
   return value;
 }
 
-function readPlanPrices(prefix: string, defaults: { monthly: number; yearly: number; trial: number }) {
+function readOptionalNumber(envKey: string, fallback?: number): number | undefined {
+  const raw = process.env[envKey];
+  if (raw === undefined || raw.trim() === '') {
+    return fallback;
+  }
+
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value < 0) {
+    throw new Error(`Invalid numeric env ${envKey}: ${raw}`);
+  }
+
+  return value;
+}
+
+function readPlanPrices(
+  prefix: string,
+  defaults: {
+    monthly: number;
+    monthlyCompare?: number;
+    yearly: number;
+    yearlyCompare?: number;
+    trial: number;
+  },
+) {
   return [
     {
       billingCycle: BillingCycle.MONTHLY,
       price: readNumber(`${prefix}_MONTHLY_PRICE`, defaults.monthly),
+      compareAtPrice: readOptionalNumber(`${prefix}_MONTHLY_COMPARE_PRICE`, defaults.monthlyCompare),
       trialDays: readNumber(`${prefix}_TRIAL_DAYS`, defaults.trial),
     },
     {
       billingCycle: BillingCycle.YEARLY,
       price: readNumber(`${prefix}_YEARLY_PRICE`, defaults.yearly),
+      compareAtPrice: readOptionalNumber(`${prefix}_YEARLY_COMPARE_PRICE`, defaults.yearlyCompare),
       trialDays: readNumber(`${prefix}_TRIAL_DAYS`, defaults.trial),
     },
   ] satisfies PlanPriceSeed[];
@@ -100,7 +126,13 @@ export const PLAN_SEED_DEFINITIONS: PlanSeedDefinition[] = [
     description: 'Essential tools for small salons getting started',
     displayOrder: 1,
     features: ['CUSTOMERS', 'SERVICES', 'APPOINTMENTS', 'EMPLOYEES'],
-    prices: readPlanPrices('SEED_SILVER', { monthly: 5000, yearly: 50000, trial: 14 }),
+    prices: readPlanPrices('SEED_SILVER', {
+      monthly: 4800,
+      monthlyCompare: 6000,
+      yearly: 48000,
+      yearlyCompare: 54000,
+      trial: 21,
+    }),
   },
   {
     id: '0b48d4e0-162d-43fc-94d0-f721ebffb122',
@@ -122,7 +154,13 @@ export const PLAN_SEED_DEFINITIONS: PlanSeedDefinition[] = [
       'STAFF_MANAGEMENT',
       'MULTI_BRANCH',
     ],
-    prices: readPlanPrices('SEED_GOLD', { monthly: 15000, yearly: 150000, trial: 14 }),
+    prices: readPlanPrices('SEED_GOLD', {
+      monthly: 9600,
+      monthlyCompare: 12000,
+      yearly: 96000,
+      yearlyCompare: 114000,
+      trial: 21,
+    }),
   },
   {
     id: '0ca456db-5a12-42cf-8c0c-f1216c5624ae',

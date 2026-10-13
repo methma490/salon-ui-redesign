@@ -4,8 +4,12 @@
  * browser modal dialogs, overlays, transforms, or scroll containers from clipping the preview.
  */
 export function printReceipt(elementId = 'pos-printable-invoice'): void {
+  const isMobile =
+    typeof window !== 'undefined' &&
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
   const element = document.getElementById(elementId);
-  if (!element) {
+  if (!element || isMobile) {
     window.print();
     return;
   }
@@ -49,7 +53,7 @@ export function printReceipt(elementId = 'pos-printable-invoice'): void {
       font-size: 13px;
       line-height: 1.4;
     }
-    .pos-inv-document, .sale-inv-document, .ebill-receipt-card {
+    .pos-inv-document, .sale-inv-document, .ebill-receipt-card, .payslip-modern {
       width: 100% !important;
       max-width: 100% !important;
       margin: 0 auto !important;
@@ -392,7 +396,205 @@ export function printReceipt(elementId = 'pos-printable-invoice'): void {
       color: #777777 !important;
       margin-top: 2px !important;
     }
-    .no-print, button, .pos-inv-preview-header, .pos-inv-success-banner, .sale-inv-mobile-lines {
+    /* Payslip print styles */
+    .ps-header {
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: flex-start !important;
+      gap: 20px !important;
+      padding-bottom: 16px !important;
+      border-bottom: 2px solid #e2e8f0 !important;
+      margin-bottom: 16px !important;
+    }
+    .ps-brand {
+      display: flex !important;
+      align-items: flex-start !important;
+      gap: 12px !important;
+    }
+    .ps-logo, .ps-logo-img {
+      width: 44px !important;
+      height: 44px !important;
+      object-fit: contain !important;
+      border-radius: 6px !important;
+      border: 1px solid #cbd5e1 !important;
+    }
+    .ps-logo-fallback {
+      width: 44px !important;
+      height: 44px !important;
+      border-radius: 6px !important;
+      background: #0f172a !important;
+      color: #ffffff !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-weight: 800 !important;
+    }
+    .ps-brand-info h1 {
+      margin: 0 !important;
+      font-size: 18px !important;
+      font-weight: 800 !important;
+      color: #0f172a !important;
+    }
+    .ps-brand-info p {
+      margin: 2px 0 0 !important;
+      font-size: 11px !important;
+      color: #475569 !important;
+    }
+    .ps-title-block {
+      text-align: right !important;
+    }
+    .ps-title-block h2 {
+      margin: 0 !important;
+      font-size: 20px !important;
+      font-weight: 800 !important;
+      color: #0f172a !important;
+      letter-spacing: 0.04em !important;
+    }
+    .ps-period-title {
+      margin: 2px 0 4px !important;
+      font-size: 13px !important;
+      font-weight: 700 !important;
+      color: #1e293b !important;
+    }
+    .ps-meta-line {
+      margin: 1px 0 !important;
+      font-size: 10px !important;
+      color: #64748b !important;
+    }
+    .ps-emp-box {
+      background: #f8fafc !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 6px !important;
+      padding: 10px 14px !important;
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 8px 24px !important;
+      margin-bottom: 14px !important;
+      font-size: 11px !important;
+    }
+    .ps-emp-row {
+      display: flex !important;
+      align-items: baseline !important;
+      gap: 6px !important;
+    }
+    .ps-emp-label {
+      font-weight: 600 !important;
+      color: #334155 !important;
+      width: 90px !important;
+      flex-shrink: 0 !important;
+    }
+    .ps-emp-sep {
+      color: #94a3b8 !important;
+    }
+    .ps-emp-val {
+      font-weight: 600 !important;
+      color: #0f172a !important;
+    }
+    .ps-two-col {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 14px !important;
+      margin-bottom: 14px !important;
+    }
+    .ps-table-card, .ps-section-card, .ps-notes, .ps-two-col, .ps-net-banner { break-inside: avoid !important; page-break-inside: avoid !important; }
+    .ps-table-card, .ps-section-card {
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 6px !important;
+      overflow: hidden !important;
+      background: #ffffff !important;
+      margin-bottom: 14px !important;
+    }
+    .ps-table-card {
+      margin-bottom: 0 !important;
+    }
+    .ps-table-head {
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      padding: 7px 12px !important;
+      font-size: 10px !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.04em !important;
+      text-transform: uppercase !important;
+    }
+    .ps-table-head.earnings, .ps-table-head.section {
+      background: #f0f7ff !important;
+      color: #1e3a8a !important;
+      border-bottom: 1px solid #dbeafe !important;
+    }
+    .ps-table-head.deductions {
+      background: #fff1f2 !important;
+      color: #9f1239 !important;
+      border-bottom: 1px solid #ffe4e6 !important;
+    }
+    .ps-table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+      font-size: 11px !important;
+    }
+    .ps-table tr td {
+      padding: 6px 12px !important;
+      border-bottom: 1px solid #f1f5f9 !important;
+      color: #334155 !important;
+    }
+    .ps-table tr td:last-child {
+      text-align: right !important;
+      font-weight: 600 !important;
+      color: #0f172a !important;
+    }
+    .ps-table tr.total-row td {
+      font-weight: 700 !important;
+      color: #0f172a !important;
+      background: #f8fafc !important;
+      border-top: 1.5px solid #cbd5e1 !important;
+      border-bottom: none !important;
+      font-size: 11px !important;
+      padding: 8px 12px !important;
+    }
+    .ps-net-banner {
+      border-top: 2px solid #cbd5e1 !important;
+      border-bottom: 2px solid #cbd5e1 !important;
+      padding: 10px 8px !important;
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      margin-bottom: 14px !important;
+      background: #f8fafc !important;
+    }
+    .ps-net-left h3 {
+      margin: 0 !important;
+      font-size: 16px !important;
+      font-weight: 800 !important;
+      color: #0f172a !important;
+    }
+    .ps-net-left p {
+      margin: 2px 0 0 !important;
+      font-size: 10px !important;
+      color: #64748b !important;
+    }
+    .ps-net-right {
+      font-size: 18px !important;
+      font-weight: 800 !important;
+      color: #0f172a !important;
+    }
+    
+    .ps-notes {
+      margin-top: 16px !important;
+      font-size: 10px !important;
+      color: #475569 !important;
+      line-height: 1.5 !important;
+    }
+    .ps-notes h4 {
+      margin: 0 0 4px !important;
+      font-size: 11px !important;
+      font-weight: 700 !important;
+      color: #1e293b !important;
+    }
+    .ps-notes ul {
+      margin: 0 !important;
+      padding-left: 16px !important;
+    }
+    .no-print, button, .payslip-no-print, .pos-inv-preview-header, .pos-inv-success-banner, .sale-inv-mobile-lines {
       display: none !important;
     }
   `;

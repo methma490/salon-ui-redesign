@@ -114,7 +114,7 @@ export function Footer() {
               </p>
               <p className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#A855F7]" />
-                <span>Isolated PostgreSQL Tenant Schemas</span>
+                <span>Dedicated Salon Data Protection</span>
               </p>
             </div>
 

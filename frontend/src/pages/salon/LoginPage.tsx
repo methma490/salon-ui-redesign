@@ -55,30 +55,35 @@ export default function SalonLoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Salon Admin Login</CardTitle>
-          <CardDescription>Sign in to manage your salon</CardDescription>
+    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-8">
+      <Card className="w-full max-w-md border-border/80 shadow-lg shadow-purple-900/5">
+        <CardHeader className="text-center pb-6">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-100 text-primary">
+            <span className="font-bold text-xl">✂</span>
+          </div>
+          <CardTitle className="text-2xl font-bold text-slate-900">Salon Admin Login</CardTitle>
+          <CardDescription className="text-slate-500">Sign in to manage your salon</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-xs font-semibold text-slate-700">Email</Label>
               <Input
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@yoursalon.com"
+                className="h-11 rounded-xl border-slate-200 focus-visible:ring-primary focus-visible:border-primary"
                 required
               />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" className="text-xs font-semibold text-slate-700">Password</Label>
                 <Link
                   to="/salon/forgot-password"
-                  className="text-xs text-muted-foreground underline-offset-4 hover:underline"
+                  className="text-xs text-primary underline-offset-4 hover:underline font-medium"
                 >
                   Forgot password?
                 </Link>
@@ -87,11 +92,16 @@ export default function SalonLoginPage() {
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                className="h-11 rounded-xl border-slate-200 focus-visible:ring-primary focus-visible:border-primary"
                 required
               />
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button
+              type="submit"
+              className="w-full h-11 rounded-xl bg-primary text-white font-semibold shadow-md shadow-purple-500/25 hover:bg-primary/90 transition-all cursor-pointer"
+              disabled={loading}
+            >
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>

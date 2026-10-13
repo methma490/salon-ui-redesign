@@ -1,7 +1,7 @@
 export const APP_NAME = 'Dart Smart Salon';
 
 export const SITE_DESCRIPTION =
-  'Multi-tenant salon management software for appointments, POS, inventory, payroll, and growth — built for modern salons in Sri Lanka.';
+  'All-in-one salon management software for appointments, POS, inventory, payroll, and growth — built for modern salons in Sri Lanka.';
 
 export const CONTACT_EMAIL = 'info@dartcodes.com';
 export const CONTACT_PHONE = '+94 77 455 2144';
@@ -85,7 +85,7 @@ export const FAQ_ITEMS = [
   {
     question: 'Where is my data hosted?',
     answer:
-      'Your salon operates in an isolated tenant schema on our PostgreSQL platform, with authentication and subscription billing managed centrally.',
+      'Your salon data is securely hosted in its own isolated cloud environment with automatic daily backups and strict encryption.',
   },
   {
     question: 'How do I migrate from spreadsheets or another tool?',

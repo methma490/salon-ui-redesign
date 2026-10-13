@@ -28,7 +28,9 @@ export function ManagePlanPricingDialog({
   const updatePricing = useUpdatePlanPricing(plan?.id ?? '');
   const [currency, setCurrency] = useState('LKR');
   const [monthlyPrice, setMonthlyPrice] = useState('');
+  const [monthlyCompareAtPrice, setMonthlyCompareAtPrice] = useState('');
   const [yearlyPrice, setYearlyPrice] = useState('');
+  const [yearlyCompareAtPrice, setYearlyCompareAtPrice] = useState('');
   const [trialDays, setTrialDays] = useState('14');
   const [error, setError] = useState('');
 
@@ -43,7 +45,13 @@ export function ManagePlanPricingDialog({
     setMonthlyPrice(
       summary.monthlyAmount != null ? String(summary.monthlyAmount) : '',
     );
+    setMonthlyCompareAtPrice(
+      summary.monthlyCompareAtAmount != null ? String(summary.monthlyCompareAtAmount) : '',
+    );
     setYearlyPrice(summary.yearlyAmount != null ? String(summary.yearlyAmount) : '');
+    setYearlyCompareAtPrice(
+      summary.yearlyCompareAtAmount != null ? String(summary.yearlyCompareAtAmount) : '',
+    );
     setTrialDays(String(monthly?.trialDays ?? yearly?.trialDays ?? 14));
     setError('');
   }, [plan]);
@@ -56,7 +64,9 @@ export function ManagePlanPricingDialog({
       await updatePricing.mutateAsync({
         currency,
         monthlyPrice: monthlyPrice ? Number(monthlyPrice) : undefined,
+        monthlyCompareAtPrice: monthlyCompareAtPrice ? Number(monthlyCompareAtPrice) : null,
         yearlyPrice: yearlyPrice ? Number(yearlyPrice) : undefined,
+        yearlyCompareAtPrice: yearlyCompareAtPrice ? Number(yearlyCompareAtPrice) : null,
         trialDays: Number(trialDays),
       });
       onOpenChange(false);
@@ -71,7 +81,7 @@ export function ManagePlanPricingDialog({
         <DialogHeader>
           <DialogTitle>Pricing — {plan?.code}</DialogTitle>
           <DialogDescription>
-            Set monthly and yearly prices plus trial period for new signups.
+            Set real monthly and yearly selling prices, marketing compare-at prices, and trial period.
           </DialogDescription>
         </DialogHeader>
 
@@ -87,25 +97,54 @@ export function ManagePlanPricingDialog({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="pricing-monthly">Monthly Price</Label>
+              <Label htmlFor="pricing-monthly">Actual Monthly Price</Label>
               <Input
                 id="pricing-monthly"
                 type="number"
                 min="0"
                 step="0.01"
+                placeholder="e.g. 4800"
                 value={monthlyPrice}
                 onChange={(e) => setMonthlyPrice(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="pricing-yearly">Yearly Price</Label>
+              <Label htmlFor="pricing-monthly-compare">Compare Monthly Price</Label>
+              <Input
+                id="pricing-monthly-compare"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="e.g. 6000"
+                value={monthlyCompareAtPrice}
+                onChange={(e) => setMonthlyCompareAtPrice(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="pricing-yearly">Actual Yearly Price</Label>
               <Input
                 id="pricing-yearly"
                 type="number"
                 min="0"
                 step="0.01"
+                placeholder="e.g. 48000"
                 value={yearlyPrice}
                 onChange={(e) => setYearlyPrice(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pricing-yearly-compare">Compare Yearly Price</Label>
+              <Input
+                id="pricing-yearly-compare"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="e.g. 54000"
+                value={yearlyCompareAtPrice}
+                onChange={(e) => setYearlyCompareAtPrice(e.target.value)}
               />
             </div>
           </div>

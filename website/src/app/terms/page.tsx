@@ -28,7 +28,7 @@ export default function TermsPage() {
         </p>
         <h2 className="mt-10 font-serif text-2xl text-black">Subscriptions</h2>
         <p className="mt-4 text-sm text-muted">
-          Plans, trials, and renewals are governed by the active subscription record in your tenant
+          Plans, trials, and renewals are governed by the active subscription record in your salon account
           and payment confirmations from PayHere.
         </p>
         <h2 className="mt-10 font-serif text-2xl text-black">Acceptable use</h2>

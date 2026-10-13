@@ -74,7 +74,8 @@ export async function fetchPublicPlans(): Promise<PublicPlan[]> {
     }
 
     const data = (await res.json()) as unknown;
-    if (Array.isArray(data) && data.length > 0) {
+    if (Array.isArray(data)) {
+      // If backend responded with 200 OK (even an empty array when all plans are deactivated), honor the real backend response
       return data as PublicPlan[];
     }
 

@@ -26,12 +26,12 @@ export default function AboutPage() {
           align="left"
           eyebrow="About"
           title={`About ${APP_NAME}`}
-          description="We build secure, multi-tenant software so salon owners can run daily operations and grow without juggling disconnected tools."
+          description="We build secure, cloud-based software so salon owners can run daily operations and grow without juggling disconnected tools."
         />
         <div className="prose prose-neutral mt-10 max-w-3xl text-muted">
           <p>
-            {APP_NAME} is developed as a production-ready salon management platform with isolated
-            tenant data, subscription billing, and modules for appointments through payroll.
+            {APP_NAME} is developed as a production-ready salon management platform with private
+            salon data, subscription billing, and modules for appointments through payroll.
           </p>
           <p>
             Our focus is practical operations for Sri Lankan salons — reliable POS, inventory,
