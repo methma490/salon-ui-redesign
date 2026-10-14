@@ -409,22 +409,22 @@ export function Features() {
             }}
             className="w-full"
           >
-            <CarouselContent className="-ml-3 sm:-ml-4 md:-ml-5">
+            <CarouselContent className="-ml-4 sm:-ml-5 md:-ml-6">
               {filteredFeatures.map((feature) => {
                 const Icon = feature.icon;
                 return (
                   <CarouselItem
                     key={feature.id}
-                    className="basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/3 2xl:basis-1/4 pl-3 sm:pl-4 md:pl-5"
+                    className="basis-[88%] xs:basis-[90%] sm:basis-1/2 lg:basis-1/3 xl:basis-1/3 2xl:basis-1/4 pl-4 sm:pl-5 md:pl-6"
                   >
-                    <div className="p-1 h-full">
+                    <div className="py-2 px-1 sm:px-1.5 h-full">
                       <Card className="group h-full flex flex-col justify-between rounded-3xl border border-[#FCE7F3] bg-white transition-all duration-300 hover:-translate-y-1 hover:border-[#DDD6FE] hover:shadow-xl hover:shadow-purple-900/5">
-                        <CardContent className="p-6 sm:p-7 flex flex-col justify-between h-full">
+                        <CardContent className="p-7 sm:p-8 flex flex-col justify-between h-full">
                           {/* Top Card Info */}
                           <div>
-                            <div className="flex items-center justify-between mb-5">
-                              <span className="flex size-12 items-center justify-center rounded-2xl bg-[#EDE9FE] text-[#7C3AED] group-hover:bg-[#7C3AED] group-hover:text-white transition-colors duration-200 shadow-2xs">
-                                <Icon className="size-6" strokeWidth={2} />
+                            <div className="flex items-center justify-between mb-6">
+                              <span className="flex size-13 items-center justify-center rounded-2xl bg-[#EDE9FE] text-[#7C3AED] group-hover:bg-[#7C3AED] group-hover:text-white transition-colors duration-200 shadow-2xs">
+                                <Icon className="size-6.5" strokeWidth={2} />
                               </span>
 
                               <span className="rounded-full bg-[#F5F3FF] border border-[#DDD6FE] px-3 py-1 text-[11px] font-bold text-[#7C3AED]">

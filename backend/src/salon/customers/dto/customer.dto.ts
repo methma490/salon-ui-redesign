@@ -100,3 +100,56 @@ export class ListCustomersQueryDto extends PaginationQueryDto {
   @IsBoolean()
   summary?: boolean;
 }
+
+export class CustomerAnalyticsQueryDto extends PaginationQueryDto {
+  @IsOptional()
+  @IsString()
+  from?: string;
+
+  @IsOptional()
+  @IsString()
+  to?: string;
+
+  @IsOptional()
+  @IsString()
+  preset?: string;
+
+  @IsOptional()
+  @IsString()
+  branchId?: string;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsEnum(['ACTIVE', 'INACTIVE', 'BLOCKED'])
+  status?: 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
+
+  @IsOptional()
+  @IsEnum(['visits', 'servicesTaken', 'totalSpend', 'name', 'lastVisit'])
+  sortBy?: 'visits' | 'servicesTaken' | 'totalSpend' | 'name' | 'lastVisit';
+
+  @IsOptional()
+  @IsEnum(['asc', 'desc'])
+  sortOrder?: 'asc' | 'desc';
+}
+
+export class CustomerAnalyticsDetailQueryDto {
+  @IsOptional()
+  @IsString()
+  from?: string;
+
+  @IsOptional()
+  @IsString()
+  to?: string;
+
+  @IsOptional()
+  @IsString()
+  preset?: string;
+
+  @IsOptional()
+  @IsString()
+  branchId?: string;
+}
+

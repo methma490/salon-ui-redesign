@@ -866,4 +866,456 @@ export class EmployeesService {
       return { performers: created ? [created] : [], autoProvisioned: true };
     });
   }
+
+  // =========================================================================
+  // EMPLOYEE PERFORMANCE ANALYTICS
+  // =========================================================================
+
+  private resolvePerformanceRange(query: { from?: string; to?: string; preset?: string }) {
+    const today = new Date().toISOString().slice(0, 10);
+    const preset = (query.preset ?? 'this_month').toLowerCase();
+
+    if (query.from && query.to) {
+      return { from: query.from.slice(0, 10), to: query.to.slice(0, 10) };
+    }
+
+    if (preset === 'today') {
+      return { from: today, to: today };
+    }
+    if (preset === 'last_7_days' || preset === '7d' || preset === 'week') {
+      const d = new Date();
+      d.setDate(d.getDate() - 6);
+      return { from: d.toISOString().slice(0, 10), to: today };
+    }
+    if (preset === 'last_30_days' || preset === '30d') {
+      const d = new Date();
+      d.setDate(d.getDate() - 29);
+      return { from: d.toISOString().slice(0, 10), to: today };
+    }
+    if (preset === 'last_month') {
+      const d = new Date();
+      const start = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+      const end = new Date(d.getFullYear(), d.getMonth(), 0);
+      return {
+        from: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-01`,
+        to: `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`,
+      };
+    }
+    if (preset === 'all_time' || preset === 'all') {
+      return { from: '2000-01-01', to: today };
+    }
+
+    // Default: this month
+    const d = new Date();
+    const start = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+    return { from: start, to: today };
+  }
+
+  async getPerformance(
+    schemaName: string,
+    query: {
+      from?: string;
+      to?: string;
+      preset?: string;
+      branchId?: string;
+      search?: string;
+      status?: 'ACTIVE' | 'INACTIVE' | 'RESIGNED';
+      sortBy?: 'name' | 'servicesDone' | 'salesGenerated' | 'customersServed';
+      sortOrder?: 'asc' | 'desc';
+      page?: number;
+      limit?: number;
+    },
+  ) {
+    const range = this.resolvePerformanceRange(query);
+    const employees = tenantTable(schemaName, 'employees');
+    const branches = tenantTable(schemaName, 'branches');
+    const sales = tenantTable(schemaName, 'sales');
+    const saleItems = tenantTable(schemaName, 'sale_items');
+    const saleItemEmployees = tenantTable(schemaName, 'sale_item_employees');
+    const services = tenantTable(schemaName, 'services');
+    const userRolesTable = tenantTable(schemaName, 'user_roles');
+    const rolesTable = tenantTable(schemaName, 'roles');
+    const { page, limit, offset } = resolvePagination(query.page, query.limit ?? 20);
+
+    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      const empConditions: string[] = ['1=1'];
+      const empParams: unknown[] = [];
+      let idx = 1;
+
+      if (query.branchId) {
+        empConditions.push(`e.branch_id = $${idx++}::uuid`);
+        empParams.push(query.branchId);
+      }
+      if (query.status) {
+        empConditions.push(`e.status::text = $${idx++}`);
+        empParams.push(query.status);
+      }
+      if (query.search?.trim()) {
+        empConditions.push(
+          `(e.name ILIKE $${idx} OR e.code ILIKE $${idx} OR e.phone ILIKE $${idx} OR e.designation ILIKE $${idx})`,
+        );
+        empParams.push(`%${query.search.trim()}%`);
+        idx++;
+      }
+
+      const empWhere = empConditions.join(' AND ');
+
+      // Total employees matching filter
+      const countRows = await tx.$queryRawUnsafe<Array<{ count: bigint }>>(
+        `SELECT COUNT(*)::bigint AS count
+         FROM ${employees} e
+         INNER JOIN ${branches} b ON b.id = e.branch_id
+         WHERE ${empWhere}`,
+        ...empParams,
+      );
+      const total = Number(countRows[0]?.count ?? 0);
+
+      // Now query aggregated performance for all matching employees in date range
+      const dateStartIdx = idx;
+      const perfParams = [...empParams, range.from, range.to];
+      idx += 2;
+
+      let orderClause = 'e.name ASC';
+      const dir = query.sortOrder === 'desc' ? 'DESC' : 'ASC';
+      if (query.sortBy === 'servicesDone') {
+        orderClause = `COALESCE(p.services_done, 0) ${dir}, e.name ASC`;
+      } else if (query.sortBy === 'salesGenerated') {
+        orderClause = `COALESCE(p.sales_generated, 0) ${dir}, e.name ASC`;
+      } else if (query.sortBy === 'customersServed') {
+        orderClause = `COALESCE(p.customers_served, 0) ${dir}, e.name ASC`;
+      } else if (query.sortBy === 'name') {
+        orderClause = `e.name ${dir}`;
+      }
+
+      const rows = await tx.$queryRawUnsafe<
+        Array<{
+          id: string;
+          code: string;
+          name: string;
+          phone: string | null;
+          email: string | null;
+          designation: string | null;
+          branchId: string;
+          branchName: string;
+          status: string;
+          systemRoles: string[];
+          photoUrl: string | null;
+          servicesDone: number;
+          salesGenerated: number;
+          customersServed: number;
+          topServiceName: string | null;
+          topServiceCount: number;
+        }>
+      >(
+        `WITH emp_perf AS (
+           SELECT
+             sie.employee_id,
+             COUNT(si.id)::int AS services_done,
+             COALESCE(SUM(
+               CASE
+                 WHEN COALESCE(s.total, 0) <= 0 THEN 0
+                 ELSE ROUND((si.total * GREATEST(0, s.total - COALESCE(s.refunded_amount, 0)) / s.total)::numeric, 2)
+               END
+             ), 0)::float AS sales_generated,
+             COUNT(DISTINCT s.customer_id)::int AS customers_served
+           FROM ${saleItemEmployees} sie
+           INNER JOIN ${saleItems} si ON si.id = sie.sale_item_id AND si.item_type = 'service'
+           INNER JOIN ${sales} s ON s.id = si.sale_id
+           WHERE s.status::text = 'COMPLETED'
+             AND s.created_at >= $${dateStartIdx}::date
+             AND s.created_at < ($${dateStartIdx + 1}::date + INTERVAL '1 day')
+             ${query.branchId ? `AND s.branch_id = '${query.branchId}'::uuid` : ''}
+           GROUP BY sie.employee_id
+         ),
+         emp_service_ranks AS (
+           SELECT
+             sie.employee_id,
+             COALESCE(svc.name, 'Service') AS service_name,
+             COUNT(*)::int AS svc_count,
+             COALESCE(SUM(si.total), 0)::float AS svc_revenue,
+             ROW_NUMBER() OVER (
+               PARTITION BY sie.employee_id
+               ORDER BY COUNT(*) DESC, COALESCE(SUM(si.total), 0) DESC, COALESCE(svc.name, 'Service') ASC
+             ) AS rank
+           FROM ${saleItemEmployees} sie
+           INNER JOIN ${saleItems} si ON si.id = sie.sale_item_id AND si.item_type = 'service'
+           INNER JOIN ${sales} s ON s.id = si.sale_id
+           LEFT JOIN ${services} svc ON svc.id = si.service_id
+           WHERE s.status::text = 'COMPLETED'
+             AND s.created_at >= $${dateStartIdx}::date
+             AND s.created_at < ($${dateStartIdx + 1}::date + INTERVAL '1 day')
+             ${query.branchId ? `AND s.branch_id = '${query.branchId}'::uuid` : ''}
+           GROUP BY sie.employee_id, svc.name
+         )
+         SELECT
+           e.id,
+           e.code,
+           e.name,
+           e.phone,
+           e.email,
+           e.designation,
+           e.branch_id AS "branchId",
+           b.name AS "branchName",
+           e.status::text AS status,
+           COALESCE(
+             (SELECT array_agg(r.code ORDER BY r.code)
+              FROM ${userRolesTable} ur
+              INNER JOIN ${rolesTable} r ON ur.role_id = r.id
+              WHERE ur.user_id = e.user_id),
+             ARRAY[]::text[]
+           ) AS "systemRoles",
+           e.photo_url AS "photoUrl",
+           COALESCE(p.services_done, 0)::int AS "servicesDone",
+           COALESCE(p.sales_generated, 0)::float AS "salesGenerated",
+           COALESCE(p.customers_served, 0)::int AS "customersServed",
+           esr.service_name AS "topServiceName",
+           COALESCE(esr.svc_count, 0)::int AS "topServiceCount"
+         FROM ${employees} e
+         INNER JOIN ${branches} b ON b.id = e.branch_id
+         LEFT JOIN emp_perf p ON p.employee_id = e.id
+         LEFT JOIN emp_service_ranks esr ON esr.employee_id = e.id AND esr.rank = 1
+         WHERE ${empWhere}
+         ORDER BY ${orderClause}
+         LIMIT $${idx} OFFSET $${idx + 1}`,
+        ...perfParams,
+        limit,
+        offset,
+      );
+
+      return {
+        range,
+        ...buildPaginatedResponse(rows, total, page, limit),
+      };
+    });
+  }
+
+  async getEmployeePerformanceDetail(
+    schemaName: string,
+    employeeId: string,
+    query: {
+      from?: string;
+      to?: string;
+      preset?: string;
+      branchId?: string;
+    },
+  ) {
+    const range = this.resolvePerformanceRange(query);
+    const employees = tenantTable(schemaName, 'employees');
+    const branches = tenantTable(schemaName, 'branches');
+    const sales = tenantTable(schemaName, 'sales');
+    const saleItems = tenantTable(schemaName, 'sale_items');
+    const saleItemEmployees = tenantTable(schemaName, 'sale_item_employees');
+    const services = tenantTable(schemaName, 'services');
+    const customers = tenantTable(schemaName, 'customers');
+    const userRolesTable = tenantTable(schemaName, 'user_roles');
+    const rolesTable = tenantTable(schemaName, 'roles');
+
+    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      const empRows = await tx.$queryRawUnsafe<
+        Array<{
+          id: string;
+          code: string;
+          name: string;
+          phone: string | null;
+          email: string | null;
+          designation: string | null;
+          branchId: string;
+          branchName: string;
+          status: string;
+          systemRoles: string[];
+          photoUrl: string | null;
+          commissionRate: number;
+        }>
+      >(
+        `SELECT
+           e.id,
+           e.code,
+           e.name,
+           e.phone,
+           e.email,
+           e.designation,
+           e.branch_id AS "branchId",
+           b.name AS "branchName",
+           e.status::text AS status,
+           COALESCE(
+             (SELECT array_agg(r.code ORDER BY r.code)
+              FROM ${userRolesTable} ur
+              INNER JOIN ${rolesTable} r ON ur.role_id = r.id
+              WHERE ur.user_id = e.user_id),
+             ARRAY[]::text[]
+           ) AS "systemRoles",
+           e.photo_url AS "photoUrl",
+           COALESCE(e.commission_rate, 0)::float AS "commissionRate"
+         FROM ${employees} e
+         INNER JOIN ${branches} b ON b.id = e.branch_id
+         WHERE e.id = $1::uuid
+         LIMIT 1`,
+        employeeId,
+      );
+
+      if (!empRows[0]) {
+        throw new NotFoundException('Employee not found');
+      }
+
+      const emp = empRows[0];
+      const params: unknown[] = [employeeId, range.from, range.to];
+      let branchFilter = '';
+      if (query.branchId) {
+        branchFilter = `AND s.branch_id = $4::uuid`;
+        params.push(query.branchId);
+      }
+
+      // 1. KPI summary
+      const summaryRows = await tx.$queryRawUnsafe<
+        Array<{
+          servicesDone: number;
+          salesGenerated: number;
+          customersServed: number;
+        }>
+      >(
+        `SELECT
+           COUNT(si.id)::int AS "servicesDone",
+           COALESCE(SUM(
+             CASE
+               WHEN COALESCE(s.total, 0) <= 0 THEN 0
+               ELSE ROUND((si.total * GREATEST(0, s.total - COALESCE(s.refunded_amount, 0)) / s.total)::numeric, 2)
+             END
+           ), 0)::float AS "salesGenerated",
+           COUNT(DISTINCT s.customer_id)::int AS "customersServed"
+         FROM ${saleItemEmployees} sie
+         INNER JOIN ${saleItems} si ON si.id = sie.sale_item_id AND si.item_type = 'service'
+         INNER JOIN ${sales} s ON s.id = si.sale_id
+         WHERE sie.employee_id = $1::uuid
+           AND s.status::text = 'COMPLETED'
+           AND s.created_at >= $2::date
+           AND s.created_at < ($3::date + INTERVAL '1 day')
+           ${branchFilter}`,
+        ...params,
+      );
+
+      const servicesDone = Number(summaryRows[0]?.servicesDone ?? 0);
+      const salesGenerated = Number(summaryRows[0]?.salesGenerated ?? 0);
+      const customersServed = Number(summaryRows[0]?.customersServed ?? 0);
+      const averageRevenuePerService =
+        servicesDone > 0 ? Math.round((salesGenerated / servicesDone) * 100) / 100 : 0;
+
+      // 2. Top Services (top 5 breakdown)
+      const topServices = await tx.$queryRawUnsafe<
+        Array<{
+          serviceId: string | null;
+          serviceName: string;
+          count: number;
+          revenue: number;
+        }>
+      >(
+        `SELECT
+           si.service_id AS "serviceId",
+           COALESCE(svc.name, 'Service') AS "serviceName",
+           COUNT(*)::int AS count,
+           COALESCE(SUM(
+             CASE
+               WHEN COALESCE(s.total, 0) <= 0 THEN 0
+               ELSE ROUND((si.total * GREATEST(0, s.total - COALESCE(s.refunded_amount, 0)) / s.total)::numeric, 2)
+             END
+           ), 0)::float AS revenue
+         FROM ${saleItemEmployees} sie
+         INNER JOIN ${saleItems} si ON si.id = sie.sale_item_id AND si.item_type = 'service'
+         INNER JOIN ${sales} s ON s.id = si.sale_id
+         LEFT JOIN ${services} svc ON svc.id = si.service_id
+         WHERE sie.employee_id = $1::uuid
+           AND s.status::text = 'COMPLETED'
+           AND s.created_at >= $2::date
+           AND s.created_at < ($3::date + INTERVAL '1 day')
+           ${branchFilter}
+         GROUP BY si.service_id, svc.name
+         ORDER BY count DESC, revenue DESC, svc.name ASC
+         LIMIT 5`,
+        ...params,
+      );
+
+      // 3. Daily trend for charts/graphs
+      const dailyTrend = await tx.$queryRawUnsafe<
+        Array<{
+          date: string;
+          servicesCount: number;
+          revenue: number;
+        }>
+      >(
+        `SELECT
+           s.created_at::date::text AS date,
+           COUNT(si.id)::int AS "servicesCount",
+           COALESCE(SUM(
+             CASE
+               WHEN COALESCE(s.total, 0) <= 0 THEN 0
+               ELSE ROUND((si.total * GREATEST(0, s.total - COALESCE(s.refunded_amount, 0)) / s.total)::numeric, 2)
+             END
+           ), 0)::float AS revenue
+         FROM ${saleItemEmployees} sie
+         INNER JOIN ${saleItems} si ON si.id = sie.sale_item_id AND si.item_type = 'service'
+         INNER JOIN ${sales} s ON s.id = si.sale_id
+         WHERE sie.employee_id = $1::uuid
+           AND s.status::text = 'COMPLETED'
+           AND s.created_at >= $2::date
+           AND s.created_at < ($3::date + INTERVAL '1 day')
+           ${branchFilter}
+         GROUP BY s.created_at::date
+         ORDER BY s.created_at::date ASC`,
+        ...params,
+      );
+
+      // 4. Recent completed services
+      const recentServices = await tx.$queryRawUnsafe<
+        Array<{
+          saleId: string;
+          saleNumber: string;
+          serviceName: string;
+          customerName: string;
+          date: string;
+          amount: number;
+        }>
+      >(
+        `SELECT
+           s.id AS "saleId",
+           s.sale_number AS "saleNumber",
+           COALESCE(svc.name, 'Service') AS "serviceName",
+           COALESCE(c.name, 'Walk-in customer') AS "customerName",
+           s.created_at::text AS date,
+           (
+             CASE
+               WHEN COALESCE(s.total, 0) <= 0 THEN 0
+               ELSE ROUND((si.total * GREATEST(0, s.total - COALESCE(s.refunded_amount, 0)) / s.total)::numeric, 2)
+             END
+           )::float AS amount
+         FROM ${saleItemEmployees} sie
+         INNER JOIN ${saleItems} si ON si.id = sie.sale_item_id AND si.item_type = 'service'
+         INNER JOIN ${sales} s ON s.id = si.sale_id
+         LEFT JOIN ${services} svc ON svc.id = si.service_id
+         LEFT JOIN ${customers} c ON c.id = s.customer_id
+         WHERE sie.employee_id = $1::uuid
+           AND s.status::text = 'COMPLETED'
+           AND s.created_at >= $2::date
+           AND s.created_at < ($3::date + INTERVAL '1 day')
+           ${branchFilter}
+         ORDER BY s.created_at DESC
+         LIMIT 10`,
+        ...params,
+      );
+
+      return {
+        employee: emp,
+        range,
+        kpis: {
+          servicesDone,
+          salesGenerated,
+          customersServed,
+          averageRevenuePerService,
+          topService: topServices[0]?.serviceName ?? null,
+        },
+        topServices,
+        dailyTrend,
+        recentServices,
+      };
+    });
+  }
 }
+

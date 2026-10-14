@@ -262,187 +262,336 @@
 }
 
 /* ------------------------------------------------------------------------- */
-/* SUMMARY KPI CARDS (ROW 1)                                                */
+/* ------------------------------------------------------------------------- */
+/* SUMMARY KPI CARDS (ROW 1) — GRADIENT MODERN STYLE                         */
 /* ------------------------------------------------------------------------- */
 .dash-kpi-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.875rem;
+  gap: 0.75rem;
+  width: 100%;
 }
 
 @media (min-width: 640px) {
   .dash-kpi-grid {
-    gap: 1rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
   }
 }
 
-@media (min-width: 1180px) {
-  .dash-kpi-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 1.125rem;
-  }
-
-  .dash-kpi-grid-with-live-balance {
+/* Force all 5 cards on one single row from desktop upwards */
+@media (min-width: 1024px) {
+  .dash-kpi-grid,
+  .dash-gradient-modern-grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-}
-
-.dash-kpi-card {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-  background: linear-gradient(145deg, #ffffff 0%, var(--brand-soft, #fcfaff) 100%);
-  border: 1px solid var(--brand-border, #eee8f7);
-  border-radius: 0.9rem;
-  padding: 0.9rem 0.75rem;
-  display: flex;
-  align-items: flex-start;
-  gap: 0.65rem;
-  box-shadow: 0 5px 18px color-mix(in srgb, var(--brand-primary, #a44a5c) 8%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.95);
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-  box-sizing: border-box;
-  min-width: 0;
-}
-
-.dash-kpi-card > * {
-  position: relative;
-  z-index: 1;
-}
-
-.dash-kpi-watermark {
-  position: absolute;
-  right: 0.35rem;
-  bottom: -0.6rem;
-  z-index: 0;
-  color: var(--brand-primary, #a44a5c);
-  opacity: 0.095;
-  pointer-events: none;
-}
-
-.dash-kpi-watermark svg {
-  display: block;
-  width: 4.75rem;
-  height: 4.75rem;
-  stroke-width: 1.35;
-}
-
-.dash-kpi-watermark-expenses {
-  color: var(--brand-primary, #a44a5c);
-}
-
-@media (min-width: 640px) {
-  .dash-kpi-card {
-    border-radius: 0.875rem;
-    padding: 1.125rem 1rem;
-    gap: 0.875rem;
+    gap: 0.75rem;
   }
 }
 
 @media (min-width: 1400px) {
-  .dash-kpi-card {
-    padding: 1.25rem;
-    gap: 1rem;
+  .dash-kpi-grid,
+  .dash-gradient-modern-grid {
+    gap: 0.875rem;
   }
+}
+
+/* Base Card Structure - Compact & Same Height */
+.dash-kpi-card {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  box-sizing: border-box;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+  box-shadow: 0 2px 10px -2px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .dash-kpi-card:hover {
   transform: translateY(-2px);
-  border-color: var(--brand-primary, #a44a5c);
-  box-shadow: 0 12px 26px color-mix(in srgb, var(--brand-primary, #a44a5c) 16%, transparent);
+  box-shadow: 0 8px 18px -3px rgba(15, 23, 42, 0.08), 0 2px 5px -1px rgba(15, 23, 42, 0.03);
 }
 
-.dash-kpi-card-live-balance {
-  border: 1px solid color-mix(in srgb, var(--brand-primary, #a44a5c) 35%, white);
-  background: radial-gradient(ellipse at 92% 0%, color-mix(in srgb, var(--brand-primary, #a44a5c) 68%, white), transparent 43%),
-    linear-gradient(135deg, color-mix(in srgb, var(--brand-primary, #a44a5c) 92%, black) 0%, var(--brand-primary, #a44a5c) 54%, color-mix(in srgb, var(--brand-primary, #a44a5c) 78%, black) 100%);
-  backdrop-filter: blur(14px) saturate(145%);
-  -webkit-backdrop-filter: blur(14px) saturate(145%);
-  box-shadow: 0 12px 26px color-mix(in srgb, var(--brand-primary, #a44a5c) 32%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+/* 1. Sky / Blue Gradient Card */
+.dash-card-gradient-blue {
+  background: linear-gradient(135deg, #f0f7ff 0%, #e2efff 55%, #ffffff 100%);
+  border: 1px solid rgba(191, 219, 254, 0.75);
+}
+.dash-card-gradient-blue:hover {
+  border-color: #93c5fd;
 }
 
-.dash-kpi-card-live-balance::before {
-  content: '';
-  position: absolute;
-  top: -38px;
-  right: 10px;
-  z-index: 0;
-  width: 105px;
-  height: 105px;
+/* 2. Mint / Emerald Green Gradient Card */
+.dash-card-gradient-green {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 55%, #ffffff 100%);
+  border: 1px solid rgba(187, 247, 208, 0.75);
+}
+.dash-card-gradient-green:hover {
+  border-color: #86efac;
+}
+
+/* 3. Lavender / Purple Gradient Card */
+.dash-card-gradient-purple {
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 55%, #ffffff 100%);
+  border: 1px solid rgba(233, 213, 255, 0.75);
+}
+.dash-card-gradient-purple:hover {
+  border-color: #d8b4fe;
+}
+
+/* 4. Warm Amber / Sun Gradient Card */
+.dash-card-gradient-amber {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 55%, #ffffff 100%);
+  border: 1px solid rgba(253, 230, 138, 0.75);
+}
+.dash-card-gradient-amber:hover {
+  border-color: #fde047;
+}
+
+/* 5. Rose / Pink Gradient Card */
+.dash-card-gradient-rose {
+  background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 55%, #ffffff 100%);
+  border: 1px solid rgba(254, 205, 211, 0.75);
+}
+.dash-card-gradient-rose:hover {
+  border-color: #fecdd3;
+}
+
+/* ------------------------------------------------------------------------- */
+/* 3D Frosted Icon Badges                                                     */
+/* ------------------------------------------------------------------------- */
+.dash-kpi-icon-bubble {
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  filter: blur(18px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.05), inset 0 1.5px 1.5px rgba(255, 255, 255, 0.95);
+  transition: transform 0.2s ease;
+}
+
+.dash-kpi-card:hover .dash-kpi-icon-bubble {
+  transform: scale(1.06);
+}
+
+.dash-kpi-icon-bubble svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.bubble-blue {
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #ebf5ff 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.95);
+  color: #2563eb;
+}
+
+.bubble-green {
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #ecfdf5 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.95);
+  color: #059669;
+}
+
+.bubble-purple {
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #f5f3ff 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.95);
+  color: #7c3aed;
+}
+
+.bubble-amber {
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #fffbeb 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.95);
+  color: #d97706;
+}
+
+.bubble-rose {
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #fff1f2 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.95);
+  color: #e11d48;
+}
+
+/* ------------------------------------------------------------------------- */
+/* Card Content & Typography                                                 */
+/* ------------------------------------------------------------------------- */
+.dash-kpi-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  z-index: 2;
+}
+
+.dash-kpi-label {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: #475569;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-kpi-value {
+  display: flex;
+  align-items: baseline;
+  gap: 0.2rem;
+  margin-bottom: 0.1rem;
+  line-height: 1.15;
+}
+
+.dash-kpi-num {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-kpi-num.text-emerald {
+  color: #047857;
+}
+
+@media (min-width: 1280px) {
+  .dash-kpi-num {
+    font-size: 1.05rem;
+  }
+}
+
+@media (min-width: 1536px) {
+  .dash-kpi-num {
+    font-size: 1.15rem;
+  }
+}
+
+/* Sub-row trends & badges */
+.dash-kpi-sub-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.05rem;
+}
+
+.dash-kpi-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.dash-kpi-trend.trend-green {
+  color: #059669;
+}
+
+.dash-kpi-trend.trend-red {
+  color: #e11d48;
+}
+
+.dash-kpi-trend.trend-amber {
+  color: #d97706;
+}
+
+.dash-kpi-trend .trend-sub {
+  font-weight: 400;
+  color: #64748b;
+  font-size: 0.62rem;
+}
+
+.dash-kpi-sub-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.dash-kpi-sub-badge.badge-purple {
+  color: #7c3aed;
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------------------- */
+/* Bottom-Right Watermark Graphics (Wave & Bars)                             */
+/* ------------------------------------------------------------------------- */
+.dash-kpi-deco-wave {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 75px;
+  height: 40px;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.dash-kpi-deco-wave svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.dash-kpi-deco-bars {
+  position: absolute;
+  right: 8px;
+  bottom: 0px;
+  display: flex;
+  align-items: flex-end;
+  gap: 3.5px;
+  height: 38px;
+  z-index: 1;
   pointer-events: none;
 }
 
-.dash-kpi-watermark-live {
-  color: #ffffff;
-  opacity: 0.13;
+.dash-kpi-deco-bars .deco-bar {
+  width: 5.5px;
+  border-radius: 3px 3px 0 0;
+  background: currentColor;
+  opacity: 0.22;
 }
 
-.dash-kpi-card-live-balance .dash-kpi-label {
-  color: rgba(255, 255, 255, 0.78);
-  font-weight: 650;
+.dash-card-gradient-green .dash-kpi-deco-bars {
+  color: #10b981;
 }
 
-.dash-kpi-card-live-balance .dash-kpi-num {
-  color: #ffffff;
-  font-size: 1.35rem;
-  letter-spacing: -0.04em;
+.dash-card-gradient-purple .dash-kpi-deco-bars {
+  color: #8b5cf6;
 }
 
-.dash-kpi-live-profit {
-  display: block;
-  width: fit-content;
-  margin-top: 0.4rem;
-  padding: 0.25rem 0.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 0.75rem;
-  font-weight: 650;
+.dash-card-gradient-rose .dash-kpi-deco-bars {
+  color: #f43f5e;
 }
 
-.dash-kpi-card-live-balance .dash-kpi-icon-live {
-  background: rgba(255, 255, 255, 0.14);
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-}
+.deco-bar.b1 { height: 12px; opacity: 0.16; }
+.deco-bar.b2 { height: 20px; opacity: 0.22; }
+.deco-bar.b3 { height: 28px; opacity: 0.28; }
+.deco-bar.b4 { height: 35px; opacity: 0.34; }
 
-.dash-kpi-card-revenue {
-  border-top-color: var(--brand-border, #ddd0f2);
-}
-
-.dash-kpi-card-expenses {
-  border-top-color: var(--brand-border, #f6d5e0);
-}
-
-.dash-kpi-card-salaries {
-  border-top-color: var(--brand-border, #e7d8f6);
-}
-
-.dash-kpi-card-opening {
-  border-top-color: var(--brand-border, #ddd0f2);
-}
-
-.dash-kpi-card-revenue .dash-kpi-icon-wrap,
-.dash-kpi-card-salaries .dash-kpi-icon-wrap,
-.dash-kpi-card-opening .dash-kpi-icon-wrap {
-  background: var(--brand-soft, #f2eaff);
-  color: var(--brand-primary, #7c3aed);
-}
-
-.dash-kpi-card-expenses .dash-kpi-icon-wrap {
-  background: var(--brand-soft, #fff0f3);
-  color: var(--brand-primary, #fb4565);
-}
-
+/* Fallback & legacy styles */
 .dash-kpi-icon-wrap {
   width: 36px;
   height: 36px;
   border-radius: 0.5rem;
   display: flex;
   align-items: center;
+
   justify-content: center;
   flex-shrink: 0;
 }
@@ -1898,7 +2047,6 @@
 .dash-kpi-card {
   border-color: color-mix(in srgb, var(--brand-primary, #6d28d9) 14%, #e6e5f3);
   border-radius: 0.8rem;
-  background: linear-gradient(145deg, #fff 0%, color-mix(in srgb, var(--brand-primary, #6d28d9) 3%, #fff) 100%);
   box-shadow: 0 4px 13px color-mix(in srgb, var(--brand-primary, #493682) 7%, transparent);
 }
 
@@ -2055,12 +2203,13 @@
   color: var(--brand-primary, #6d28d9);
 }
 
-/* Keep the summary row balanced while giving the bank card more room. */
-@media (min-width: 1180px) {
+/* Keep all 5 KPI cards on one line on desktop */
+@media (min-width: 1024px) {
   .dash-kpi-grid,
+  .dash-gradient-modern-grid,
   .dash-kpi-grid-with-live-balance {
-    grid-template-columns: 1.35fr repeat(3, minmax(0, 1fr));
-    gap: 0.9rem;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 0.75rem;
   }
 }
 

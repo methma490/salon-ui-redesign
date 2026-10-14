@@ -75,8 +75,18 @@ function SubscriptionCard({
       <div className="admin-kv-grid">
         <AdminKv label="Plan" value={sub.plan.name} />
         <AdminKv
-          label={isTrial ? 'Price After Trial' : 'Amount'}
-          value={`${formatAmount(sub.price, sub.currency)} / ${sub.billingCycle.toLowerCase()}`}
+          label={
+            sub.totals && sub.totals.activeAddonsTotal > 0
+              ? 'Next Renewal Total'
+              : isTrial
+                ? 'Price After Trial'
+                : 'Amount'
+          }
+          value={
+            sub.totals && sub.totals.activeAddonsTotal > 0
+              ? `${formatAmount(sub.totals.nextRenewalTotal ?? sub.price, sub.currency)} / ${sub.billingCycle.toLowerCase()} (incl. ${formatAmount(sub.totals.activeAddonsTotal, sub.currency)} add-ons)`
+              : `${formatAmount(sub.price, sub.currency)} / ${sub.billingCycle.toLowerCase()}`
+          }
           amount
         />
         {isTrial ? (
@@ -160,7 +170,18 @@ function SubscriptionTableRow({
         </div>
       </td>
       <td>
-        <div>{formatAmount(sub.price, sub.currency)} / {sub.billingCycle.toLowerCase()}</div>
+        {sub.totals && sub.totals.activeAddonsTotal > 0 ? (
+          <div>
+            <div className="font-semibold text-foreground">
+              {formatAmount(sub.totals.nextRenewalTotal ?? sub.price, sub.currency)} / {sub.billingCycle.toLowerCase()}
+            </div>
+            <div className="text-xs text-primary">
+              Base: {formatAmount(sub.price, sub.currency)} + Add-ons: {formatAmount(sub.totals.activeAddonsTotal, sub.currency)}
+            </div>
+          </div>
+        ) : (
+          <div>{formatAmount(sub.price, sub.currency)} / {sub.billingCycle.toLowerCase()}</div>
+        )}
         {isTrial && <div className="text-xs text-muted-foreground">(Expected after trial)</div>}
       </td>
       <td>

@@ -1,4 +1,11 @@
-import { CreditCard, TrendingUp, TrendingDown, Users, Wallet } from 'lucide-react';
+import {
+  CreditCard,
+  TrendingUp,
+  TrendingDown,
+  Users,
+  Wallet,
+  CheckCircle2,
+} from 'lucide-react';
 import { formatMoneyAmount } from '@/lib/money';
 
 interface PaymentMethodAmount {
@@ -30,27 +37,36 @@ export function SummaryKpiCards({
   netProfit,
   openingBankBalance,
   liveBankBalance,
-  salesByPaymentMethod = [],
-  expensesByPaymentMethod = [],
 }: SummaryKpiCardsProps) {
-  const paymentMethods = ['CASH', 'CARD', 'BANK_TRANSFER'] as const;
-  const paymentMethodLabel: Record<(typeof paymentMethods)[number], string> = {
-    CASH: 'Cash',
-    CARD: 'Card',
-    BANK_TRANSFER: 'Bank Transfer',
-  };
-  const getMethodAmount = (rows: PaymentMethodAmount[], method: string) =>
-    rows.find((row) => row.paymentMethod.toUpperCase() === method)?.amount ?? 0;
-
   return (
-    <div className="dash-kpi-grid dash-kpi-grid-with-live-balance">
-      <div className="dash-kpi-card dash-kpi-card-live-balance">
-        <div className="dash-kpi-watermark dash-kpi-watermark-live" aria-hidden="true">
-          <Wallet />
+    <div className="dash-kpi-grid dash-gradient-modern-grid">
+      {/* 1. Live Bank Balance - Modern Sky/Blue Gradient Style */}
+      <div className="dash-kpi-card dash-card-gradient-blue">
+        <div className="dash-kpi-deco-wave" aria-hidden="true">
+          <svg viewBox="0 0 160 65" fill="none" preserveAspectRatio="none">
+            <path
+              d="M0 50 C 35 15, 65 60, 100 25 C 130 -5, 145 35, 160 20 L 160 65 L 0 65 Z"
+              fill="url(#blueWaveGrad)"
+            />
+            <path
+              d="M0 50 C 35 15, 65 60, 100 25 C 130 -5, 145 35, 160 20"
+              stroke="#3b82f6"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            />
+            <defs>
+              <linearGradient id="blueWaveGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.18" />
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.02" />
+              </linearGradient>
+            </defs>
+          </svg>
         </div>
-        <div className="dash-kpi-icon-wrap dash-kpi-icon-live">
-          <Wallet className="h-4 w-4 sm:h-5 sm:w-5" />
+
+        <div className="dash-kpi-icon-bubble bubble-blue">
+          <Wallet className="w-5 h-5" />
         </div>
+
         <div className="dash-kpi-content">
           <span className="dash-kpi-label">Bank Balance</span>
           <div className="dash-kpi-value">
@@ -58,98 +74,159 @@ export function SummaryKpiCards({
               {liveBankBalance === null ? '—' : formatMoneyAmount(liveBankBalance)}
             </span>
           </div>
-          <div className="dash-kpi-balance-details">
-            <div>
-              <span>Opening Balance</span>
-              <strong>{openingBankBalance === null ? '—' : formatMoneyAmount(openingBankBalance)}</strong>
+
+          <div className="dash-kpi-sub-row">
+            <span className="dash-kpi-sub-badge">
+              Open: {openingBankBalance === null ? '—' : formatMoneyAmount(openingBankBalance)}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Total Revenue - Modern Mint/Green Gradient Style */}
+      <div className="dash-kpi-card dash-card-gradient-green">
+        <div className="dash-kpi-deco-bars" aria-hidden="true">
+          <div className="deco-bar b1" />
+          <div className="deco-bar b2" />
+          <div className="deco-bar b3" />
+          <div className="deco-bar b4" />
+        </div>
+
+        <div className="dash-kpi-icon-bubble bubble-green">
+          <TrendingUp className="w-5 h-5" />
+        </div>
+
+        <div className="dash-kpi-content">
+          <span className="dash-kpi-label">Total Revenue</span>
+          <div className="dash-kpi-value">
+            <span className="dash-kpi-num text-emerald">
+              {formatMoneyAmount(revenue ?? 0)}
+            </span>
+          </div>
+
+          <div className="dash-kpi-sub-row">
+            <div className={`dash-kpi-trend ${revenueGrowth >= 0 ? 'trend-green' : 'trend-red'}`}>
+              {revenueGrowth >= 0 ? (
+                <TrendingUp className="w-3.5 h-3.5" />
+              ) : (
+                <TrendingDown className="w-3.5 h-3.5" />
+              )}
+              <span>{revenueGrowth >= 0 ? `+${revenueGrowth}%` : `${revenueGrowth}%`}</span>
+              <span className="trend-sub">vs prev</span>
             </div>
-            <div>
-              <span>Net Profit</span>
-              <strong>{formatMoneyAmount(netProfit ?? 0)}</strong>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Net Profit - Modern Purple/Lavender Gradient Style */}
+      <div className="dash-kpi-card dash-card-gradient-purple">
+        <div className="dash-kpi-deco-bars" aria-hidden="true">
+          <div className="deco-bar b1" />
+          <div className="deco-bar b2" />
+          <div className="deco-bar b3" />
+          <div className="deco-bar b4" />
+        </div>
+
+        <div className="dash-kpi-icon-bubble bubble-purple">
+          <CheckCircle2 className="w-5 h-5" />
+        </div>
+
+        <div className="dash-kpi-content">
+          <span className="dash-kpi-label">Net Profit</span>
+          <div className="dash-kpi-value">
+            <span className="dash-kpi-num">
+              {formatMoneyAmount(netProfit ?? 0)}
+            </span>
+          </div>
+
+          <div className="dash-kpi-sub-row">
+            <span className="dash-kpi-sub-badge badge-purple">
+              {netProfit >= 0 ? 'Profitable' : 'Deficit'} this period
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Expenses - Modern Warm Amber Gradient Style */}
+      <div className="dash-kpi-card dash-card-gradient-amber">
+        <div className="dash-kpi-deco-wave" aria-hidden="true">
+          <svg viewBox="0 0 160 65" fill="none" preserveAspectRatio="none">
+            <path
+              d="M0 45 C 40 60, 80 15, 120 40 C 140 50, 150 30, 160 25 L 160 65 L 0 65 Z"
+              fill="url(#amberWaveGrad)"
+            />
+            <path
+              d="M0 45 C 40 60, 80 15, 120 40 C 140 50, 150 30, 160 25"
+              stroke="#f59e0b"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            />
+            <defs>
+              <linearGradient id="amberWaveGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.2" />
+                <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.02" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+
+        <div className="dash-kpi-icon-bubble bubble-amber">
+          <CreditCard className="w-5 h-5" />
+        </div>
+
+        <div className="dash-kpi-content">
+          <span className="dash-kpi-label">Total Expenses</span>
+          <div className="dash-kpi-value">
+            <span className="dash-kpi-num">
+              {formatMoneyAmount(expenses ?? 0)}
+            </span>
+          </div>
+
+          <div className="dash-kpi-sub-row">
+            <div className="dash-kpi-trend trend-amber">
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>{expensesGrowth >= 0 ? `+${expensesGrowth}%` : `${expensesGrowth}%`}</span>
+              <span className="trend-sub">vs prev</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Card 1: Revenue */}
-      <div className="dash-kpi-card dash-kpi-card-revenue">
-        <div className="dash-kpi-watermark" aria-hidden="true">
-          <TrendingUp />
+      {/* 5. Salaries / Payroll - Modern Rose/Pink Gradient Style */}
+      <div className="dash-kpi-card dash-card-gradient-rose">
+        <div className="dash-kpi-deco-bars" aria-hidden="true">
+          <div className="deco-bar b1" />
+          <div className="deco-bar b2" />
+          <div className="deco-bar b3" />
+          <div className="deco-bar b4" />
         </div>
-        <div className="dash-kpi-icon-wrap dash-kpi-icon-blue">
-          <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
+
+        <div className="dash-kpi-icon-bubble bubble-rose">
+          <Users className="w-5 h-5" />
         </div>
+
         <div className="dash-kpi-content">
-          <span className="dash-kpi-label">Revenue</span>
+          <span className="dash-kpi-label">Salaries / Payroll</span>
           <div className="dash-kpi-value">
-            <span className="dash-kpi-num">{formatMoneyAmount(revenue ?? 0)}</span>
+            <span className="dash-kpi-num">
+              {formatMoneyAmount(salaries ?? 0)}
+            </span>
           </div>
-          <div className={`dash-kpi-trend ${revenueGrowth >= 0 ? 'dash-trend-green' : 'dash-trend-red'}`}>
-            {revenueGrowth >= 0 ? <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> : <TrendingDown className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
-            <span>{revenueGrowth >= 0 ? `+${revenueGrowth}%` : `${revenueGrowth}%`}</span>
-            <span className="dash-trend-subtext">vs prev</span>
-          </div>
-          <div className="dash-kpi-payment-methods" aria-label="Revenue by payment method">
-            {paymentMethods.map((method) => (
-              <div className="dash-kpi-payment-method" key={method}>
-                <span>{paymentMethodLabel[method]}</span>
-                <strong>{formatMoneyAmount(getMethodAmount(salesByPaymentMethod, method))}</strong>
-              </div>
-            ))}
+
+          <div className="dash-kpi-sub-row">
+            <div className={`dash-kpi-trend ${salariesGrowth <= 0 ? 'trend-green' : 'trend-red'}`}>
+              {salariesGrowth > 0 ? (
+                <TrendingUp className="w-3.5 h-3.5" />
+              ) : (
+                <TrendingDown className="w-3.5 h-3.5" />
+              )}
+              <span>{salariesGrowth >= 0 ? `+${salariesGrowth}%` : `${salariesGrowth}%`}</span>
+              <span className="trend-sub">vs prev</span>
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Card 2: Expenses */}
-      <div className="dash-kpi-card dash-kpi-card-expenses">
-        <div className="dash-kpi-watermark dash-kpi-watermark-expenses" aria-hidden="true">
-          <CreditCard />
-        </div>
-        <div className="dash-kpi-icon-wrap dash-kpi-icon-red">
-          <CreditCard className="h-4 w-4 sm:h-5 sm:w-5" />
-        </div>
-        <div className="dash-kpi-content">
-          <span className="dash-kpi-label">Expenses</span>
-          <div className="dash-kpi-value">
-            <span className="dash-kpi-num">{formatMoneyAmount(expenses ?? 0)}</span>
-          </div>
-          <div className="dash-kpi-trend dash-trend-red">
-            <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-            <span>{expensesGrowth >= 0 ? `+${expensesGrowth}%` : `${expensesGrowth}%`}</span>
-            <span className="dash-trend-subtext">vs prev</span>
-          </div>
-          <div className="dash-kpi-payment-methods" aria-label="Expenses by payment method">
-            {paymentMethods.map((method) => (
-              <div className="dash-kpi-payment-method" key={method}>
-                <span>{paymentMethodLabel[method]}</span>
-                <strong>{formatMoneyAmount(getMethodAmount(expensesByPaymentMethod, method))}</strong>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Card 3: Salaries */}
-      <div className="dash-kpi-card dash-kpi-card-salaries">
-        <div className="dash-kpi-watermark" aria-hidden="true">
-          <Users />
-        </div>
-        <div className="dash-kpi-icon-wrap dash-kpi-icon-amber">
-          <Users className="h-4 w-4 sm:h-5 sm:w-5" />
-        </div>
-        <div className="dash-kpi-content">
-          <span className="dash-kpi-label">Salaries</span>
-          <div className="dash-kpi-value">
-            <span className="dash-kpi-num">{formatMoneyAmount(salaries ?? 0)}</span>
-          </div>
-          <div className="dash-kpi-trend dash-trend-green">
-            <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-            <span>{salariesGrowth >= 0 ? `+${salariesGrowth}%` : `${salariesGrowth}%`}</span>
-            <span className="dash-trend-subtext">vs prev</span>
-          </div>
-        </div>
-      </div>
-
     </div>
   );
 }
+

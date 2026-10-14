@@ -142,11 +142,28 @@ export default function SalonDetailsPage() {
                     </dd>
                   </div>
                   <div className="sd-detail-item">
-                    <dt>Price</dt>
+                    <dt>Base Plan Price</dt>
                     <dd className="sd-detail-strong">
                       {formatPrice(salon.subscription.price, salon.subscription.currency)}
                     </dd>
                   </div>
+                  {salon.subscription.totals && salon.subscription.totals.activeAddonsTotal > 0 && (
+                    <>
+                      <div className="sd-detail-item">
+                        <dt>Active Add-ons</dt>
+                        <dd className="sd-detail-strong" style={{ color: '#2563eb' }}>
+                          + {formatPrice(salon.subscription.totals.activeAddonsTotal, salon.subscription.currency)}
+                          {salon.subscription.activeAddonsCount ? ` (${salon.subscription.activeAddonsCount} add-on${salon.subscription.activeAddonsCount > 1 ? 's' : ''})` : ''}
+                        </dd>
+                      </div>
+                      <div className="sd-detail-item">
+                        <dt>Next Renewal Total</dt>
+                        <dd className="sd-detail-strong" style={{ color: '#16a34a', fontWeight: 700 }}>
+                          {formatPrice(salon.subscription.totals.nextRenewalTotal ?? salon.subscription.price, salon.subscription.currency)}
+                        </dd>
+                      </div>
+                    </>
+                  )}
                   {salon.subscription.startDate && (
                     <div className="sd-detail-item">
                       <dt>Started</dt>

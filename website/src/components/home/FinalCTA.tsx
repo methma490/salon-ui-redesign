@@ -1,7 +1,20 @@
+'use client';
+
 import Link from 'next/link';
 import { ArrowRight, Check, Sparkles } from 'lucide-react';
 
 export function FinalCTA() {
+  const handleScrollToPricing = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    // If on homepage, smoothly scroll to pricing section
+    if (typeof window !== 'undefined' && window.location.pathname === '/') {
+      const pricingEl = document.getElementById('pricing') || document.getElementById('pricing-preview');
+      if (pricingEl) {
+        e.preventDefault();
+        pricingEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        window.history.pushState(null, '', '#pricing');
+      }
+    }
+  };
   return (
     <section className="py-16 lg:py-24 bg-white" aria-labelledby="final-cta-heading">
       <div className="section-container">
@@ -52,7 +65,8 @@ export function FinalCTA() {
             <div className="mt-8 sm:mt-10 flex flex-wrap justify-center items-center gap-4">
               <Link
                 href="/#pricing"
-                className="inline-flex items-center justify-center gap-2.5 rounded-full bg-white text-[#7C3AED] hover:bg-[#F5F3FF] px-8 py-4 text-base font-bold shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+                onClick={handleScrollToPricing}
+                className="inline-flex items-center justify-center gap-2.5 rounded-full bg-white text-[#7C3AED] hover:bg-[#F5F3FF] px-8 py-4 text-base font-bold shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
               >
                 <span>Start Free 21-Day Trial</span>
                 <ArrowRight className="size-4.5" />

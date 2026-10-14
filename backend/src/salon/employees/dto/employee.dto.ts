@@ -187,3 +187,56 @@ export class ListEmployeesQueryDto extends PaginationQueryDto {
   @IsString()
   search?: string;
 }
+
+export class EmployeePerformanceQueryDto extends PaginationQueryDto {
+  @IsOptional()
+  @IsString()
+  from?: string;
+
+  @IsOptional()
+  @IsString()
+  to?: string;
+
+  @IsOptional()
+  @IsString()
+  preset?: string;
+
+  @IsOptional()
+  @IsUUID()
+  branchId?: string;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsEnum(['ACTIVE', 'INACTIVE', 'RESIGNED'])
+  status?: 'ACTIVE' | 'INACTIVE' | 'RESIGNED';
+
+  @IsOptional()
+  @IsString()
+  sortBy?: 'name' | 'servicesDone' | 'salesGenerated' | 'customersServed';
+
+  @IsOptional()
+  @IsEnum(['asc', 'desc'])
+  sortOrder?: 'asc' | 'desc';
+}
+
+export class EmployeePerformanceDetailQueryDto {
+  @IsOptional()
+  @IsString()
+  from?: string;
+
+  @IsOptional()
+  @IsString()
+  to?: string;
+
+  @IsOptional()
+  @IsString()
+  preset?: string;
+
+  @IsOptional()
+  @IsUUID()
+  branchId?: string;
+}
+

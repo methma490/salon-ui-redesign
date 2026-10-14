@@ -66,7 +66,7 @@ export default function QuotationDetailPage() {
     queryKey: ['pos-performers', query.data?.branchId],
     queryFn: async () => {
       const res = await tenantApi.pos.getPerformers({ branchId: query.data!.branchId });
-      return res.performers;
+      return Array.isArray(res?.performers) ? res.performers : [];
     },
     enabled: !!query.data?.branchId && convertOpen,
   });
@@ -547,7 +547,7 @@ export default function QuotationDetailPage() {
                     <SelectValue placeholder="Select performer" />
                   </SelectTrigger>
                   <SelectContent>
-                    {(performersQuery.data ?? []).map((p) => (
+                    {(Array.isArray(performersQuery.data) ? performersQuery.data : []).map((p) => (
                       <SelectItem key={p.id} value={p.id}>
                         {p.name}
                       </SelectItem>

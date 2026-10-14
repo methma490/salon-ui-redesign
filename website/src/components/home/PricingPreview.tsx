@@ -7,7 +7,7 @@ export async function PricingPreview() {
   const plans = await fetchPublicPlans();
 
   return (
-    <div id="pricing-preview" className="relative bg-[#F1EAFF]">
+    <div id="pricing" className="relative bg-[#F1EAFF] scroll-mt-16">
       <PricingSection plans={plans} compact />
       <div className="section-container pb-16 text-center">
         <Link

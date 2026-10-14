@@ -15,6 +15,7 @@ import { UpdateSalonFeaturesDto } from './dto/update-salon-features.dto';
 import { UpdateSalonStatusDto } from './dto/update-salon-status.dto';
 import { AuthService } from '../../auth/auth.service';
 import { SubscriptionsService } from '../../subscriptions/subscriptions.service';
+import { calculateSubscriptionRecurringTotals } from '../../subscriptions/utils/subscription-billing.util';
 import { normalizeFeatureCodes, validateFeatureRecords } from './utils/feature-validation.util';
 
 const TENANT_CODE_PREFIX = 'SAL';
@@ -40,6 +41,10 @@ type TenantWithRelations = Tenant & {
     addOns?: Array<{
       id: string;
       status: SubscriptionAddOnStatus;
+      featureId: string;
+      recurringAmount: Prisma.Decimal;
+      currency: string;
+      cancelAtPeriodEnd?: boolean;
       feature: Feature;
     }>;
   }>;
@@ -622,6 +627,20 @@ export class SalonsService {
       .map((a) => a.feature.code);
     const featureCodes = Array.from(new Set([...baseCodes, ...addonCodes]));
 
+    const planFeatureIds = new Set((sub.subscriptionFeatures ?? []).map((sf) => sf.feature.id));
+    const totals = calculateSubscriptionRecurringTotals(
+      sub.price,
+      (sub.addOns ?? []).map((a) => ({
+        featureId: a.featureId,
+        status: a.status,
+        recurringAmount: a.recurringAmount,
+        currency: a.currency,
+        cancelAtPeriodEnd: a.cancelAtPeriodEnd,
+      })),
+      sub.currency,
+      planFeatureIds,
+    );
+
     return {
       id: sub.id,
       planCode: sub.plan.code,
@@ -632,6 +651,10 @@ export class SalonsService {
       startDate: sub.startDate,
       endDate: sub.endDate,
       featureCodes,
+      totals,
+      activeAddonsCount: (sub.addOns ?? []).filter(
+        (a) => a.status === SubscriptionAddOnStatus.ACTIVE,
+      ).length,
     };
   }
 
