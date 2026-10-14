@@ -15,6 +15,12 @@ import { InventoryOverviewCard } from './dashboard/InventoryOverviewCard';
 import { EmployeeLoansCard } from './dashboard/EmployeeLoansCard';
 import { RecentAppointmentsCard } from './dashboard/RecentAppointmentsCard';
 import { RecentTransactionsCard } from './dashboard/RecentTransactionsCard';
+import { PerformanceHighlightsSection } from './dashboard/PerformanceHighlightsSection';
+import {
+  Top5EmployeesCard,
+  Top5CustomersCard,
+  Top5ServicesCard,
+} from './dashboard/Top5SummaryWidgets';
 import './dashboard/salon-admin-dashboard.css';
 
 function getTodayStr() {
@@ -157,6 +163,44 @@ export default function PremiumDashboardPage() {
     refetchOnWindowFocus: false,
   });
 
+  // Query top customer highlights: GET /tenant/customers/top
+  const { data: topCustomersSummary } = useQuery({
+    queryKey: ['dashboard-customers-top-summary', period],
+    queryFn: () => {
+      const presetMap: Record<SalonDashboardPeriod, string> = {
+        today: 'today',
+        week: 'last_30_days',
+        month: 'this_month',
+        year: 'all_time',
+      };
+      return tenantApi.customers.top({ preset: presetMap[period] || 'all_time' });
+    },
+    staleTime: 60_000,
+    retry: 1,
+  });
+
+  // Query top 5 customers: GET /tenant/customers/analytics?limit=5&sortBy=totalSpend
+  const { data: topCustomersListResponse } = useQuery({
+    queryKey: ['dashboard-top5-customers-list', period],
+    queryFn: () => {
+      const presetMap: Record<SalonDashboardPeriod, string> = {
+        today: 'today',
+        week: 'last_30_days',
+        month: 'this_month',
+        year: 'all_time',
+      };
+      return tenantApi.customers.analytics({
+        preset: (presetMap[period] || 'all_time') as any,
+        sortBy: 'totalSpend',
+        sortOrder: 'desc',
+        page: 1,
+        limit: 5,
+      });
+    },
+    staleTime: 60_000,
+    retry: 1,
+  });
+
   if (isLoading) {
     return <OpsLoading />;
   }
@@ -193,6 +237,35 @@ export default function PremiumDashboardPage() {
       ? null
       : openingBankBalance + (financials?.currentNetProfit ?? 0));
 
+  // Compute highlights
+  const topEmployeesList = dashboardData?.topEmployees ?? [];
+  const topEmployeeRevenue = topEmployeesList[0] || null;
+  const topEmployeeServices = topEmployeesList.length
+    ? [...topEmployeesList].sort((a, b) => b.servicesDone - a.servicesDone)[0]
+    : null;
+
+  const topCustomerSpending = topCustomersSummary?.topBySpending?.customer
+    ? {
+        name: topCustomersSummary.topBySpending.customer.name,
+        totalSpend: topCustomersSummary.topBySpending.metric ?? topCustomersSummary.topBySpending.customer.totalSpend ?? 0,
+      }
+    : null;
+
+  const topCustomerActive = topCustomersSummary?.topByVisits?.customer
+    ? {
+        name: topCustomersSummary.topByVisits.customer.name,
+        visits: topCustomersSummary.topByVisits.metric ?? topCustomersSummary.topByVisits.customer.visitCount ?? 0,
+      }
+    : topCustomersSummary?.topByServices?.customer
+    ? {
+        name: topCustomersSummary.topByServices.customer.name,
+        servicesTaken: topCustomersSummary.topByServices.metric ?? topCustomersSummary.topByServices.customer.servicesTaken ?? 0,
+      }
+    : null;
+
+  const top5Customers = topCustomersListResponse?.data ?? [];
+  const top5Services = dashboardData?.topServices ?? [];
+
   return (
     <div className="dash-container">
       {/* Top Header with Greeting, Branch, and Quick Filters */}
@@ -220,7 +293,22 @@ export default function PremiumDashboardPage() {
         expensesByPaymentMethod={dashboardData?.paymentMethodBreakdown?.expenses}
       />
 
-      {/* Row 2: Financial overview and inventory */}
+      {/* Row 2: Performance Highlights Section */}
+      <PerformanceHighlightsSection
+        topEmployeeRevenue={topEmployeeRevenue}
+        topEmployeeServices={topEmployeeServices}
+        topCustomerSpending={topCustomerSpending}
+        topCustomerActive={topCustomerActive}
+      />
+
+      {/* Row 3: Top 5 Sections (Employees, Customers, Services) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Top5EmployeesCard employees={topEmployeesList} />
+        <Top5CustomersCard customers={top5Customers} />
+        <Top5ServicesCard services={top5Services} />
+      </div>
+
+      {/* Row 4: Financial overview and inventory */}
       <div className="dash-row-2">
         <FinancialOverviewChart
           data={financials?.weeklyComparison}
@@ -230,7 +318,7 @@ export default function PremiumDashboardPage() {
         <InventoryOverviewCard data={inventoryOverview} />
       </div>
 
-      {/* Row 3: Appointment overview and employee loans */}
+      {/* Row 5: Appointment overview and employee loans */}
       <div className="dash-row-4">
         <AppointmentOverviewCard
           data={appointmentOverview}
@@ -240,7 +328,7 @@ export default function PremiumDashboardPage() {
         {isLoansFeatureEnabled && <EmployeeLoansCard data={employeeLoans} />}
       </div>
 
-      {/* Row 4: Recent appointments, employee loans, recent transactions */}
+      {/* Row 6: Recent appointments and recent transactions */}
       <div className="dash-row-3">
         <RecentAppointmentsCard appointments={dashboardData?.upcomingAppointments} />
         <RecentTransactionsCard transactions={recentTransactions} />

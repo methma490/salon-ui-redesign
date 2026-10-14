@@ -3381,6 +3381,7 @@
   right: auto !important;
   bottom: auto !important;
   transform: translate(-50%, -50%) !important;
+  translate: -50% -50% !important;
   --tw-translate-x: -50% !important;
   --tw-translate-y: -50% !important;
   width: calc(100vw - 2rem) !important;
@@ -3426,9 +3427,9 @@
 }
 
 .pos-new-customer-modal .pos-field input:focus {
-  border-color: var(--brand-primary, #0d5c3d) !important;
+  border-color: var(--brand-primary, #7c3aed) !important;
   outline: none !important;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-primary, #0d5c3d) 20%, transparent) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand-primary, #7c3aed) 20%, transparent) !important;
 }
 
 .pos-new-customer-modal .pos-customer-submit {
@@ -3437,6 +3438,6 @@
   font-weight: 700 !important;
   border-radius: 0.5rem !important;
   margin-top: 0.5rem !important;
-  background: var(--brand-primary, #0d5c3d) !important;
-  color: #ffffff !important;
+  background: var(--brand-primary, #7c3aed) !important;
+  color: var(--brand-foreground, #ffffff) !important;
 }

@@ -1630,7 +1630,15 @@ export class SuppliersService {
     grnsTable: string,
   ): Promise<string> {
     const rows = await tx.$queryRawUnsafe<Array<{ maxNum: string | null }>>(
-      `SELECT MAX(NULLIF(regexp_replace(grn_number, '^GRN-', ''), '')::bigint)::text AS "maxNum" FROM ${grnsTable}`,
+      `SELECT MAX(
+        CASE
+          WHEN grn_number ~ '^[A-Za-z]+-[0-9]+$'
+            THEN SUBSTRING(grn_number FROM '[0-9]+$')::bigint
+          WHEN grn_number ~ '[0-9]+$'
+            THEN SUBSTRING(grn_number FROM '[0-9]+$')::bigint
+          ELSE NULL
+        END
+      )::text AS "maxNum" FROM ${grnsTable}`,
     );
     const next = (Number(rows[0]?.maxNum) || 0) + 1;
     return `GRN-${String(next).padStart(6, '0')}`;
@@ -1953,7 +1961,15 @@ export class SuppliersService {
 
     // 6. Generate sequential expense code
     const expCodeRows = await tx.$queryRawUnsafe<Array<{ maxNum: string | null }>>(
-      `SELECT MAX(NULLIF(regexp_replace(code, '^EXP-', ''), '')::bigint)::text AS "maxNum" FROM ${expenses}`,
+      `SELECT MAX(
+        CASE
+          WHEN code ~ '^[A-Za-z]+-[0-9]+$'
+            THEN SUBSTRING(code FROM '[0-9]+$')::bigint
+          WHEN code ~ '[0-9]+$'
+            THEN SUBSTRING(code FROM '[0-9]+$')::bigint
+          ELSE NULL
+        END
+      )::text AS "maxNum" FROM ${expenses}`,
     );
     const nextExpNum = (Number(expCodeRows[0]?.maxNum) || 0) + 1;
     const expCode = `EXP-${String(nextExpNum).padStart(6, '0')}`;

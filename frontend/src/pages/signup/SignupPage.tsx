@@ -42,6 +42,20 @@ export default function SignupPage() {
     return cycleParam?.toUpperCase() === 'YEARLY' ? 'YEARLY' : 'MONTHLY';
   });
 
+  // Handle browser back button: if user is on step 1 or hits browser back from registration,
+  // ensure they are navigated to the website home page instead of an unexpected internal URL.
+  useEffect(() => {
+    const handlePopState = () => {
+      // If user presses browser back button, navigate cleanly to marketing website home
+      window.location.href = websiteHomeUrl();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
   const plan = useMemo(() => {
     if (!planId || !plans.length) return undefined;
     const trimmed = planId.trim();
@@ -251,38 +265,39 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen bg-slate-50/60 text-slate-900 antialiased">
       {/* ── Top Ribbon Navigation ── */}
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-slate-200/80 bg-white/95 px-4 backdrop-blur-md md:px-8">
-        <div className="flex items-center gap-4">
+      <header className="sticky top-0 z-30 flex min-h-14 py-2.5 items-center justify-between gap-2 border-b border-slate-200/80 bg-white/95 px-3 sm:px-6 backdrop-blur-md md:px-8">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <Button
             asChild
             variant="ghost"
             size="sm"
-            className="h-8 gap-1.5 rounded-lg px-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+            className="h-8 gap-1 rounded-lg px-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900"
           >
             <a href={websitePricingUrl()}>
-              <ArrowLeft className="h-4 w-4" />
-              <span>Plans</span>
+              <ArrowLeft className="h-4 w-4 shrink-0" />
+              <span className="text-xs font-semibold">Plans</span>
             </a>
           </Button>
 
-          <a href={websiteHomeUrl()} className="flex items-center gap-2.5">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-white shadow-sm">
+          <a href={websiteHomeUrl()} className="flex items-center gap-2">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary text-white shadow-sm">
               <Scissors className="h-4 w-4" />
             </span>
-            <span className="text-sm font-bold tracking-tight text-slate-900">
+            <span className="hidden sm:inline-block text-sm font-bold tracking-tight text-slate-900 truncate max-w-[120px] md:max-w-none">
               Dart Smart Salon
             </span>
           </a>
         </div>
 
         {plan && (
-          <div className="flex items-center gap-1.5 rounded-full border border-purple-200/80 bg-purple-50/80 px-3 py-1 text-xs font-semibold text-purple-900 shadow-sm">
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
-            <span>{plan.name}</span>
-            <span className="text-purple-400">·</span>
-            <span className="font-bold text-primary">
-              {formatPrice(activePlanPrice?.price ?? plan.price, activePlanPrice?.currency ?? plan.currency)} / {billingCycleLabel(selectedCycle)}
+          <div className="flex items-center gap-1.5 rounded-full border border-purple-200/80 bg-purple-50/80 px-2.5 py-1 text-[11px] sm:text-xs font-semibold text-purple-900 shadow-sm shrink-0">
+            <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary shrink-0" />
+            <span className="font-bold text-primary truncate max-w-[75px] sm:max-w-none">{plan.name}</span>
+            <span className="text-purple-300">·</span>
+            <span className="font-bold text-primary font-mono whitespace-nowrap">
+              {formatPrice(activePlanPrice?.price ?? plan.price, activePlanPrice?.currency ?? plan.currency)}
             </span>
+            <span className="hidden xs:inline text-purple-600">/{selectedCycle === 'YEARLY' ? 'yr' : 'mo'}</span>
           </div>
         )}
       </header>

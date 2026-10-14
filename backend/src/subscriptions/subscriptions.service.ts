@@ -1102,29 +1102,62 @@ export class SubscriptionsService {
           tenant: { select: { id: true, name: true, code: true, email: true, status: true } },
           plan: { select: { id: true, code: true, name: true } },
           planPrice: { select: { billingCycle: true, trialDays: true } },
+          addOns: {
+            where: {
+              status: {
+                in: [SubscriptionAddOnStatus.ACTIVE, SubscriptionAddOnStatus.CANCEL_AT_PERIOD_END],
+              },
+            },
+            select: {
+              id: true,
+              featureId: true,
+              recurringAmount: true,
+              currency: true,
+              status: true,
+              cancelAtPeriodEnd: true,
+            },
+          },
         },
       }),
       this.prisma.subscription.count({ where }),
     ]);
 
     return buildPaginatedResponse(
-      data.map((sub) => ({
-        id: sub.id,
-        tenantId: sub.tenantId,
-        tenant: sub.tenant,
-        plan: sub.plan,
-        status: sub.status,
-        billingCycle: sub.billingCycle,
-        price: sub.price,
-        currency: sub.currency,
-        startDate: sub.startDate,
-        endDate: sub.endDate,
-        trialStart: sub.trialStart,
-        trialEnd: sub.trialEnd,
-        nextBillingDate: sub.nextBillingDate,
-        cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
-        createdAt: sub.createdAt,
-      })),
+      data.map((sub) => {
+        const totals = calculateSubscriptionRecurringTotals(
+          sub.price,
+          (sub.addOns ?? []).map((a) => ({
+            featureId: a.featureId,
+            status: a.status,
+            recurringAmount: a.recurringAmount,
+            currency: a.currency,
+            cancelAtPeriodEnd: a.cancelAtPeriodEnd,
+          })),
+          sub.currency,
+        );
+
+        return {
+          id: sub.id,
+          tenantId: sub.tenantId,
+          tenant: sub.tenant,
+          plan: sub.plan,
+          status: sub.status,
+          billingCycle: sub.billingCycle,
+          price: sub.price,
+          currency: sub.currency,
+          startDate: sub.startDate,
+          endDate: sub.endDate,
+          trialStart: sub.trialStart,
+          trialEnd: sub.trialEnd,
+          nextBillingDate: sub.nextBillingDate,
+          cancelAtPeriodEnd: sub.cancelAtPeriodEnd,
+          createdAt: sub.createdAt,
+          totals,
+          activeAddonsCount: (sub.addOns ?? []).filter(
+            (a) => a.status === SubscriptionAddOnStatus.ACTIVE,
+          ).length,
+        };
+      }),
       total,
       page,
       limit,

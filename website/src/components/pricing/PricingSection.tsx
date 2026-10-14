@@ -74,7 +74,7 @@ export function PricingSection({
         aria-hidden
       />
 
-      <div className="relative z-10 section-container max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="relative z-10 section-container max-w-6xl mx-auto px-3.5 sm:px-6 lg:px-8">
         {/* Top Segmented Pill Toggle matching reference */}
         <div className="flex justify-center mb-10 sm:mb-12">
           <div

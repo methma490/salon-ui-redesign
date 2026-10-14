@@ -156,7 +156,7 @@ export default function QuotationFormPage() {
     queryKey: ['pos-performers', branchId],
     queryFn: async () => {
       const res = await tenantApi.pos.getPerformers({ branchId });
-      return res.performers;
+      return Array.isArray(res?.performers) ? res.performers : [];
     },
     enabled: !!branchId,
   });
@@ -545,7 +545,7 @@ export default function QuotationFormPage() {
                                   <SelectValue placeholder="Optional" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {performers.map((p) => (
+                                  {(Array.isArray(performers) ? performers : []).map((p) => (
                                     <SelectItem key={p.id} value={p.id}>
                                       {p.name}
                                     </SelectItem>

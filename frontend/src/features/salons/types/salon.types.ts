@@ -10,6 +10,20 @@ export interface SalonSubscriptionSummary {
   startDate: string | null;
   endDate: string | null;
   featureCodes: string[];
+  activeAddonsCount?: number;
+  totals?: {
+    basePlanPrice: number;
+    activeAddonsTotal: number;
+    activeRenewingAddonsTotal?: number;
+    scheduledCancellationAddonsTotal?: number;
+    pendingAddonsTotal: number;
+    currentRecurringTotal: number;
+    currentServiceTotal?: number;
+    nextRenewalTotal?: number;
+    projectedRecurringTotal: number;
+    projectedRenewalTotal?: number;
+    currency: string;
+  };
 }
 
 export interface AuthUser {

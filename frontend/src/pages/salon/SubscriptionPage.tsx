@@ -877,12 +877,32 @@ export default function SubscriptionPage() {
                 </div>
 
                 <div className="sub-detail-item">
-                  <dt>Subscription Price</dt>
+                  <dt>Base Plan Price</dt>
                   <dd>
                     {formatAmount(subscription.price, subscription.currency)} /{' '}
                     {billingCycleLabel(subscription.billingCycle)}
                   </dd>
                 </div>
+
+                {subscription.totals && subscription.totals.activeAddonsTotal > 0 && (
+                  <>
+                    <div className="sub-detail-item">
+                      <dt>Active Add-ons</dt>
+                      <dd style={{ color: '#2563eb' }}>
+                        + {formatAmount(subscription.totals.activeAddonsTotal, subscription.currency)} /{' '}
+                        {billingCycleLabel(subscription.billingCycle)}
+                      </dd>
+                    </div>
+
+                    <div className="sub-detail-item">
+                      <dt>Next Renewal Total</dt>
+                      <dd style={{ color: '#16a34a', fontWeight: 700 }}>
+                        {formatAmount(subscription.totals.nextRenewalTotal, subscription.currency)} /{' '}
+                        {billingCycleLabel(subscription.billingCycle)}
+                      </dd>
+                    </div>
+                  </>
+                )}
 
                 {subscription.trialStart && (
                   <div className="sub-detail-item">
@@ -1047,10 +1067,10 @@ export default function SubscriptionPage() {
                   {checkoutLoading
                     ? 'Redirecting…'
                     : subscription.status === 'SUSPENDED' || subscription.status === 'EXPIRED'
-                      ? 'Pay Now / Renew'
+                      ? `Pay Now / Renew (${formatAmount(subscription.totals?.nextRenewalTotal ?? subscription.price, subscription.currency)})`
                       : subscription.pendingPlanPrice
                         ? `Renew (${formatAmount(subscription.pendingPlanPrice.price, subscription.pendingPlanPrice.currency)})`
-                        : 'Renew Subscription'}
+                        : `Renew Subscription (${formatAmount(subscription.totals?.nextRenewalTotal ?? subscription.price, subscription.currency)})`}
 
                 </button>
 

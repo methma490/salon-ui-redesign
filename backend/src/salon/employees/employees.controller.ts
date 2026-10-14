@@ -25,6 +25,8 @@ import { FeatureGuard } from '../../tenant/guards/feature.guard';
 import { TenantContext } from '../../tenant/interfaces/tenant-context.interface';
 import {
   CreateEmployeeDto,
+  EmployeePerformanceDetailQueryDto,
+  EmployeePerformanceQueryDto,
   ListEmployeesQueryDto,
   UpdateEmployeeDto,
   UpdateEmployeeStatusDto,
@@ -41,6 +43,26 @@ export class EmployeesController {
   list(@CurrentTenant() tenant: TenantContext, @Query() query: ListEmployeesQueryDto) {
     return this.employeesService.list(tenant.schemaName, query);
   }
+
+  @Get('performance')
+  @RequirePermission('EMPLOYEE_VIEW')
+  getPerformance(
+    @CurrentTenant() tenant: TenantContext,
+    @Query() query: EmployeePerformanceQueryDto,
+  ) {
+    return this.employeesService.getPerformance(tenant.schemaName, query);
+  }
+
+  @Get(':id/performance')
+  @RequirePermission('EMPLOYEE_VIEW')
+  getEmployeePerformanceDetail(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id') id: string,
+    @Query() query: EmployeePerformanceDetailQueryDto,
+  ) {
+    return this.employeesService.getEmployeePerformanceDetail(tenant.schemaName, id, query);
+  }
+
 
   @Get('assignable-roles')
   @UseGuards(FeatureGuard)

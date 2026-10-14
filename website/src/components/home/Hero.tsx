@@ -232,10 +232,10 @@ export function Hero() {
               </div>
 
               {/* ── Floating Upper Right Card: Revenue Analytics Preview ── */}
-              <div className="absolute top-16 sm:top-18 -right-3 sm:-right-6 z-30 animate-float-gentle">
-                <div className="glass-card rounded-2xl p-3 sm:p-3.5 flex items-center gap-3 border border-[#DDD6FE]/80 shadow-xl shadow-purple-900/10">
-                  <div className="flex size-9 sm:size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#7C3AED] to-[#D946EF] text-white shadow-sm shadow-purple-500/25">
-                    <TrendingUp className="size-4.5 sm:size-5" />
+              <div className="hidden xs:block absolute top-12 sm:top-18 right-1 sm:-right-6 z-30 animate-float-gentle">
+                <div className="glass-card rounded-2xl p-2.5 sm:p-3.5 flex items-center gap-2.5 sm:gap-3 border border-[#DDD6FE]/80 shadow-xl shadow-purple-900/10 backdrop-blur-md bg-white/95">
+                  <div className="flex size-8 sm:size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#7C3AED] to-[#D946EF] text-white shadow-sm shadow-purple-500/25">
+                    <TrendingUp className="size-4 sm:size-5" />
                   </div>
                   <div>
                     <div className="text-xs sm:text-sm font-extrabold text-[#0F172A] leading-tight">

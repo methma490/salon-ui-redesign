@@ -94,10 +94,10 @@ export function PricingCard({ plan, billingCycle }: PricingCardProps) {
 
   return (
     <article
-      className={`relative flex flex-col justify-between rounded-[36px] p-7 sm:p-9 lg:p-10 transition-all duration-300 bg-white ${
+      className={`relative flex flex-col justify-between rounded-3xl sm:rounded-[36px] p-5 xs:p-6 sm:p-9 lg:p-10 w-full max-w-full transition-all duration-300 bg-white box-border ${
         popular
-          ? 'border-[2.5px] border-[#8B5CF6] shadow-[0_25px_60px_-15px_rgba(139,92,246,0.25)] ring-4 ring-[#DDD6FE]/40 z-10'
-          : 'border border-[#E2E8F0] shadow-[0_20px_50px_-20px_rgba(148,163,184,0.35)] hover:border-[#DDD6FE]'
+          ? 'border-[2px] sm:border-[2.5px] border-[#8B5CF6] shadow-[0_20px_50px_-15px_rgba(139,92,246,0.25)] ring-2 sm:ring-4 ring-[#DDD6FE]/40 z-10'
+          : 'border border-[#E2E8F0] shadow-[0_15px_40px_-20px_rgba(148,163,184,0.35)] hover:border-[#DDD6FE]'
       }`}
     >
       {/* Most Popular badge centered on top border */}

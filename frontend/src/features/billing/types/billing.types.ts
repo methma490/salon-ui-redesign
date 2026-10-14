@@ -29,6 +29,20 @@ export interface AdminSubscriptionItem {
   nextBillingDate: string | null;
   cancelAtPeriodEnd: boolean;
   createdAt: string;
+  activeAddonsCount?: number;
+  totals?: {
+    basePlanPrice: number;
+    activeAddonsTotal: number;
+    activeRenewingAddonsTotal?: number;
+    scheduledCancellationAddonsTotal?: number;
+    pendingAddonsTotal: number;
+    currentRecurringTotal: number;
+    currentServiceTotal?: number;
+    nextRenewalTotal?: number;
+    projectedRecurringTotal: number;
+    projectedRenewalTotal?: number;
+    currency: string;
+  };
 }
 
 export interface AdminPaymentItem {

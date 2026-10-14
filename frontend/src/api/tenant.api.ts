@@ -69,6 +69,76 @@ export interface AssignableEmployeeRole {
   permissions: Array<{ code: string; name: string }>;
 }
 
+export interface EmployeePerformance {
+  id: string;
+  name: string;
+  code: string;
+  designation: string | null;
+  photoUrl: string | null;
+  branchId: string;
+  branchName: string;
+  status: string;
+  systemRoles: string[];
+  servicesDone: number;
+  salesGenerated: number;
+  customersServed: number;
+  topService: {
+    name: string;
+    count: number;
+  } | null;
+}
+
+export interface EmployeePerformanceDetail {
+  employee: {
+    id: string;
+    name: string;
+    code: string;
+    designation: string | null;
+    photoUrl: string | null;
+    branchId: string;
+    branchName: string;
+    status: string;
+    systemRoles: string[];
+  };
+  range: {
+    from: string;
+    to: string;
+    preset: string;
+  };
+  kpis: {
+    salesGenerated: number;
+    servicesDone: number;
+    customersServed: number;
+    averageRevenuePerService: number;
+  };
+  topService: {
+    name: string;
+    count: number;
+    revenue: number;
+  } | null;
+  topServices: Array<{
+    serviceId: string;
+    serviceName: string;
+    count: number;
+    revenue: number;
+  }>;
+  dailyTrend: Array<{
+    date: string;
+    sales: number;
+    services: number;
+  }>;
+  recentCompletedServices: Array<{
+    saleId: string;
+    invoiceNumber: string;
+    completedAt: string;
+    customerName: string;
+    serviceName: string;
+    quantity: number;
+    price: number;
+    netAmount: number;
+  }>;
+}
+
 // --- Customers ---
 export interface Customer {
   id: string;
@@ -80,6 +150,99 @@ export interface Customer {
   notes: string | null;
   status: string;
   createdAt: string;
+}
+
+export interface CustomerLoyaltyItem {
+  id: string;
+  code: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  birthday: string | null;
+  notes: string | null;
+  status: string;
+  createdAt: string;
+  visitCount: number;
+  servicesTaken: number;
+  totalSpend: number;
+  lastVisit: string | null;
+  favouriteService: {
+    name: string;
+    count: number;
+  } | null;
+}
+
+export interface TopCustomersSummary {
+  topByVisits: {
+    customer: CustomerLoyaltyItem | null;
+    metric: number;
+  };
+  topByServices: {
+    customer: CustomerLoyaltyItem | null;
+    metric: number;
+  };
+  topBySpending: {
+    customer: CustomerLoyaltyItem | null;
+    metric: number;
+  };
+}
+
+export interface CustomerDetailAnalytics {
+  customer: {
+    id: string;
+    code: string;
+    name: string;
+    phone: string | null;
+    email: string | null;
+    birthday: string | null;
+    notes: string | null;
+    status: string;
+    createdAt: string;
+  };
+  range: {
+    from: string | null;
+    to: string | null;
+    preset: string;
+  };
+  kpis: {
+    totalVisits: number;
+    totalServicesTaken: number;
+    totalSpend: number;
+    averageSpendPerVisit: number;
+    lastVisit: string | null;
+  };
+  favouriteService: {
+    id: string;
+    name: string;
+    count: number;
+    revenue: number;
+  } | null;
+  favouriteEmployee: {
+    id: string;
+    name: string;
+    count: number;
+  } | null;
+  favouriteServices?: Array<{
+    serviceName: string;
+    count: number;
+    revenue: number;
+  }>;
+  topServices?: Array<{
+    serviceId?: string;
+    serviceName: string;
+    count: number;
+    revenue: number;
+  }>;
+  recentVisits: Array<{
+    saleId: string;
+    invoiceNumber?: string;
+    saleNumber?: string;
+    completedAt?: string;
+    date?: string;
+    branchName?: string;
+    itemCount?: number;
+    total: number;
+  }>;
 }
 
 export interface CustomerBookingHistoryItem {
@@ -931,6 +1094,14 @@ export const tenantApi = {
       api
         .get<PaginatedResponse<Employee> | Employee[]>('/tenant/employees', { params })
         .then((r) => unwrapPaginatedList(r.data)),
+    performance: (params?: Record<string, string | number | undefined>) =>
+      api
+        .get<PaginatedResponse<EmployeePerformance>>('/tenant/employees/performance', { params })
+        .then((r) => r.data),
+    performanceDetail: (id: string, params?: Record<string, string | undefined>) =>
+      api
+        .get<EmployeePerformanceDetail>(`/tenant/employees/${id}/performance`, { params })
+        .then((r) => r.data),
     assignableRoles: () =>
       api
         .get<AssignableEmployeeRole[]>('/tenant/employees/assignable-roles')
@@ -992,6 +1163,18 @@ export const tenantApi = {
       api
         .get<PaginatedResponse<Customer> | Customer[]>('/tenant/customers/search', { params })
         .then((r) => unwrapPaginatedList(r.data)),
+    analytics: (params?: Record<string, string | number | undefined>) =>
+      api
+        .get<PaginatedResponse<CustomerLoyaltyItem>>('/tenant/customers/analytics', { params })
+        .then((r) => r.data),
+    top: (params?: Record<string, string | undefined>) =>
+      api
+        .get<TopCustomersSummary>('/tenant/customers/top', { params })
+        .then((r) => r.data),
+    detailAnalytics: (id: string, params?: Record<string, string | undefined>) =>
+      api
+        .get<CustomerDetailAnalytics>(`/tenant/customers/${id}/analytics`, { params })
+        .then((r) => r.data),
     get: (id: string) => api.get<Customer>(`/tenant/customers/${id}`).then((r) => r.data),
     create: (data: Record<string, unknown>) =>
       api.post<Customer>('/tenant/customers', data).then((r) => r.data),

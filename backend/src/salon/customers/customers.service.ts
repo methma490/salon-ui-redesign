@@ -393,4 +393,515 @@ export class CustomersService {
       return rows;
     });
   }
+
+  // =========================================================================
+  // CUSTOMER LOYALTY & ANALYTICS
+  // =========================================================================
+
+  private resolveCustomerRange(query: { from?: string; to?: string; preset?: string }) {
+    const today = new Date().toISOString().slice(0, 10);
+    const preset = (query.preset ?? 'all_time').toLowerCase();
+
+    if (query.from && query.to) {
+      return { from: query.from.slice(0, 10), to: query.to.slice(0, 10) };
+    }
+
+    if (preset === 'today') {
+      return { from: today, to: today };
+    }
+    if (preset === 'last_30_days' || preset === '30d') {
+      const d = new Date();
+      d.setDate(d.getDate() - 29);
+      return { from: d.toISOString().slice(0, 10), to: today };
+    }
+    if (preset === 'this_month') {
+      const d = new Date();
+      const start = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+      return { from: start, to: today };
+    }
+    if (preset === 'last_month') {
+      const d = new Date();
+      const start = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+      const end = new Date(d.getFullYear(), d.getMonth(), 0);
+      return {
+        from: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-01`,
+        to: `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`,
+      };
+    }
+
+    // Default: all time
+    return { from: '2000-01-01', to: today };
+  }
+
+  async getAnalytics(
+    schemaName: string,
+    query: {
+      from?: string;
+      to?: string;
+      preset?: string;
+      branchId?: string;
+      search?: string;
+      status?: 'ACTIVE' | 'INACTIVE' | 'BLOCKED';
+      sortBy?: 'visits' | 'servicesTaken' | 'totalSpend' | 'name' | 'lastVisit';
+      sortOrder?: 'asc' | 'desc';
+      page?: number;
+      limit?: number;
+    },
+  ) {
+    const range = this.resolveCustomerRange(query);
+    const customers = tenantTable(schemaName, 'customers');
+    const sales = tenantTable(schemaName, 'sales');
+    const saleItems = tenantTable(schemaName, 'sale_items');
+    const services = tenantTable(schemaName, 'services');
+    const { page, limit, offset } = resolvePagination(query.page, query.limit ?? 10);
+
+    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      const conditions: string[] = ['1=1'];
+      const params: unknown[] = [];
+      let idx = 1;
+
+      if (query.status) {
+        conditions.push(`c.status::text = $${idx++}`);
+        params.push(query.status);
+      }
+      if (query.search?.trim()) {
+        const search = query.search.trim();
+        const digits = search.replace(/\D/g, '');
+        if (digits.length >= 4) {
+          conditions.push(
+            `(c.name ILIKE $${idx} OR c.phone ILIKE $${idx} OR c.email ILIKE $${idx} OR RIGHT(REGEXP_REPLACE(c.phone, '\\D', '', 'g'), ${Math.min(digits.length, 9)}) ILIKE $${idx + 1})`,
+          );
+          params.push(`%${search}%`, `%${digits}%`);
+          idx += 2;
+        } else {
+          conditions.push(`(c.name ILIKE $${idx} OR c.phone ILIKE $${idx} OR c.email ILIKE $${idx})`);
+          params.push(`%${search}%`);
+          idx++;
+        }
+      }
+
+      const whereClause = conditions.join(' AND ');
+
+      // Total customers matching search/status filter
+      const countRows = await tx.$queryRawUnsafe<Array<{ count: bigint }>>(
+        `SELECT COUNT(*)::bigint AS count FROM ${customers} c WHERE ${whereClause}`,
+        ...params,
+      );
+      const total = Number(countRows[0]?.count ?? 0);
+
+      const dateStartIdx = idx;
+      const allParams = [...params, range.from, range.to];
+      idx += 2;
+
+      let branchFilter = '';
+      if (query.branchId && query.branchId !== 'all') {
+        branchFilter = `AND s.branch_id = $${idx++}::uuid`;
+        allParams.push(query.branchId);
+      }
+
+      const dir = query.sortOrder === 'asc' ? 'ASC' : 'DESC';
+      let orderClause = `COALESCE(cs.total_spend, 0) DESC, c.name ASC`;
+      if (query.sortBy === 'visits') {
+        orderClause = `COALESCE(cs.visits, 0) ${dir}, c.name ASC`;
+      } else if (query.sortBy === 'servicesTaken') {
+        orderClause = `COALESCE(csv.services_taken, 0) ${dir}, c.name ASC`;
+      } else if (query.sortBy === 'totalSpend') {
+        orderClause = `COALESCE(cs.total_spend, 0) ${dir}, c.name ASC`;
+      } else if (query.sortBy === 'name') {
+        orderClause = `c.name ${dir}`;
+      } else if (query.sortBy === 'lastVisit') {
+        orderClause = `cs.last_visit ${dir} NULLS LAST, c.name ASC`;
+      }
+
+      const rows = await tx.$queryRawUnsafe<
+        Array<{
+          id: string;
+          code: string;
+          name: string;
+          phone: string | null;
+          email: string | null;
+          birthday: string | null;
+          notes: string | null;
+          status: string;
+          createdAt: Date;
+          visits: number;
+          servicesTaken: number;
+          totalSpend: number;
+          lastVisit: string | null;
+          favouriteService: string | null;
+          favouriteServiceCount: number;
+        }>
+      >(
+        `WITH cust_sales AS (
+           SELECT
+             s.customer_id,
+             COUNT(DISTINCT s.id)::int AS visits,
+             COALESCE(SUM(GREATEST(0, s.total - COALESCE(s.refunded_amount, 0))), 0)::float AS total_spend,
+             MAX(s.created_at)::text AS last_visit
+           FROM ${sales} s
+           WHERE s.customer_id IS NOT NULL
+             AND s.status::text = 'COMPLETED'
+             AND s.created_at >= $${dateStartIdx}::date
+             AND s.created_at < ($${dateStartIdx + 1}::date + INTERVAL '1 day')
+             ${branchFilter}
+           GROUP BY s.customer_id
+         ),
+         cust_services AS (
+           SELECT
+             s.customer_id,
+             COUNT(si.id)::int AS services_taken
+           FROM ${saleItems} si
+           INNER JOIN ${sales} s ON s.id = si.sale_id
+           WHERE s.customer_id IS NOT NULL
+             AND s.status::text = 'COMPLETED'
+             AND si.item_type = 'service'
+             AND s.created_at >= $${dateStartIdx}::date
+             AND s.created_at < ($${dateStartIdx + 1}::date + INTERVAL '1 day')
+             ${branchFilter}
+           GROUP BY s.customer_id
+         ),
+         cust_fav_ranks AS (
+           SELECT
+             s.customer_id,
+             COALESCE(svc.name, 'Service') AS service_name,
+             COUNT(*)::int AS svc_count,
+             COALESCE(SUM(si.total), 0)::float AS svc_revenue,
+             ROW_NUMBER() OVER (
+               PARTITION BY s.customer_id
+               ORDER BY COUNT(*) DESC, COALESCE(SUM(si.total), 0) DESC, COALESCE(svc.name, 'Service') ASC
+             ) AS rank
+           FROM ${saleItems} si
+           INNER JOIN ${sales} s ON s.id = si.sale_id
+           LEFT JOIN ${services} svc ON svc.id = si.service_id
+           WHERE s.customer_id IS NOT NULL
+             AND s.status::text = 'COMPLETED'
+             AND si.item_type = 'service'
+             AND s.created_at >= $${dateStartIdx}::date
+             AND s.created_at < ($${dateStartIdx + 1}::date + INTERVAL '1 day')
+             ${branchFilter}
+           GROUP BY s.customer_id, svc.name
+         )
+         SELECT
+           c.id,
+           c.code,
+           c.name,
+           c.phone,
+           c.email,
+           c.birthday::text AS birthday,
+           c.notes,
+           c.status::text AS status,
+           c.created_at AS "createdAt",
+           COALESCE(cs.visits, 0)::int AS visits,
+           COALESCE(csv.services_taken, 0)::int AS "servicesTaken",
+           COALESCE(cs.total_spend, 0)::float AS "totalSpend",
+           cs.last_visit AS "lastVisit",
+           cfr.service_name AS "favouriteService",
+           COALESCE(cfr.svc_count, 0)::int AS "favouriteServiceCount"
+         FROM ${customers} c
+         LEFT JOIN cust_sales cs ON cs.customer_id = c.id
+         LEFT JOIN cust_services csv ON csv.customer_id = c.id
+         LEFT JOIN cust_fav_ranks cfr ON cfr.customer_id = c.id AND cfr.rank = 1
+         ORDER BY ${orderClause}
+         LIMIT $${idx} OFFSET $${idx + 1}`,
+        ...allParams,
+        limit,
+        offset,
+      );
+
+      return {
+        range,
+        ...buildPaginatedResponse(rows, total, page, limit),
+      };
+    });
+  }
+
+  async getTopCustomers(
+    schemaName: string,
+    query: {
+      from?: string;
+      to?: string;
+      preset?: string;
+      branchId?: string;
+    },
+  ) {
+    const range = this.resolveCustomerRange(query);
+    const customers = tenantTable(schemaName, 'customers');
+    const sales = tenantTable(schemaName, 'sales');
+    const saleItems = tenantTable(schemaName, 'sale_items');
+
+    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      const params: unknown[] = [range.from, range.to];
+      let branchFilter = '';
+      if (query.branchId && query.branchId !== 'all') {
+        branchFilter = `AND s.branch_id = $3::uuid`;
+        params.push(query.branchId);
+      }
+
+      // Top by visits
+      const topByVisitsRows = await tx.$queryRawUnsafe<
+        Array<{
+          customerId: string;
+          customerName: string;
+          customerPhone: string | null;
+          visits: number;
+        }>
+      >(
+        `SELECT
+           c.id AS "customerId",
+           c.name AS "customerName",
+           c.phone AS "customerPhone",
+           COUNT(DISTINCT s.id)::int AS visits
+         FROM ${sales} s
+         INNER JOIN ${customers} c ON c.id = s.customer_id
+         WHERE s.status::text = 'COMPLETED'
+           AND s.created_at >= $1::date
+           AND s.created_at < ($2::date + INTERVAL '1 day')
+           ${branchFilter}
+         GROUP BY c.id, c.name, c.phone
+         ORDER BY visits DESC, c.name ASC
+         LIMIT 1`,
+        ...params,
+      );
+
+      // Top by services taken
+      const topByServicesRows = await tx.$queryRawUnsafe<
+        Array<{
+          customerId: string;
+          customerName: string;
+          customerPhone: string | null;
+          servicesTaken: number;
+        }>
+      >(
+        `SELECT
+           c.id AS "customerId",
+           c.name AS "customerName",
+           c.phone AS "customerPhone",
+           COUNT(si.id)::int AS "servicesTaken"
+         FROM ${saleItems} si
+         INNER JOIN ${sales} s ON s.id = si.sale_id
+         INNER JOIN ${customers} c ON c.id = s.customer_id
+         WHERE s.status::text = 'COMPLETED'
+           AND si.item_type = 'service'
+           AND s.created_at >= $1::date
+           AND s.created_at < ($2::date + INTERVAL '1 day')
+           ${branchFilter}
+         GROUP BY c.id, c.name, c.phone
+         ORDER BY "servicesTaken" DESC, c.name ASC
+         LIMIT 1`,
+        ...params,
+      );
+
+      // Top by spending
+      const topBySpendingRows = await tx.$queryRawUnsafe<
+        Array<{
+          customerId: string;
+          customerName: string;
+          customerPhone: string | null;
+          totalSpend: number;
+        }>
+      >(
+        `SELECT
+           c.id AS "customerId",
+           c.name AS "customerName",
+           c.phone AS "customerPhone",
+           COALESCE(SUM(GREATEST(0, s.total - COALESCE(s.refunded_amount, 0))), 0)::float AS "totalSpend"
+         FROM ${sales} s
+         INNER JOIN ${customers} c ON c.id = s.customer_id
+         WHERE s.status::text = 'COMPLETED'
+           AND s.created_at >= $1::date
+           AND s.created_at < ($2::date + INTERVAL '1 day')
+           ${branchFilter}
+         GROUP BY c.id, c.name, c.phone
+         ORDER BY "totalSpend" DESC, c.name ASC
+         LIMIT 1`,
+        ...params,
+      );
+
+      return {
+        range,
+        topByVisits: topByVisitsRows[0] ?? null,
+        topByServices: topByServicesRows[0] ?? null,
+        topBySpending: topBySpendingRows[0] ?? null,
+      };
+    });
+  }
+
+  async getCustomerDetailAnalytics(
+    schemaName: string,
+    customerId: string,
+    query: {
+      from?: string;
+      to?: string;
+      preset?: string;
+      branchId?: string;
+    },
+  ) {
+    const range = this.resolveCustomerRange(query);
+    const customers = tenantTable(schemaName, 'customers');
+    const sales = tenantTable(schemaName, 'sales');
+    const saleItems = tenantTable(schemaName, 'sale_items');
+    const saleItemEmployees = tenantTable(schemaName, 'sale_item_employees');
+    const employees = tenantTable(schemaName, 'employees');
+    const services = tenantTable(schemaName, 'services');
+
+    return this.tenantSchemaService.withTenantSchema(schemaName, async ({ tx }) => {
+      const custRows = await tx.$queryRawUnsafe<Array<CustomerRecord>>(
+        `${this.customerSelectSql(customers)} WHERE id = $1::uuid LIMIT 1`,
+        customerId,
+      );
+
+      if (!custRows[0]) {
+        throw new NotFoundException('Customer not found');
+      }
+
+      const cust = custRows[0];
+      const params: unknown[] = [customerId, range.from, range.to];
+      let branchFilter = '';
+      if (query.branchId && query.branchId !== 'all') {
+        branchFilter = `AND s.branch_id = $4::uuid`;
+        params.push(query.branchId);
+      }
+
+      // 1. Core KPIs
+      const kpiRows = await tx.$queryRawUnsafe<
+        Array<{
+          visits: number;
+          totalSpend: number;
+          lastVisit: string | null;
+        }>
+      >(
+        `SELECT
+           COUNT(DISTINCT s.id)::int AS visits,
+           COALESCE(SUM(GREATEST(0, s.total - COALESCE(s.refunded_amount, 0))), 0)::float AS "totalSpend",
+           MAX(s.created_at)::text AS "lastVisit"
+         FROM ${sales} s
+         WHERE s.customer_id = $1::uuid
+           AND s.status::text = 'COMPLETED'
+           AND s.created_at >= $2::date
+           AND s.created_at < ($3::date + INTERVAL '1 day')
+           ${branchFilter}`,
+        ...params,
+      );
+
+      const servicesRows = await tx.$queryRawUnsafe<Array<{ servicesTaken: number }>>(
+        `SELECT COUNT(si.id)::int AS "servicesTaken"
+         FROM ${saleItems} si
+         INNER JOIN ${sales} s ON s.id = si.sale_id
+         WHERE s.customer_id = $1::uuid
+           AND s.status::text = 'COMPLETED'
+           AND si.item_type = 'service'
+           AND s.created_at >= $2::date
+           AND s.created_at < ($3::date + INTERVAL '1 day')
+           ${branchFilter}`,
+        ...params,
+      );
+
+      const visits = Number(kpiRows[0]?.visits ?? 0);
+      const totalSpend = Number(kpiRows[0]?.totalSpend ?? 0);
+      const servicesTaken = Number(servicesRows[0]?.servicesTaken ?? 0);
+      const averageSpendPerVisit =
+        visits > 0 ? Math.round((totalSpend / visits) * 100) / 100 : 0;
+      const lastVisit = kpiRows[0]?.lastVisit ?? null;
+
+      // 2. Favourite Service
+      const favServiceRows = await tx.$queryRawUnsafe<
+        Array<{
+          serviceName: string;
+          count: number;
+          revenue: number;
+        }>
+      >(
+        `SELECT
+           COALESCE(svc.name, 'Service') AS "serviceName",
+           COUNT(*)::int AS count,
+           COALESCE(SUM(si.total), 0)::float AS revenue
+         FROM ${saleItems} si
+         INNER JOIN ${sales} s ON s.id = si.sale_id
+         LEFT JOIN ${services} svc ON svc.id = si.service_id
+         WHERE s.customer_id = $1::uuid
+           AND s.status::text = 'COMPLETED'
+           AND si.item_type = 'service'
+           AND s.created_at >= $2::date
+           AND s.created_at < ($3::date + INTERVAL '1 day')
+           ${branchFilter}
+         GROUP BY svc.name
+         ORDER BY count DESC, revenue DESC, svc.name ASC
+         LIMIT 5`,
+        ...params,
+      );
+
+      // 3. Favourite Employee / Stylist
+      const favEmployeeRows = await tx.$queryRawUnsafe<
+        Array<{
+          employeeId: string;
+          employeeName: string;
+          count: number;
+        }>
+      >(
+        `SELECT
+           e.id AS "employeeId",
+           e.name AS "employeeName",
+           COUNT(*)::int AS count
+         FROM ${saleItemEmployees} sie
+         INNER JOIN ${saleItems} si ON si.id = sie.sale_item_id AND si.item_type = 'service'
+         INNER JOIN ${sales} s ON s.id = si.sale_id
+         INNER JOIN ${employees} e ON e.id = sie.employee_id
+         WHERE s.customer_id = $1::uuid
+           AND s.status::text = 'COMPLETED'
+           AND s.created_at >= $2::date
+           AND s.created_at < ($3::date + INTERVAL '1 day')
+           ${branchFilter}
+         GROUP BY e.id, e.name
+         ORDER BY count DESC, e.name ASC
+         LIMIT 1`,
+        ...params,
+      );
+
+      // 4. Recent visits / transactions
+      const recentVisits = await tx.$queryRawUnsafe<
+        Array<{
+          saleId: string;
+          saleNumber: string;
+          date: string;
+          total: number;
+          status: string;
+        }>
+      >(
+        `SELECT
+           s.id AS "saleId",
+           s.sale_number AS "saleNumber",
+           s.created_at::text AS date,
+           s.total::float AS total,
+           s.status::text AS status
+         FROM ${sales} s
+         WHERE s.customer_id = $1::uuid
+           AND s.status::text = 'COMPLETED'
+           AND s.created_at >= $2::date
+           AND s.created_at < ($3::date + INTERVAL '1 day')
+           ${branchFilter}
+         ORDER BY s.created_at DESC
+         LIMIT 10`,
+        ...params,
+      );
+
+      return {
+        customer: cust,
+        range,
+        kpis: {
+          totalVisits: visits,
+          totalServicesTaken: servicesTaken,
+          totalSpend,
+          averageSpendPerVisit,
+          lastVisit,
+          favouriteService: favServiceRows[0]?.serviceName ?? null,
+          favouriteEmployee: favEmployeeRows[0]?.employeeName ?? null,
+        },
+        favouriteServices: favServiceRows,
+        topServices: favServiceRows,
+        favouriteEmployee: favEmployeeRows[0] ?? null,
+        recentVisits,
+      };
+    });
+  }
 }
+

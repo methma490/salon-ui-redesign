@@ -11,6 +11,8 @@ import { TenantContextGuard } from '../../tenant/guards/tenant-context.guard';
 import { TenantContext } from '../../tenant/interfaces/tenant-context.interface';
 import {
   CreateCustomerDto,
+  CustomerAnalyticsDetailQueryDto,
+  CustomerAnalyticsQueryDto,
   ListCustomersQueryDto,
   UpdateCustomerDto,
   UpdateCustomerStatusDto,
@@ -33,6 +35,28 @@ export class CustomersController {
   @RequirePermission('CUSTOMER_VIEW')
   search(@CurrentTenant() tenant: TenantContext, @Query() query: ListCustomersQueryDto) {
     return this.customersService.list(tenant.schemaName, { ...query, summary: true });
+  }
+
+  @Get('analytics')
+  @RequirePermission('CUSTOMER_VIEW')
+  analytics(@CurrentTenant() tenant: TenantContext, @Query() query: CustomerAnalyticsQueryDto) {
+    return this.customersService.getAnalytics(tenant.schemaName, query);
+  }
+
+  @Get('top')
+  @RequirePermission('CUSTOMER_VIEW')
+  top(@CurrentTenant() tenant: TenantContext, @Query() query: CustomerAnalyticsQueryDto) {
+    return this.customersService.getTopCustomers(tenant.schemaName, query);
+  }
+
+  @Get(':id/analytics')
+  @RequirePermission('CUSTOMER_VIEW')
+  customerAnalytics(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id') id: string,
+    @Query() query: CustomerAnalyticsDetailQueryDto,
+  ) {
+    return this.customersService.getCustomerDetailAnalytics(tenant.schemaName, id, query);
   }
 
   @Get(':id')

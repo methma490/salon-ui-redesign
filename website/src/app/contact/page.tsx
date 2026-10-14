@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
-import { Phone, Mail, Clock, MessageSquare, Send } from 'lucide-react';
+import { Phone, Mail, Clock, MessageSquare } from 'lucide-react';
 import { MarketingShell } from '@/components/layout/MarketingShell';
+import { ContactForm } from '@/components/home/ContactForm';
 import {
   CONTACT_EMAIL,
   CONTACT_PHONE,
@@ -117,89 +118,9 @@ export default function ContactPage() {
               </a>
             </div>
 
-            {/* Right Contact Form */}
-            <div className="lg:col-span-7 rounded-3xl border border-[#DDD6FE] bg-white p-6 sm:p-8 shadow-sm">
-              <h2 className="text-xl sm:text-2xl font-bold text-[#0F172A]">
-                Send a Message
-              </h2>
-              <p className="mt-1 text-sm text-[#64748B]">
-                Fill in the details below and we will get back to you right away.
-              </p>
-
-              <form className="mt-6 space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="contact-name" className="block text-xs font-semibold uppercase tracking-wider text-[#0F172A] mb-1.5">
-                      Your Name
-                    </label>
-                    <input
-                      id="contact-name"
-                      type="text"
-                      required
-                      placeholder="e.g. Kasun Fernando"
-                      className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-[#0F172A] outline-none focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20 transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="contact-salon" className="block text-xs font-semibold uppercase tracking-wider text-[#0F172A] mb-1.5">
-                      Salon / Business Name
-                    </label>
-                    <input
-                      id="contact-salon"
-                      type="text"
-                      placeholder="e.g. Glitz Hair Studio"
-                      className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-[#0F172A] outline-none focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20 transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="contact-email" className="block text-xs font-semibold uppercase tracking-wider text-[#0F172A] mb-1.5">
-                      Email Address
-                    </label>
-                    <input
-                      id="contact-email"
-                      type="email"
-                      required
-                      placeholder="you@example.com"
-                      className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-[#0F172A] outline-none focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20 transition-all"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="contact-phone" className="block text-xs font-semibold uppercase tracking-wider text-[#0F172A] mb-1.5">
-                      Phone Number
-                    </label>
-                    <input
-                      id="contact-phone"
-                      type="tel"
-                      placeholder="+94 7X XXX XXXX"
-                      className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-[#0F172A] outline-none focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20 transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="contact-message" className="block text-xs font-semibold uppercase tracking-wider text-[#0F172A] mb-1.5">
-                    How Can We Help You?
-                  </label>
-                  <textarea
-                    id="contact-message"
-                    rows={4}
-                    required
-                    placeholder="Tell us about your salon, staff count, branches, or any specific questions..."
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-[#0F172A] outline-none focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/20 transition-all resize-none"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#7C3AED] to-[#D946EF] text-white px-8 py-3.5 text-sm font-semibold shadow-md shadow-purple-500/20 hover:opacity-95 transition-all active:scale-98 cursor-pointer"
-                >
-                  <span>Send Message</span>
-                  <Send className="size-4" />
-                </button>
-              </form>
+            {/* Right Contact Form with interactive success alert */}
+            <div className="lg:col-span-7">
+              <ContactForm />
             </div>
 
           </div>

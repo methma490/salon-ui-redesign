@@ -85,7 +85,7 @@ export const FAQ_ITEMS = [
   {
     question: 'Where is my data hosted?',
     answer:
-      'Your salon data is securely hosted in its own isolated cloud environment with automatic daily backups and strict encryption.',
+      'Your salon information is stored in a secure, private cloud with daily automatic backups so your appointments, client records, and sales are always safe and accessible 24/7.',
   },
   {
     question: 'How do I migrate from spreadsheets or another tool?',
