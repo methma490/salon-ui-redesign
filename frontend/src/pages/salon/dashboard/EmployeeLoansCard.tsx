@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ChevronRight, Coins } from 'lucide-react';
-import { formatMoneyAmount } from '@/lib/money';
+import { formatMoneyLkr } from '@/lib/money';
 import { resolveUploadUrl } from '@/lib/upload-url';
 import { useTenantTheme } from '@/contexts/TenantThemeContext';
 
@@ -52,7 +52,7 @@ export function EmployeeLoansCard({ data }: EmployeeLoansCardProps) {
           </div>
           <div className="text-right">
             <div className="dash-loans-summary-val">
-              LKR {formatMoneyAmount(totalOutstanding)}
+              {formatMoneyLkr(totalOutstanding)}
             </div>
             <div className="dash-loans-summary-lbl">Total Outstanding</div>
           </div>
@@ -91,7 +91,7 @@ export function EmployeeLoansCard({ data }: EmployeeLoansCardProps) {
 
                 <div className="flex items-center gap-2 shrink-0">
                   <span className="dash-loan-item-amount text-xs">
-                    LKR {formatMoneyAmount(loan.amount)}
+                    {formatMoneyLkr(loan.amount)}
                   </span>
                   <span
                     className={`dash-status-pill ${

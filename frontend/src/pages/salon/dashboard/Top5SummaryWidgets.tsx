@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ChevronRight, Scissors } from 'lucide-react';
 import { formatMoneyAmount } from '@/lib/money';
+import { resolveUploadUrl } from '@/lib/upload-url';
 import { useTenantTheme } from '@/contexts/TenantThemeContext';
 import type { CustomerLoyaltyItem } from '@/api/tenant.api';
 
@@ -48,7 +49,7 @@ export function Top5EmployeesCard({ employees }: Top5EmployeesCardProps) {
             <tr>
               <th style={{ width: '28px' }}>#</th>
               <th>Employee</th>
-              <th style={{ textAlign: 'right' }}>Revenue</th>
+              <th style={{ textAlign: 'right' }}>Revenue (LKR)</th>
               <th style={{ textAlign: 'right' }}>Services</th>
             </tr>
           </thead>
@@ -56,22 +57,27 @@ export function Top5EmployeesCard({ employees }: Top5EmployeesCardProps) {
             {list.length > 0 ? (
               list.slice(0, 5).map((emp, idx) => {
                 const rank = emp.rank || idx + 1;
+                const avatarSrc = resolveUploadUrl(emp.avatarUrl);
                 return (
                   <tr key={emp.id || idx}>
                     <td className="text-xs text-slate-400 font-semibold">{rank}</td>
                     <td>
                       <div className="dash-emp-row">
-                        <div
-                          className="dash-emp-avatar"
-                          style={{ backgroundColor: primaryColor }}
-                        >
-                          {emp.name.charAt(0).toUpperCase()}
-                        </div>
+                        {avatarSrc ? (
+                          <img src={avatarSrc} alt={emp.name} className="dash-emp-avatar" />
+                        ) : (
+                          <div
+                            className="dash-emp-avatar"
+                            style={{ backgroundColor: primaryColor }}
+                          >
+                            {emp.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
                         <span className="dash-emp-name text-xs font-semibold">{emp.name}</span>
                       </div>
                     </td>
                     <td style={{ textAlign: 'right', fontWeight: 700, fontSize: '12px' }}>
-                      LKR {formatMoneyAmount(emp.revenue)}
+                      {formatMoneyAmount(emp.revenue)}
                     </td>
                     <td style={{ textAlign: 'right', fontWeight: 600, fontSize: '12px' }}>
                       {emp.servicesDone}
@@ -134,7 +140,7 @@ export function Top5CustomersCard({ customers }: Top5CustomersCardProps) {
               <th style={{ width: '28px' }}>#</th>
               <th>Customer</th>
               <th style={{ textAlign: 'center' }}>Visits</th>
-              <th style={{ textAlign: 'right' }}>Total Spend</th>
+              <th style={{ textAlign: 'right' }}>Total Spend (LKR)</th>
             </tr>
           </thead>
           <tbody>
@@ -162,7 +168,7 @@ export function Top5CustomersCard({ customers }: Top5CustomersCardProps) {
                       {cust.visitCount ?? 0}
                     </td>
                     <td style={{ textAlign: 'right', fontWeight: 700, fontSize: '12px' }}>
-                      LKR {formatMoneyAmount(cust.totalSpend ?? 0)}
+                      {formatMoneyAmount(cust.totalSpend ?? 0)}
                     </td>
                   </tr>
                 );
@@ -229,7 +235,7 @@ export function Top5ServicesCard({ services }: Top5ServicesCardProps) {
               <th style={{ width: '28px' }}>#</th>
               <th>Service</th>
               <th style={{ textAlign: 'center' }}>Sales</th>
-              <th style={{ textAlign: 'right' }}>Revenue</th>
+              <th style={{ textAlign: 'right' }}>Revenue (LKR)</th>
             </tr>
           </thead>
           <tbody>
@@ -252,7 +258,7 @@ export function Top5ServicesCard({ services }: Top5ServicesCardProps) {
                       {srv.saleCount}
                     </td>
                     <td style={{ textAlign: 'right', fontWeight: 700, fontSize: '12px' }}>
-                      LKR {formatMoneyAmount(srv.revenue)}
+                      {formatMoneyAmount(srv.revenue)}
                     </td>
                   </tr>
                 );

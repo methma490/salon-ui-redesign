@@ -90,16 +90,6 @@ export default function SuperAdminSalonPnLPage() {
     } else if (type === 'this_month') {
       setStartDate(getMonthStartStr());
       setEndDate(today);
-    } else if (type === 'last_month') {
-      const d = new Date();
-      const first = new Date(d.getFullYear(), d.getMonth() - 1, 1).toISOString().slice(0, 10);
-      const last = new Date(d.getFullYear(), d.getMonth(), 0).toISOString().slice(0, 10);
-      setStartDate(first);
-      setEndDate(last);
-    } else if (type === 'this_year') {
-      const d = new Date();
-      setStartDate(new Date(d.getFullYear(), 0, 1).toISOString().slice(0, 10));
-      setEndDate(today);
     }
   };
 
@@ -202,6 +192,7 @@ export default function SuperAdminSalonPnLPage() {
           onBranchChange={setSelectedBranchId}
           branches={branches}
           salonTitle={currentSalon?.name}
+          showPrintButton
         />
       )}
     </div>

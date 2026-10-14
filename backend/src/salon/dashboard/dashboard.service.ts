@@ -321,7 +321,7 @@ export class DashboardService {
           ...periodParams,
         ),
         tx.$queryRawUnsafe(
-          `SELECT e.id AS "employeeId", e.name AS "employeeName", NULL::text AS "avatarUrl",
+          `SELECT e.id AS "employeeId", e.name AS "employeeName", e.photo_url AS "avatarUrl",
                   COUNT(*)::bigint AS "serviceCount", COALESCE(SUM(si.total), 0)::text AS revenue
            FROM ${saleItemEmployees} sie
            INNER JOIN ${saleItems} si ON sie.sale_item_id = si.id
@@ -330,7 +330,7 @@ export class DashboardService {
            WHERE s.status = 'COMPLETED'
              AND s.created_at >= $1::date AND s.created_at < ($2::date + INTERVAL '1 day')
              ${periodBranchCond}
-           GROUP BY e.id, e.name ORDER BY revenue DESC LIMIT 8`,
+           GROUP BY e.id, e.name, e.photo_url ORDER BY revenue DESC LIMIT 8`,
           ...periodParams,
         ),
         tx.$queryRawUnsafe<Array<{ label: string; total: string; saleCount: bigint }>>(
@@ -408,7 +408,7 @@ export class DashboardService {
         ),
         tx.$queryRawUnsafe(
           `SELECT a.id, a.start_time AS "startTime", a.appointment_date AS "appointmentDate",
-                  c.name AS "customerName", e.name AS "employeeName",
+                  c.name AS "customerName", e.name AS "employeeName", e.photo_url AS "employeePhotoUrl",
                   (SELECT service_name FROM ${appointmentServices}
                    WHERE appointment_id = a.id LIMIT 1) AS "serviceName"
            FROM ${appointments} a
@@ -428,7 +428,7 @@ export class DashboardService {
           remainingBalance: string;
           status: string;
         }>>(
-          `SELECT l.id, e.name AS "employeeName", NULL::text AS "avatarUrl",
+          `SELECT l.id, e.name AS "employeeName", e.photo_url AS "avatarUrl",
                   l.original_amount::text AS amount, l.remaining_balance::text AS "remainingBalance",
                   l.status::text AS status
            FROM ${employeeLoansTable} l
@@ -818,6 +818,7 @@ export class DashboardService {
             appointmentDate: Date;
             customerName: string;
             employeeName: string | null;
+            employeePhotoUrl: string | null;
             serviceName: string | null;
           }>
         ).map((a) => ({
@@ -830,6 +831,7 @@ export class DashboardService {
           customer: a.customerName,
           service: a.serviceName,
           employee: a.employeeName,
+          employeePhotoUrl: a.employeePhotoUrl,
         })),
       };
       },

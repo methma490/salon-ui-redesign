@@ -1,15 +1,35 @@
 import { Link } from 'react-router-dom';
 import { Award, Scissors, DollarSign, UserCheck, ArrowRight } from 'lucide-react';
-import { formatMoneyAmount } from '@/lib/money';
+import { formatMoneyLkr } from '@/lib/money';
+import { resolveUploadUrl } from '@/lib/upload-url';
+
+function EmployeeName({ name, photoUrl }: { name?: string | null; photoUrl?: string | null }) {
+  const label = name?.trim() || 'No data';
+  const avatarSrc = name ? resolveUploadUrl(photoUrl) : null;
+  return (
+    <div className="dash-emp-row">
+      {name ? (
+        avatarSrc ? (
+          <img src={avatarSrc} alt={label} className="dash-emp-avatar" />
+        ) : (
+          <div className="dash-emp-avatar">{label.charAt(0).toUpperCase()}</div>
+        )
+      ) : null}
+      <div className="text-sm sm:text-base font-bold text-slate-900 truncate">{label}</div>
+    </div>
+  );
+}
 
 interface PerformanceHighlightsProps {
   topEmployeeRevenue?: {
     name: string;
     revenue: number;
+    avatarUrl?: string | null;
   } | null;
   topEmployeeServices?: {
     name: string;
     servicesDone: number;
+    avatarUrl?: string | null;
   } | null;
   topCustomerSpending?: {
     name: string;
@@ -29,7 +49,7 @@ export function PerformanceHighlightsSection({
   topCustomerActive,
 }: PerformanceHighlightsProps) {
   return (
-    <div className="space-y-3">
+    <div className="dash-highlights-section space-y-3">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
@@ -42,7 +62,7 @@ export function PerformanceHighlightsSection({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+      <div className="dash-highlights-grid">
         {/* 1. Top Employee by Revenue */}
         <div className="dash-card p-4 transition-all hover:border-[var(--brand-primary,#0d5c3d)]/40 hover:shadow-sm">
           <div className="flex items-center justify-between gap-3">
@@ -54,14 +74,12 @@ export function PerformanceHighlightsSection({
             </div>
           </div>
           <div className="mt-2.5">
-            <div className="text-sm sm:text-base font-bold text-slate-900 truncate">
-              {topEmployeeRevenue?.name || 'No data'}
-            </div>
+            <EmployeeName name={topEmployeeRevenue?.name} photoUrl={topEmployeeRevenue?.avatarUrl} />
             <div className="text-xs text-slate-500 font-mono mt-0.5">
               {topEmployeeRevenue?.revenue ? (
                 <>
                   <span className="font-bold text-slate-900">
-                    LKR {formatMoneyAmount(topEmployeeRevenue.revenue)}
+                    {formatMoneyLkr(topEmployeeRevenue.revenue)}
                   </span>{' '}
                   revenue
                 </>
@@ -92,9 +110,7 @@ export function PerformanceHighlightsSection({
             </div>
           </div>
           <div className="mt-2.5">
-            <div className="text-sm sm:text-base font-bold text-slate-900 truncate">
-              {topEmployeeServices?.name || 'No data'}
-            </div>
+            <EmployeeName name={topEmployeeServices?.name} photoUrl={topEmployeeServices?.avatarUrl} />
             <div className="text-xs text-slate-500 mt-0.5">
               <span className="font-extrabold text-blue-700">
                 {topEmployeeServices?.servicesDone ?? 0}
@@ -131,7 +147,7 @@ export function PerformanceHighlightsSection({
               {topCustomerSpending?.totalSpend ? (
                 <>
                   <span className="font-bold text-slate-900">
-                    LKR {formatMoneyAmount(topCustomerSpending.totalSpend)}
+                    {formatMoneyLkr(topCustomerSpending.totalSpend)}
                   </span>{' '}
                   spend
                 </>

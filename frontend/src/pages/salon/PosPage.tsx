@@ -17,7 +17,7 @@ import {
   UserCheck,
   X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tenantApi, type Customer, type Product, type Service } from '@/api/tenant.api';
 import { useDebouncedSearch } from '@/hooks/useDebounce';
@@ -208,6 +208,7 @@ export default function PosPage() {
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [mobileCheckoutStep, setMobileCheckoutStep] = useState<'cart' | 'payment'>('cart');
   const [mobileWizardStep, setMobileWizardStep] = useState<1 | 2 | 3 | 4>(1);
+  const wizardBodyRef = useRef<HTMLDivElement>(null);
   const [mixPaymentSheetOpen, setMixPaymentSheetOpen] = useState(false);
   const [catalogTab, setCatalogTab] = useState<CatalogTab>('services');
   const [catalogSearch, setCatalogSearch] = useState('');
@@ -223,6 +224,10 @@ export default function PosPage() {
       setCatalogTab('services');
     }
   }, [hasInventory, catalogTab]);
+
+  useEffect(() => {
+    wizardBodyRef.current?.scrollTo({ top: 0 });
+  }, [mobileWizardStep]);
 
   const [branchId, setBranchId] = useState<string>(() =>
     ribbonBranchId !== 'all' ? ribbonBranchId : activeBranches[0]?.id || '',
@@ -1503,7 +1508,7 @@ export default function PosPage() {
           <button
             type="button"
             className="pos-btn-outline"
-            style={{ justifySelf: 'center', whiteSpace: 'nowrap' }}
+            style={{ justifySelf: 'start', whiteSpace: 'nowrap' }}
             onClick={() => setDraftHistoryOpen(true)}
           >
             <History size={15} /> Draft history
@@ -1529,7 +1534,7 @@ export default function PosPage() {
       <Dialog open={draftHistoryOpen} onOpenChange={setDraftHistoryOpen}>
         <DialogContent
           className="pos-assign-dialog pos-draft-history-sheet sm:max-w-xl"
-          style={{ maxHeight: '85vh', overflowY: 'auto' }}
+          style={{ maxHeight: 'calc(100dvh - 1.5rem)', overflowY: 'auto' }}
         >
           <DialogHeader>
             <DialogTitle>POS draft history</DialogTitle>
@@ -1583,6 +1588,7 @@ export default function PosPage() {
           })}
         </nav>
 
+        <div className="pos-wizard-body" ref={wizardBodyRef}>
         {mobileWizardStep === 1 && (
           <section className="pos-wizard-card">
             <div className="pos-wizard-card-heading">
@@ -1740,6 +1746,7 @@ export default function PosPage() {
         )}
 
         {formError && <div className="pos-alert pos-alert-error pos-wizard-error">{formError}</div>}
+        </div>
 
         <footer className={`pos-wizard-footer ${mobileWizardStep === 1 ? 'is-step-1' : ''}`}>
           {mobileWizardStep > 1 && <button type="button" className="pos-wizard-back" onClick={() => setMobileWizardStep((mobileWizardStep - 1) as 1 | 2 | 3 | 4)}>← <span>Back</span></button>}
@@ -2156,7 +2163,7 @@ export default function PosPage() {
           }
         }}
       >
-        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-md p-0 overflow-hidden border border-border/80 shadow-2xl rounded-2xl bg-card">
+        <DialogContent className="pos-assign-sheet w-[min(28rem,calc(100%-1.5rem))] max-w-[calc(100%-1.5rem)] max-h-[calc(100dvh-1.5rem)] overflow-y-auto border border-border/80 shadow-2xl rounded-2xl bg-card">
           <DialogHeader className="p-5 pb-3 sm:p-6 sm:pb-4 border-b border-border/60 bg-muted/20 text-left">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-medium shrink-0">

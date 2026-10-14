@@ -157,6 +157,12 @@ function formatDateDisplay(dateStr: string) {
 export default function ReportsPage() {
   const theme = useTenantTheme();
   const primaryColor = theme?.palette?.primary ?? '#2563eb';
+  const { data: salonSettings } = useQuery({
+    queryKey: ['tenant-settings'],
+    queryFn: tenantApi.settings.get,
+    staleTime: 60_000,
+  });
+  const salonName = salonSettings?.salon.name ?? 'Salon';
 
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = (searchParams.get('tab') as ReportTab) || 'profit-loss';
@@ -271,16 +277,6 @@ export default function ReportsPage() {
       setPnlEndDate(today);
     } else if (type === 'this_month') {
       setPnlStartDate(getMonthStartStr());
-      setPnlEndDate(today);
-    } else if (type === 'last_month') {
-      const d = new Date();
-      const first = new Date(d.getFullYear(), d.getMonth() - 1, 1).toISOString().slice(0, 10);
-      const last = new Date(d.getFullYear(), d.getMonth(), 0).toISOString().slice(0, 10);
-      setPnlStartDate(first);
-      setPnlEndDate(last);
-    } else if (type === 'this_year') {
-      const d = new Date();
-      setPnlStartDate(new Date(d.getFullYear(), 0, 1).toISOString().slice(0, 10));
       setPnlEndDate(today);
     }
   };
@@ -399,6 +395,11 @@ export default function ReportsPage() {
         'employee-printable-report',
         `Employee_Performance_Report_${branchSlug}_${startDate}_to_${endDate}`,
       );
+    } else if (activeTab === 'profit-loss') {
+      printReportDocument(
+        'pnl-printable-report',
+        `Profit_and_Loss_${branchSlug}_${pnlStartDate}_to_${pnlEndDate}`,
+      );
     }
   };
 
@@ -473,7 +474,27 @@ export default function ReportsPage() {
         `"${p.status}"`,
       ]);
       csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    } else if (activeTab === 'profit-loss' && pnlData) {
+      filename = `profit-and-loss-${pnlStartDate}-to-${pnlEndDate}.csv`;
+      const revenue = pnlData.summary.totalRevenue;
+      const pct = (amount: number) => (revenue > 0 ? ((amount / revenue) * 100).toFixed(1) : '0.0');
+      const headers = ['Line Item', 'Amount (LKR)', '% of Revenue'];
+      const rows: Array<Array<string | number>> = [
+        ['Service Revenue', pnlData.income.serviceRevenue, pct(pnlData.income.serviceRevenue)],
+        ['Product Revenue', pnlData.income.productRevenue, pct(pnlData.income.productRevenue)],
+        ['Discounts Allowed', -pnlData.income.discounts, '-'],
+        ['Returns / Refunds', -pnlData.income.refunds, '-'],
+        ['Total Net Revenue', pnlData.summary.totalRevenue, '100.0'],
+        ['Product Cost of Goods Sold', pnlData.costOfSales.productCogs, pct(pnlData.costOfSales.productCogs)],
+        ['Gross Profit', pnlData.summary.grossProfit, pnlData.summary.grossProfitMargin.toFixed(1)],
+        ...pnlData.operatingExpenses.categories.map((c) => [c.categoryName, c.amount, c.percentage.toFixed(1)]),
+        ['Total Operating Expenses', pnlData.operatingExpenses.totalExpenses, pct(pnlData.operatingExpenses.totalExpenses)],
+        ['Net Profit', pnlData.summary.netProfit, pnlData.summary.netProfitMargin.toFixed(1)],
+      ];
+      csvContent = [headers.join(','), ...rows.map((r) => r.map((cell) => `"${cell}"`).join(','))].join('\n');
     }
+
+    if (!csvContent) return;
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -521,7 +542,7 @@ export default function ReportsPage() {
         >
           <header className="reports-print-header">
             <div>
-              <p className="reports-print-eyebrow">Dart Smart Salon</p>
+              <p className="reports-print-eyebrow">{salonName}</p>
               <h1>Sales Report ({breakdownTab === 'service' ? 'Service Sales' : 'Product Sales'})</h1>
               <p>
                 Period: {formatDateDisplay(startDate)} – {formatDateDisplay(endDate)}
@@ -676,7 +697,7 @@ export default function ReportsPage() {
         >
           <header className="reports-print-header">
             <div>
-              <p className="reports-print-eyebrow">Dart Smart Salon</p>
+              <p className="reports-print-eyebrow">{salonName}</p>
               <h1>Inventory Valuation & Stock Report</h1>
               <p>
                 Period: {formatDateDisplay(startDate)} – {formatDateDisplay(endDate)}
@@ -766,7 +787,7 @@ export default function ReportsPage() {
         >
           <header className="reports-print-header">
             <div>
-              <p className="reports-print-eyebrow">Dart Smart Salon</p>
+              <p className="reports-print-eyebrow">{salonName}</p>
               <h1>Employee Performance Report</h1>
               <p>
                 Period: {formatDateDisplay(startDate)} – {formatDateDisplay(endDate)}
@@ -928,6 +949,7 @@ export default function ReportsPage() {
             branchId={branchId}
             onBranchChange={setBranchId}
             branches={branches}
+            salonTitle={salonName}
           />
         </>
       )}

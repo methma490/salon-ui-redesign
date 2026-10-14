@@ -226,6 +226,12 @@ export async function ensureTenantMigrationTable(
       checksum VARCHAR(64)
     )
   `);
+  // Older tenants were created before checksum existed. CREATE TABLE IF NOT EXISTS
+  // leaves that table unchanged, and the next migration insert then rolls back.
+  await client.$executeRawUnsafe(`
+    ALTER TABLE "${safeSchema}"._applied_tenant_migrations
+    ADD COLUMN IF NOT EXISTS checksum VARCHAR(64)
+  `);
 }
 
 /**
