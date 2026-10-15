@@ -17,8 +17,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Link } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Scissors, Printer, FileDown, Eye, FileCode } from 'lucide-react';
+import { Scissors, Printer, FileDown, Eye, FileCode, ChevronLeft } from 'lucide-react';
 import { formatMoneyAmount } from '@/lib/money';
 import { resolveUploadUrl } from '@/lib/upload-url';
 import { printReceipt } from '@/lib/print-receipt';
@@ -137,6 +138,15 @@ function buildPayslipHtml(
     .notes h4 { margin: 0 0 0.35rem; font-size: 0.8125rem; font-weight: 700; color: #1e293b; }
     .notes ul { margin: 0; padding-left: 1.2rem; }
     .notes li { margin-bottom: 0.2rem; }
+    @media (max-width: 600px) {
+      body { margin: 0.5rem auto; padding: 0.5rem; }
+      .header { flex-direction: column; gap: 0.75rem; }
+      .payslip-title-block { text-align: left; }
+      .emp-box { grid-template-columns: 1fr; gap: 0.4rem; padding: 0.75rem; }
+      .emp-lbl { width: 6.5rem; }
+      .two-col { grid-template-columns: 1fr; gap: 0.75rem; }
+      .net-banner { flex-direction: column; align-items: flex-start; gap: 0.35rem; }
+    }
   </style>
 </head>
 <body>
@@ -603,17 +613,33 @@ export default function PayslipsPage() {
 
   const [previewingPdf, setPreviewingPdf] = useState(false);
 
+  const [previewPdfBlobUrl, setPreviewPdfBlobUrl] = useState<string | null>(null);
+
   const handlePdfAction = async (action: 'download' | 'preview') => {
     const element = document.getElementById('payslip-modern-view');
     if (!element || !payslipDetail) return;
 
     const opt = {
-      margin: [6, 6, 6, 6],
+      margin: [4, 4, 4, 4],
       filename: `Payslip-${payslipDetail.employeeCode || payslipDetail.employeeName.replace(/\s+/g, '-')}-${payslipDetail.year}-${String(payslipDetail.month).padStart(2, '0')}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
     };
+
+    // For preview in browsers/mobile that block async popups, open an empty tab first synchronously
+    let previewTab: Window | null = null;
+    if (action === 'preview') {
+      try {
+        previewTab = window.open('about:blank', '_blank');
+        if (previewTab) {
+          previewTab.document.write('<div style="font-family:sans-serif;display:flex;height:100vh;align-items:center;justify-content:center;color:#475569;"><p>Generating payslip PDF preview...</p></div>');
+        }
+      } catch {
+        // Ignored if popup was blocked
+      }
+    }
 
     if (action === 'download') setDownloadingPdf(true);
     else setPreviewingPdf(true);
@@ -624,13 +650,25 @@ export default function PayslipsPage() {
       if (action === 'preview') {
         const pdfBlob = await worker.output('blob');
         const blobUrl = URL.createObjectURL(pdfBlob);
-        window.open(blobUrl, '_blank');
-        toast.success('Payslip PDF preview opened in new tab');
+
+        if (previewTab && !previewTab.closed) {
+          previewTab.location.href = blobUrl;
+        } else {
+          // If popup blocker intervened, show built-in preview dialog or trigger download/direct nav
+          const win = window.open(blobUrl, '_blank');
+          if (!win) {
+            setPreviewPdfBlobUrl(blobUrl);
+          }
+        }
+        toast.success('Payslip PDF preview ready');
       } else {
         await worker.save();
         toast.success('Payslip PDF downloaded successfully');
       }
     } catch (err) {
+      if (previewTab && !previewTab.closed) {
+        previewTab.close();
+      }
       console.error('PDF export failed:', err);
       toast.error('Failed to generate PDF');
     } finally {
@@ -658,6 +696,17 @@ export default function PayslipsPage() {
 
   return (
     <div className="emp-page payroll-page">
+      {/* Back button to Payroll Hub */}
+      <div className="flex items-center gap-2 mb-2">
+        <Link
+          to="/salon/payroll"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors py-1.5 px-2.5 rounded-lg hover:bg-slate-100"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          <span>Back to Payroll</span>
+        </Link>
+      </div>
+
       <OpsPageHeader title="Payslips" subtitle="View and print finalized employee payslips" />
 
       <div className="emp-panel">
@@ -807,7 +856,7 @@ export default function PayslipsPage() {
       </div>
 
       <Dialog open={!!viewId} onOpenChange={(open) => !open && setViewId(null)}>
-        <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-4xl">
+        <DialogContent className="max-h-[94vh] overflow-y-auto w-[calc(100%-1rem)] max-w-4xl p-3 sm:p-6 rounded-2xl">
           <DialogHeader className="payslip-no-print">
             <DialogTitle>Employee Payslip</DialogTitle>
           </DialogHeader>
@@ -858,6 +907,33 @@ export default function PayslipsPage() {
               </div>
               <PayslipModernView detail={payslipDetail} salon={salonInfo} />
             </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Fallback embedded preview dialog when popup is blocked */}
+      <Dialog open={!!previewPdfBlobUrl} onOpenChange={(open) => !open && setPreviewPdfBlobUrl(null)}>
+        <DialogContent className="max-h-[94vh] h-[85vh] w-[calc(100%-1rem)] max-w-4xl p-4 sm:p-6 rounded-2xl flex flex-col">
+          <DialogHeader>
+            <DialogTitle>PDF Preview</DialogTitle>
+          </DialogHeader>
+          {previewPdfBlobUrl && (
+            <div className="flex-1 w-full h-full min-h-0 pt-2 flex flex-col">
+              <iframe
+                src={previewPdfBlobUrl}
+                className="w-full flex-1 border border-slate-200 rounded-xl"
+                title="Payslip PDF Preview"
+              />
+              <div className="flex justify-end gap-2 pt-3">
+                <a
+                  href={previewPdfBlobUrl}
+                  download="Payslip.pdf"
+                  className="emp-btn emp-btn-primary"
+                >
+                  Download PDF
+                </a>
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>

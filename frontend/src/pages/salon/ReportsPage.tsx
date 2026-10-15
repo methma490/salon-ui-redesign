@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import {
   AreaChart,
   Area,
@@ -28,7 +28,6 @@ import {
   TrendingUp,
   FileSpreadsheet,
   FileText,
-  User,
   ChevronDown,
 } from 'lucide-react';
 import {
@@ -852,43 +851,17 @@ export default function ReportsPage() {
         </section>
       )}
 
-      {/* Top Main Navigation Tabs */}
-      <div className="reports-nav-header">
-        <div className="reports-main-tabs">
-          <button
-            type="button"
-            className={`reports-main-tab-btn ${activeTab === 'profit-loss' ? 'active' : ''}`}
-            onClick={() => setActiveTab('profit-loss')}
-          >
-            <TrendingUp className="h-4 w-4" />
-            <span>Profit & Loss</span>
-          </button>
-          {enabledFeatures.includes('SALES_REPORTS') && <button
-            type="button"
-            className={`reports-main-tab-btn ${activeTab === 'sales' ? 'active' : ''}`}
-            onClick={() => setActiveTab('sales')}
-          >
-            <CreditCard className="h-4 w-4" />
-            <span>Sales Report</span>
-          </button>}
-          {enabledFeatures.includes('EMPLOYEE_REPORTS') && <button
-            type="button"
-            className={`reports-main-tab-btn ${activeTab === 'employee-performance' ? 'active' : ''}`}
-            onClick={() => setActiveTab('employee-performance')}
-          >
-            <User className="h-4 w-4" />
-            <span>Employee Performance Report</span>
-          </button>}
-          {enabledFeatures.includes('INVENTORY_REPORTS') && <button
-            type="button"
-            className={`reports-main-tab-btn ${activeTab === 'inventory' ? 'active' : ''}`}
-            onClick={() => setActiveTab('inventory')}
-          >
-            <Package className="h-4 w-4" />
-            <span>Inventory Report</span>
-          </button>}
-        </div>
+      {/* Back button and Export row */}
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <Link
+          to="/salon/reports-hub"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors py-1.5 px-2.5 rounded-lg hover:bg-slate-100"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          <span>Back to Reports</span>
+        </Link>
 
+        {/* Export Button */}
         <div className="relative" ref={exportRef}>
           <button
             type="button"
@@ -899,7 +872,6 @@ export default function ReportsPage() {
             <span>Export</span>
             <ChevronDown className="h-3.5 w-3.5 opacity-80" />
           </button>
-
           {exportMenuOpen && (
             <div className="absolute right-0 top-full mt-1 w-48 rounded-lg border border-slate-200 bg-white py-1 shadow-lg z-50">
               <button
@@ -921,6 +893,60 @@ export default function ReportsPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Compact Segmented Switcher for desktop/tablet */}
+      <div className="hidden sm:flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl mb-4 w-fit overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setActiveTab('profit-loss')}
+          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            activeTab === 'profit-loss'
+              ? 'bg-white text-emerald-700 shadow-sm'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          P &amp; L Report
+        </button>
+        {enabledFeatures.includes('SALES_REPORTS') && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('sales')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === 'sales'
+                ? 'bg-white text-blue-700 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Sales Report
+          </button>
+        )}
+        {enabledFeatures.includes('EMPLOYEE_REPORTS') && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('employee-performance')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === 'employee-performance'
+                ? 'bg-white text-amber-700 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Employee Performance
+          </button>
+        )}
+        {enabledFeatures.includes('INVENTORY_REPORTS') && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('inventory')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              activeTab === 'inventory'
+                ? 'bg-white text-purple-700 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Inventory Report
+          </button>
+        )}
       </div>
 
       {/* ========================================================================= */}
