@@ -86,6 +86,7 @@ export class SalesService {
                 s.subtotal, s.discount, s.total, s.status::text AS status,
                 s.branch_id AS "branchId", b.name AS "branchName",
                 s.customer_id AS "customerId", c.name AS "customerName",
+                c.phone AS "customerPhone",
                 s.cashier_id AS "cashierId", u.name AS "cashierName",
                 s.created_at AS "createdAt"
          ${fromClause}
@@ -275,8 +276,8 @@ export class SalesService {
     });
   }
 
-  async getInvoiceLink(tenantId: string, saleId: string) {
-    return this.invoiceLinksService.getLinkForSale(tenantId, saleId);
+  async getInvoiceLink(tenantId: string, schemaName: string, saleId: string) {
+    return this.invoiceLinksService.getLinkForSale(tenantId, schemaName, saleId);
   }
 
   async sendEbillWhatsapp(tenantId: string, schemaName: string, saleId: string, customPhone?: string) {

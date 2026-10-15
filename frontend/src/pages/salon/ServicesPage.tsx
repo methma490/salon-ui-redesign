@@ -17,7 +17,9 @@ import {
   Tag,
   Trash2,
   X,
+  ChevronLeft,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { appAlert } from '@/lib/app-alerts';
 import { tenantApi, type Service, type ServiceCategory } from '@/api/tenant.api';
 import { useDebouncedSearch } from '@/hooks/useDebounce';
@@ -443,6 +445,17 @@ export default function ServicesPage() {
 
   return (
     <div className="emp-page">
+      {/* Back button to Services hub */}
+      <div className="flex items-center gap-2 mb-2">
+        <Link
+          to="/salon/services-hub"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors py-1.5 px-2.5 rounded-lg hover:bg-slate-100"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          <span>Back to Services</span>
+        </Link>
+      </div>
+
       {/* Top Header matching Screenshot 1 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>

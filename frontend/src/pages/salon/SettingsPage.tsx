@@ -25,6 +25,7 @@ import {
   OpsStatusBadge,
 } from './salon-ops-ui';
 import { toast } from 'sonner';
+import { SettingsDemoResetAction } from '@/components/salon/DemoBanner';
 import './settings-page.css';
 
 type SettingsTab = 'account' | 'business' | 'appearance' | 'subscription' | 'access' | 'payroll';
@@ -478,6 +479,7 @@ export default function SettingsPage() {
           <p>System settings · {data.salon.code}</p>
         </div>
         <div className="settings-hero-meta">
+          <SettingsDemoResetAction />
           <span className="settings-hero-pill">{data.subscription?.plan ?? 'No plan'}</span>
           <span className="settings-hero-pill">{data.salon.status}</span>
         </div>

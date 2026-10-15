@@ -35,7 +35,7 @@ export function SummaryKpiCards({
   salaries,
   salariesGrowth = 0,
   netProfit,
-  openingBankBalance,
+  openingBankBalance: _openingBankBalance,
   liveBankBalance,
 }: SummaryKpiCardsProps) {
   return (
@@ -77,7 +77,7 @@ export function SummaryKpiCards({
 
           <div className="dash-kpi-sub-row">
             <span className="dash-kpi-sub-badge">
-              Open: {openingBankBalance === null ? '—' : formatMoneyAmount(openingBankBalance)}
+              Available balance
             </span>
           </div>
         </div>
@@ -184,7 +184,11 @@ export function SummaryKpiCards({
 
           <div className="dash-kpi-sub-row">
             <div className="dash-kpi-trend trend-amber">
-              <TrendingUp className="w-3.5 h-3.5" />
+              {expensesGrowth <= 0 ? (
+                <TrendingDown className="w-3.5 h-3.5" />
+              ) : (
+                <TrendingUp className="w-3.5 h-3.5" />
+              )}
               <span>{expensesGrowth >= 0 ? `+${expensesGrowth}%` : `${expensesGrowth}%`}</span>
               <span className="trend-sub">vs prev</span>
             </div>
@@ -192,8 +196,8 @@ export function SummaryKpiCards({
         </div>
       </div>
 
-      {/* 5. Salaries / Payroll - Modern Rose/Pink Gradient Style */}
-      <div className="dash-kpi-card dash-card-gradient-rose">
+      {/* 5. Salaries / Payroll - Modern Rose/Pink Gradient Style (Desktop/Tablet) */}
+      <div className="dash-kpi-card dash-card-gradient-rose hidden md:flex">
         <div className="dash-kpi-deco-bars" aria-hidden="true">
           <div className="deco-bar b1" />
           <div className="deco-bar b2" />

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Banknote, Eye, Receipt, Smartphone, Users } from 'lucide-react';
+import { Banknote, Eye, Receipt, Smartphone, Users, ChevronLeft } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { tenantApi } from '@/api/tenant.api';
@@ -57,6 +57,7 @@ export default function SalesPage() {
   const [ebillModalSale, setEbillModalSale] = useState<{
     id: string;
     customerName?: string | null;
+    customerPhone?: string | null;
   } | null>(null);
 
   const {
@@ -96,6 +97,17 @@ export default function SalesPage() {
 
   return (
     <div className="sales-page emp-page">
+      {/* Back button to Sales hub */}
+      <div className="flex items-center gap-2 mb-2">
+        <Link
+          to="/salon/sales-hub"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors py-1.5 px-2.5 rounded-lg hover:bg-slate-100"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          <span>Back to Sales</span>
+        </Link>
+      </div>
+
       <OpsPageHeader
         title={saleStatus === 'PENDING' ? 'POS Drafts' : 'Sales History'}
         subtitle={saleStatus === 'PENDING' ? 'View saved POS drafts from any page' : 'Browse completed sales, receipts, and customer details'}
@@ -308,7 +320,11 @@ export default function SalesPage() {
                               border: '1px solid #bae6fd',
                             }}
                             onClick={() =>
-                              setEbillModalSale({ id: sale.id, customerName: sale.customerName })
+                              setEbillModalSale({
+                                id: sale.id,
+                                customerName: sale.customerName,
+                                customerPhone: sale.customerPhone,
+                              })
                             }
                           >
                             <Smartphone size={14} />
@@ -346,6 +362,7 @@ export default function SalesPage() {
           }}
           saleId={ebillModalSale.id}
           customerName={ebillModalSale.customerName}
+          defaultPhone={ebillModalSale.customerPhone}
         />
       )}
     </div>

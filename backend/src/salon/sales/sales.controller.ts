@@ -35,7 +35,7 @@ export class SalesController {
     @CurrentTenant() tenant: TenantContext,
     @Param('id') id: string,
   ) {
-    return this.salesService.getInvoiceLink(tenant.tenantId, id);
+    return this.salesService.getInvoiceLink(tenant.tenantId, tenant.schemaName, id);
   }
 
   @Post(':id/send-ebill-sms')

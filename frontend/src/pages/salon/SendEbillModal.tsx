@@ -10,7 +10,7 @@ import {
   Smartphone,
   XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tenantApi } from '@/api/tenant.api';
 import { Button } from '@/components/ui/button';
@@ -76,6 +76,7 @@ export default function SendEbillModal({
 }: SendEbillModalProps) {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const [phoneInput, setPhoneInput] = useState('');
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(
     null,
   );
@@ -92,10 +93,27 @@ export default function SendEbillModal({
     enabled: open,
   });
 
+  // Sync phone input when invoiceLink or defaultPhone resolves
+  const resolvedInitialPhone = invoiceLink?.customerPhone || defaultPhone || '';
+  useEffect(() => {
+    if (resolvedInitialPhone && !phoneInput) {
+      setPhoneInput(resolvedInitialPhone);
+    }
+  }, [resolvedInitialPhone]);
+
+  // Reset when dialog opens/closes
+  useEffect(() => {
+    if (open) {
+      setPhoneInput(invoiceLink?.customerPhone || defaultPhone || '');
+      setStatusMsg(null);
+    }
+  }, [open, saleId, defaultPhone]);
+
   const hasSmsFeature = enabledFeatures.includes('SMS_NOTIFICATIONS');
+  const activePhone = phoneInput.trim();
 
   const smsMutation = useMutation({
-    mutationFn: () => tenantApi.sales.resendEbillSms(saleId, ''),
+    mutationFn: () => tenantApi.sales.resendEbillSms(saleId, activePhone),
     onSuccess: (res) => {
       setStatusMsg({
         type: res.success ? 'success' : 'error',
@@ -120,80 +138,62 @@ export default function SendEbillModal({
 
   const smsStatusBadge = invoiceLink ? formatStatusBadge(invoiceLink.smsStatus) : null;
 
-  // Resolve phone: prefer what's saved in invoice link, then prop
-  const customerPhone = invoiceLink?.customerPhone || defaultPhone;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="pos-ebill-dialog" style={{ maxWidth: 460, borderRadius: 16 }}>
-        <DialogHeader>
-          <DialogTitle style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 18 }}>
-            <Send size={20} color="#0284c7" /> Send eBill SMS
+      <DialogContent
+        className="pos-ebill-dialog w-[calc(100%-1.5rem)] max-w-[460px] p-4 sm:p-6 rounded-2xl bg-white border border-slate-200 shadow-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto box-border"
+        style={{ margin: 'auto' }}
+      >
+        <DialogHeader className="pb-1">
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg font-bold text-slate-900">
+            <Send size={18} className="text-sky-600 shrink-0" />
+            <span>Send eBill SMS</span>
           </DialogTitle>
         </DialogHeader>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 8 }}>
-          {/* Customer Info */}
-          <div
-            style={{
-              background: '#f8fafc',
-              border: '1px solid #e2e8f0',
-              borderRadius: 10,
-              padding: '10px 14px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 4,
-            }}
-          >
+        <div className="flex flex-col gap-3.5 mt-2 w-full box-border">
+          {/* Customer Info Card */}
+          <div className="w-full box-border bg-slate-50 border border-slate-200 rounded-xl p-3 sm:p-4 flex flex-col gap-2">
             {customerName && (
-              <p style={{ margin: 0, fontSize: 13, color: '#0f172a', fontWeight: 600 }}>
+              <p className="m-0 text-xs sm:text-sm font-semibold text-slate-900 truncate">
                 {customerName}
               </p>
             )}
-            {customerPhone ? (
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 13,
-                  color: '#0284c7',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 5,
-                  fontWeight: 500,
-                }}
+
+            <div className="flex flex-col gap-1 w-full box-border">
+              <label
+                htmlFor="ebill-phone-input"
+                className="text-[11px] font-bold text-slate-500 uppercase tracking-wide"
               >
-                <Phone size={13} /> {customerPhone}
-              </p>
-            ) : (
-              <p style={{ margin: 0, fontSize: 12, color: '#ef4444' }}>
-                ⚠ No phone number found for this customer
-              </p>
-            )}
+                Mobile Number for SMS:
+              </label>
+              <div className="relative flex items-center w-full box-border">
+                <Phone
+                  size={14}
+                  className="absolute left-3 text-sky-600 pointer-events-none"
+                />
+                <input
+                  id="ebill-phone-input"
+                  type="tel"
+                  placeholder="e.g. 0771234567 or +94771234567"
+                  value={phoneInput}
+                  onChange={(e) => setPhoneInput(e.target.value)}
+                  className="w-full box-border pl-9 pr-3 py-2 text-xs sm:text-sm rounded-lg border border-slate-300 bg-white text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-all"
+                />
+              </div>
+              {!activePhone && (
+                <p className="m-0 text-[11px] text-red-500 font-medium leading-tight pt-0.5">
+                  ⚠ No phone number found for this customer. Enter a number above to send SMS.
+                </p>
+              )}
+            </div>
           </div>
 
           {/* SMS Status & eBill Link Card */}
           {invoiceLink && (
-            <div
-              style={{
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: 10,
-                padding: 12,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 8,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  flexWrap: 'wrap',
-                  gap: 6,
-                }}
-              >
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>
+            <div className="w-full box-border bg-slate-50 border border-slate-200 rounded-xl p-3 sm:p-4 flex flex-col gap-2.5">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <span className="text-xs font-bold text-slate-600">
                   SMS eBill Status:
                 </span>
                 {smsStatusBadge && (
@@ -217,69 +217,47 @@ export default function SendEbillModal({
               </div>
 
               {invoiceLink.smsSentAt && (
-                <div style={{ fontSize: 11, color: '#64748b' }}>
+                <div className="text-[11px] text-slate-500">
                   Last Sent: {new Date(invoiceLink.smsSentAt).toLocaleString('en-LK')}
                   {invoiceLink.smsAttempts > 0 && ` (Attempts: ${invoiceLink.smsAttempts})`}
                 </div>
               )}
 
               {invoiceLink.smsStatus === 'FAILED' && invoiceLink.smsFailureReason && (
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: '#dc2626',
-                    background: '#fef2f2',
-                    padding: '4px 8px',
-                    borderRadius: 6,
-                  }}
-                >
+                <div className="text-[11px] text-red-600 bg-red-50 p-2 rounded-lg border border-red-200">
                   Failure Reason: {invoiceLink.smsFailureReason}
                 </div>
               )}
 
               {/* Copyable eBill URL */}
               {invoiceLink.ebillUrl && (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    marginTop: 4,
-                    paddingTop: 8,
-                    borderTop: '1px dashed #e2e8f0',
-                  }}
-                >
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mt-1 pt-2.5 border-t border-dashed border-slate-200 w-full box-border">
                   <input
                     readOnly
                     value={invoiceLink.ebillUrl}
-                    style={{
-                      flex: 1,
-                      fontSize: 12,
-                      padding: '6px 8px',
-                      background: '#ffffff',
-                      border: '1px solid #cbd5e1',
-                      borderRadius: 6,
-                      color: '#0f172a',
-                    }}
+                    className="flex-1 min-w-0 box-border text-xs px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-slate-900 font-mono select-all truncate"
                   />
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={handleCopyLink}
-                    style={{ height: 32, gap: 4, fontSize: 12 }}
-                  >
-                    <Copy size={13} /> {copied ? 'Copied' : 'Copy'}
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => window.open(invoiceLink.ebillUrl, '_blank')}
-                    style={{ height: 32, gap: 4, fontSize: 12 }}
-                  >
-                    <ExternalLink size={13} />
-                  </Button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={handleCopyLink}
+                      className="h-8 gap-1.5 text-xs font-semibold rounded-lg flex-1 sm:flex-initial"
+                    >
+                      <Copy size={13} /> {copied ? 'Copied' : 'Copy'}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => window.open(invoiceLink.ebillUrl, '_blank')}
+                      className="h-8 w-8 p-0 rounded-lg shrink-0"
+                      title="Open link in new tab"
+                    >
+                      <ExternalLink size={13} />
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
@@ -307,7 +285,7 @@ export default function SendEbillModal({
             {hasSmsFeature ? (
               <Button
                 type="button"
-                disabled={smsMutation.isPending || !customerPhone}
+                disabled={smsMutation.isPending || !activePhone}
                 onClick={() => {
                   setStatusMsg(null);
                   smsMutation.mutate();
@@ -317,13 +295,13 @@ export default function SendEbillModal({
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 8,
-                  background: customerPhone ? '#0284c7' : '#94a3b8',
+                  background: activePhone ? '#0284c7' : '#94a3b8',
                   color: '#ffffff',
                   height: 42,
                   borderRadius: 8,
                   fontWeight: 600,
                   width: '100%',
-                  cursor: customerPhone ? 'pointer' : 'not-allowed',
+                  cursor: activePhone ? 'pointer' : 'not-allowed',
                 }}
               >
                 <Smartphone size={16} />

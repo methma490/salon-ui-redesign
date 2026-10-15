@@ -17,10 +17,10 @@ export interface PlanSeedDefinition {
   prices: PlanPriceSeed[];
 }
 
-function readNumber(envKey: string, fallback: number): number {
+function parsePositiveNumber(envKey: string): number | undefined {
   const raw = process.env[envKey];
   if (raw === undefined || raw.trim() === '') {
-    return fallback;
+    return undefined;
   }
 
   const value = Number(raw);
@@ -31,18 +31,12 @@ function readNumber(envKey: string, fallback: number): number {
   return value;
 }
 
+function readNumber(envKey: string, fallback: number): number {
+  return parsePositiveNumber(envKey) ?? fallback;
+}
+
 function readOptionalNumber(envKey: string, fallback?: number): number | undefined {
-  const raw = process.env[envKey];
-  if (raw === undefined || raw.trim() === '') {
-    return fallback;
-  }
-
-  const value = Number(raw);
-  if (!Number.isFinite(value) || value < 0) {
-    throw new Error(`Invalid numeric env ${envKey}: ${raw}`);
-  }
-
-  return value;
+  return parsePositiveNumber(envKey) ?? fallback;
 }
 
 function readPlanPrices(
