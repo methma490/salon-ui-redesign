@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" width="640" height="400">
+  <defs>
+    <linearGradient id="cal-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F5F3FF"/>
+      <stop offset="100%" stop-color="#EDE9FE"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="400" fill="url(#cal-bg)"/>
+  
+  <rect x="50" y="40" width="540" height="320" rx="18" fill="#FFFFFF" stroke="#DDD6FE" stroke-width="1.5"/>
+  <rect x="50" y="40" width="540" height="42" rx="18" fill="#FAF5FF"/>
+  <line x1="50" y1="82" x2="590" y2="82" stroke="#EDE9FE" stroke-width="1"/>
+
+  <circle cx="78" cy="61" r="4.5" fill="#FDA4AF"/>
+  <circle cx="94" cy="61" r="4.5" fill="#FCD34D"/>
+  <circle cx="110" cy="61" r="4.5" fill="#86EFAC"/>
+  <text x="320" y="65" fill="#6B21A8" font-family="system-ui, sans-serif" font-size="11.5" font-weight="700" text-anchor="middle">Multi-Stylist Calendar Matrix • Real-Time Conflict Prevention</text>
+
+  <!-- Stylist Columns Header -->
+  <g transform="translate(100, 95)">
+    <text x="70" y="16" fill="#0F172A" font-family="system-ui, sans-serif" font-size="11" font-weight="700" text-anchor="middle">Elena (Color)</text>
+    <text x="230" y="16" fill="#0F172A" font-family="system-ui, sans-serif" font-size="11" font-weight="700" text-anchor="middle">Marcus (Stylist)</text>
+    <text x="390" y="16" fill="#0F172A" font-family="system-ui, sans-serif" font-size="11" font-weight="700" text-anchor="middle">Chloe (Nails &amp; Spa)</text>
+    <line x1="0" y1="26" x2="460" y2="26" stroke="#E2E8F0" stroke-width="1"/>
+  </g>
+
+  <!-- Timeline Grid -->
+  <g transform="translate(65, 130)">
+    <text x="0" y="20" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="9" font-weight="600">10:00 AM</text>
+    <text x="0" y="85" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="9" font-weight="600">11:00 AM</text>
+    <text x="0" y="150" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="9" font-weight="600">12:00 PM</text>
+    <text x="0" y="215" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="9" font-weight="600">01:00 PM</text>
+
+    <!-- Grid lines -->
+    <line x1="45" y1="16" x2="510" y2="16" stroke="#F1F5F9" stroke-width="1"/>
+    <line x1="45" y1="81" x2="510" y2="81" stroke="#F1F5F9" stroke-width="1"/>
+    <line x1="45" y1="146" x2="510" y2="146" stroke="#F1F5F9" stroke-width="1"/>
+    <line x1="45" y1="211" x2="510" y2="211" stroke="#F1F5F9" stroke-width="1"/>
+
+    <!-- Column 1 Appointments (Elena) -->
+    <g transform="translate(45, 0)">
+      <rect x="5" y="0" width="145" height="110" rx="10" fill="#EDE9FE" stroke="#C4B5FD" stroke-width="1.2"/>
+      <rect x="5" y="0" width="5" height="110" rx="2" fill="#7C3AED"/>
+      <text x="18" y="22" fill="#5B21B6" font-family="system-ui, sans-serif" font-size="10" font-weight="800">Sophia M. • $165</text>
+      <text x="18" y="38" fill="#6D28D9" font-family="system-ui, sans-serif" font-size="9">Balayage &amp; Toner</text>
+      <rect x="18" y="78" width="62" height="16" rx="8" fill="#DCFCE7"/>
+      <text x="49" y="89" fill="#166534" font-family="system-ui, sans-serif" font-size="8" font-weight="700" text-anchor="middle">In Service</text>
+    </g>
+
+    <!-- Column 2 Appointments (Marcus) -->
+    <g transform="translate(205, 0)">
+      <rect x="5" y="10" width="145" height="60" rx="10" fill="#FCE7F3" stroke="#FBCFE8" stroke-width="1.2"/>
+      <rect x="5" y="10" width="5" height="60" rx="2" fill="#DB2777"/>
+      <text x="18" y="32" fill="#9D174D" font-family="system-ui, sans-serif" font-size="10" font-weight="800">David K. • $55</text>
+      <text x="18" y="48" fill="#BE185D" font-family="system-ui, sans-serif" font-size="9">Fade Cut + Beard</text>
+
+      <rect x="5" y="90" width="145" height="55" rx="10" fill="#EDE9FE" stroke="#C4B5FD" stroke-width="1.2"/>
+      <rect x="5" y="90" width="5" height="55" rx="2" fill="#7C3AED"/>
+      <text x="18" y="112" fill="#5B21B6" font-family="system-ui, sans-serif" font-size="10" font-weight="800">Alex R. • $75</text>
+      <text x="18" y="128" fill="#6D28D9" font-family="system-ui, sans-serif" font-size="9">Executive Styling</text>
+    </g>
+
+    <!-- Column 3 Appointments (Chloe) -->
+    <g transform="translate(365, 0)">
+      <rect x="5" y="30" width="145" height="85" rx="10" fill="#FEF3C7" stroke="#FDE68A" stroke-width="1.2"/>
+      <rect x="5" y="30" width="5" height="85" rx="2" fill="#D97706"/>
+      <text x="18" y="52" fill="#92400E" font-family="system-ui, sans-serif" font-size="10" font-weight="800">Jessica T. • $85</text>
+      <text x="18" y="68" fill="#B45309" font-family="system-ui, sans-serif" font-size="9">Gel Manicure + Spa</text>
+      <rect x="18" y="86" width="68" height="16" rx="8" fill="#FFFFFF"/>
+      <text x="52" y="97" fill="#92400E" font-family="system-ui, sans-serif" font-size="8" font-weight="700" text-anchor="middle">SMS Reminded</text>
+    </g>
+  </g>
+</svg>

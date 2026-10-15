@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" width="640" height="400">
+  <defs>
+    <linearGradient id="pos-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FAF5FF"/>
+      <stop offset="100%" stop-color="#F3E8FF"/>
+    </linearGradient>
+    <linearGradient id="pay-btn" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#7C3AED"/>
+      <stop offset="100%" stop-color="#A855F7"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="400" fill="url(#pos-bg)"/>
+  
+  <rect x="50" y="40" width="540" height="320" rx="18" fill="#FFFFFF" stroke="#DDD6FE" stroke-width="1.5"/>
+  <rect x="50" y="40" width="540" height="42" rx="18" fill="#FAF5FF"/>
+  <line x1="50" y1="82" x2="590" y2="82" stroke="#EDE9FE" stroke-width="1"/>
+
+  <circle cx="78" cy="61" r="4.5" fill="#FDA4AF"/>
+  <circle cx="94" cy="61" r="4.5" fill="#FCD34D"/>
+  <circle cx="110" cy="61" r="4.5" fill="#86EFAC"/>
+  <text x="320" y="65" fill="#6B21A8" font-family="system-ui, sans-serif" font-size="11.5" font-weight="700" text-anchor="middle">Express Station POS • Sub-5s Billing &amp; Thermal Receipts</text>
+
+  <!-- Left: Service & Retail Item list -->
+  <g transform="translate(75, 100)">
+    <rect width="250" height="235" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+    <text x="14" y="24" fill="#0F172A" font-family="system-ui, sans-serif" font-size="11" font-weight="700">Order Items (Client: Sophia Miller)</text>
+
+    <!-- Item 1 -->
+    <rect x="14" y="40" width="222" height="42" rx="8" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+    <text x="24" y="60" fill="#0F172A" font-family="system-ui, sans-serif" font-size="10.5" font-weight="600">Balayage Full Color</text>
+    <text x="24" y="74" fill="#64748B" font-family="system-ui, sans-serif" font-size="9">Stylist: Elena Rostova</text>
+    <text x="224" y="66" fill="#0F172A" font-family="system-ui, sans-serif" font-size="11" font-weight="700" text-anchor="end">$165.00</text>
+
+    <!-- Item 2 -->
+    <rect x="14" y="90" width="222" height="42" rx="8" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+    <text x="24" y="110" fill="#0F172A" font-family="system-ui, sans-serif" font-size="10.5" font-weight="600">Moroccanoil Treatment 100ml</text>
+    <text x="24" y="124" fill="#64748B" font-family="system-ui, sans-serif" font-size="9">Retail Shelf • Barcode #4820</text>
+    <text x="224" y="116" fill="#0F172A" font-family="system-ui, sans-serif" font-size="11" font-weight="700" text-anchor="end">$38.00</text>
+
+    <!-- Item 3 -->
+    <rect x="14" y="140" width="222" height="36" rx="8" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+    <text x="24" y="162" fill="#0F172A" font-family="system-ui, sans-serif" font-size="10" font-weight="600">Deep Conditioning Mask</text>
+    <text x="224" y="162" fill="#0F172A" font-family="system-ui, sans-serif" font-size="11" font-weight="700" text-anchor="end">$22.00</text>
+
+    <line x1="14" y1="188" x2="236" y2="188" stroke="#CBD5E1" stroke-width="1"/>
+    <text x="14" y="210" fill="#64748B" font-family="system-ui, sans-serif" font-size="10">Subtotal: $225.00</text>
+    <text x="14" y="224" fill="#10B981" font-family="system-ui, sans-serif" font-size="9.5" font-weight="700">Tax Included • 0% Discount</text>
+  </g>
+
+  <!-- Right: Payment Methods & Actions -->
+  <g transform="translate(340, 100)">
+    <rect width="225" height="235" rx="12" fill="#FAF5FF" stroke="#DDD6FE" stroke-width="1.2"/>
+    
+    <text x="16" y="24" fill="#6B21A8" font-family="system-ui, sans-serif" font-size="11" font-weight="700">Split Payment Methods</text>
+
+    <!-- Total Big Display -->
+    <rect x="16" y="38" width="193" height="48" rx="10" fill="#FFFFFF" stroke="#DDD6FE" stroke-width="1"/>
+    <text x="28" y="58" fill="#64748B" font-family="system-ui, sans-serif" font-size="9.5" font-weight="600">Total Payable</text>
+    <text x="28" y="78" fill="#7C3AED" font-family="system-ui, sans-serif" font-size="18" font-weight="800">$225.00</text>
+
+    <!-- Quick Buttons -->
+    <g transform="translate(16, 96)">
+      <rect x="0" y="0" width="92" height="30" rx="8" fill="#EDE9FE"/>
+      <text x="46" y="19" fill="#7C3AED" font-family="system-ui, sans-serif" font-size="10" font-weight="700" text-anchor="middle">💳 Card: $150</text>
+
+      <rect x="101" y="0" width="92" height="30" rx="8" fill="#EDE9FE"/>
+      <text x="147" y="19" fill="#7C3AED" font-family="system-ui, sans-serif" font-size="10" font-weight="700" text-anchor="middle">💵 Cash: $75</text>
+    </g>
+
+    <!-- Complete Button -->
+    <rect x="16" y="140" width="193" height="40" rx="10" fill="url(#pay-btn)"/>
+    <text x="112" y="165" fill="#FFFFFF" font-family="system-ui, sans-serif" font-size="12" font-weight="700" text-anchor="middle">
+      Complete &amp; Print Thermal 🖨️
+    </text>
+
+    <!-- Digital Receipt Toggle -->
+    <rect x="16" y="192" width="193" height="28" rx="8" fill="#DCFCE7"/>
+    <text x="112" y="210" fill="#166534" font-family="system-ui, sans-serif" font-size="9.5" font-weight="700" text-anchor="middle">
+      ✓ Instant SMS Receipt Sent to Client
+    </text>
+  </g>
+</svg>

@@ -66,9 +66,73 @@ const HERO_FEATURES: FeatureNavItem[] = [
   },
 ];
 
+const FEATURE_SHOWCASE: Record<
+  string,
+  {
+    badgeTitle: string;
+    badgeValue: string;
+    badgeDetail: string;
+    badgeDelta: string;
+    noteText: string;
+    icon: typeof TrendingUp;
+  }
+> = {
+  dashboard: {
+    badgeTitle: 'Total Revenue',
+    badgeValue: 'LKR 53,000',
+    badgeDetail: 'This month',
+    badgeDelta: '+12%',
+    noteText: 'More bookings, happier clients ♡',
+    icon: TrendingUp,
+  },
+  appointments: {
+    badgeTitle: 'Daily Bookings',
+    badgeValue: '18 Bookings',
+    badgeDetail: 'Today',
+    badgeDelta: '100% On Time',
+    noteText: 'Zero conflicts & auto SMS reminders ♡',
+    icon: Calendar,
+  },
+  pos: {
+    badgeTitle: 'Express POS',
+    badgeValue: 'Sub-5s Checkout',
+    badgeDetail: 'Thermal & WhatsApp',
+    badgeDelta: 'Split-Bills Ready',
+    noteText: 'Lightning fast counter checkout ♡',
+    icon: CreditCard,
+  },
+  inventory: {
+    badgeTitle: 'Stock Management',
+    badgeValue: '142 Items In-Stock',
+    badgeDetail: 'Automated GRN',
+    badgeDelta: '2 Low-Stock Alerts',
+    noteText: 'Never run out of hair treatment stock ♡',
+    icon: Package,
+  },
+  staff: {
+    badgeTitle: 'Stylist Rosters',
+    badgeValue: '8 Staff Active',
+    badgeDetail: 'Auto-Commissions',
+    badgeDelta: 'Commissions Calculated',
+    noteText: 'Happy team, effortless payroll ♡',
+    icon: Users,
+  },
+  reports: {
+    badgeTitle: 'Business Analytics',
+    badgeValue: '+28% Net Margin',
+    badgeDetail: 'Branch Trends',
+    badgeDelta: 'Daily Reconciliation',
+    noteText: 'Actionable data to scale your salon ♡',
+    icon: BarChart3,
+  },
+};
+
 export function Hero() {
   const [activeFeature, setActiveFeature] = useState<string>('dashboard');
   const [isDemoModalOpen, setIsDemoModalOpen] = useState<boolean>(false);
+
+  const currentShowcase = FEATURE_SHOWCASE[activeFeature] || FEATURE_SHOWCASE.dashboard;
+  const ShowcaseIcon = currentShowcase.icon;
 
   return (
     <section
@@ -112,7 +176,7 @@ export function Hero() {
             </h1>
 
             {/* Subtitle / Description */}
-            <p className="mt-4 sm:mt-5 text-base sm:text-lg text-[#64748B] leading-relaxed max-w-xl">
+            <p className="mt-4 sm:mt-5 text-base sm:text-lg text-[#475569] leading-relaxed max-w-xl">
               Manage appointments, customers, employees, sales, inventory, and reports in one beautifully simple platform. Spend less time managing and more time growing your salon.
             </p>
 
@@ -121,7 +185,7 @@ export function Hero() {
               {/* Primary Pill Button with Purple Gradient */}
               <Link
                 href="/#pricing"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#7C3AED] to-[#D946EF] px-7 py-3.5 text-sm sm:text-base font-semibold text-white shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/35 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#7C3AED] to-[#D946EF] px-7 py-3.5 text-sm sm:text-base font-semibold text-white shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/35 hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 focus-visible:ring-offset-2 transition-all cursor-pointer"
               >
                 <span>Get Started Free</span>
                 <ArrowRight className="size-4.5" />
@@ -131,7 +195,7 @@ export function Hero() {
               <button
                 type="button"
                 onClick={() => setIsDemoModalOpen(true)}
-                className="inline-flex items-center justify-center gap-2.5 rounded-full border border-[#DDD6FE] bg-white/90 backdrop-blur-md px-6 py-3.5 text-sm sm:text-base font-semibold text-[#0F172A] shadow-xs hover:bg-white hover:border-[#A855F7] hover:shadow-md transition-all active:scale-[0.98]"
+                className="inline-flex items-center justify-center gap-2.5 rounded-full border border-[#DDD6FE] bg-white/90 backdrop-blur-md px-6 py-3.5 text-sm sm:text-base font-semibold text-[#0F172A] shadow-xs hover:bg-white hover:border-[#A855F7] hover:shadow-md active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 focus-visible:ring-offset-2 transition-all cursor-pointer"
               >
                 <span className="flex size-6 items-center justify-center rounded-full bg-[#0F172A] text-white">
                   <Play className="size-2.5 fill-current ml-0.5" />
@@ -140,27 +204,70 @@ export function Hero() {
               </button>
             </div>
 
-            {/* Compact Trust / Policy Indicators */}
-            <div className="mt-6 sm:mt-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs sm:text-sm font-medium text-[#64748B]">
-              <div className="flex items-center gap-1.5">
-                <span className="flex size-4 items-center justify-center rounded-full bg-[#EDE9FE] text-[#7C3AED]">
-                  <Check className="size-2.5" strokeWidth={3} />
-                </span>
-                <span>No credit card required</span>
+            {/* Social Proof + Compact Trust Badges (Anchored under primary CTAs) */}
+            <div className="mt-6 sm:mt-8 flex flex-col items-start gap-3.5">
+              {/* Inline Social Proof Badge */}
+              <div className="inline-flex items-center gap-3 rounded-full bg-white/95 border border-[#DDD6FE] py-1.5 px-3.5 shadow-sm backdrop-blur-md">
+                <div className="flex -space-x-2 overflow-hidden">
+                  <div className="inline-block size-6 sm:size-7 rounded-full ring-2 ring-white overflow-hidden bg-purple-200">
+                    <Image
+                      src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&h=80&q=80"
+                      alt="Salon Owner"
+                      width={28}
+                      height={28}
+                      className="size-full object-cover"
+                      unoptimized
+                    />
+                  </div>
+                  <div className="inline-block size-6 sm:size-7 rounded-full ring-2 ring-white overflow-hidden bg-purple-300">
+                    <Image
+                      src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&h=80&q=80"
+                      alt="Salon Manager"
+                      width={28}
+                      height={28}
+                      className="size-full object-cover"
+                      unoptimized
+                    />
+                  </div>
+                  <div className="inline-block size-6 sm:size-7 rounded-full ring-2 ring-white overflow-hidden bg-purple-400">
+                    <Image
+                      src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=80&h=80&q=80"
+                      alt="Lead Stylist"
+                      width={28}
+                      height={28}
+                      className="size-full object-cover"
+                      unoptimized
+                    />
+                  </div>
+                </div>
+                <div className="text-xs">
+                  <span className="font-bold text-[#0F172A]">100+ Salons</span>
+                  <span className="text-[#475569] ml-1">trust Dart Smart Salon</span>
+                </div>
               </div>
 
-              <div className="flex items-center gap-1.5">
-                <span className="flex size-4 items-center justify-center rounded-full bg-[#EDE9FE] text-[#7C3AED]">
-                  <Check className="size-2.5" strokeWidth={3} />
-                </span>
-                <span>Free 21-day trial</span>
-              </div>
+              {/* Trust Indicators */}
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs sm:text-sm font-semibold text-[#475569]">
+                <div className="flex items-center gap-1.5">
+                  <span className="flex size-4 items-center justify-center rounded-full bg-[#EDE9FE] text-[#7C3AED]">
+                    <Check className="size-2.5" strokeWidth={3} />
+                  </span>
+                  <span>No credit card required</span>
+                </div>
 
-              <div className="flex items-center gap-1.5">
-                <span className="flex size-4 items-center justify-center rounded-full bg-[#EDE9FE] text-[#7C3AED]">
-                  <Check className="size-2.5" strokeWidth={3} />
-                </span>
-                <span>Cancel anytime</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="flex size-4 items-center justify-center rounded-full bg-[#EDE9FE] text-[#7C3AED]">
+                    <Check className="size-2.5" strokeWidth={3} />
+                  </span>
+                  <span>Free 21-day trial</span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="flex size-4 items-center justify-center rounded-full bg-[#EDE9FE] text-[#7C3AED]">
+                    <Check className="size-2.5" strokeWidth={3} />
+                  </span>
+                  <span>Cancel anytime</span>
+                </div>
               </div>
             </div>
           </div>
@@ -169,13 +276,13 @@ export function Hero() {
           <div className="lg:col-span-6 xl:col-span-7 relative flex flex-col items-center lg:items-end justify-center w-full mt-4 lg:mt-0">
             <div className="relative w-full max-w-[620px] xl:max-w-[700px] 2xl:max-w-[760px]">
 
-              {/* ── Decorative Floating Handwritten Text & Arrow ── */}
-              <div className="hidden sm:flex absolute -top-12 lg:-top-14 left-8 lg:left-14 z-30 items-center gap-2 pointer-events-none select-none">
-                <span className="font-handwriting text-2xl lg:text-[1.7rem] text-[#7C3AED] font-bold tracking-wide transform -rotate-6 drop-shadow-xs animate-handwriting whitespace-nowrap">
-                  More bookings, happier clients ♡
+              {/* ── Decorative Handwritten Note (Neatly Anchored) ── */}
+              <div className="hidden sm:flex absolute -top-10 lg:-top-12 left-6 lg:left-10 z-30 items-center gap-2 pointer-events-none select-none transition-all duration-300">
+                <span className="font-handwriting text-xl lg:text-2xl text-[#7C3AED] font-bold tracking-wide transform -rotate-6 drop-shadow-xs animate-handwriting whitespace-nowrap">
+                  {currentShowcase.noteText}
                 </span>
                 <svg
-                  className="w-12 h-10 text-[#7C3AED] transform rotate-12 -mt-2 animate-draw-arrow"
+                  className="w-10 h-8 text-[#7C3AED] transform rotate-12 -mt-1"
                   viewBox="0 0 50 40"
                   fill="none"
                   stroke="currentColor"
@@ -188,62 +295,19 @@ export function Hero() {
                 </svg>
               </div>
 
-              {/* ── Floating Top Card: 100+ Salons Trust Us ── */}
-              <div className="absolute -top-6 sm:-top-8 right-6 sm:right-12 z-30 animate-float-slow">
-                <div className="glass-card rounded-2xl py-2 px-3.5 sm:px-4 flex items-center gap-3 border border-[#DDD6FE]/80 shadow-xl shadow-purple-900/10">
-                  {/* Avatar stack */}
-                  <div className="flex -space-x-2 overflow-hidden">
-                    <div className="inline-block size-7 sm:size-8 rounded-full ring-2 ring-white overflow-hidden bg-purple-200">
-                      <Image
-                        src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&h=80&q=80"
-                        alt="Salon Owner"
-                        width={32}
-                        height={32}
-                        className="size-full object-cover"
-                        unoptimized
-                      />
-                    </div>
-                    <div className="inline-block size-7 sm:size-8 rounded-full ring-2 ring-white overflow-hidden bg-purple-300">
-                      <Image
-                        src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&h=80&q=80"
-                        alt="Salon Manager"
-                        width={32}
-                        height={32}
-                        className="size-full object-cover"
-                        unoptimized
-                      />
-                    </div>
-                    <div className="inline-block size-7 sm:size-8 rounded-full ring-2 ring-white overflow-hidden bg-purple-400">
-                      <Image
-                        src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=80&h=80&q=80"
-                        alt="Lead Stylist"
-                        width={32}
-                        height={32}
-                        className="size-full object-cover"
-                        unoptimized
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs sm:text-sm font-bold text-[#0F172A]">100+</div>
-                    <div className="text-[10px] sm:text-[11px] font-medium text-[#64748B]">Salons trust us</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* ── Floating Upper Right Card: Revenue Analytics Preview ── */}
-              <div className="hidden xs:block absolute top-12 sm:top-18 right-1 sm:-right-6 z-30 animate-float-gentle">
-                <div className="glass-card rounded-2xl p-2.5 sm:p-3.5 flex items-center gap-2.5 sm:gap-3 border border-[#DDD6FE]/80 shadow-xl shadow-purple-900/10 backdrop-blur-md bg-white/95">
-                  <div className="flex size-8 sm:size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#7C3AED] to-[#D946EF] text-white shadow-sm shadow-purple-500/25">
-                    <TrendingUp className="size-4 sm:size-5" />
+              {/* ── Docked Dynamic Badge (Anchored cleanly to laptop frame) ── */}
+              <div className="hidden xs:block absolute -top-5 sm:-top-6 right-2 sm:right-6 z-30 transition-all duration-300">
+                <div className="rounded-2xl p-2.5 sm:p-3 flex items-center gap-2.5 sm:gap-3 border border-[#DDD6FE] shadow-xl shadow-purple-900/15 backdrop-blur-md bg-white/95">
+                  <div className="flex size-8 sm:size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#7C3AED] to-[#D946EF] text-white shadow-sm shadow-purple-500/25">
+                    <ShowcaseIcon className="size-4 sm:size-4.5" />
                   </div>
                   <div>
                     <div className="text-xs sm:text-sm font-extrabold text-[#0F172A] leading-tight">
-                      LKR 53,000
+                      {currentShowcase.badgeValue}
                     </div>
-                    <div className="text-[10px] sm:text-[11px] text-[#64748B] flex items-center gap-1">
-                      <span>This month revenue</span>
-                      <span className="text-emerald-600 font-bold">↗ +12%</span>
+                    <div className="text-[10px] sm:text-[11px] text-[#475569] flex items-center gap-1 font-medium">
+                      <span>{currentShowcase.badgeDetail}</span>
+                      <span className="text-emerald-700 font-bold">↗ {currentShowcase.badgeDelta}</span>
                     </div>
                   </div>
                 </div>

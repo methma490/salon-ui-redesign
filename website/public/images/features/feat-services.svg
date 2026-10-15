@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" width="640" height="400">
+  <defs>
+    <linearGradient id="srv-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F5F3FF"/>
+      <stop offset="100%" stop-color="#EDE9FE"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="400" fill="url(#srv-bg)"/>
+  
+  <rect x="50" y="40" width="540" height="320" rx="18" fill="#FFFFFF" stroke="#DDD6FE" stroke-width="1.5"/>
+  <rect x="50" y="40" width="540" height="42" rx="18" fill="#FAF5FF"/>
+  <line x1="50" y1="82" x2="590" y2="82" stroke="#EDE9FE" stroke-width="1"/>
+
+  <circle cx="78" cy="61" r="4.5" fill="#FDA4AF"/>
+  <circle cx="94" cy="61" r="4.5" fill="#FCD34D"/>
+  <circle cx="110" cy="61" r="4.5" fill="#86EFAC"/>
+  <text x="320" y="65" fill="#6B21A8" font-family="system-ui, sans-serif" font-size="11.5" font-weight="700" text-anchor="middle">Dynamic Service Catalog • Duration Buffers &amp; Tiered Pricing</text>
+
+  <!-- Service 1: Balayage -->
+  <g transform="translate(75, 96)">
+    <rect width="490" height="68" rx="12" fill="#FAF5FF" stroke="#DDD6FE" stroke-width="1.2"/>
+    <text x="18" y="28" fill="#0F172A" font-family="system-ui, sans-serif" font-size="12" font-weight="800">Balayage &amp; Silk Gloss Signature</text>
+    <rect x="230" y="14" width="75" height="18" rx="9" fill="#EDE9FE"/>
+    <text x="267" y="27" fill="#7C3AED" font-family="system-ui, sans-serif" font-size="9" font-weight="700" text-anchor="middle">Color &amp; Spa</text>
+    <text x="18" y="50" fill="#64748B" font-family="system-ui, sans-serif" font-size="10">Duration: 90 mins • 15 min Wash Buffer • Stylist Tier: Master</text>
+    <text x="470" y="40" fill="#7C3AED" font-family="system-ui, sans-serif" font-size="15" font-weight="800" text-anchor="end">$165.00</text>
+  </g>
+
+  <!-- Service 2: Haircut & Blowout -->
+  <g transform="translate(75, 174)">
+    <rect width="490" height="68" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.2"/>
+    <text x="18" y="28" fill="#0F172A" font-family="system-ui, sans-serif" font-size="12" font-weight="800">Precision Haircut &amp; Volumizing Blowout</text>
+    <rect x="280" y="14" width="60" height="18" rx="9" fill="#F1F5F9"/>
+    <text x="310" y="27" fill="#475569" font-family="system-ui, sans-serif" font-size="9" font-weight="700" text-anchor="middle">Styling</text>
+    <text x="18" y="50" fill="#64748B" font-family="system-ui, sans-serif" font-size="10">Duration: 45 mins • Senior Tier: $65 • Junior Tier: $45</text>
+    <text x="470" y="40" fill="#0F172A" font-family="system-ui, sans-serif" font-size="15" font-weight="800" text-anchor="end">$65.00</text>
+  </g>
+
+  <!-- Service 3: Bridal Package -->
+  <g transform="translate(75, 252)">
+    <rect width="490" height="68" rx="12" fill="#FDF4FF" stroke="#F0ABFC" stroke-width="1.2"/>
+    <text x="18" y="28" fill="#701A75" font-family="system-ui, sans-serif" font-size="12" font-weight="800">VIP Bridal Glamour Treatment Package</text>
+    <rect x="260" y="14" width="95" height="18" rx="9" fill="#FCE7F3"/>
+    <text x="307" y="27" fill="#BE185D" font-family="system-ui, sans-serif" font-size="9" font-weight="700" text-anchor="middle">3 Bundled Services</text>
+    <text x="18" y="50" fill="#86198F" font-family="system-ui, sans-serif" font-size="10">Updo + Makeup + Deluxe Gel Nails (Total: 180 min)</text>
+    <text x="470" y="40" fill="#BE185D" font-family="system-ui, sans-serif" font-size="15" font-weight="800" text-anchor="end">$340.00</text>
+  </g>
+
+  <g transform="translate(75, 332)">
+    <text x="0" y="12" fill="#10B981" font-family="system-ui, sans-serif" font-size="9.5" font-weight="700">✓ Auto-calculated processing times prevent schedule overlaps</text>
+  </g>
+</svg>

@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from '@/components/ui/Button';
 import { ShieldCheck, Users, Zap, CheckCircle2, ArrowRight } from 'lucide-react';
 

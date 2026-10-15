@@ -12,18 +12,15 @@ export function getApiBaseUrl(): string {
   if (publicUrl) {
     if (
       publicUrl.includes('salon-main-website') ||
-      (process.env.NODE_ENV === 'production' &&
-        (publicUrl === 'http://localhost:3000/api' || publicUrl === 'http://localhost:3000'))
+      publicUrl === 'http://localhost:3000/api' ||
+      publicUrl === 'http://localhost:3000'
     ) {
       return 'https://saloon-server.bc.dartcodes.com/api';
     }
     return publicUrl;
   }
 
-  if (process.env.NODE_ENV === 'production') {
-    return 'https://saloon-server.bc.dartcodes.com/api';
-  }
-  return 'http://localhost:3000/api';
+  return 'https://saloon-server.bc.dartcodes.com/api';
 }
 
 export function getAppUrl(): string {
@@ -32,10 +29,7 @@ export function getAppUrl(): string {
     envUrl = envUrl.replace(/\/(salon\/)?login\/?$/i, '').replace(/\/$/, '');
     if (envUrl) return envUrl;
   }
-  if (process.env.NODE_ENV === 'production') {
-    return 'https://saloon-client.bc.dartcodes.com';
-  }
-  return 'http://localhost:5173';
+  return 'https://saloon-client.bc.dartcodes.com';
 }
 
 export function signupUrl(planId: string, billingCycle?: string): string {
@@ -50,39 +44,78 @@ export function loginUrl(): string {
   return `${getAppUrl()}/salon/login`;
 }
 
+/**
+ * Resilient request helper for server-side fetches.
+ * Avoids Next.js dev server's patched fetch interceptor which can crash
+ * on connection failures when WASM source mapping encounters errors.
+ */
+function requestJson(url: string, timeoutMs: number = 8000): Promise<unknown> {
+  if (typeof window === 'undefined') {
+    return new Promise((resolve, reject) => {
+      try {
+        const isHttps = url.startsWith('https:');
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { request } = isHttps ? require('node:https') : require('node:http');
+
+        const req = request(
+          url,
+          {
+            method: 'GET',
+            headers: {
+              Accept: 'application/json',
+              'User-Agent': 'DartSmartSalon-Website/1.0',
+            },
+            timeout: timeoutMs,
+          },
+          (res: import('node:http').IncomingMessage) => {
+            const statusCode = res.statusCode ?? 500;
+            if (statusCode < 200 || statusCode >= 300) {
+              return reject(new Error(`HTTP ${statusCode}`));
+            }
+            let body = '';
+            res.setEncoding('utf8');
+            res.on('data', (chunk: string) => {
+              body += chunk;
+            });
+            res.on('end', () => {
+              try {
+                resolve(JSON.parse(body));
+              } catch (e) {
+                reject(e);
+              }
+            });
+          }
+        );
+
+        req.on('error', (err: Error) => reject(err));
+        req.on('timeout', () => {
+          req.destroy(new Error(`Request timed out after ${timeoutMs}ms`));
+        });
+        req.end();
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  return fetch(url, { headers: { Accept: 'application/json' } }).then((r) => {
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  });
+}
+
 export async function fetchPublicPlans(): Promise<PublicPlan[]> {
   const baseUrl = getApiBaseUrl();
   const url = `${baseUrl}/plans`;
+
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
-
-    const res = await fetch(url, {
-      cache: 'no-store',
-      signal: controller.signal,
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!res.ok) {
-      console.warn(`[Plans API] Backend responded with ${res.status} ${res.statusText} from ${url}. Using fallback plans.`);
-      return DEFAULT_FALLBACK_PLANS;
-    }
-
-    const data = (await res.json()) as unknown;
-    if (Array.isArray(data)) {
-      // If backend responded with 200 OK (even an empty array when all plans are deactivated), honor the real backend response
+    const data = await requestJson(url, 8000);
+    if (Array.isArray(data) && data.length > 0) {
       return data as PublicPlan[];
     }
-
     return DEFAULT_FALLBACK_PLANS;
   } catch (error) {
-    console.warn(`[Plans API] Backend fetch error from ${url}, falling back to local plans catalogue:`, error);
+    console.warn(`[Plans API] Note: Using offline/fallback plans catalogue (${(error as Error)?.message || error})`);
     return DEFAULT_FALLBACK_PLANS;
   }
 }
-

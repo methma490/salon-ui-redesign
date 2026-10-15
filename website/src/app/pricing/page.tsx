@@ -8,7 +8,7 @@ import { buildMetadata, breadcrumbJsonLd } from '@/lib/seo';
 
 export const metadata: Metadata = buildMetadata({
   title: 'Pricing',
-  description: 'Compare Silver, Gold, and Platinum plans for Dart Smart Salon.',
+  description: 'Compare Basic and Gold plans for Dart Smart Salon.',
   path: '/pricing',
 });
 

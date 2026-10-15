@@ -1,3 +1,5 @@
+'use client';
+
 import { Star, CheckCircle, TrendingUp, Clock, Shield } from 'lucide-react';
 import { SectionHeading } from '@/components/ui/SectionHeading';
 

@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" width="640" height="400">
+  <defs>
+    <linearGradient id="sup-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FAF5FF"/>
+      <stop offset="100%" stop-color="#EDE9FE"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="400" fill="url(#sup-bg)"/>
+  
+  <rect x="50" y="40" width="540" height="320" rx="18" fill="#FFFFFF" stroke="#DDD6FE" stroke-width="1.5"/>
+  <rect x="50" y="40" width="540" height="42" rx="18" fill="#FAF5FF"/>
+  <line x1="50" y1="82" x2="590" y2="82" stroke="#EDE9FE" stroke-width="1"/>
+
+  <circle cx="78" cy="61" r="4.5" fill="#FDA4AF"/>
+  <circle cx="94" cy="61" r="4.5" fill="#FCD34D"/>
+  <circle cx="110" cy="61" r="4.5" fill="#86EFAC"/>
+  <text x="320" y="65" fill="#6B21A8" font-family="system-ui, sans-serif" font-size="11.5" font-weight="700" text-anchor="middle">Supplier Procurement &amp; Goods Received Notes (GRN)</text>
+
+  <!-- GRN Receipt Card -->
+  <g transform="translate(75, 96)">
+    <rect width="490" height="74" rx="12" fill="#FAF5FF" stroke="#DDD6FE" stroke-width="1.2"/>
+    <text x="18" y="28" fill="#0F172A" font-family="system-ui, sans-serif" font-size="12" font-weight="800">GRN #2026-084 • L'Oréal Professional Supplies</text>
+    <rect x="330" y="14" width="85" height="18" rx="9" fill="#DCFCE7"/>
+    <text x="372" y="27" fill="#166534" font-family="system-ui, sans-serif" font-size="9" font-weight="700" text-anchor="middle">Shipment Verified</text>
+    
+    <text x="18" y="52" fill="#64748B" font-family="system-ui, sans-serif" font-size="10">Delivered: Oct 14, 2026 • 48 Units (Color Tubes, Developers &amp; Serums)</text>
+    <text x="470" y="42" fill="#7C3AED" font-family="system-ui, sans-serif" font-size="15" font-weight="800" text-anchor="end">$1,420.00</text>
+  </g>
+
+  <!-- Ledger Table View -->
+  <g transform="translate(75, 180)">
+    <rect width="490" height="140" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+    
+    <text x="18" y="24" fill="#0F172A" font-family="system-ui, sans-serif" font-size="11" font-weight="700">Vendor Outstanding Payables Ledger</text>
+
+    <!-- Row 1 -->
+    <g transform="translate(18, 36)">
+      <text x="0" y="18" fill="#0F172A" font-family="system-ui, sans-serif" font-size="10.5" font-weight="600">L'Oréal Professional</text>
+      <text x="240" y="18" fill="#64748B" font-family="system-ui, sans-serif" font-size="10">Net 30 Days (Due in 18d)</text>
+      <text x="450" y="18" fill="#0F172A" font-family="system-ui, sans-serif" font-size="11" font-weight="700" text-anchor="end">$1,420.00</text>
+      <line x1="0" y1="28" x2="450" y2="28" stroke="#E2E8F0" stroke-width="1"/>
+    </g>
+
+    <!-- Row 2 -->
+    <g transform="translate(18, 70)">
+      <text x="0" y="18" fill="#0F172A" font-family="system-ui, sans-serif" font-size="10.5" font-weight="600">Wella Salon Distribution</text>
+      <text x="240" y="18" fill="#10B981" font-family="system-ui, sans-serif" font-size="10" font-weight="700">Paid in Full (Bank Transfer)</text>
+      <text x="450" y="18" fill="#10B981" font-family="system-ui, sans-serif" font-size="11" font-weight="700" text-anchor="end">$0.00</text>
+      <line x1="0" y1="28" x2="450" y2="28" stroke="#E2E8F0" stroke-width="1"/>
+    </g>
+
+    <!-- Row 3 -->
+    <g transform="translate(18, 104)">
+      <text x="0" y="18" fill="#0F172A" font-family="system-ui, sans-serif" font-size="10.5" font-weight="600">BeautyPro Salon Towel &amp; Linen</text>
+      <text x="240" y="18" fill="#64748B" font-family="system-ui, sans-serif" font-size="10">Weekly Recurring</text>
+      <text x="450" y="18" fill="#0F172A" font-family="system-ui, sans-serif" font-size="11" font-weight="700" text-anchor="end">$180.00</text>
+    </g>
+  </g>
+</svg>

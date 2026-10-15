@@ -19,11 +19,11 @@ const segments = [
   },
   {
     title: 'Busy city salons',
-    body: 'Gold and Platinum plans add POS, quotations, reports, and staff logins for high volume.',
+    body: 'Gold plan adds POS, quotations, reports, and staff logins for high volume.',
   },
   {
     title: 'Multi-branch groups',
-    body: 'Platinum unlocks multi-branch operations, expenses, payroll, analytics, and SMS receipts.',
+    body: 'Gold unlocks multi-branch operations, expenses, payroll, analytics, and SMS receipts.',
   },
 ];
 

@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" width="640" height="400">
+  <defs>
+    <linearGradient id="bg-grad-4" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FAF5FF"/>
+      <stop offset="100%" stop-color="#F3E8FF"/>
+    </linearGradient>
+    <linearGradient id="chart-area-4" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#A855F7" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#A855F7" stop-opacity="0.0"/>
+    </linearGradient>
+    <filter id="shadow-4" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#7C3AED" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <rect width="640" height="400" fill="url(#bg-grad-4)"/>
+
+  <!-- Subtle Grid Lines -->
+  <path d="M0 80 H640 M0 160 H640 M0 240 H640 M0 320 H640" stroke="#DDD6FE" stroke-width="1" stroke-dasharray="4 8" opacity="0.6"/>
+  <path d="M120 0 V400 M240 0 V400 M360 0 V400 M480 0 V400" stroke="#DDD6FE" stroke-width="1" stroke-dasharray="4 8" opacity="0.6"/>
+
+  <g filter="url(#shadow-4)">
+    <rect x="70" y="45" width="500" height="310" rx="20" fill="#FFFFFF" stroke="#DDD6FE" stroke-width="1.5"/>
+
+    <!-- App Header Bar -->
+    <rect x="70" y="45" width="500" height="46" rx="20" fill="#FAF5FF"/>
+    <rect x="70" y="71" width="500" height="20" fill="#FAF5FF"/>
+    <line x1="70" y1="91" x2="570" y2="91" stroke="#EDE9FE" stroke-width="1"/>
+
+    <!-- Window dots -->
+    <circle cx="102" cy="68" r="5" fill="#FDA4AF"/>
+    <circle cx="120" cy="68" r="5" fill="#FCD34D"/>
+    <circle cx="138" cy="68" r="5" fill="#86EFAC"/>
+
+    <text x="320" y="72" fill="#6B21A8" font-family="system-ui, sans-serif" font-size="12" font-weight="700" text-anchor="middle">
+      Live Executive Intelligence: Net Profit &amp; Stylist Rankings
+    </text>
+
+    <!-- Top 3 Metric Stat Cards -->
+    <g transform="translate(95, 106)">
+      <!-- Metric 1: Net Revenue -->
+      <g>
+        <rect x="0" y="0" width="140" height="66" rx="12" fill="#FAF5FF" stroke="#DDD6FE" stroke-width="1.2"/>
+        <text x="14" y="20" fill="#64748B" font-family="system-ui, sans-serif" font-size="10" font-weight="600">Net Revenue (MTD)</text>
+        <text x="14" y="44" fill="#0F172A" font-family="system-ui, sans-serif" font-size="16" font-weight="800">$24,850</text>
+        <rect x="86" y="28" width="44" height="18" rx="9" fill="#DCFCE7"/>
+        <text x="108" y="40" fill="#166534" font-family="system-ui, sans-serif" font-size="9" font-weight="800" text-anchor="middle">+28%</text>
+      </g>
+
+      <!-- Metric 2: Net Margin -->
+      <g transform="translate(155, 0)">
+        <rect x="0" y="0" width="140" height="66" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.2"/>
+        <text x="14" y="20" fill="#64748B" font-family="system-ui, sans-serif" font-size="10" font-weight="600">Net Profit Margin</text>
+        <text x="14" y="44" fill="#7C3AED" font-family="system-ui, sans-serif" font-size="16" font-weight="800">41.6%</text>
+        <text x="126" y="44" fill="#10B981" font-family="system-ui, sans-serif" font-size="11" font-weight="700" text-anchor="end">↑ High</text>
+      </g>
+
+      <!-- Metric 3: Repeat Clients -->
+      <g transform="translate(310, 0)">
+        <rect x="0" y="0" width="140" height="66" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.2"/>
+        <text x="14" y="20" fill="#64748B" font-family="system-ui, sans-serif" font-size="10" font-weight="600">Client Return Rate</text>
+        <text x="14" y="44" fill="#0F172A" font-family="system-ui, sans-serif" font-size="16" font-weight="800">86.2%</text>
+        <rect x="94" y="28" width="36" height="18" rx="9" fill="#EDE9FE"/>
+        <text x="112" y="40" fill="#7C3AED" font-family="system-ui, sans-serif" font-size="9" font-weight="800" text-anchor="middle">VIP</text>
+      </g>
+    </g>
+
+    <!-- Bottom Trend Chart + Stylist Leaderboard -->
+    <g transform="translate(95, 186)">
+      <!-- Trend Graph Area -->
+      <g>
+        <rect x="0" y="0" width="280" height="106" rx="12" fill="#FAF5FF" stroke="#DDD6FE" stroke-width="1.2"/>
+        <text x="14" y="20" fill="#0F172A" font-family="system-ui, sans-serif" font-size="10.5" font-weight="700">Weekly Revenue Surge</text>
+        
+        <!-- Smooth Path Chart -->
+        <path d="M14 85 Q 50 78, 80 62 T 150 48 T 210 32 T 266 22 L 266 94 L 14 94 Z" fill="url(#chart-area-4)"/>
+        <path d="M14 85 Q 50 78, 80 62 T 150 48 T 210 32 T 266 22" fill="none" stroke="#7C3AED" stroke-width="2.5" stroke-linecap="round"/>
+
+        <!-- Apex Dot -->
+        <circle cx="266" cy="22" r="4.5" fill="#7C3AED" stroke="#FFFFFF" stroke-width="2"/>
+        <text x="266" y="14" fill="#7C3AED" font-family="system-ui, sans-serif" font-size="9" font-weight="800" text-anchor="end">$4,250 Today</text>
+      </g>
+
+      <!-- Stylist Commissions mini rank -->
+      <g transform="translate(295, 0)">
+        <rect x="0" y="0" width="155" height="106" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.2"/>
+        <text x="12" y="20" fill="#0F172A" font-family="system-ui, sans-serif" font-size="10.5" font-weight="700">Top Stylist Sales</text>
+
+        <!-- Rank 1 -->
+        <text x="12" y="44" fill="#7C3AED" font-family="system-ui, sans-serif" font-size="9.5" font-weight="700">#1 Elena R.</text>
+        <text x="143" y="44" fill="#0F172A" font-family="system-ui, sans-serif" font-size="9.5" font-weight="700" text-anchor="end">$6,840</text>
+        <rect x="12" y="50" width="131" height="5" rx="2.5" fill="#EDE9FE"/>
+        <rect x="12" y="50" width="112" height="5" rx="2.5" fill="#7C3AED"/>
+
+        <!-- Rank 2 -->
+        <text x="12" y="74" fill="#64748B" font-family="system-ui, sans-serif" font-size="9.5" font-weight="600">#2 Marcus T.</text>
+        <text x="143" y="74" fill="#0F172A" font-family="system-ui, sans-serif" font-size="9.5" font-weight="700" text-anchor="end">$4,920</text>
+        <rect x="12" y="80" width="131" height="5" rx="2.5" fill="#EDE9FE"/>
+        <rect x="12" y="80" width="82" height="5" rx="2.5" fill="#A855F7"/>
+
+        <text x="12" y="99" fill="#10B981" font-family="system-ui, sans-serif" font-size="8.5" font-weight="700">✓ Auto-calculated payroll</text>
+      </g>
+    </g>
+
+    <!-- Bottom summary -->
+    <g transform="translate(95, 304)">
+      <circle cx="10" cy="10" r="8" fill="#DCFCE7"/>
+      <text x="10" y="14" fill="#16A34A" font-family="system-ui, sans-serif" font-size="10" font-weight="800" text-anchor="middle">✓</text>
+      <text x="26" y="14" fill="#475569" font-family="system-ui, sans-serif" font-size="11" font-weight="600">Automated monthly P&amp;L • Stylist commission math • Customer retention</text>
+    </g>
+  </g>
+</svg>

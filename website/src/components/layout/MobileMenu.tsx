@@ -103,25 +103,22 @@ export function MobileMenu() {
 
   const drawerContent = mounted ? (
     <div
-      className={`fixed inset-0 z-[9999] transition-visibility duration-300 lg:hidden ${
-        open ? 'visible' : 'invisible pointer-events-none'
-      }`}
+      className={`fixed inset-0 z-[9999] transition-visibility duration-300 lg:hidden ${open ? 'visible' : 'invisible pointer-events-none'
+        }`}
       aria-hidden={!open}
     >
       {/* Backdrop Overlay */}
       <div
-        className={`fixed inset-0 bg-[#0F172A]/50 backdrop-blur-sm transition-opacity duration-300 ${
-          open ? 'opacity-100' : 'opacity-0'
-        }`}
+        className={`fixed inset-0 bg-[#0F172A]/50 backdrop-blur-sm transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'
+          }`}
         onClick={() => setOpen(false)}
         aria-hidden="true"
       />
 
       {/* Slide-Over Drawer Panel */}
       <div
-        className={`fixed inset-y-0 right-0 z-[10000] flex h-full w-full max-w-[340px] sm:max-w-[380px] flex-col justify-between bg-white shadow-2xl transition-transform duration-300 ease-out ${
-          open ? 'translate-x-0' : 'translate-x-full'
-        }`}
+        className={`fixed inset-y-0 right-0 z-[10000] flex h-full w-full max-w-[340px] sm:max-w-[380px] flex-col justify-between bg-white shadow-2xl transition-transform duration-300 ease-out ${open ? 'translate-x-0' : 'translate-x-full'
+          }`}
         role="dialog"
         aria-modal="true"
         aria-label="Mobile Navigation"

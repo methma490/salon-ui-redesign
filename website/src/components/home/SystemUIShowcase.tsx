@@ -47,7 +47,7 @@ const DEVICE_VIEWS: Record<DeviceKey, DeviceView> = {
     icon: Layers,
     title: 'Dart Smart Salon Multi-Device Suite',
     subtitle: 'Unified salon administration across desktop, tablet, and smartphone',
-    imageSrc: '/assets/landing/desktop-dashboard.png',
+    imageSrc: '/images/dashboard/multi-device-overview.png',
     aspectClass: 'aspect-[16/9.5]',
     maxContainerClass: 'max-w-5xl',
     features: [
@@ -105,7 +105,7 @@ const DEVICE_VIEWS: Record<DeviceKey, DeviceView> = {
     icon: TabletIcon,
     title: 'Chairside Service Tablet',
     subtitle: 'Interactive service catalog and consultation tool for stylists at their work stations',
-    imageSrc: '/assets/landing/desktop-dashboard.png',
+    imageSrc: '/images/dashboard/tablet-dashboard.jpg',
     aspectClass: 'aspect-[16/10]',
     maxContainerClass: 'max-w-4xl',
     features: [
@@ -134,7 +134,7 @@ const DEVICE_VIEWS: Record<DeviceKey, DeviceView> = {
     icon: Smartphone,
     title: 'Mobile App Management',
     subtitle: 'Real-time revenue, daily bookings, and staff attendance directly in your pocket',
-    imageSrc: '/assets/landing/mobile-dashboard.png',
+    imageSrc: '/images/dashboard/mobile-dashboard.jpg',
     aspectClass: 'aspect-[9/16]',
     maxContainerClass: 'max-w-sm',
     features: [
@@ -157,6 +157,7 @@ const DEVICE_VIEWS: Record<DeviceKey, DeviceView> = {
     sideHighlights: ['iOS & Android Compatible', 'Push Notifications', 'Real-Time Revenue'],
   },
 };
+
 
 export function SystemUIShowcase() {
   const [activeTab, setActiveTab] = useState<DeviceKey>('all');

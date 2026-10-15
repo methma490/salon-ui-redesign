@@ -32,8 +32,17 @@ export function Header() {
         setActiveDropdown(null);
       }
     }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setActiveDropdown(null);
+      }
+    }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const handleMouseEnter = (name: string) => setActiveDropdown(name);
@@ -62,18 +71,16 @@ export function Header() {
             <button
               type="button"
               onClick={() => setActiveDropdown(activeDropdown === 'product' ? null : 'product')}
-              className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                activeDropdown === 'product'
+              className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 focus-visible:ring-offset-2 ${activeDropdown === 'product'
                   ? 'bg-[#EDE9FE] text-[#7C3AED]'
                   : 'text-[#0F172A] hover:bg-[#F5F3FF] hover:text-[#7C3AED]'
-              }`}
+                }`}
               aria-expanded={activeDropdown === 'product'}
             >
               <span>Product</span>
               <ChevronDown
-                className={`h-3.5 w-3.5 transition-transform duration-200 ${
-                  activeDropdown === 'product' ? 'rotate-180 text-[#7C3AED]' : 'text-[#64748B]'
-                }`}
+                className={`h-3.5 w-3.5 transition-transform duration-200 ${activeDropdown === 'product' ? 'rotate-180 text-[#7C3AED]' : 'text-[#64748B]'
+                  }`}
               />
             </button>
 
@@ -173,18 +180,16 @@ export function Header() {
             <button
               type="button"
               onClick={() => setActiveDropdown(activeDropdown === 'features' ? null : 'features')}
-              className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                activeDropdown === 'features'
+              className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 focus-visible:ring-offset-2 ${activeDropdown === 'features'
                   ? 'bg-[#EDE9FE] text-[#7C3AED]'
                   : 'text-[#0F172A] hover:bg-[#F5F3FF] hover:text-[#7C3AED]'
-              }`}
+                }`}
               aria-expanded={activeDropdown === 'features'}
             >
               <span>Features</span>
               <ChevronDown
-                className={`h-3.5 w-3.5 transition-transform duration-200 ${
-                  activeDropdown === 'features' ? 'rotate-180 text-[#7C3AED]' : 'text-[#64748B]'
-                }`}
+                className={`h-3.5 w-3.5 transition-transform duration-200 ${activeDropdown === 'features' ? 'rotate-180 text-[#7C3AED]' : 'text-[#64748B]'
+                  }`}
               />
             </button>
 
@@ -194,7 +199,7 @@ export function Header() {
                   <Link
                     href="/features#services"
                     onClick={() => setActiveDropdown(null)}
-                    className="flex items-start gap-3 rounded-xl p-2.5 transition hover:bg-[#F5F3FF] group"
+                    className="flex items-start gap-3 rounded-xl p-2.5 transition hover:bg-[#F5F3FF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 focus-visible:ring-offset-1 group"
                   >
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#EDE9FE] text-[#7C3AED] group-hover:bg-[#7C3AED] group-hover:text-white transition-colors">
                       <Scissors className="h-4 w-4" />
@@ -246,7 +251,7 @@ export function Header() {
           {/* Pricing Link */}
           <Link
             href="/#pricing"
-            className="rounded-full px-4 py-2 text-sm font-medium text-[#0F172A] hover:bg-[#F5F3FF] hover:text-[#7C3AED] transition-colors"
+            className="rounded-full px-4 py-2 text-sm font-medium text-[#0F172A] hover:bg-[#F5F3FF] hover:text-[#7C3AED] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 focus-visible:ring-offset-2 transition-colors"
           >
             Pricing
           </Link>
@@ -260,18 +265,16 @@ export function Header() {
             <button
               type="button"
               onClick={() => setActiveDropdown(activeDropdown === 'resources' ? null : 'resources')}
-              className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                activeDropdown === 'resources'
+              className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 focus-visible:ring-offset-2 ${activeDropdown === 'resources'
                   ? 'bg-[#EDE9FE] text-[#7C3AED]'
                   : 'text-[#0F172A] hover:bg-[#F5F3FF] hover:text-[#7C3AED]'
-              }`}
+                }`}
               aria-expanded={activeDropdown === 'resources'}
             >
               <span>Resources</span>
               <ChevronDown
-                className={`h-3.5 w-3.5 transition-transform duration-200 ${
-                  activeDropdown === 'resources' ? 'rotate-180 text-[#7C3AED]' : 'text-[#64748B]'
-                }`}
+                className={`h-3.5 w-3.5 transition-transform duration-200 ${activeDropdown === 'resources' ? 'rotate-180 text-[#7C3AED]' : 'text-[#64748B]'
+                  }`}
               />
             </button>
 
