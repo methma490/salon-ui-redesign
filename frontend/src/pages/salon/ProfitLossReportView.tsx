@@ -33,7 +33,7 @@ import {
 import { OpsLoading, OpsError, getErrorMessage } from './salon-ops-ui';
 import { printReportDocument } from '@/lib/print-report';
 
-export type PnLQuickFilter = 'today' | 'this_week' | 'this_month' | 'last_month' | 'this_year' | 'custom';
+export type PnLQuickFilter = 'today' | 'this_week' | 'this_month' | 'custom';
 
 export interface BranchOption {
   id: string;
@@ -59,6 +59,7 @@ interface ProfitLossReportViewProps {
   branches: BranchOption[];
   hideBranchFilter?: boolean;
   salonTitle?: string;
+  showPrintButton?: boolean;
 }
 
 export function ProfitLossReportView({
@@ -78,6 +79,7 @@ export function ProfitLossReportView({
   branches,
   hideBranchFilter = false,
   salonTitle,
+  showPrintButton = false,
 }: ProfitLossReportViewProps) {
   const handlePrint = () => {
     if (!data) return;
@@ -101,8 +103,6 @@ export function ProfitLossReportView({
               { id: 'today', label: 'Today' },
               { id: 'this_week', label: 'This Week' },
               { id: 'this_month', label: 'This Month' },
-              { id: 'last_month', label: 'Last Month' },
-              { id: 'this_year', label: 'This Year' },
               { id: 'custom', label: 'Custom' },
             ] as const
           ).map((preset) => (
@@ -160,16 +160,18 @@ export function ProfitLossReportView({
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={handlePrint}
-            disabled={!data || isLoading}
-            className="reports-export-btn"
-            title="Print or export PDF report"
-          >
-            <Printer className="h-4 w-4" />
-            <span>Print P&L</span>
-          </button>
+          {showPrintButton && (
+            <button
+              type="button"
+              onClick={handlePrint}
+              disabled={!data || isLoading}
+              className="reports-export-btn"
+              title="Print or export PDF report"
+            >
+              <Printer className="h-4 w-4" />
+              <span>Print P&L</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -186,20 +188,20 @@ export function ProfitLossReportView({
       {!isLoading && !isError && data && (
         <>
           {/* KPI CARDS */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="pnl-kpi-grid grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* 1. TOTAL REVENUE */}
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center shrink-0 text-purple-600">
+            <div className="pnl-kpi-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-start gap-4">
+              <div className="pnl-kpi-icon w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center shrink-0 text-purple-600">
                 <DollarSign className="h-6 w-6" />
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <div className="pnl-kpi-body min-w-0 flex-1">
+                <p className="pnl-kpi-label text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   Total Revenue
                 </p>
-                <h3 className="text-2xl font-bold text-slate-900 mt-1">
+                <h3 className="pnl-kpi-value text-2xl font-bold text-slate-900 mt-1">
                   {formatMoneyAmount(data.summary.totalRevenue)}
                 </h3>
-                <div className="flex items-center gap-1.5 mt-1.5 text-xs text-slate-500">
+                <div className="pnl-kpi-meta flex items-center gap-1.5 mt-1.5 text-xs text-slate-500">
                   <span className="font-medium text-slate-700">
                     Gross: {formatMoneyAmount(data.income.grossSales)}
                   </span>
@@ -213,18 +215,18 @@ export function ProfitLossReportView({
             </div>
 
             {/* 2. TOTAL EXPENSES (Including Supplier Payments) */}
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center shrink-0 text-rose-600">
+            <div className="pnl-kpi-card bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-start gap-4">
+              <div className="pnl-kpi-icon w-12 h-12 rounded-xl bg-rose-50 flex items-center justify-center shrink-0 text-rose-600">
                 <Receipt className="h-6 w-6" />
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+              <div className="pnl-kpi-body min-w-0 flex-1">
+                <p className="pnl-kpi-label text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   Total Expenses
                 </p>
-                <h3 className="text-2xl font-bold text-rose-600 mt-1">
+                <h3 className="pnl-kpi-value text-2xl font-bold text-rose-600 mt-1">
                   {formatMoneyAmount(data.summary.totalExpenses)}
                 </h3>
-                <div className="flex items-center gap-1.5 mt-1.5 text-xs text-slate-500">
+                <div className="pnl-kpi-meta flex items-center gap-1.5 mt-1.5 text-xs text-slate-500">
                   <span>Across {data.operatingExpenses.categories.length} categories (inc. supplier payments)</span>
                 </div>
               </div>
@@ -232,14 +234,14 @@ export function ProfitLossReportView({
 
             {/* 3. NET PROFIT / LOSS */}
             <div
-              className={`p-5 rounded-xl border shadow-sm flex items-start gap-4 ${
+              className={`pnl-kpi-card p-5 rounded-xl border shadow-sm flex items-start gap-4 ${
                 netProfitPositive
                   ? 'bg-gradient-to-br from-emerald-50/50 to-white border-emerald-200'
                   : 'bg-gradient-to-br from-rose-50/50 to-white border-rose-200'
               }`}
             >
               <div
-                className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                className={`pnl-kpi-icon w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
                   netProfitPositive
                     ? 'bg-emerald-100 text-emerald-700'
                     : 'bg-rose-100 text-rose-700'
@@ -251,22 +253,22 @@ export function ProfitLossReportView({
                   <TrendingDown className="h-6 w-6" />
                 )}
               </div>
-              <div className="min-w-0 flex-1">
+              <div className="pnl-kpi-body min-w-0 flex-1">
                 <p
-                  className={`text-xs font-semibold uppercase tracking-wider ${
+                  className={`pnl-kpi-label text-xs font-semibold uppercase tracking-wider ${
                     netProfitPositive ? 'text-emerald-700' : 'text-rose-700'
                   }`}
                 >
                   {netProfitPositive ? 'Net Profit' : 'Net Loss'}
                 </p>
                 <h3
-                  className={`text-2xl font-black mt-1 ${
+                  className={`pnl-kpi-value text-2xl font-black mt-1 ${
                     netProfitPositive ? 'text-emerald-700' : 'text-rose-700'
                   }`}
                 >
                   {formatMoneyAmount(data.summary.netProfit)}
                 </h3>
-                <div className="flex items-center gap-2 mt-1.5 text-xs">
+                <div className="pnl-kpi-meta flex items-center gap-2 mt-1.5 text-xs">
                   <span
                     className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold ${
                       netProfitPositive
@@ -562,7 +564,7 @@ export function ProfitLossReportView({
           >
             <header className="reports-print-header">
               <div>
-                <p className="reports-print-eyebrow">{salonTitle || 'Dart Smart Salon'}</p>
+                <p className="reports-print-eyebrow">{salonTitle || 'Salon'}</p>
                 <h1>Profit &amp; Loss Statement</h1>
                 <p>
                   Period: {data.period.startDate} to {data.period.endDate} &bull; Branch: {data.branch.name || 'All Branches'}

@@ -48,9 +48,15 @@
 
 .pr-hero h1 {
   margin: 0;
+  color: #fff;
   font-size: 1.2rem;
   font-weight: 700;
   line-height: 1.2;
+}
+
+body:has(.salon-theme-root) main .pr-hero h1,
+body:has(.admin-panel-root) main .pr-hero h1 {
+  color: #fff !important;
 }
 
 .pr-hero p {

@@ -125,7 +125,7 @@ export default function SendEbillModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent style={{ maxWidth: 460, borderRadius: 16 }}>
+      <DialogContent className="pos-ebill-dialog" style={{ maxWidth: 460, borderRadius: 16 }}>
         <DialogHeader>
           <DialogTitle style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 18 }}>
             <Send size={20} color="#0284c7" /> Send eBill SMS
