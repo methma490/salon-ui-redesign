@@ -1980,6 +1980,8 @@
 .dash-container {
   color: #111827;
   gap: 0.875rem;
+  container-type: inline-size;
+  container-name: dashboard;
 }
 
 @media (min-width: 768px) {
@@ -2147,11 +2149,16 @@
     display: contents;
   }
 
+  .dash-highlights-section {
+    grid-column: 1 / -1;
+    grid-row: 5;
+  }
+
   .dash-row-3 {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-column: 1 / -1;
-    grid-row: 5;
+    grid-row: 7;
     gap: 0.75rem;
   }
 
@@ -2191,6 +2198,69 @@
     grid-column: 3;
     grid-row: 4;
     align-self: stretch;
+  }
+
+  .dash-leaders {
+    grid-column: 1 / -1;
+    grid-row: 6;
+  }
+}
+
+.dash-highlights-section,
+.dash-leaders {
+  min-width: 0;
+  width: 100%;
+  container-type: inline-size;
+  container-name: leaders;
+}
+
+.dash-leaders {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.dash-highlights-grid,
+.dash-top5-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.dash-leaders .dash-card,
+.dash-leaders .dash-table-wrap {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@container leaders (min-width: 560px) {
+  .dash-highlights-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container leaders (min-width: 720px) {
+  .dash-top5-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dash-top5-grid > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@container leaders (min-width: 980px) {
+  .dash-highlights-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .dash-top5-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .dash-top5-grid > :last-child {
+    grid-column: auto;
   }
 }
 
@@ -2266,8 +2336,27 @@
   }
 }
 
-.dash-recent-appointments .dash-table {
-  min-width: 500px;
+.dash-recent-appointments,
+.dash-recent-transactions {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.dash-recent-appointments .dash-table-wrap,
+.dash-recent-transactions .dash-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.dash-recent-appointments .dash-table,
+.dash-recent-transactions .dash-table {
+  min-width: 32rem;
+}
+
+@container dashboard (max-width: 1180px) {
+  .dash-row-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .dash-recent-appointments .dash-table th,

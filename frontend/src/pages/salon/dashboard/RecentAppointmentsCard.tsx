@@ -1,5 +1,6 @@
 ﻿import { CalendarDays } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { resolveUploadUrl } from '@/lib/upload-url';
 
 interface AppointmentItem {
   id: string;
@@ -8,6 +9,7 @@ interface AppointmentItem {
   customer: string;
   service: string | null;
   employee: string | null;
+  employeePhotoUrl?: string | null;
 }
 
 interface RecentAppointmentsCardProps {
@@ -62,7 +64,26 @@ export function RecentAppointmentsCard({ appointments }: RecentAppointmentsCardP
                   </td>
                   <td className="text-xs font-semibold text-slate-800">{appointment.customer}</td>
                   <td className="text-xs text-slate-600">{appointment.service?.trim() || '—'}</td>
-                  <td className="text-xs text-slate-600">{appointment.employee?.trim() || '—'}</td>
+                  <td className="text-xs text-slate-600">
+                    {appointment.employee?.trim() ? (
+                      <div className="dash-emp-row">
+                        {resolveUploadUrl(appointment.employeePhotoUrl) ? (
+                          <img
+                            src={resolveUploadUrl(appointment.employeePhotoUrl) ?? undefined}
+                            alt={appointment.employee}
+                            className="dash-emp-avatar"
+                          />
+                        ) : (
+                          <div className="dash-emp-avatar">
+                            {appointment.employee.trim().charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <span>{appointment.employee.trim()}</span>
+                      </div>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
                 </tr>
               ))
             ) : (

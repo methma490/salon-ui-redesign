@@ -293,21 +293,6 @@ export default function PremiumDashboardPage() {
         expensesByPaymentMethod={dashboardData?.paymentMethodBreakdown?.expenses}
       />
 
-      {/* Row 2: Performance Highlights Section */}
-      <PerformanceHighlightsSection
-        topEmployeeRevenue={topEmployeeRevenue}
-        topEmployeeServices={topEmployeeServices}
-        topCustomerSpending={topCustomerSpending}
-        topCustomerActive={topCustomerActive}
-      />
-
-      {/* Row 3: Top 5 Sections (Employees, Customers, Services) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Top5EmployeesCard employees={topEmployeesList} />
-        <Top5CustomersCard customers={top5Customers} />
-        <Top5ServicesCard services={top5Services} />
-      </div>
-
       {/* Row 4: Financial overview and inventory */}
       <div className="dash-row-2">
         <FinancialOverviewChart
@@ -318,7 +303,7 @@ export default function PremiumDashboardPage() {
         <InventoryOverviewCard data={inventoryOverview} />
       </div>
 
-      {/* Row 5: Appointment overview and employee loans */}
+      {/* Appointment overview and employee loans */}
       <div className="dash-row-4">
         <AppointmentOverviewCard
           data={appointmentOverview}
@@ -328,7 +313,22 @@ export default function PremiumDashboardPage() {
         {isLoansFeatureEnabled && <EmployeeLoansCard data={employeeLoans} />}
       </div>
 
-      {/* Row 6: Recent appointments and recent transactions */}
+      <PerformanceHighlightsSection
+        topEmployeeRevenue={topEmployeeRevenue}
+        topEmployeeServices={topEmployeeServices}
+        topCustomerSpending={topCustomerSpending}
+        topCustomerActive={topCustomerActive}
+      />
+
+      <div className="dash-leaders">
+        <div className="dash-top5-grid">
+          <Top5EmployeesCard employees={topEmployeesList} />
+          <Top5CustomersCard customers={top5Customers} />
+          <Top5ServicesCard services={top5Services} />
+        </div>
+      </div>
+
+      {/* Recent appointments and recent transactions */}
       <div className="dash-row-3">
         <RecentAppointmentsCard appointments={dashboardData?.upcomingAppointments} />
         <RecentTransactionsCard transactions={recentTransactions} />

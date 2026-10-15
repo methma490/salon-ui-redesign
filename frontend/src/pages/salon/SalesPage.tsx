@@ -241,7 +241,7 @@ export default function SalesPage() {
                       <span className="sales-total-cell">{formatMoneyAmount(sale.total)}</span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  <div className="sales-card-actions">
                     {saleStatus === 'COMPLETED' && <button
                       type="button"
                       className="sales-view-btn"
