@@ -119,7 +119,7 @@ describe('ProfitLossService', () => {
   it('2. Excludes cancelled sales and cancelled/void expenses from calculations', async () => {
     mockTx.$queryRawUnsafe.mockImplementation(async (sql: string) => {
       // Verify SQL contains status filters
-      if (sql.includes('s.status <> \'CANCELLED\'') || sql.includes('e.status::text NOT IN (\'VOID\', \'CANCELLED\')')) {
+      if (sql.includes("s.status = 'COMPLETED'") || sql.includes("e.status::text NOT IN ('VOID', 'CANCELLED')")) {
         // Correct filters applied in SQL
       }
       return [];
