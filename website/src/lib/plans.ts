@@ -58,7 +58,31 @@ export function billingCycleLabel(cycle: string): string {
 export const PLAN_HIGHLIGHTS: Record<string, string> = {
   SILVER: 'Best for small salons getting started',
   GOLD: 'Most popular for growing salons',
-  PLATINUM: 'Full platform for multi-branch salons',
+};
+
+export const PLAN_KEY_FEATURES: Record<string, string[]> = {
+  SILVER: [
+    'Single Salon Branch (up to 5 staff)',
+    'Appointments & Timeline Calendar',
+    'Express POS & Thermal / SMS Receipts',
+    'Customer Profiles & Visit History',
+    'Daily Revenue & Sales Analytics',
+  ],
+  BASIC: [
+    'Single Salon Branch (up to 5 staff)',
+    'Appointments & Timeline Calendar',
+    'Express POS & Thermal / SMS Receipts',
+    'Customer Profiles & Visit History',
+    'Daily Revenue & Sales Analytics',
+  ],
+  GOLD: [
+    'Up to 3 Branches (up to 25 staff)',
+    'Stylist Split-Bills & Commissions',
+    'Inventory Stock & Low-Stock Alerts',
+    'Client Color Formulas & VIP Notes',
+    '1,500 WhatsApp & SMS Digital Receipts',
+    'Priority 24/7 Dedicated Support',
+  ],
 };
 
 export function isPopularPlan(code: string): boolean {

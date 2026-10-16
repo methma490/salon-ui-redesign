@@ -1,13 +1,14 @@
 export const APP_NAME = 'Dart Smart Salon';
 
 export const SITE_DESCRIPTION =
-  'All-in-one salon management software for appointments, POS, inventory, payroll, and growth — built for modern salons in Sri Lanka.';
+  'All-in-one salon management software for appointments, POS, inventory, payroll, and multi-branch operations — built for modern salons in Sri Lanka.';
 
 export const CONTACT_EMAIL = 'info@dartcodes.com';
 export const CONTACT_PHONE = '+94 77 455 2144';
 export const CONTACT_PHONE_RAW = '+94774552144';
-export const CONTACT_HOURS = 'Mon – Fri, 8:30 AM – 5:30 PM';
+export const CONTACT_HOURS = 'Monday – Saturday, 8:30 AM – 6:00 PM';
 export const COMPANY_NAME = 'DartCodes (Pvt) Ltd.';
+export const COMPANY_ADDRESS = 'Level 4, Colombo 03, Sri Lanka';
 export const WHATSAPP_NUMBER = '94774552144';
 export const WHATSAPP_URL = 'https://wa.me/94774552144';
 
@@ -16,80 +17,125 @@ export const NAV_LINKS = [
   { href: '/features', label: 'Product' },
   { href: '/solutions', label: 'Solutions' },
   { href: '/pricing', label: 'Pricing' },
-  { href: '/faq', label: 'Resources' },
+  { href: '/about', label: 'About' },
+  { href: '/faq', label: 'FAQ' },
+  { href: '/contact', label: 'Contact' },
 ] as const;
-
 
 export const FEATURE_ITEMS = [
   {
     icon: 'Calendar',
-    title: 'Appointments',
-    description: 'Schedule, confirm, and manage bookings across staff and services.',
+    title: 'Smart Calendar & Bookings',
+    description: 'Color-coded scheduling, zero double-booking, and automated SMS & WhatsApp reminders.',
     href: '/features#appointments',
   },
   {
-    icon: 'Users',
-    title: 'Customer Management',
-    description: 'Profiles, visit history, and relationships that keep clients coming back.',
-    href: '/features#customers',
-  },
-  {
-    icon: 'Scissors',
-    title: 'Staff Management',
-    description: 'Roles, permissions, and team visibility for salon admins and staff.',
-    href: '/features#staff',
-  },
-  {
-    icon: 'Package',
-    title: 'Inventory',
-    description: 'Stock levels, products, and supply tracking tied to your services.',
-    href: '/features#inventory',
-  },
-  {
     icon: 'CreditCard',
-    title: 'Point of Sale',
-    description: 'Fast checkout, services, products, and receipts from one screen.',
+    title: 'Express POS & Fast Checkout',
+    description: 'Sub-5s ticket checkout, split-tender payments, thermal printing, and WhatsApp digital bills.',
     href: '/features#pos',
   },
   {
-    icon: 'ChartNoAxesCombined',
-    title: 'Payroll & Loans',
-    description: 'Payroll runs, advances, and employee loan tracking in one place.',
+    icon: 'Users',
+    title: 'Client CRM & Formulas',
+    description: 'Detailed client dossiers with color formulations, allergy warnings, and lifetime visit history.',
+    href: '/features#customers',
+  },
+  {
+    icon: 'Package',
+    title: 'Inventory & Stock Alerts',
+    description: 'Retail stock deductions, back-bar usage tracking, supplier ledgers, and low-inventory alerts.',
+    href: '/features#inventory',
+  },
+  {
+    icon: 'Scissors',
+    title: 'Staff Rosters & Attendance',
+    description: 'Role-based permissions, customizable shift rosters, and daily check-ins for stylists and receptionists.',
+    href: '/features#staff',
+  },
+  {
+    icon: 'Wallet',
+    title: 'Commissions & Payroll',
+    description: 'Automated tiered commission calculations for services and retail, salary advances, and payslips.',
     href: '/features#payroll',
   },
   {
-    icon: 'Settings',
-    title: 'Expenses',
-    description: 'Track salon expenses and keep finances organized by branch.',
-    href: '/features#expenses',
+    icon: 'Store',
+    title: 'Multi-Branch Oversight',
+    description: 'Unified command center to monitor sales, staff schedules, and inventory transfers across all branches.',
+    href: '/features#branches',
   },
   {
-    icon: 'Bell',
-    title: 'Reports & Analytics',
-    description: 'Dashboards and reports for revenue, staff, and operations.',
+    icon: 'BarChart3',
+    title: 'Live Analytics & Reports',
+    description: 'Real-time profit & loss, daily cash drawer balancing, best-selling services, and client retention KPIs.',
     href: '/features#reports',
   },
 ] as const;
 
 export const FAQ_ITEMS = [
   {
-    question: 'Can I try Dart Smart Salon before paying?',
+    category: 'Getting Started',
+    question: 'Can I try Dart Smart Salon before committing to a plan?',
     answer:
-      'Paid plans include a trial period where configured in your plan. Start signup from Pricing and complete PayHere checkout when you are ready.',
+      'Yes! All plans include a 21-day full-access free trial. You can test appointment scheduling, POS checkout, staff commissions, and inventory with zero upfront payment and no credit card required.',
   },
   {
-    question: 'Does the platform support multiple branches?',
+    category: 'Getting Started',
+    question: 'How do I migrate from spreadsheets, paper books, or other software?',
     answer:
-      'Multi-branch capabilities are available on higher-tier plans. Compare plans on the Pricing page or contact us for Custom arrangements.',
+      'Our dedicated onboarding team helps you import your existing client list, service catalog, prices, and stock inventory. We also provide step-by-step video tutorials and guided staff training sessions.',
   },
   {
-    question: 'Where is my data hosted?',
+    category: 'Features & Hardware',
+    question: 'What hardware do I need to run Dart Smart Salon?',
     answer:
-      'Your salon information is stored in a secure, private cloud with daily automatic backups so your appointments, client records, and sales are always safe and accessible 24/7.',
+      'Dart Smart Salon runs seamlessly on any standard desktop PC, laptop, iPad/Android tablet, or smartphone via any web browser. It connects directly with standard ESC/POS thermal receipt printers and barcode scanners.',
   },
   {
-    question: 'How do I migrate from spreadsheets or another tool?',
+    category: 'Features & Hardware',
+    question: 'Does the system send automated appointment reminders to clients?',
     answer:
-      'Contact our team with your current setup. We can guide onboarding, staff training, and a phased rollout.',
+      'Yes. Dart Smart Salon can automatically send booking confirmation and 24-hour reminder messages via WhatsApp and SMS, reducing client no-shows by up to 75%.',
   },
+  {
+    category: 'Multi-Branch',
+    question: 'Does the platform support multiple branches and salon chains?',
+    answer:
+      'Absolutely. Our Gold and Enterprise tiers support multi-branch management. Salon owners can switch between locations with one click, compare branch revenues in real-time, and transfer inventory between salons.',
+  },
+  {
+    category: 'Security & Billing',
+    question: 'How secure is our salon and customer data?',
+    answer:
+      'Your salon data is isolated in a private, encrypted cloud database with automated daily backups. Access is protected by role-based permissions, ensuring stylists only view their schedules while financial figures remain admin-only.',
+  },
+  {
+    category: 'Security & Billing',
+    question: 'What payment methods are supported for subscriptions?',
+    answer:
+      'We process subscription payments securely via PayHere, supporting all major credit/debit cards (Visa, MasterCard, Amex) and local mobile banking solutions in Sri Lanka. Invoices and receipts are generated automatically.',
+  },
+  {
+    category: 'Security & Billing',
+    question: 'Can I cancel or upgrade my subscription plan anytime?',
+    answer:
+      'Yes, you have full flexibility. You can switch between Monthly and Yearly billing, upgrade from Basic to Gold as your salon expands, or cancel anytime with no lock-in contracts or penalty fees.',
+  },
+] as const;
+
+export const TRUST_METRICS = [
+  { value: '99.9%', label: 'Cloud Uptime SLA' },
+  { value: '100+', label: 'Salons & Spas' },
+  { value: '< 5s', label: 'Express Checkout Speed' },
+  { value: '0', label: 'Booking Conflicts' },
+] as const;
+
+export const SALON_TYPES = [
+  'Hair Salons & Studios',
+  'Beauty & Aesthetic Clinics',
+  'Nail Bars & Lounges',
+  'Day Spas & Wellness',
+  'Barbershops & Grooming',
+  'Multi-Branch Salon Chains',
 ] as const;
