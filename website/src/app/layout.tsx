@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter, Plus_Jakarta_Sans, Caveat } from 'next/font/google';
+import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { APP_NAME, SITE_DESCRIPTION } from '@/lib/constants';
 import {
@@ -22,14 +22,8 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   display: 'swap',
 });
 
-const caveat = Caveat({
-  subsets: ['latin'],
-  variable: '--font-caveat',
-  display: 'swap',
-});
-
 export const metadata: Metadata = buildMetadata({
-  title: APP_NAME,
+  title: `${APP_NAME} — All-in-One Salon Management Software`,
   description: SITE_DESCRIPTION,
   path: '/',
 });
@@ -38,9 +32,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${plusJakartaSans.variable} ${caveat.variable} h-full scroll-smooth`}
+      className={`${inter.variable} ${plusJakartaSans.variable} h-full scroll-smooth`}
     >
-      <body className="min-h-full font-sans antialiased bg-[#F9FAFB] text-[#0F172A] selection:bg-[#E9D5FF] selection:text-[#7C3AED]">
+      <body className="min-h-full font-sans antialiased bg-[#fafbfc] text-slate-900 selection:bg-violet-100 selection:text-violet-900">
         <JsonLd
           data={[organizationJsonLd(), webSiteJsonLd(), softwareApplicationJsonLd()]}
         />
