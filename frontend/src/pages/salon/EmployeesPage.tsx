@@ -462,33 +462,33 @@ function EmployeePerformanceDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-6 sm:p-7 rounded-2xl">
-        <DialogHeader className="border-b border-slate-100 pb-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3">
+      <DialogContent className="w-[calc(100%-1.5rem)] sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-7 rounded-2xl">
+        <DialogHeader className="border-b border-slate-100 pb-4 pr-7 sm:pr-8">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
+            <div className="flex items-center gap-3 min-w-0">
               {data?.employee && (
-                <div className="h-12 w-12 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-base border border-emerald-200">
+                <div className="h-11 w-11 sm:h-12 sm:w-12 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-sm sm:text-base border border-emerald-200 shrink-0">
                   {data.employee.name.charAt(0).toUpperCase()}
                 </div>
               )}
-              <div>
-                <DialogTitle className="text-xl font-bold text-slate-900">
+              <div className="min-w-0">
+                <DialogTitle className="text-lg sm:text-xl font-bold text-slate-900 truncate">
                   {data?.employee?.name || 'Employee Performance'}
                 </DialogTitle>
-                <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
-                  <span className="font-mono font-semibold">{data?.employee?.code}</span>
-                  <span>•</span>
-                  <span>{data?.employee?.designation || 'Staff'}</span>
-                  <span>•</span>
-                  <span className="font-medium text-slate-700">{data?.employee?.branchName}</span>
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs text-slate-500 mt-1">
+                  <span className="font-mono font-semibold bg-slate-100 px-1.5 py-0.5 rounded text-[11px] text-slate-700">{data?.employee?.code}</span>
+                  <span className="text-slate-300">•</span>
+                  <span className="font-medium text-slate-700">{data?.employee?.designation || 'Staff'}</span>
+                  <span className="text-slate-300">•</span>
+                  <span className="text-slate-500">{data?.employee?.branchName}</span>
                 </div>
               </div>
             </div>
 
             {/* Modal Date Range Filter */}
-            <div className="flex flex-col items-end gap-1.5 shrink-0">
+            <div className="flex flex-col items-start sm:items-end gap-1.5 w-full sm:w-auto shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-100">
               <Select value={modalPreset} onValueChange={setModalPreset}>
-                <SelectTrigger className="h-8 text-xs w-36 rounded-lg border-slate-200">
+                <SelectTrigger className="h-8 text-xs w-full sm:w-36 rounded-lg border-slate-200 bg-white">
                   <SelectValue placeholder="Period" />
                 </SelectTrigger>
                 <SelectContent>
@@ -502,19 +502,19 @@ function EmployeePerformanceDetailModal({
                 </SelectContent>
               </Select>
               {modalPreset === 'custom' && (
-                <div className="flex items-center gap-1.5 text-xs">
+                <div className="flex items-center gap-1.5 text-xs w-full sm:w-auto">
                   <input
                     type="date"
                     value={modalFrom}
                     onChange={(e) => setModalFrom(e.target.value)}
-                    className="h-7 px-2 border border-slate-200 rounded text-xs"
+                    className="h-7 px-2 border border-slate-200 rounded text-xs flex-1 sm:flex-initial"
                   />
-                  <span>to</span>
+                  <span className="text-slate-400">to</span>
                   <input
                     type="date"
                     value={modalTo}
                     onChange={(e) => setModalTo(e.target.value)}
-                    className="h-7 px-2 border border-slate-200 rounded text-xs"
+                    className="h-7 px-2 border border-slate-200 rounded text-xs flex-1 sm:flex-initial"
                   />
                 </div>
               )}
@@ -1176,44 +1176,45 @@ export default function EmployeesPage() {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="flex border-b border-slate-200 gap-2">
+      <div className="bg-slate-100/80 p-1 rounded-2xl flex sm:inline-flex border border-slate-200/60 max-w-full">
         <button
           type="button"
           onClick={() => handleTabChange('employees')}
-          className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-2 ${
+          className={`flex-1 sm:flex-initial py-2 sm:py-2.5 px-3 sm:px-4 text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 ${
             activeTab === 'employees'
-              ? 'border-[var(--brand-primary,#0d5c3d)] text-[var(--brand-primary,#0d5c3d)]'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              ? 'bg-white text-slate-900 shadow-xs font-bold'
+              : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'
           }`}
         >
-          <Users className="h-4 w-4" />
+          <Users className="h-4 w-4 shrink-0 text-[var(--brand-primary,#0d5c3d)]" />
           <span>Employees</span>
-          <span className="ml-1 text-xs py-0.5 px-2 rounded-full bg-slate-100 text-slate-600 font-bold">
+          <span className="text-[11px] py-0.5 px-1.5 sm:px-2 rounded-full bg-slate-100 text-slate-700 font-bold border border-slate-200/60">
             {allEmployees.length}
           </span>
         </button>
         <button
           type="button"
           onClick={() => handleTabChange('performance')}
-          className={`pb-3 px-4 text-sm font-semibold border-b-2 transition-colors cursor-pointer flex items-center gap-2 ${
+          className={`flex-1 sm:flex-initial py-2 sm:py-2.5 px-3 sm:px-4 text-xs sm:text-sm font-semibold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 sm:gap-2 ${
             activeTab === 'performance'
-              ? 'border-[var(--brand-primary,#0d5c3d)] text-[var(--brand-primary,#0d5c3d)]'
-              : 'border-transparent text-slate-500 hover:text-slate-800'
+              ? 'bg-white text-slate-900 shadow-xs font-bold'
+              : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'
           }`}
         >
-          <BarChart3 className="h-4 w-4" />
+          <BarChart3 className="h-4 w-4 shrink-0 text-emerald-600" />
           <span>Performance</span>
-          <span className="ml-1 text-xs py-0.5 px-2 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
-            Analytics
+          <span className="text-[10px] sm:text-xs py-0.5 px-1.5 sm:px-2 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold">
+            <span className="hidden xs:inline">Analytics</span>
+            <span className="xs:hidden">Live</span>
           </span>
         </button>
       </div>
 
-      {/* Filter Toolbar */}
-      <div className="rounded-2xl border border-slate-200/80 bg-white p-3 shadow-xs space-y-3">
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Search Input */}
-          <div className="relative flex-1 min-w-[240px] sm:min-w-[280px]">
+      {/* Filter Toolbar - Responsive Grid on Mobile & Tablet */}
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-3 sm:p-4 shadow-xs space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap items-center gap-2.5 sm:gap-3">
+          {/* Search Input - Full width on mobile/tablet or flex on large */}
+          <div className="relative col-span-1 sm:col-span-2 lg:flex-1 min-w-0 lg:min-w-[260px]">
             {isFetching && debouncedSearch ? (
               <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-[var(--brand-primary,#0d5c3d)]" />
             ) : (
@@ -1233,7 +1234,7 @@ export default function EmployeesPage() {
               <button
                 type="button"
                 onClick={() => setSearch('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
                 title="Clear search"
               >
                 <X className="h-3.5 w-3.5" />
@@ -1242,9 +1243,9 @@ export default function EmployeesPage() {
           </div>
 
           {/* Branch Filter */}
-          <div className="w-full sm:w-44">
+          <div className="w-full lg:w-44">
             <Select value={branchFilter} onValueChange={setBranchFilter}>
-              <SelectTrigger className="h-10 rounded-xl border-slate-200 text-xs">
+              <SelectTrigger className="h-10 rounded-xl border-slate-200 text-xs w-full bg-white">
                 <SelectValue placeholder="All branches" />
               </SelectTrigger>
               <SelectContent>
@@ -1261,9 +1262,9 @@ export default function EmployeesPage() {
           {activeTab === 'employees' ? (
             <>
               {/* Role Filter */}
-              <div className="w-full sm:w-40">
+              <div className="w-full lg:w-40">
                 <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); setPage(1); }}>
-                  <SelectTrigger className="h-10 rounded-xl border-slate-200 text-xs">
+                  <SelectTrigger className="h-10 rounded-xl border-slate-200 text-xs w-full bg-white">
                     <SelectValue placeholder="All roles" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1278,7 +1279,7 @@ export default function EmployeesPage() {
               </div>
 
               {/* Status Filter */}
-              <div className="w-full sm:w-36">
+              <div className="w-full lg:w-36">
                 <Select
                   value={statusFilter}
                   onValueChange={(v) => {
@@ -1286,7 +1287,7 @@ export default function EmployeesPage() {
                     setPage(1);
                   }}
                 >
-                  <SelectTrigger className="h-10 rounded-xl border-slate-200 text-xs">
+                  <SelectTrigger className="h-10 rounded-xl border-slate-200 text-xs w-full bg-white">
                     <SelectValue placeholder="All status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1300,7 +1301,7 @@ export default function EmployeesPage() {
           ) : (
             <>
               {/* Performance Date Preset Filter */}
-              <div className="w-full sm:w-48">
+              <div className="w-full lg:w-48">
                 <Select
                   value={datePreset}
                   onValueChange={(v) => {
@@ -1308,7 +1309,7 @@ export default function EmployeesPage() {
                     setPage(1);
                   }}
                 >
-                  <SelectTrigger className="h-10 rounded-xl border-slate-200 text-xs bg-emerald-50/40 border-emerald-200/80 font-medium text-emerald-900">
+                  <SelectTrigger className="h-10 rounded-xl border-slate-200 text-xs bg-emerald-50/40 border-emerald-200/80 font-medium text-emerald-900 w-full">
                     <div className="flex items-center gap-1.5 truncate">
                       <Calendar className="h-3.5 w-3.5 text-emerald-700 shrink-0" />
                       <SelectValue placeholder="Performance period" />
@@ -1327,12 +1328,12 @@ export default function EmployeesPage() {
               </div>
 
               {datePreset === 'custom' && (
-                <div className="flex items-center gap-1.5 bg-slate-50 p-1 rounded-xl border border-slate-200">
+                <div className="col-span-1 sm:col-span-2 lg:col-span-1 flex items-center gap-1.5 bg-slate-50 p-1 rounded-xl border border-slate-200">
                   <input
                     type="date"
                     value={fromDate}
                     onChange={(e) => { setFromDate(e.target.value); setPage(1); }}
-                    className="h-8 px-2 text-xs border border-slate-200 rounded-lg bg-white"
+                    className="h-8 px-2 text-xs border border-slate-200 rounded-lg bg-white flex-1"
                     placeholder="From"
                   />
                   <span className="text-xs text-slate-400">to</span>
@@ -1340,7 +1341,7 @@ export default function EmployeesPage() {
                     type="date"
                     value={toDate}
                     onChange={(e) => { setToDate(e.target.value); setPage(1); }}
-                    className="h-8 px-2 text-xs border border-slate-200 rounded-lg bg-white"
+                    className="h-8 px-2 text-xs border border-slate-200 rounded-lg bg-white flex-1"
                     placeholder="To"
                   />
                 </div>
@@ -1353,7 +1354,7 @@ export default function EmployeesPage() {
             <button
               type="button"
               onClick={clearFilters}
-              className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors shrink-0 cursor-pointer"
+              className="col-span-1 sm:col-span-2 lg:col-span-1 inline-flex items-center justify-center gap-1.5 h-10 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors shrink-0 cursor-pointer"
             >
               <RotateCcw className="h-3.5 w-3.5 text-slate-500" />
               <span>Clear Filters</span>
@@ -1570,105 +1571,116 @@ export default function EmployeesPage() {
               {/* Mobile Cards (Clean Management Info Only - No Analytics) */}
               <div className="block md:hidden divide-y divide-slate-100">
                 {paginatedEmployees.map((emp) => (
-                  <div key={emp.id} className="p-4 space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
+                  <div key={emp.id} className="p-3.5 sm:p-4 space-y-3">
+                    {/* Header Row */}
+                    <div className="flex items-start justify-between gap-2.5">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
                         <EmployeeAvatar employee={emp} />
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <div className="font-bold text-slate-900 text-sm truncate">
                             {emp.name}
                           </div>
-                          <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
-                            <span className="font-mono font-semibold">{emp.code}</span>
-                            <span>•</span>
-                            <span className="truncate">{emp.designation || 'Staff'}</span>
+                          <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 mt-0.5">
+                            <span className="font-mono font-semibold text-[11px] bg-slate-100 px-1.5 py-0.2 rounded text-slate-700">
+                              {emp.code}
+                            </span>
+                            <span className="text-slate-300">•</span>
+                            <span className="font-medium text-slate-700">
+                              {emp.designation || 'Staff'}
+                            </span>
                           </div>
                         </div>
                       </div>
                       <StatusPill status={emp.status} />
                     </div>
 
-                    {/* Badges & Branch */}
-                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                    {/* Roles & Branch Row */}
+                    <div className="flex flex-wrap items-center gap-1.5 text-xs">
                       {emp.systemRoles && emp.systemRoles.length > 0 ? (
                         emp.systemRoles.map((code) => <RoleBadge key={code} code={code} />)
                       ) : (
                         <RoleBadge code="STAFF" />
                       )}
-                      <span className="text-slate-400">•</span>
-                      <span className="text-slate-600 font-medium">{emp.branchName}</span>
+                      <span className="text-slate-300">•</span>
+                      <span className="text-slate-600 font-medium bg-slate-50 border border-slate-200/60 px-2 py-0.5 rounded-md">
+                        {emp.branchName}
+                      </span>
                     </div>
 
                     {/* Details Grid */}
-                    <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                    <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50/80 p-3 rounded-xl border border-slate-100">
                       <div>
-                        <span className="text-slate-400 block text-[10px] uppercase font-bold">Salary</span>
-                        <span className="font-semibold text-slate-900">{formatSalary(emp.basicSalary)}</span>
+                        <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Salary</span>
+                        <span className="font-bold text-slate-900 font-mono text-xs mt-0.5 block">{formatSalary(emp.basicSalary)}</span>
                       </div>
                       {payrollEnabled && (
                         <div>
-                          <span className="text-slate-400 block text-[10px] uppercase font-bold">EPF / ETF</span>
-                          <span className="text-slate-700">
+                          <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">EPF / ETF</span>
+                          <span className="text-slate-700 font-medium text-xs mt-0.5 block">
                             {emp.epfEnabled === false ? 'EPF off' : 'EPF on'} / {emp.etfEnabled === false ? 'ETF off' : 'ETF on'}
                           </span>
                         </div>
                       )}
                       {emp.phone && (
-                        <div className="col-span-2">
-                          <span className="text-slate-400 block text-[10px] uppercase font-bold">Contact</span>
-                          <span className="text-slate-700">{emp.phone} {emp.email ? `(${emp.email})` : ''}</span>
+                        <div className="col-span-2 pt-1 border-t border-slate-200/50">
+                          <span className="text-slate-400 block text-[10px] uppercase font-bold tracking-wider">Contact</span>
+                          <span className="text-slate-700 font-medium mt-0.5 block break-all">
+                            {emp.phone} {emp.email ? `(${emp.email})` : ''}
+                          </span>
                         </div>
                       )}
                     </div>
 
                     {/* Mobile Actions Toolbar */}
-                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100">
+                    <div className="flex items-center gap-2 pt-1.5 border-t border-slate-100">
                       <button
                         type="button"
                         onClick={() => openEdit(emp)}
                         disabled={isOwner(emp)}
-                        className={`h-8 px-2.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                        className={`flex-1 h-9 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                           isOwner(emp)
                             ? 'border-slate-200 bg-slate-50 text-slate-300'
-                            : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'
+                            : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-2xs'
                         }`}
                       >
                         <Pencil className="h-3.5 w-3.5" />
                         <span>Edit</span>
                       </button>
 
-                      <div className="flex items-center gap-1.5">
-                        {canManageEmployees && (
-                          <>
-                            <button
-                              type="button"
-                              disabled={statusMutation.isPending || isOwner(emp)}
-                              onClick={() => handleToggleStatus(emp)}
-                              className={`h-8 px-2.5 rounded-lg border text-xs font-semibold transition-colors flex items-center gap-1 ${
-                                isOwner(emp)
-                                  ? 'border-slate-200 bg-slate-50 text-slate-300 cursor-not-allowed'
-                                  : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
-                              }`}
-                            >
-                              {emp.status === 'ACTIVE' ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                              <span>{emp.status === 'ACTIVE' ? 'Off' : 'On'}</span>
-                            </button>
+                      {canManageEmployees && (
+                        <>
+                          <button
+                            type="button"
+                            disabled={statusMutation.isPending || isOwner(emp)}
+                            onClick={() => handleToggleStatus(emp)}
+                            className={`h-9 px-3 rounded-xl border text-xs font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer ${
+                              isOwner(emp)
+                                ? 'border-slate-200 bg-slate-50 text-slate-300 cursor-not-allowed'
+                                : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                            }`}
+                            title={emp.status === 'ACTIVE' ? 'Deactivate Employee' : 'Activate Employee'}
+                          >
+                            {emp.status === 'ACTIVE' ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                            <span>{emp.status === 'ACTIVE' ? 'Off' : 'On'}</span>
+                          </button>
 
-                            <button
-                              type="button"
-                              disabled={deleteMutation.isPending || isOwner(emp)}
-                              onClick={() => handleDeleteEmployee(emp)}
-                              className={`h-8 px-2.5 rounded-lg border text-xs font-semibold transition-colors flex items-center gap-1 ${
-                                isOwner(emp)
-                                  ? 'border-slate-200 bg-slate-50 text-slate-300 cursor-not-allowed'
-                                  : 'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100'
-                              }`}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </>
-                        )}
+                          <button
+                            type="button"
+                            disabled={deleteMutation.isPending || isOwner(emp)}
+                            onClick={() => handleDeleteEmployee(emp)}
+                            className={`h-9 w-9 rounded-xl border text-xs font-semibold transition-colors flex items-center justify-center cursor-pointer ${
+                              isOwner(emp)
+                                ? 'border-slate-200 bg-slate-50 text-slate-300 cursor-not-allowed'
+                                : 'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100'
+                            }`}
+                            title="Delete Employee"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </>
+                      )}
 
+                      <div className="shrink-0">
                         <EmployeeActionMenu
                           employee={emp}
                           payrollEnabled={payrollEnabled}
@@ -1917,77 +1929,84 @@ export default function EmployeesPage() {
               {/* Mobile Cards for Performance Tab */}
               <div className="block md:hidden divide-y divide-slate-100">
                 {performanceResponse.data.map((perfItem) => (
-                  <div key={perfItem.id} className="p-4 space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
+                  <div key={perfItem.id} className="p-3.5 sm:p-4 space-y-3">
+                    {/* Header Row */}
+                    <div className="flex items-start justify-between gap-2.5">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
                         <EmployeeProfileAvatar
                           name={perfItem.name}
                           photoUrl={perfItem.photoUrl}
-                          className="h-9 w-9 shadow-sm"
+                          className="h-10 w-10 shadow-sm shrink-0"
                           fallbackClassName={getAvatarColor(perfItem.name)}
                         />
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <div className="font-bold text-slate-900 text-sm truncate">
                             {perfItem.name}
                           </div>
-                          <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
-                            <span className="font-mono font-semibold">{perfItem.code}</span>
-                            <span>•</span>
-                            <span className="truncate">{perfItem.designation || 'Staff'}</span>
+                          <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 mt-0.5">
+                            <span className="font-mono font-semibold text-[11px] bg-slate-100 px-1.5 py-0.2 rounded text-slate-700">
+                              {perfItem.code}
+                            </span>
+                            <span className="text-slate-300">•</span>
+                            <span className="font-medium text-slate-700 truncate">
+                              {perfItem.designation || 'Staff'}
+                            </span>
                           </div>
                         </div>
                       </div>
-                      <span className="text-xs text-slate-500 font-medium">{perfItem.branchName}</span>
+                      <span className="text-xs text-slate-600 font-medium bg-slate-50 border border-slate-200/60 px-2 py-0.5 rounded-md shrink-0">
+                        {perfItem.branchName}
+                      </span>
                     </div>
 
-                    {/* Analytics KPIs Banner */}
-                    <div className="bg-emerald-50/60 p-3 rounded-xl border border-emerald-100 flex items-center justify-between text-xs">
-                      <div>
-                        <span className="text-[10px] text-emerald-800 font-bold uppercase block tracking-wider">
+                    {/* Analytics KPIs Banner - 3-Column Structured Grid */}
+                    <div className="bg-emerald-50/70 p-3 rounded-xl border border-emerald-100/90 grid grid-cols-3 gap-1 sm:gap-2 text-center">
+                      <div className="border-r border-emerald-200/50 pr-1">
+                        <span className="text-[10px] text-emerald-800 font-bold uppercase tracking-wider block">
                           Revenue
                         </span>
-                        <span className="text-sm font-black text-slate-900 font-mono">
+                        <span className="text-xs sm:text-sm font-black text-slate-900 font-mono mt-0.5 block truncate">
                           LKR {formatMoneyAmount(perfItem.salesGenerated ?? 0)}
                         </span>
                       </div>
-                      <div>
-                        <span className="text-[10px] text-emerald-800 font-bold uppercase block tracking-wider">
-                          Services Done
+                      <div className="border-r border-emerald-200/50 px-1">
+                        <span className="text-[10px] text-emerald-800 font-bold uppercase tracking-wider block">
+                          Services
                         </span>
-                        <span className="text-sm font-black text-emerald-950">
+                        <span className="text-xs sm:text-sm font-black text-emerald-950 mt-0.5 block">
                           {perfItem.servicesDone ?? 0}
                         </span>
                       </div>
-                      <div>
-                        <span className="text-[10px] text-emerald-800 font-bold uppercase block tracking-wider">
+                      <div className="pl-1">
+                        <span className="text-[10px] text-emerald-800 font-bold uppercase tracking-wider block">
                           Customers
                         </span>
-                        <span className="text-sm font-black text-blue-900">
+                        <span className="text-xs sm:text-sm font-black text-blue-900 mt-0.5 block">
                           {perfItem.customersServed ?? 0}
                         </span>
                       </div>
                     </div>
 
                     {perfItem.topService && (
-                      <div className="flex items-center gap-1.5 text-xs text-slate-700 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100">
+                      <div className="flex items-center gap-1.5 text-xs text-slate-700 bg-slate-50/80 px-2.5 py-2 rounded-xl border border-slate-100">
                         <Sparkles className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                        <span className="text-slate-500 text-[11px]">Top Service:</span>
-                        <span className="font-semibold truncate">
+                        <span className="text-slate-500 text-[11px] shrink-0">Top Service:</span>
+                        <span className="font-semibold text-slate-800 truncate flex-1">
                           {perfItem.topService.name}
                         </span>
-                        <span className="text-slate-400 text-[10px] shrink-0">
-                          ({perfItem.topService.count})
+                        <span className="text-slate-500 font-medium text-[11px] shrink-0 bg-slate-200/60 px-1.5 py-0.2 rounded">
+                          {perfItem.topService.count}
                         </span>
                       </div>
                     )}
 
-                    <div className="pt-1 border-t border-slate-100 flex justify-end">
+                    <div className="pt-1.5 border-t border-slate-100">
                       <button
                         type="button"
                         onClick={() => setPerformanceDetailEmployeeId(perfItem.id)}
-                        className="w-full h-8 px-3 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                        className="w-full h-9 px-3 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                       >
-                        <BarChart3 className="h-3.5 w-3.5 text-emerald-600" />
+                        <BarChart3 className="h-3.5 w-3.5 text-emerald-700" />
                         <span>View Performance</span>
                       </button>
                     </div>

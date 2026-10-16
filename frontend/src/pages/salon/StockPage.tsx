@@ -23,7 +23,9 @@ import {
   SlidersHorizontal,
   TrendingDown,
   X,
+  ChevronLeft,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import {
   tenantApi,
   type StockCreditDetail,
@@ -413,6 +415,16 @@ export default function StockPage() {
 
   return (
     <div className="emp-page">
+      {/* Back button to Inventory hub */}
+      <div className="flex items-center gap-2 mb-2">
+        <Link
+          to="/salon/inventory-hub"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors py-1.5 px-2.5 rounded-lg hover:bg-slate-100"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          <span>Back to Inventory</span>
+        </Link>
+      </div>
       <OpsPageHeader
         title="Stock Management & Analytics"
         subtitle="View live stock movements, inventory reports, level metrics, and supplier credits"
@@ -474,9 +486,9 @@ export default function StockPage() {
                   <h2 className="emp-panel-title text-base sm:text-lg">Recent Movement Volume Chart</h2>
                   <p className="emp-panel-desc text-xs sm:text-sm">Visual comparison of incoming vs sales vs adjustment activity</p>
                 </div>
-                <div className="flex flex-wrap items-center gap-3 text-xs font-semibold">
+                <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 text-xs font-semibold">
                   <Select value={chartBranchId} onValueChange={setChartBranchId}>
-                    <SelectTrigger aria-label="Filter chart by branch" className="h-8 w-[170px] bg-white text-xs">
+                    <SelectTrigger aria-label="Filter chart by branch" className="h-8 w-full sm:w-[170px] bg-white text-xs">
                       <SelectValue placeholder="All branches" />
                     </SelectTrigger>
                     <SelectContent>
@@ -488,36 +500,47 @@ export default function StockPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <span className="flex items-center gap-1.5 text-emerald-700">
-                    <span className="w-2.5 h-2.5 rounded bg-emerald-600 inline-block" /> Stock In
-                  </span>
-                  <span className="flex items-center gap-1.5 text-blue-700">
-                    <span className="w-2.5 h-2.5 rounded bg-blue-600 inline-block" /> Sales Out
-                  </span>
-                  <span className="flex items-center gap-1.5 text-amber-700">
-                    <span className="w-2.5 h-2.5 rounded bg-amber-500 inline-block" /> Adjustments
-                  </span>
+                  <div className="flex items-center gap-3 text-xs pt-1 sm:pt-0">
+                    <span className="flex items-center gap-1.5 text-emerald-700">
+                      <span className="w-2.5 h-2.5 rounded bg-emerald-600 inline-block" /> Stock In
+                    </span>
+                    <span className="flex items-center gap-1.5 text-blue-700">
+                      <span className="w-2.5 h-2.5 rounded bg-blue-600 inline-block" /> Sales Out
+                    </span>
+                    <span className="flex items-center gap-1.5 text-amber-700">
+                      <span className="w-2.5 h-2.5 rounded bg-amber-500 inline-block" /> Adjustments
+                    </span>
+                  </div>
                 </div>
               </div>
-              <div className="h-56 sm:h-64 md:h-72 w-full pt-2">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={movementChartData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} interval={0} angle={-15} textAnchor="end" />
-                    <YAxis tick={{ fontSize: 11, fill: '#64748b' }} allowDecimals={false} />
-                    <Tooltip
-                      contentStyle={{
-                        borderRadius: 10,
-                        border: '1px solid #e2e8f0',
-                        fontSize: 12,
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
-                      }}
-                    />
-                    <Bar dataKey="stockIn" fill="#10b981" radius={[4, 4, 0, 0]} name="Stock In" />
-                    <Bar dataKey="sales" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Sales" />
-                    <Bar dataKey="adjustment" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Adjustments" />
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="w-full overflow-x-auto pb-2">
+                <div className="h-64 sm:h-72 w-full min-w-[500px] pt-2">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={movementChartData} margin={{ top: 10, right: 15, left: -20, bottom: 45 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fontSize: 10, fill: '#64748b' }}
+                        interval={0}
+                        angle={-30}
+                        textAnchor="end"
+                        height={50}
+                      />
+                      <YAxis tick={{ fontSize: 11, fill: '#64748b' }} allowDecimals={false} />
+                      <Tooltip
+                        contentStyle={{
+                          borderRadius: 10,
+                          border: '1px solid #e2e8f0',
+                          fontSize: 12,
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+                        }}
+                      />
+                      <Bar dataKey="stockIn" fill="#10b981" radius={[4, 4, 0, 0]} name="Stock In" />
+                      <Bar dataKey="sales" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Sales" />
+                      <Bar dataKey="adjustment" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Adjustments" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
           )}
