@@ -109,7 +109,7 @@ export class ProfitLossService {
            FROM ${saleItems} si
            INNER JOIN ${sales} s ON s.id = si.sale_id
            LEFT JOIN ${products} p ON p.id = si.product_id
-           WHERE s.status <> 'CANCELLED'
+           WHERE s.status = 'COMPLETED'
              AND s.created_at >= $1::date
              AND s.created_at < ($2::date + INTERVAL '1 day')
              ${salesBranchCond}`,
@@ -127,7 +127,7 @@ export class ProfitLossService {
              COALESCE(SUM(COALESCE(s.refunded_amount, 0)), 0)::float AS "refunds",
              COALESCE(SUM(s.total), 0)::float AS "netSalesTotal"
            FROM ${sales} s
-           WHERE s.status <> 'CANCELLED'
+           WHERE s.status = 'COMPLETED'
              AND s.created_at >= $1::date
              AND s.created_at < ($2::date + INTERVAL '1 day')
              ${salesBranchCond}`,
@@ -227,7 +227,7 @@ export class ProfitLossService {
                 WHERE si.sale_id = s.id AND si.item_type = 'product')
              ), 0)::float AS "cogs"
            FROM ${sales} s
-           WHERE s.status <> 'CANCELLED'
+           WHERE s.status = 'COMPLETED'
              AND s.created_at >= ($1::date - INTERVAL '6 months')
              AND s.created_at < ($2::date + INTERVAL '1 day')
              ${salesBranchCond}

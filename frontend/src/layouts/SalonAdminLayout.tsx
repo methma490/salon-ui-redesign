@@ -38,7 +38,7 @@ import { Button } from '@/components/ui/button';
 import { NotificationBell } from '@/components/salon/NotificationBell';
 import { Separator } from '@/components/ui/separator';
 import { SalonBranchProvider, useSalonBranch } from '@/contexts/SalonBranchContext';
-import { TenantThemeProvider } from '@/contexts/TenantThemeContext';
+import { TenantThemeProvider, useTenantTheme } from '@/contexts/TenantThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { resolveUploadUrl } from '@/lib/upload-url';
 import { cn } from '@/lib/utils';
@@ -632,7 +632,7 @@ function SalonAdminHeader({
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  const currentBranch = branches.find((b) => b.id === branchId);
+  const currentBranch = branches.find((b: { id: string; name: string }) => b.id === branchId);
   const branchName = branchId === 'all' || !currentBranch ? 'All Branches' : currentBranch.name;
   const isSubPage = location.pathname !== '/salon/dashboard' && location.pathname !== '/salon/more';
 
@@ -781,6 +781,7 @@ function SalonAdminHeader({
 
 function SalonAdminLayoutInner() {
   const { user, logout } = useAuth();
+  const { palette } = useTenantTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const mainRef = useRef<HTMLElement>(null);
@@ -925,7 +926,7 @@ function SalonAdminLayoutInner() {
 
         <main
           ref={mainRef}
-          className="salon-admin-main min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-[#f8fafc] p-3 sm:p-4 md:p-6 pb-20 xl:pb-6"
+          className="salon-admin-main min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-[#f8fafc] p-3 sm:p-4 md:p-6 pb-24 sm:pb-28 xl:pb-6"
         >
           <SalonPermissionGate>
             <div className="admin-page-content">
@@ -934,102 +935,60 @@ function SalonAdminLayoutInner() {
           </SalonPermissionGate>
         </main>
 
-        {/* Mobile & Tablet App Bottom Dock - Exactly Matching Screenshot Reference */}
+        {/* Mobile & Tablet App Bottom Dock - Floating Pill with Curved Circle Active Indicator */}
         <nav
-          className="xl:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/70 px-2.5 py-1.5 flex items-center justify-around shadow-[0_-4px_20px_rgba(0,0,0,0.04)]"
+          className="xl:hidden fixed bottom-3 left-3 right-3 sm:bottom-4 sm:left-6 sm:right-6 max-w-lg mx-auto z-40 bg-white/95 backdrop-blur-md rounded-[32px] sm:rounded-full border border-slate-200/80 px-2 sm:px-4 py-2 sm:py-2.5 flex items-center justify-around shadow-[0_12px_40px_rgba(0,0,0,0.12)]"
           aria-label="Mobile and Tablet Navigation"
         >
-          <NavLink
-            to="/salon/dashboard"
-            className={({ isActive }) =>
-              `flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all ${
-                isActive
-                  ? 'bg-[#ede9fe] text-[#7c3aed] font-bold'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <Home className={`w-5 h-5 ${isActive ? 'text-[#7c3aed] fill-[#7c3aed]' : 'text-slate-500'}`} />
-                <span className="text-[10px] mt-0.5 font-semibold">Dashboard</span>
-              </>
-            )}
-          </NavLink>
-
-          <NavLink
-            to="/salon/pos"
-            className={({ isActive }) =>
-              `flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all ${
-                isActive
-                  ? 'bg-[#ede9fe] text-[#7c3aed] font-bold'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <Printer className={`w-5 h-5 ${isActive ? 'text-[#7c3aed]' : 'text-slate-500'}`} />
-                <span className="text-[10px] mt-0.5 font-semibold">POS</span>
-              </>
-            )}
-          </NavLink>
-
-          <NavLink
-            to="/salon/appointments"
-            className={({ isActive }) =>
-              `flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all ${
-                isActive
-                  ? 'bg-[#ede9fe] text-[#7c3aed] font-bold'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <Calendar className={`w-5 h-5 ${isActive ? 'text-[#7c3aed]' : 'text-slate-500'}`} />
-                <span className="text-[10px] mt-0.5 font-semibold">Appointments</span>
-              </>
-            )}
-          </NavLink>
-
-          <NavLink
-            to="/salon/sales"
-            className={({ isActive }) =>
-              `flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all ${
-                isActive
-                  ? 'bg-[#ede9fe] text-[#7c3aed] font-bold'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <Receipt className={`w-5 h-5 ${isActive ? 'text-[#7c3aed]' : 'text-slate-500'}`} />
-                <span className="text-[10px] mt-0.5 font-semibold">Transactions</span>
-              </>
-            )}
-          </NavLink>
-
-          <NavLink
-            to="/salon/more"
-            className={({ isActive }) =>
-              `flex flex-col items-center justify-center py-1 px-2.5 rounded-2xl transition-all ${
-                isActive
-                  ? 'text-[#ea580c] font-bold'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`
-            }
-          >
-            {({ isActive }) => (
-              <>
-                <div className={`p-1 rounded-xl transition-all ${isActive ? 'bg-[#ffedd5] text-[#ea580c]' : ''}`}>
-                  <Grid2X2 className={`w-5 h-5 ${isActive ? 'text-[#ea580c]' : 'text-slate-500'}`} />
-                </div>
-                <span className={`text-[10px] mt-0.5 font-semibold ${isActive ? 'text-[#ea580c]' : 'text-slate-500'}`}>More</span>
-              </>
-            )}
-          </NavLink>
+          {[
+            { to: '/salon/dashboard', label: 'Home', icon: Home },
+            { to: '/salon/pos', label: 'POS', icon: Printer },
+            { to: '/salon/appointments', label: 'Bookings', icon: Calendar },
+            { to: '/salon/sales', label: 'Sales', icon: Receipt },
+            { to: '/salon/more', label: 'More', icon: Grid2X2 },
+          ].map(({ to, label, icon: NavIcon }) => (
+            <NavLink
+              key={to}
+              to={to}
+              className="flex flex-col items-center justify-center flex-1 transition-all group select-none"
+            >
+              {({ isActive }) => (
+                <>
+                  <div
+                    className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center transition-all duration-200 ${
+                      isActive
+                        ? 'scale-105'
+                        : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/60'
+                    }`}
+                    style={
+                      isActive
+                        ? {
+                            backgroundColor: palette.primary,
+                            color: palette.foreground,
+                            boxShadow: `0 4px 14px ${palette.primary}55`,
+                          }
+                        : undefined
+                    }
+                  >
+                    <NavIcon
+                      className={`w-5 h-5 transition-transform ${
+                        isActive ? 'stroke-[2.2]' : 'text-slate-500 stroke-[1.8]'
+                      }`}
+                      style={isActive ? { color: palette.foreground } : undefined}
+                    />
+                  </div>
+                  <span
+                    className={`text-[10px] sm:text-[11px] mt-1 transition-colors leading-tight text-center ${
+                      isActive ? 'font-bold' : 'text-slate-500 font-medium'
+                    }`}
+                    style={isActive ? { color: palette.primary } : undefined}
+                  >
+                    {label}
+                  </span>
+                </>
+              )}
+            </NavLink>
+          ))}
         </nav>
       </div>
     </div>
