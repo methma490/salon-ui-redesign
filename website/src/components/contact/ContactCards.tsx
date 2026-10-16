@@ -21,15 +21,15 @@ export function ContactCards() {
         <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700 group-hover:bg-violet-700 group-hover:text-white transition-colors">
           <Phone className="size-5" />
         </span>
-        <div>
+        <div className="min-w-0">
           <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
             Call Directly
           </span>
-          <span className="mt-0.5 block text-base sm:text-lg font-bold text-slate-900 group-hover:text-violet-700 transition-colors">
+          <span className="mt-0.5 block text-base sm:text-lg font-bold text-slate-900 group-hover:text-violet-700 transition-colors truncate">
             {CONTACT_PHONE}
           </span>
           <span className="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
-            <Clock className="size-3.5 text-slate-400" />
+            <Clock className="size-3.5 text-slate-400 shrink-0" />
             <span>{CONTACT_HOURS}</span>
           </span>
         </div>
@@ -43,11 +43,11 @@ export function ContactCards() {
         <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700 group-hover:bg-violet-700 group-hover:text-white transition-colors">
           <Mail className="size-5" />
         </span>
-        <div>
+        <div className="min-w-0">
           <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
             Email Support & Sales
           </span>
-          <span className="mt-0.5 block text-base font-bold text-slate-900 group-hover:text-violet-700 transition-colors">
+          <span className="mt-0.5 block text-base font-bold text-slate-900 group-hover:text-violet-700 transition-colors truncate">
             {CONTACT_EMAIL}
           </span>
           <span className="mt-1 block text-xs text-slate-500">

@@ -40,24 +40,24 @@ export function Footer() {
   };
 
   return (
-    <footer className="overflow-x-clip bg-[#0B0F17] text-white border-t border-slate-800">
+    <footer className="overflow-x-clip border-t border-violet-900/60 bg-gradient-to-b from-[#342842] via-[#292330] to-[#211f26] text-white">
       {/* ── Top Contact Highlights Bar ── */}
-      <div className="border-b border-white/[0.08] bg-white/[0.02]">
+      <div className="border-b border-violet-300/10 bg-violet-300/[0.04]">
         <div className="section-container py-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 items-center">
             {/* Phone */}
             <a
               href={`tel:${CONTACT_PHONE_RAW}`}
-              className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] transition-all group"
+              className="group flex items-center gap-3.5 rounded-2xl border border-violet-200/10 bg-white/[0.04] p-3.5 transition-all hover:border-violet-300/25 hover:bg-violet-300/[0.08]"
             >
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-600 text-white shadow-xs group-hover:scale-105 transition-transform">
                 <Phone className="h-5 w-5" />
               </span>
-              <div>
+              <div className="min-w-0">
                 <span className="block text-[11px] font-semibold uppercase tracking-wider text-violet-300">
                   Call Direct
                 </span>
-                <span className="text-sm sm:text-base font-bold text-white group-hover:text-violet-200 transition-colors">
+                <span className="text-sm sm:text-base font-bold text-white group-hover:text-violet-200 transition-colors truncate block">
                   {CONTACT_PHONE}
                 </span>
               </div>
@@ -66,23 +66,23 @@ export function Footer() {
             {/* Email */}
             <a
               href={`mailto:${CONTACT_EMAIL}`}
-              className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] transition-all group"
+              className="group flex items-center gap-3.5 rounded-2xl border border-violet-200/10 bg-white/[0.04] p-3.5 transition-all hover:border-violet-300/25 hover:bg-violet-300/[0.08]"
             >
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-600 text-white shadow-xs group-hover:scale-105 transition-transform">
                 <Mail className="h-5 w-5" />
               </span>
-              <div>
+              <div className="min-w-0">
                 <span className="block text-[11px] font-semibold uppercase tracking-wider text-violet-300">
                   Support & Inquiries
                 </span>
-                <span className="text-sm sm:text-base font-bold text-white group-hover:text-violet-200 transition-colors">
+                <span className="text-sm sm:text-base font-bold text-white group-hover:text-violet-200 transition-colors truncate block">
                   {CONTACT_EMAIL}
                 </span>
               </div>
             </a>
 
             {/* Working Hours */}
-            <div className="hidden lg:flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+            <div className="hidden lg:flex items-center gap-3.5 rounded-2xl border border-violet-200/10 bg-white/[0.04] p-3.5">
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-violet-300">
                 <Clock className="h-5 w-5" />
               </span>
@@ -100,7 +100,7 @@ export function Footer() {
       </div>
 
       {/* ── Main Footer Navigation ── */}
-      <div className="section-container py-14 lg:py-18">
+      <div className="section-container py-12 lg:py-14">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-8 items-start">
           {/* Brand & Mission (Column 1) */}
           <div className="lg:col-span-4 flex flex-col items-start">
@@ -128,37 +128,37 @@ export function Footer() {
 
           {/* Product Modules (Column 2) */}
           <div className="lg:col-span-3">
-            <h3 className="text-xs font-bold tracking-wider uppercase text-white">
+            <h3 className="text-xs font-bold tracking-wider uppercase text-violet-100">
               Product Modules
             </h3>
             <ul className="mt-4 space-y-2.5 text-sm text-slate-400">
               <li>
-                <Link href="/features#appointments" className="hover:text-white transition-colors">
+                <Link href="/features#appointments" className="transition-colors hover:text-violet-200">
                   Appointments & Calendar
                 </Link>
               </li>
               <li>
-                <Link href="/features#pos" className="hover:text-white transition-colors">
+                <Link href="/features#pos" className="transition-colors hover:text-violet-200">
                   Express Station POS
                 </Link>
               </li>
               <li>
-                <Link href="/features#customers" className="hover:text-white transition-colors">
+                <Link href="/features#customers" className="transition-colors hover:text-violet-200">
                   Client CRM & Color Formulas
                 </Link>
               </li>
               <li>
-                <Link href="/features#inventory" className="hover:text-white transition-colors">
+                <Link href="/features#inventory" className="transition-colors hover:text-violet-200">
                   Inventory & Stock Control
                 </Link>
               </li>
               <li>
-                <Link href="/features#payroll" className="hover:text-white transition-colors">
+                <Link href="/features#payroll" className="transition-colors hover:text-violet-200">
                   Stylist Commissions & Payroll
                 </Link>
               </li>
               <li>
-                <Link href="/features#branches" className="hover:text-white transition-colors">
+                <Link href="/features#branches" className="transition-colors hover:text-violet-200">
                   Multi-Branch Oversight
                 </Link>
               </li>
@@ -167,32 +167,32 @@ export function Footer() {
 
           {/* Solutions & Company (Column 3) */}
           <div className="lg:col-span-2">
-            <h3 className="text-xs font-bold tracking-wider uppercase text-white">
+            <h3 className="text-xs font-bold tracking-wider uppercase text-violet-100">
               Company
             </h3>
             <ul className="mt-4 space-y-2.5 text-sm text-slate-400">
               <li>
-                <Link href="/solutions" className="hover:text-white transition-colors">
+                <Link href="/solutions" className="transition-colors hover:text-violet-200">
                   Solutions by Salon Size
                 </Link>
               </li>
               <li>
-                <Link href="/pricing" className="hover:text-white transition-colors">
+                <Link href="/pricing" className="transition-colors hover:text-violet-200">
                   Plans & Pricing
                 </Link>
               </li>
               <li>
-                <Link href="/about" className="hover:text-white transition-colors">
+                <Link href="/about" className="transition-colors hover:text-violet-200">
                   About DartCodes
                 </Link>
               </li>
               <li>
-                <Link href="/faq" className="hover:text-white transition-colors">
+                <Link href="/faq" className="transition-colors hover:text-violet-200">
                   FAQ & Knowledgebase
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="hover:text-white transition-colors">
+                <Link href="/contact" className="transition-colors hover:text-violet-200">
                   Contact & Live Demos
                 </Link>
               </li>
@@ -206,7 +206,7 @@ export function Footer() {
 
           {/* Stay Updated / Newsletter (Column 4) */}
           <div className="lg:col-span-3 flex flex-col items-start">
-            <h3 className="text-xs font-bold tracking-wider uppercase text-white">
+            <h3 className="text-xs font-bold tracking-wider uppercase text-violet-100">
               Stay Informed
             </h3>
             <p className="mt-4 text-xs leading-relaxed text-slate-400">
@@ -214,7 +214,7 @@ export function Footer() {
             </p>
 
             <form onSubmit={handleSubscribe} className="mt-4 w-full">
-              <div className="flex h-11 w-full items-center rounded-full border border-white/10 bg-white/[0.05] pr-1 focus-within:border-violet-500 transition-colors">
+              <div className="flex h-11 w-full items-center rounded-full border border-violet-200/15 bg-violet-950/30 pr-1 transition-colors focus-within:border-violet-400">
                 <label htmlFor="footer-newsletter-email" className="sr-only">
                   Email address
                 </label>
@@ -259,7 +259,7 @@ export function Footer() {
       </div>
 
       {/* ── Bottom Legal & Copyright Bar ── */}
-      <div className="border-t border-white/[0.08] bg-black/40">
+      <div className="border-t border-violet-300/10 bg-[#1a171f]/70">
         <div className="section-container flex flex-col gap-3 py-6 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
           <p>
             © {year} {APP_NAME}. All rights reserved.

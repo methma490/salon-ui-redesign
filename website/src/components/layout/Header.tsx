@@ -2,28 +2,15 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   ChevronDown,
   ArrowRight,
-  UserCheck,
-  Scissors,
-  Building2,
-  Calendar,
-  CreditCard,
-  Users,
-  Package,
-  Store,
-  BarChart3,
-  Sparkles,
-  HelpCircle,
-  Phone,
 } from 'lucide-react';
 import { Logo } from '@/components/layout/Logo';
 import { MobileMenu } from '@/components/layout/MobileMenu';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { loginUrl } from '@/lib/api';
-import { CONTACT_PHONE } from '@/lib/constants';
 
 interface MegaMenuColumn {
   heading: string;
@@ -36,82 +23,57 @@ interface MegaMenuColumn {
 
 const PRODUCT_COLUMNS: MegaMenuColumn[] = [
   {
-    heading: 'Front Desk & Calendar',
+    heading: 'Appointments',
     links: [
-      { label: 'Smart Calendar Grid', href: '/features#appointments', badge: 'Popular' },
-      { label: 'Walk-In Queue Manager', href: '/features#appointments' },
-      { label: 'Automated SMS Reminders', href: '/features#appointments' },
-      { label: 'Multi-Stylist Time Slots', href: '/features#appointments' },
-      { label: 'Color & Treatment Timers', href: '/features#appointments' },
+      { label: 'Calendar & Bookings', href: '/features#appointments' },
     ],
   },
   {
-    heading: 'Express POS & Billing',
+    heading: 'Point of Sale',
     links: [
-      { label: 'Sub-5s Station Checkout', href: '/features#pos', badge: '<5s Speed' },
-      { label: 'Split Cash & Card Tenders', href: '/features#pos' },
-      { label: 'PayHere Online & QR Pay', href: '/features#pos' },
-      { label: 'Thermal Receipt Printing', href: '/features#pos' },
-      { label: 'Digital WhatsApp Bills', href: '/features#pos' },
+      { label: 'Checkout & Payments', href: '/features#pos' },
     ],
   },
   {
-    heading: 'Client CRM & Formulas',
+    heading: 'Clients & Team',
     links: [
-      { label: 'Color Recipe Formulations', href: '/features#customers', badge: 'Essential' },
-      { label: 'Allergy & Patch Test Logs', href: '/features#customers' },
-      { label: 'Lifetime Visit Dossiers', href: '/features#customers' },
-      { label: 'VIP Loyalty Tiers & Points', href: '/features#customers' },
-      { label: 'Client Photo History', href: '/features#customers' },
+      { label: 'Client Profiles & History', href: '/features#customers' },
+      { label: 'Staff & Payroll', href: '/features#payroll' },
     ],
   },
   {
-    heading: 'Operations & Payroll',
+    heading: 'Manage & Grow',
     links: [
-      { label: 'Stylist Shift Rosters', href: '/features#payroll' },
-      { label: 'Automated Commissions', href: '/features#payroll' },
-      { label: 'Back-Bar Stock Deductions', href: '/features#inventory' },
-      { label: 'Low Stock Reorder Alerts', href: '/features#inventory', badge: 'Auto-Alert' },
-      { label: 'Multi-Branch Oversight', href: '/features#branches' },
+      { label: 'Inventory & Stock', href: '/features#inventory' },
+      { label: 'Reports & Branches', href: '/features#branches' },
     ],
   },
 ];
 
 const SOLUTION_COLUMNS: MegaMenuColumn[] = [
   {
-    heading: 'Solo Artists & Studios',
+    heading: 'Solo Stylists',
     links: [
-      { label: 'Independent Stylists & Barbers', href: '/solutions#solo' },
-      { label: 'Chair & Booth Renters', href: '/solutions#solo' },
-      { label: 'Mobile-Only Stylists', href: '/solutions#solo' },
-      { label: 'Zero Hardware Overhead', href: '/solutions#solo' },
+      { label: 'Independent stylists & barbers', href: '/solutions#solo' },
     ],
   },
   {
-    heading: 'Boutique Salons & Spas',
+    heading: 'Salons & Spas',
     links: [
-      { label: '1 to 5 Styling Chairs', href: '/solutions#boutique' },
-      { label: 'Front Desk Reception POS', href: '/solutions#boutique' },
-      { label: 'Commission Math & Slips', href: '/solutions#boutique' },
-      { label: 'Retail Stock Tracking', href: '/solutions#boutique' },
+      { label: 'Tools for growing teams', href: '/solutions#boutique' },
     ],
   },
   {
-    heading: 'Multi-Branch Salon Chains',
+    heading: 'Salon Groups',
     links: [
-      { label: 'Centralized Stock Transfers', href: '/solutions#chain' },
-      { label: 'Cross-Branch Client Dossiers', href: '/solutions#chain' },
-      { label: 'Unified Owner Analytics', href: '/solutions#chain' },
-      { label: 'Consolidated P&L Reports', href: '/solutions#chain' },
+      { label: 'Multi-branch management', href: '/solutions#chain' },
     ],
   },
   {
-    heading: 'Free Migration Concierge',
+    heading: 'Getting Started',
     links: [
-      { label: 'Complimentary Data Import', href: '/contact', badge: 'Free' },
-      { label: 'Excel & Paper Book Import', href: '/contact' },
-      { label: 'Printer & Hardware Setup', href: '/faq' },
-      { label: '24/7 Dedicated Support', href: '/contact' },
+      { label: 'Free data migration', href: '/contact' },
+      { label: 'Talk to our team', href: '/contact' },
     ],
   },
 ];
@@ -120,6 +82,7 @@ export function Header() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -148,16 +111,24 @@ export function Header() {
     };
   }, []);
 
-  const closeDropdown = () => setActiveDropdown(null);
+  const closeDropdown = () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => setActiveDropdown(null), 120);
+  };
+  const openDropdown = (menu: string) => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    setActiveDropdown(menu);
+  };
 
   return (
     <header
       ref={headerRef}
       onMouseLeave={closeDropdown}
-      className={`sticky top-0 z-50 w-full transition-all duration-200 bg-white ${
+      onMouseEnter={() => closeTimerRef.current && clearTimeout(closeTimerRef.current)}
+      className={`fixed inset-x-0 top-0 z-50 w-full transition-all duration-200 bg-white/95 dark:bg-[#25232c]/95 backdrop-blur-md ${
         isScrolled
-          ? 'border-b border-slate-200/90 shadow-xs'
-          : 'border-b border-slate-100'
+          ? 'border-b border-slate-200/90 dark:border-slate-800 shadow-xs'
+          : 'border-b border-slate-100 dark:border-slate-800/70'
       }`}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -167,24 +138,25 @@ export function Header() {
             <Logo />
           </div>
 
-          {/* CENTER: Navigation Links (Only Original Navigation Items) */}
-          <nav className="hidden lg:flex items-center gap-1 xl:gap-2" aria-label="Main Navigation">
+          {/* CENTER: Navigation Links */}
+          <nav className="hidden lg:flex items-center gap-2 xl:gap-4" aria-label="Main Navigation">
             {/* 1. Product Mega Dropdown Trigger */}
             <button
               type="button"
-              onMouseEnter={() => setActiveDropdown('product')}
+              onMouseEnter={() => openDropdown('product')}
+              onFocus={() => openDropdown('product')}
               onClick={() => setActiveDropdown(activeDropdown === 'product' ? null : 'product')}
-              className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition-colors cursor-pointer ${
+              className={`group/nav flex items-center gap-1.5 rounded-lg px-3.5 py-2.5 text-sm font-semibold transition-all duration-200 cursor-pointer hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${
                 activeDropdown === 'product' || pathname === '/features'
-                  ? 'bg-violet-50 text-violet-700'
-                  : 'text-slate-700 hover:bg-slate-50 hover:text-violet-700'
+                  ? 'text-violet-700 dark:text-violet-300'
+                  : 'text-slate-700 dark:text-slate-200 hover:text-violet-600 dark:hover:text-violet-400'
               }`}
               aria-expanded={activeDropdown === 'product'}
             >
               <span>Product</span>
               <ChevronDown
                 className={`h-4 w-4 transition-transform duration-200 ${
-                  activeDropdown === 'product' ? 'rotate-180 text-violet-700' : 'text-slate-400'
+                  activeDropdown === 'product' ? 'rotate-180 text-violet-600 dark:text-violet-400' : 'text-slate-400'
                 }`}
               />
             </button>
@@ -192,19 +164,20 @@ export function Header() {
             {/* 2. Solutions Dropdown Trigger */}
             <button
               type="button"
-              onMouseEnter={() => setActiveDropdown('solutions')}
+              onMouseEnter={() => openDropdown('solutions')}
+              onFocus={() => openDropdown('solutions')}
               onClick={() => setActiveDropdown(activeDropdown === 'solutions' ? null : 'solutions')}
-              className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition-colors cursor-pointer ${
+              className={`group/nav flex items-center gap-1.5 rounded-lg px-3.5 py-2.5 text-sm font-semibold transition-all duration-200 cursor-pointer hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${
                 activeDropdown === 'solutions' || pathname === '/solutions'
-                  ? 'bg-violet-50 text-violet-700'
-                  : 'text-slate-700 hover:bg-slate-50 hover:text-violet-700'
+                  ? 'text-violet-700 dark:text-violet-300'
+                  : 'text-slate-700 dark:text-slate-200 hover:text-violet-600 dark:hover:text-violet-400'
               }`}
               aria-expanded={activeDropdown === 'solutions'}
             >
               <span>Solutions</span>
               <ChevronDown
                 className={`h-4 w-4 transition-transform duration-200 ${
-                  activeDropdown === 'solutions' ? 'rotate-180 text-violet-700' : 'text-slate-400'
+                  activeDropdown === 'solutions' ? 'rotate-180 text-violet-600 dark:text-violet-400' : 'text-slate-400'
                 }`}
               />
             </button>
@@ -213,10 +186,10 @@ export function Header() {
             <Link
               href="/pricing"
               onMouseEnter={closeDropdown}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                className={`rounded-lg px-3.5 py-2.5 text-sm font-semibold transition-all duration-200 hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${
                 pathname === '/pricing'
-                  ? 'bg-violet-50 text-violet-700'
-                  : 'text-slate-700 hover:bg-slate-50 hover:text-violet-700'
+                  ? 'text-violet-700 dark:text-violet-300'
+                  : 'text-slate-700 dark:text-slate-200 hover:text-violet-600 dark:hover:text-violet-400'
               }`}
             >
               Pricing
@@ -226,10 +199,10 @@ export function Header() {
             <Link
               href="/about"
               onMouseEnter={closeDropdown}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+              className={`rounded-lg px-3.5 py-2.5 text-sm font-semibold transition-all duration-200 hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${
                 pathname === '/about'
-                  ? 'bg-violet-50 text-violet-700'
-                  : 'text-slate-700 hover:bg-slate-50 hover:text-violet-700'
+                  ? 'text-violet-700 dark:text-violet-300'
+                  : 'text-slate-700 dark:text-slate-200 hover:text-violet-600 dark:hover:text-violet-400'
               }`}
             >
               About
@@ -239,10 +212,10 @@ export function Header() {
             <Link
               href="/faq"
               onMouseEnter={closeDropdown}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+              className={`rounded-lg px-3.5 py-2.5 text-sm font-semibold transition-all duration-200 hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${
                 pathname === '/faq'
-                  ? 'bg-violet-50 text-violet-700'
-                  : 'text-slate-700 hover:bg-slate-50 hover:text-violet-700'
+                  ? 'text-violet-700 dark:text-violet-300'
+                  : 'text-slate-700 dark:text-slate-200 hover:text-violet-600 dark:hover:text-violet-400'
               }`}
             >
               FAQ
@@ -252,31 +225,37 @@ export function Header() {
             <Link
               href="/contact"
               onMouseEnter={closeDropdown}
-              className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+              className={`rounded-lg px-3.5 py-2.5 text-sm font-semibold transition-all duration-200 hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${
                 pathname === '/contact'
-                  ? 'bg-violet-50 text-violet-700'
-                  : 'text-slate-700 hover:bg-slate-50 hover:text-violet-700'
+                  ? 'text-violet-700 dark:text-violet-300'
+                  : 'text-slate-700 dark:text-slate-200 hover:text-violet-600 dark:hover:text-violet-400'
               }`}
             >
               Contact
             </Link>
           </nav>
 
-          {/* RIGHT: Login & Sign Up CTA (Only Original Actions) */}
-          <div className="flex items-center gap-3">
+          {/* RIGHT: Theme Toggle & CTAs */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* Theme Toggle Button */}
+            <ThemeToggle className="hidden sm:inline-flex" />
+
             <Link
               href={loginUrl()}
-              className="hidden sm:inline-block text-sm font-semibold text-slate-700 hover:text-violet-700 transition-colors px-3 py-2 rounded-lg"
+              className="hidden sm:inline-block text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-violet-600 dark:hover:text-violet-400 transition-colors px-3 py-2 rounded-lg"
             >
               Log in
             </Link>
 
             <Link
               href="/pricing"
-              className="inline-flex items-center gap-2 rounded-full bg-violet-700 hover:bg-violet-800 active:bg-violet-900 px-5 py-2.5 text-sm font-semibold text-white shadow-xs hover:shadow-md transition-all active:scale-[0.98]"
+              className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full bg-violet-600 hover:bg-violet-700 active:bg-violet-800 px-3.5 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-xs hover:shadow-md hover:shadow-violet-600/30 transition-all active:scale-[0.98] shrink-0"
             >
-              <span>Start Free Trial</span>
-              <ArrowRight className="h-4 w-4" />
+              <span>
+                <span className="hidden sm:inline">Start Free Trial</span>
+                <span className="sm:hidden">Try Free</span>
+              </span>
+              <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Link>
 
             {/* Mobile Drawer */}
@@ -285,34 +264,32 @@ export function Header() {
         </div>
       </div>
 
-      {/* ── EXPANSIVE MEGA MENU SHELF (Full Width, Perfectly Aligned With Page Container) ── */}
+      {/* ── EXPANSIVE MEGA MENU SHELF ── */}
       {activeDropdown && (
         <div
           onMouseEnter={() => {}}
-          className="absolute left-0 right-0 top-full w-full border-b border-slate-200/90 bg-white/98 shadow-2xl backdrop-blur-xl z-50 animate-in fade-in slide-in-from-top-1 duration-150"
+          className="absolute left-0 right-0 top-full w-full border-b border-slate-200/90 dark:border-slate-700 bg-white dark:bg-[#25232c] shadow-xl z-50 animate-in fade-in slide-in-from-top-1 duration-150 max-h-[calc(100vh-5rem)] overflow-y-auto"
         >
-          <div className="mx-auto max-w-7xl px-6 lg:px-8 py-8">
-            <div className="grid grid-cols-12 gap-8 items-start">
-              {/* Left Side: 4 Clean, Well-Spaced Feature Columns (9 of 12 columns) */}
-              <div className="col-span-8 lg:col-span-9 grid grid-cols-4 gap-6 xl:gap-8">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-5 lg:gap-8 items-start">
                 {(activeDropdown === 'solutions' ? SOLUTION_COLUMNS : PRODUCT_COLUMNS).map((col) => (
-                  <div key={col.heading} className="space-y-3">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 border-b border-slate-100 pb-2">
+                  <div key={col.heading} className="space-y-2.5">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100">
                       {col.heading}
                     </h3>
-                    <ul className="space-y-2">
+                    <ul className="space-y-1.5">
                       {col.links.map((link) => (
                         <li key={link.label}>
                           <Link
                             href={link.href}
                             onClick={closeDropdown}
-                            className="group flex items-center justify-between text-xs sm:text-[13px] text-slate-600 hover:text-violet-700 transition-colors py-0.5"
+                            className="group flex items-center justify-between text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 transition-colors py-0.5"
                           >
                             <span className="font-medium group-hover:translate-x-0.5 transition-transform">
                               {link.label}
                             </span>
                             {link.badge && (
-                              <span className="ml-1.5 shrink-0 rounded-full bg-violet-100 px-2 py-0.5 text-[9px] font-bold text-violet-700">
+                              <span className="ml-1.5 shrink-0 rounded-full bg-violet-100 dark:bg-violet-950/80 px-2 py-0.5 text-[9px] font-bold text-violet-700 dark:text-violet-300">
                                 {link.badge}
                               </span>
                             )}
@@ -322,51 +299,16 @@ export function Header() {
                     </ul>
                   </div>
                 ))}
-              </div>
-
-              {/* Right Side: Elegant Framed Salon Photography Card (3 of 12 columns) */}
-              <div className="col-span-4 lg:col-span-3 flex flex-col justify-between rounded-2xl border border-violet-100 bg-gradient-to-b from-violet-50/70 via-white to-purple-50/30 p-4 shadow-sm">
-                <div>
-                  <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl border border-slate-200/90 mb-3 bg-slate-100">
-                    <Image
-                      src={
-                        activeDropdown === 'solutions'
-                          ? '/landing/solution-highlight.jpg'
-                          : '/landing/hero-salon-premium.jpg'
-                      }
-                      alt="Salon Suite Showcase"
-                      fill
-                      className="object-cover transition-transform duration-500 hover:scale-105"
-                      sizes="(max-width: 1024px) 100vw, 320px"
-                    />
-                    <div className="absolute top-2.5 left-2.5 rounded-full bg-white/95 backdrop-blur-xs px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-violet-700 shadow-2xs">
-                      {activeDropdown === 'solutions' ? 'Salon Tiers' : 'Express Station'}
-                    </div>
-                  </div>
-
-                  <h4 className="text-sm font-bold text-slate-900 leading-snug">
-                    {activeDropdown === 'solutions'
-                      ? 'Tailored For Salons of Every Scale'
-                      : 'Express Point of Sale & Billing'}
-                  </h4>
-                  <p className="mt-1 text-xs text-slate-600 leading-relaxed">
-                    {activeDropdown === 'solutions'
-                      ? 'From independent chair stylists to multi-city franchise salon chains across Sri Lanka.'
-                      : 'Sub-5s station checkout, split tenders & instant thermal receipt printing.'}
-                  </p>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-slate-100">
-                  <Link
-                    href={activeDropdown === 'solutions' ? '/solutions' : '/features'}
-                    onClick={closeDropdown}
-                    className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-violet-700 hover:bg-violet-800 p-2.5 text-xs font-semibold text-white shadow-xs transition-colors"
-                  >
-                    <span>{activeDropdown === 'solutions' ? 'Compare Solutions' : 'View Full Tour'}</span>
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </Link>
-                </div>
-              </div>
+            </div>
+            <div className="mt-5 border-t border-slate-100 dark:border-slate-800 pt-3">
+              <Link
+                href={activeDropdown === 'solutions' ? '/solutions' : '/features'}
+                onClick={closeDropdown}
+                className="inline-flex items-center gap-2 text-sm font-semibold text-violet-700 dark:text-violet-300 hover:text-violet-900 dark:hover:text-violet-200"
+              >
+                {activeDropdown === 'solutions' ? 'Explore all solutions' : 'Explore all features'}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
           </div>
         </div>

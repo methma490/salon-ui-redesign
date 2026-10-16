@@ -7,7 +7,7 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Header />
-      <main>{children}</main>
+      <main className="pt-18 sm:pt-20">{children}</main>
       <Footer />
       <WhatsAppWidget />
       <ScrollToTop />

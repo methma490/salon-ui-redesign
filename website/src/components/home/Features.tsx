@@ -49,7 +49,7 @@ const ALL_FEATURES: FeatureItem[] = [
     category: 'Front Desk',
     badge: 'Zero Conflicts',
     title: 'Visual Appointment Calendar',
-    description: 'Color-coded stylist schedules with double-booking prevention and quick drag-and-drop rescheduling.',
+    description: 'Easy scheduling and rescheduling.',
     keyHighlight: 'Double-booking detection & SMS reminders',
     image: '/images/features/feat-calendar.jpg',
     icon: Calendar,
@@ -60,7 +60,7 @@ const ALL_FEATURES: FeatureItem[] = [
     category: 'Billing & POS',
     badge: 'Sub-5s Checkout',
     title: 'Express Station POS & Invoicing',
-    description: 'Rapid billing for services & retail products with split payments, discounts, and thermal/WhatsApp receipts.',
+    description: 'Fast billing, split payments, and receipts..',
     keyHighlight: 'Split payment checkout & instant receipt printing',
     image: '/images/features/feat-pos.jpg',
     icon: Receipt,
@@ -71,7 +71,7 @@ const ALL_FEATURES: FeatureItem[] = [
     category: 'Front Desk',
     badge: 'Client CRM',
     title: 'Customer Profiles & History',
-    description: 'Client dossiers with hair/skin color formulas, treatment history, allergy notes, and spending trends.',
+    description: 'Store client details,hair/skin formulas, treatment history, allergies, and spending trends.',
     keyHighlight: 'Dossier notes, visit history & VIP tags',
     image: '/images/features/feat-crm.jpg',
     icon: Users,
@@ -137,7 +137,7 @@ const ALL_FEATURES: FeatureItem[] = [
     category: 'Operations',
     badge: 'Multi-Branch',
     title: 'Multi-Branch Central Command',
-    description: 'Master control for multiple salon locations with revenue benchmarking and inter-branch inventory transfers.',
+    description: 'Manage multiple salon branches with revenue comparisons and inventory transfers.',
     keyHighlight: 'Unified master login & branch comparisons',
     image: '/images/features/feat-branches.jpg',
     icon: Building2,
@@ -235,7 +235,7 @@ export function Features() {
   return (
     <section
       id="features"
-      className="relative overflow-hidden py-18 lg:py-24 bg-slate-50/60"
+      className="relative overflow-hidden py-10 sm:py-12 lg:py-14 bg-slate-50/60"
       aria-labelledby="features-heading"
     >
       <div className="section-container">
@@ -415,7 +415,7 @@ export function Features() {
         <div className="mt-10 text-center">
           <Link
             href="/features"
-            className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 px-7 py-3 text-xs sm:text-sm font-semibold shadow-2xs hover:shadow-xs transition-all"
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 px-6 sm:px-7 py-3 text-xs sm:text-sm font-semibold shadow-2xs hover:shadow-xs transition-all w-full sm:w-auto"
           >
             <span>View All Features in the Interactive Tour</span>
             <ArrowRight className="size-4 text-violet-700" />

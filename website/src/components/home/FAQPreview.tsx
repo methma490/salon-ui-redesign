@@ -13,7 +13,7 @@ export function FAQPreview() {
   };
 
   return (
-    <section id="faq" className="py-18 lg:py-24 bg-white" aria-labelledby="faq-preview-heading">
+    <section id="faq" className="py-10 sm:py-12 lg:py-14 bg-white" aria-labelledby="faq-preview-heading">
       <div className="section-container grid gap-12 lg:grid-cols-12 lg:items-start">
         {/* Left Column: Heading & CTA */}
         <div className="lg:col-span-5">
@@ -37,7 +37,7 @@ export function FAQPreview() {
           <div className="mt-8">
             <Link
               href="/contact"
-              className="inline-flex items-center gap-2 rounded-full bg-violet-700 hover:bg-violet-800 text-white px-6 py-3 text-sm font-semibold shadow-xs hover:shadow-md transition-all active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-violet-700 hover:bg-violet-800 text-white px-6 py-3 text-sm font-semibold shadow-xs hover:shadow-md transition-all active:scale-[0.98] w-full sm:w-auto"
             >
               <span>Have a Custom Question? Talk to Us</span>
               <ArrowRight className="size-4" />
@@ -61,7 +61,7 @@ export function FAQPreview() {
                 <button
                   type="button"
                   onClick={() => toggle(idx)}
-                  className="w-full flex items-center justify-between p-5 text-left cursor-pointer gap-4"
+                  className="w-full flex items-center justify-between p-4 sm:p-5 text-left cursor-pointer gap-3 sm:gap-4"
                   aria-expanded={isOpen}
                   aria-controls={`faq-answer-${idx}`}
                   id={`faq-question-${idx}`}
@@ -85,7 +85,7 @@ export function FAQPreview() {
                     id={`faq-answer-${idx}`}
                     role="region"
                     aria-labelledby={`faq-question-${idx}`}
-                    className="px-5 pb-5 pt-0 text-xs sm:text-sm leading-relaxed text-slate-600 animate-in fade-in duration-150"
+                    className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0 text-xs sm:text-sm leading-relaxed text-slate-600 animate-in fade-in duration-150"
                   >
                     {item.answer}
                   </div>

@@ -86,7 +86,7 @@ export function PricingCard({ plan, billingCycle }: PricingCardProps) {
   return (
     <Link href={signupUrl(plan.id, billingCycle)} className="block h-full group">
       <article
-        className={`relative flex flex-col justify-between rounded-3xl p-6 sm:p-8 w-full max-w-md mx-auto transition-all duration-300 bg-white box-border h-full cursor-pointer ${
+        className={`relative flex flex-col justify-between rounded-3xl p-5 sm:p-8 w-full max-w-md mx-auto transition-all duration-300 bg-white box-border h-full cursor-pointer ${
           popular
             ? 'border-2 border-violet-600 shadow-xl shadow-violet-950/5 ring-4 ring-violet-100 z-10 group-hover:-translate-y-1 group-hover:shadow-2xl'
             : 'border border-slate-200 shadow-sm hover:border-violet-300 hover:shadow-lg hover:-translate-y-1'
@@ -105,14 +105,14 @@ export function PricingCard({ plan, billingCycle }: PricingCardProps) {
       <div>
         {/* Header row: Icon + Title + Subtitle + Branch Badge */}
         <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3">
             {meta.iconType === 'gold' ? (
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 shadow-2xs">
-                <Sparkles className="size-5 fill-amber-300 text-amber-500" />
+              <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 shadow-2xs">
+                <Sparkles className="size-4.5 sm:size-5 fill-amber-300 text-amber-500" />
               </div>
             ) : (
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-50 border border-violet-200 text-violet-700 shadow-2xs">
-                <Gem className="size-5 text-violet-700" />
+              <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-50 border border-violet-200 text-violet-700 shadow-2xs">
+                <Gem className="size-4.5 sm:size-5 text-violet-700" />
               </div>
             )}
 
@@ -126,7 +126,7 @@ export function PricingCard({ plan, billingCycle }: PricingCardProps) {
             </div>
           </div>
 
-          <span className="shrink-0 rounded-full bg-slate-100 border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-700 whitespace-nowrap">
+          <span className="shrink-0 rounded-full bg-slate-100 border border-slate-200 px-2.5 py-1 text-[10px] sm:text-[11px] font-semibold text-slate-700 whitespace-nowrap">
             {meta.branchTag}
           </span>
         </div>
@@ -188,7 +188,7 @@ export function PricingCard({ plan, billingCycle }: PricingCardProps) {
       {/* Button & Trust Badges */}
       <div className="mt-8 pt-4">
         <div
-          className={`w-full py-3.5 px-5 rounded-full text-white font-bold text-sm shadow-xs transition-all flex items-center justify-center gap-2 active:scale-[0.98] focus-ring cursor-pointer group-hover:scale-105 ${
+          className={`w-full py-3 sm:py-3.5 px-5 rounded-full text-white font-bold text-xs sm:text-sm shadow-xs transition-all flex items-center justify-center gap-2 active:scale-[0.98] focus-ring cursor-pointer group-hover:scale-102 ${
             popular
               ? 'bg-violet-700 hover:bg-violet-800 shadow-md shadow-violet-900/10'
               : 'bg-slate-900 hover:bg-slate-800'
@@ -199,17 +199,17 @@ export function PricingCard({ plan, billingCycle }: PricingCardProps) {
         </div>
 
         {/* Trust Badges */}
-        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+        <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[10px] sm:text-[11px] text-slate-500 font-medium">
           <div className="flex items-center gap-1">
-            <CreditCard className="size-3.5 text-violet-600" />
+            <CreditCard className="size-3.5 text-violet-600 shrink-0" />
             <span>No card required</span>
           </div>
           <div className="flex items-center gap-1">
-            <Calendar className="size-3.5 text-violet-600" />
+            <Calendar className="size-3.5 text-violet-600 shrink-0" />
             <span>21-day trial</span>
           </div>
           <div className="flex items-center gap-1">
-            <ShieldCheck className="size-3.5 text-violet-600" />
+            <ShieldCheck className="size-3.5 text-violet-600 shrink-0" />
             <span>Cancel anytime</span>
           </div>
         </div>

@@ -124,17 +124,17 @@ export default function AboutPage() {
                 </p>
               </div>
 
-              <div className="mt-8 flex flex-wrap items-center gap-4">
+              <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 sm:gap-4">
                 <Link
                   href="/features"
-                  className="inline-flex items-center gap-2 rounded-full bg-violet-700 hover:bg-violet-800 text-white px-6 py-3 text-sm font-semibold shadow-xs transition-all"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-violet-700 hover:bg-violet-800 text-white px-6 py-3 text-sm font-semibold shadow-xs transition-all w-full sm:w-auto"
                 >
                   <span>Explore Our Features</span>
                   <ArrowRight className="size-4" />
                 </Link>
                 <Link
                   href="/contact"
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 px-6 py-3 text-sm font-semibold transition-all"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 px-6 py-3 text-sm font-semibold transition-all w-full sm:w-auto"
                 >
                   <span>Talk with Our Team</span>
                 </Link>
@@ -143,18 +143,18 @@ export default function AboutPage() {
 
             {/* Visual Image / Stats Card */}
             <div className="lg:col-span-5">
-              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-8 shadow-sm">
+              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 sm:p-8 shadow-sm">
                 <h3 className="text-lg font-bold text-slate-900 mb-6">
                   Platform Milestones
                 </h3>
 
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-2 gap-3.5 sm:gap-6">
                   {STATS.map((s, i) => (
-                    <div key={i} className="p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
-                      <div className="text-3xl font-extrabold text-violet-700">
+                    <div key={i} className="p-3.5 sm:p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
+                      <div className="text-2xl sm:text-3xl font-extrabold text-violet-700">
                         {s.value}
                       </div>
-                      <div className="text-xs text-slate-500 font-medium mt-1 leading-snug">
+                      <div className="text-[11px] sm:text-xs text-slate-500 font-medium mt-1 leading-snug">
                         {s.label}
                       </div>
                     </div>

@@ -55,7 +55,7 @@ const STEPS: StepItem[] = [
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="py-18 lg:py-24 bg-white" aria-labelledby="how-it-works-heading">
+    <section id="how-it-works" className="py-10 sm:py-12 lg:py-14 bg-white" aria-labelledby="how-it-works-heading">
       <div className="section-container">
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto">
@@ -143,7 +143,7 @@ export function HowItWorks() {
         <div className="mt-12 text-center">
           <Link
             href="/pricing"
-            className="inline-flex items-center gap-2 rounded-full bg-violet-700 hover:bg-violet-800 px-7 py-3.5 text-sm font-semibold text-white shadow-xs hover:shadow-md transition-all active:scale-[0.98]"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-violet-700 hover:bg-violet-800 px-7 py-3.5 text-sm font-semibold text-white shadow-xs hover:shadow-md transition-all active:scale-[0.98] w-full sm:w-auto"
           >
             <span>Start Free 21-Day Trial Today</span>
             <ArrowRight className="size-4" />

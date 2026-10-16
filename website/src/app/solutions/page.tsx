@@ -106,17 +106,17 @@ export default function SolutionsPage() {
             Whether you operate an independent styling studio, a bustling boutique salon, or a multi-branch network, Dart Smart Salon adapts to your exact operational workflow.
           </p>
 
-          <div className="mt-8 flex flex-wrap justify-center items-center gap-3.5">
+          <div className="mt-8 flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3.5 w-full sm:w-auto">
             <Link
               href="/pricing"
-              className="inline-flex items-center gap-2 rounded-full bg-violet-600 hover:bg-violet-700 text-white px-7 py-3 text-sm font-semibold shadow-md transition-all active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-violet-600 hover:bg-violet-700 text-white px-7 py-3 text-sm font-semibold shadow-md transition-all active:scale-[0.98] w-full sm:w-auto"
             >
               <span>Compare Plan Tiers</span>
               <ArrowRight className="size-4" />
             </Link>
             <Link
               href="/contact"
-              className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 text-sm font-semibold transition-all"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-700 bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 text-sm font-semibold transition-all w-full sm:w-auto"
             >
               <span>Schedule a 1-on-1 Consultation</span>
             </Link>
@@ -222,10 +222,10 @@ export default function SolutionsPage() {
                 </p>
               </div>
 
-              <div className="shrink-0">
+              <div className="shrink-0 w-full md:w-auto">
                 <Link
                   href="/pricing"
-                  className="inline-flex items-center gap-2 rounded-full bg-violet-700 hover:bg-violet-800 text-white px-6 py-3 text-sm font-semibold shadow-xs transition-all"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-violet-700 hover:bg-violet-800 text-white px-6 py-3 text-sm font-semibold shadow-xs transition-all w-full md:w-auto"
                 >
                   <span>Start Free Trial</span>
                   <ArrowRight className="size-4" />

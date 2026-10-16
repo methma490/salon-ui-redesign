@@ -22,9 +22,9 @@ import {
   Users,
   Store,
   ChevronRight,
-  ShieldCheck,
 } from 'lucide-react';
 import { Logo } from '@/components/layout/Logo';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { loginUrl } from '@/lib/api';
 import {
   CONTACT_PHONE,
@@ -105,6 +105,10 @@ export function MobileMenu() {
   }, []);
 
   useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden';
     } else {
@@ -136,7 +140,7 @@ export function MobileMenu() {
     >
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity duration-300 ${
+        className={`fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-xs transition-opacity duration-300 ${
           open ? 'opacity-100' : 'opacity-0'
         }`}
         onClick={() => setOpen(false)}
@@ -145,7 +149,7 @@ export function MobileMenu() {
 
       {/* Slide-Over Drawer */}
       <div
-        className={`fixed inset-y-0 right-0 z-[10000] flex h-full w-full max-w-[340px] sm:max-w-[380px] flex-col justify-between bg-white shadow-2xl transition-transform duration-300 ease-out ${
+        className={`fixed inset-y-0 right-0 z-[10000] flex h-full w-full max-w-[340px] sm:max-w-[380px] flex-col justify-between bg-white dark:bg-[#25232c] shadow-2xl transition-transform duration-300 ease-out border-l border-slate-200/90 dark:border-slate-700 ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
         role="dialog"
@@ -153,16 +157,16 @@ export function MobileMenu() {
         aria-label="Mobile Navigation"
       >
         {/* Drawer Header */}
-        <div className="flex h-17 shrink-0 items-center justify-between border-b border-slate-200/90 px-5 bg-slate-50/70">
-          <div className="flex items-center gap-2">
+        <div className="flex h-16 sm:h-17 shrink-0 items-center justify-between border-b border-slate-200/90 dark:border-slate-800 px-4 sm:px-5 bg-slate-50/70 dark:bg-slate-900/70">
+          <div className="flex items-center gap-2 min-w-0">
             <Logo />
-            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700">
+            <span className="hidden xs:inline-block rounded-full bg-violet-100 dark:bg-violet-950/80 px-2 py-0.5 text-[10px] font-bold text-violet-700 dark:text-violet-300">
               v2.4
             </span>
           </div>
           <button
             type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 hover:text-violet-700 active:scale-95 transition-all cursor-pointer shadow-2xs"
+            className="flex size-10 items-center justify-center rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-violet-600 active:scale-95 transition-all cursor-pointer shadow-2xs shrink-0"
             onClick={() => setOpen(false)}
             aria-label="Close navigation menu"
           >
@@ -172,19 +176,27 @@ export function MobileMenu() {
 
         {/* Drawer Scrollable Content */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+          {/* Theme switcher bar for mobile */}
+          <div className="flex items-center justify-between p-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60">
+            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Interface Theme
+            </span>
+            <ThemeToggle showLabel />
+          </div>
+
           {/* Live Status Pill */}
-          <div className="flex items-center justify-between rounded-xl border border-emerald-200/80 bg-emerald-50/70 px-3 py-2 text-xs">
+          <div className="flex items-center justify-between rounded-xl border border-emerald-200/80 dark:border-emerald-800/60 bg-emerald-50/70 dark:bg-emerald-950/30 px-3 py-2 text-xs">
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="font-semibold text-emerald-800">Cloud POS Operational</span>
+              <span className="font-semibold text-emerald-800 dark:text-emerald-300">Cloud POS Operational</span>
             </div>
-            <span className="font-mono text-[10px] font-bold text-emerald-700">99.9% SLA</span>
+            <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium">99.98% Uptime</span>
           </div>
 
           {/* Primary Navigation Links */}
-          <div>
-            <p className="px-2 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Pages
+          <div className="space-y-1">
+            <p className="px-2 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              Navigation
             </p>
             <div className="space-y-0.5">
               {PRIMARY_PAGES.map((item) => {
@@ -195,17 +207,17 @@ export function MobileMenu() {
                     key={item.href}
                     href={item.href}
                     onClick={() => setOpen(false)}
-                    className={`group flex items-center gap-3 rounded-2xl px-3 py-2 transition-all ${
+                    className={`group flex items-center gap-3 rounded-2xl px-3 py-2.5 transition-colors ${
                       isActive
-                        ? 'bg-violet-50 text-violet-700 font-semibold'
-                        : 'hover:bg-slate-50 text-slate-700'
+                        ? 'bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 font-semibold'
+                        : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
                     }`}
                   >
                     <span
                       className={`flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-xl transition-colors ${
                         isActive
-                          ? 'bg-violet-700 text-white'
-                          : 'bg-violet-100/70 text-violet-700 group-hover:bg-violet-700 group-hover:text-white'
+                          ? 'bg-violet-600 text-white'
+                          : 'bg-violet-100/70 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 group-hover:bg-violet-600 group-hover:text-white'
                       }`}
                     >
                       <Icon className="h-4 w-4" />
@@ -214,20 +226,22 @@ export function MobileMenu() {
                       <div className="flex items-center gap-1.5">
                         <span
                           className={`text-sm ${
-                            isActive ? 'text-violet-700 font-bold' : 'text-slate-900 group-hover:text-violet-700'
+                            isActive
+                              ? 'text-violet-700 dark:text-violet-300 font-bold'
+                              : 'text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400'
                           }`}
                         >
                           {item.label}
                         </span>
                         {item.badge && (
-                          <span className="rounded-full bg-violet-100/80 px-1.5 py-0.2 text-[9px] font-bold text-violet-700">
+                          <span className="rounded-full bg-violet-100 dark:bg-violet-950/80 px-1.5 py-0.2 text-[9px] font-bold text-violet-700 dark:text-violet-300">
                             {item.badge}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-500 truncate">{item.description}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{item.description}</p>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-violet-700 transition-colors" />
+                    <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600 group-hover:text-violet-600 transition-colors" />
                   </Link>
                 );
               })}
@@ -236,7 +250,7 @@ export function MobileMenu() {
 
           {/* Direct Module Shortcuts */}
           <div>
-            <p className="px-2 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <p className="px-2 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
               Quick Module Jumps
             </p>
             <div className="grid grid-cols-1 gap-1">
@@ -247,7 +261,7 @@ export function MobileMenu() {
                     key={feat.label}
                     href={feat.href}
                     onClick={() => setOpen(false)}
-                    className="flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-xs text-slate-600 hover:bg-violet-50 hover:text-violet-700 transition-colors"
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-violet-50 dark:hover:bg-violet-950/50 hover:text-violet-600 dark:hover:text-violet-300 transition-colors"
                   >
                     <Icon className="h-3.5 w-3.5 text-violet-500" />
                     <span>{feat.label}</span>
@@ -258,19 +272,19 @@ export function MobileMenu() {
           </div>
 
           {/* Quick Support Card */}
-          <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3 space-y-2">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+          <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 p-3 space-y-2">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
               Direct Assistance
             </p>
             <div className="grid grid-cols-2 gap-2">
               <a
                 href={`tel:${CONTACT_PHONE_RAW}`}
-                className="flex items-center gap-2 p-2 rounded-xl border border-slate-200 bg-white hover:border-violet-300 transition-all text-left"
+                className="flex items-center gap-2 p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:border-violet-300 dark:hover:border-violet-700 transition-all text-left"
               >
-                <Phone className="h-3.5 w-3.5 text-violet-700 shrink-0" />
+                <Phone className="h-3.5 w-3.5 text-violet-600 shrink-0" />
                 <div className="min-w-0">
-                  <div className="text-[9px] font-bold uppercase text-slate-400">Call Now</div>
-                  <div className="text-xs font-bold text-slate-900 truncate">{CONTACT_PHONE}</div>
+                  <div className="text-[9px] font-bold uppercase text-slate-400 dark:text-slate-500">Call Now</div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white truncate">{CONTACT_PHONE}</div>
                 </div>
               </a>
 
@@ -278,12 +292,12 @@ export function MobileMenu() {
                 href={WHATSAPP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 p-2 rounded-xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 transition-all text-left"
+                className="flex items-center gap-2 p-2 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-all text-left"
               >
                 <MessageCircle className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
                 <div className="min-w-0">
-                  <div className="text-[9px] font-bold uppercase text-emerald-700">WhatsApp</div>
-                  <div className="text-xs font-bold text-emerald-900 truncate">Chat Live</div>
+                  <div className="text-[9px] font-bold uppercase text-emerald-700 dark:text-emerald-400">WhatsApp</div>
+                  <div className="text-xs font-bold text-emerald-900 dark:text-white truncate">Chat Live</div>
                 </div>
               </a>
             </div>
@@ -291,20 +305,20 @@ export function MobileMenu() {
         </div>
 
         {/* Drawer Bottom Actions */}
-        <div className="border-t border-slate-200/90 bg-slate-50/90 p-4 space-y-2 shrink-0">
+        <div className="border-t border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900/90 p-4 space-y-2 shrink-0">
           <Link
             href={loginUrl()}
             onClick={() => setOpen(false)}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 hover:text-violet-700 transition-all shadow-2xs"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-2.5 text-sm font-semibold text-slate-800 dark:text-white hover:text-violet-600 dark:hover:text-violet-300 transition-all shadow-2xs"
           >
-            <LogIn className="h-4 w-4 text-slate-500" />
+            <LogIn className="h-4 w-4 text-slate-500 dark:text-slate-400" />
             <span>Salon Admin Log In</span>
           </Link>
 
           <Link
             href="/pricing"
             onClick={() => setOpen(false)}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-violet-700 hover:bg-violet-800 active:bg-violet-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm active:scale-[0.98] transition-all"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-violet-600 hover:bg-violet-700 active:bg-violet-800 px-5 py-2.5 text-sm font-semibold text-white shadow-sm active:scale-[0.98] transition-all"
           >
             <span>START FREE 21-DAY TRIAL</span>
             <ArrowRight className="h-4 w-4" />
@@ -318,7 +332,7 @@ export function MobileMenu() {
     <div className="lg:hidden">
       <button
         type="button"
-        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200/90 bg-white text-slate-700 hover:text-violet-700 hover:border-violet-300 active:scale-95 transition-all cursor-pointer shadow-2xs"
+        className="inline-flex size-11 items-center justify-center rounded-full border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-violet-600 hover:border-violet-300 active:scale-95 transition-all cursor-pointer shadow-2xs shrink-0"
         aria-expanded={open}
         aria-label={open ? 'Close menu' : 'Open menu'}
         onClick={() => setOpen((prev) => !prev)}

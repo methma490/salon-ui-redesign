@@ -125,10 +125,10 @@ export function FAQKnowledgebase() {
                 <button
                   type="button"
                   onClick={() => toggle(idx)}
-                  className="w-full flex items-center justify-between p-5 text-left cursor-pointer gap-4"
+                  className="w-full flex items-center justify-between p-4 sm:p-5 text-left cursor-pointer gap-3 sm:gap-4"
                   aria-expanded={isOpen}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center items-start gap-1.5 sm:gap-3 min-w-0">
                     <span className="shrink-0 rounded-full bg-slate-100 border border-slate-200 px-2.5 py-0.5 text-[10px] font-bold text-slate-600 uppercase">
                       {item.category}
                     </span>
@@ -148,7 +148,7 @@ export function FAQKnowledgebase() {
                 </button>
 
                 {isOpen && (
-                  <div className="px-5 pb-5 pt-0 text-xs sm:text-sm leading-relaxed text-slate-600 animate-in fade-in duration-150">
+                  <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0 text-xs sm:text-sm leading-relaxed text-slate-600 animate-in fade-in duration-150">
                     {item.answer}
                   </div>
                 )}

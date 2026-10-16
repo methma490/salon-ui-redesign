@@ -42,7 +42,7 @@ export default function TermsPage() {
 
       {/* ── Terms Content ── */}
       <article className="section-container py-14 lg:py-18 max-w-4xl mx-auto">
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 sm:p-12 shadow-xs space-y-8 text-slate-700 text-sm leading-relaxed">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-10 shadow-xs space-y-8 text-slate-700 text-sm leading-relaxed">
           <section>
             <h2 className="text-lg font-bold text-slate-900 mb-3">1. Agreement to Terms</h2>
             <p>

@@ -190,8 +190,8 @@ export function SystemUIShowcase() {
         </div>
 
         {/* Device Switcher Tabs */}
-        <div className="mt-9 flex justify-center">
-          <div className="inline-flex flex-wrap items-center justify-center gap-1 rounded-full border border-slate-200 bg-white p-1.5 shadow-2xs">
+        <div className="mt-9 flex justify-center px-2">
+          <div className="inline-flex flex-wrap items-center justify-center gap-1 rounded-full border border-slate-200 bg-white p-1 sm:p-1.5 shadow-2xs max-w-full">
             {(
               [
                 { key: 'all', label: 'All Screens', icon: Layers },
@@ -207,13 +207,13 @@ export function SystemUIShowcase() {
                   key={tab.key}
                   type="button"
                   onClick={() => setActiveTab(tab.key)}
-                  className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs sm:text-sm font-semibold transition-all duration-150 cursor-pointer ${
+                  className={`flex items-center gap-1.5 sm:gap-2 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition-all duration-150 cursor-pointer ${
                     isActive
                       ? 'bg-violet-700 text-white shadow-xs'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                   }`}
                 >
-                  <Icon className={`size-4 ${isActive ? 'text-white' : 'text-slate-500'}`} />
+                  <Icon className={`size-3.5 sm:size-4 ${isActive ? 'text-white' : 'text-slate-500'}`} />
                   <span>{tab.label}</span>
                 </button>
               );
@@ -238,17 +238,17 @@ export function SystemUIShowcase() {
             {/* Screen Container */}
             <div className="group relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200 bg-white shadow-lg">
               {/* Top ambient browser bar */}
-              <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-3.5 py-2 text-xs text-slate-500">
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
-                  <span className="h-2.5 w-2.5 rounded-full bg-slate-300" />
+              <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-3 sm:px-3.5 py-2 text-xs text-slate-500 gap-2">
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-slate-300" />
+                  <span className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-slate-300" />
+                  <span className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-slate-300" />
                 </div>
-                <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-0.5 text-[11px] font-mono text-slate-600">
-                  <span className="inline-block size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  saloon-client.bc.dartcodes.com / {activeTab}
+                <div className="flex items-center gap-1.5 sm:gap-2 rounded-full border border-slate-200 bg-white px-2.5 sm:px-3 py-0.5 text-[10px] sm:text-[11px] font-mono text-slate-600 truncate max-w-[200px] sm:max-w-none">
+                  <span className="inline-block size-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                  <span className="truncate">saloon-client.bc.dartcodes.com / {activeTab}</span>
                 </div>
-                <div className="text-[11px] font-semibold text-violet-700">Live Platform</div>
+                <div className="text-[10px] sm:text-[11px] font-semibold text-violet-700 shrink-0 hidden xs:block">Live Platform</div>
               </div>
 
               {/* Main Image Frame */}
@@ -311,7 +311,7 @@ export function SystemUIShowcase() {
 
         {/* Bottom Callout Banner */}
         <div className="mt-12 flex flex-col items-center justify-between gap-5 rounded-2xl border border-slate-200 bg-slate-50 p-6 sm:p-7 sm:flex-row shadow-2xs">
-          <div>
+          <div className="text-center sm:text-left">
             <p className="text-xs font-bold uppercase tracking-wider text-violet-700">
               Interactive Test Drive
             </p>
@@ -319,17 +319,17 @@ export function SystemUIShowcase() {
               Ready to experience Dart Smart Salon on your own devices?
             </p>
           </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
             <Link
               href="/pricing"
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-violet-700 hover:bg-violet-800 text-white px-5 py-2.5 text-xs sm:text-sm font-semibold shadow-xs transition-all"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-violet-700 hover:bg-violet-800 text-white px-5 py-2.5 text-xs sm:text-sm font-semibold shadow-xs transition-all w-full sm:w-auto"
             >
               <span>Start Free Trial</span>
               <ArrowRight className="size-4" />
             </Link>
             <Link
               href="/contact"
-              className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 px-5 py-2.5 text-xs sm:text-sm font-semibold transition-all"
+              className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 px-5 py-2.5 text-xs sm:text-sm font-semibold transition-all w-full sm:w-auto"
             >
               <span>Book a Demo</span>
             </Link>

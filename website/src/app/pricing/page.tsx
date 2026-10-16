@@ -109,21 +109,21 @@ export default async function PricingPage() {
           </div>
 
           {/* PayHere Security Reassurance */}
-          <div className="mt-12 p-6 rounded-2xl border border-slate-200 bg-slate-50 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-600">
-            <div className="flex items-center gap-3">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+          <div className="mt-12 p-5 sm:p-6 rounded-2xl border border-slate-200 bg-slate-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-slate-600">
+            <div className="flex items-start sm:items-center gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700 mt-0.5 sm:mt-0">
                 <Lock className="size-5" />
               </span>
               <div>
                 <strong className="text-slate-900 block text-sm font-semibold">
                   Secure Checkout with PayHere
                 </strong>
-                <span>All subscription transactions are encrypted with bank-grade 256-bit SSL protocols.</span>
+                <span className="leading-relaxed">All subscription transactions are encrypted with bank-grade 256-bit SSL protocols.</span>
               </div>
             </div>
             <Link
               href="/contact"
-              className="shrink-0 text-violet-700 hover:text-violet-900 font-bold"
+              className="shrink-0 text-violet-700 hover:text-violet-900 font-bold self-start sm:self-auto"
             >
               Need a Custom Enterprise Quote? →
             </Link>

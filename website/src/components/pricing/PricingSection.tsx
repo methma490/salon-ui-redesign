@@ -62,7 +62,7 @@ export function PricingSection({
   return (
     <section
       id="pricing"
-      className="relative overflow-hidden py-16 sm:py-20 lg:py-24 bg-slate-50/50"
+      className="relative overflow-hidden py-10 sm:py-12 lg:py-14 bg-slate-50/50"
       aria-labelledby="pricing-heading"
     >
       <div className="section-container max-w-6xl mx-auto">
@@ -87,15 +87,15 @@ export function PricingSection({
         </div>
 
         {/* Billing Cycle Toggle */}
-        <div className="flex justify-center mb-10">
+        <div className="flex justify-center mb-10 px-2">
           <div
-            className="inline-flex items-center rounded-full border border-slate-200 bg-white p-1.5 shadow-xs"
+            className="inline-flex items-center rounded-full border border-slate-200 bg-white p-1 sm:p-1.5 shadow-xs max-w-full"
             role="group"
             aria-label="Billing cycle"
           >
             <button
               type="button"
-              className={`rounded-full px-6 py-2 text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+              className={`rounded-full px-3.5 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
                 billingCycle === 'MONTHLY'
                   ? 'bg-violet-700 text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
@@ -106,7 +106,7 @@ export function PricingSection({
             </button>
             <button
               type="button"
-              className={`inline-flex items-center gap-2 rounded-full px-6 py-2 text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-1 sm:gap-2 rounded-full px-3.5 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
                 billingCycle === 'YEARLY'
                   ? 'bg-violet-700 text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900'
@@ -116,7 +116,7 @@ export function PricingSection({
               <span>Annual Billing</span>
               {yearlySavingsPercentage ? (
                 <span
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                  className={`rounded-full px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold ${
                     billingCycle === 'YEARLY'
                       ? 'bg-white/20 text-white'
                       : 'bg-emerald-100 text-emerald-800'
@@ -158,109 +158,115 @@ export function PricingSection({
               </p>
             </div>
 
-            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-xs">
+            <p className="sm:hidden text-center text-[11px] text-slate-400 font-medium mb-2.5">
+              ← Swipe horizontally to compare all features →
+            </p>
+
+            <div className="mx-auto w-full max-w-6xl overflow-x-auto rounded-2xl border border-violet-200 bg-white shadow-sm">
               <table className="w-full text-left border-collapse min-w-[620px]">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
-                    <th className="py-4 px-6 text-xs font-bold text-slate-700 uppercase tracking-wider w-1/2">
+                  <tr className="border-b border-violet-200 bg-violet-50/70">
+                    <th className="py-3 sm:py-4 px-4 sm:px-6 text-xs font-bold text-slate-700 uppercase tracking-wider w-1/2">
                       Features &amp; Modules
                     </th>
-                    <th className="py-4 px-6 text-center text-xs font-bold text-slate-700 uppercase tracking-wider w-1/4">
-                      Basic
+                    <th className="py-3 sm:py-4 px-3 sm:px-5 text-center w-1/4 bg-violet-100/45">
+                      <span className="block text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-500">Plan</span>
+                      <span className="mt-0.5 block text-sm font-extrabold uppercase tracking-wider text-violet-900">Basic</span>
                     </th>
-                    <th className="py-4 px-6 text-center text-xs font-bold text-violet-700 uppercase tracking-wider w-1/4 bg-violet-50/50 border-l border-slate-200">
-                      Gold (Recommended)
+                    <th className="py-3 sm:py-4 px-3 sm:px-5 text-center w-1/4 bg-violet-200/60 border-l border-violet-200">
+                      <span className="block text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-700">Recommended plan</span>
+                      <span className="mt-0.5 block text-sm font-extrabold uppercase tracking-wider text-violet-950">Gold</span>
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-xs sm:text-sm">
+                <tbody className="divide-y divide-violet-100 text-xs sm:text-sm">
                   {/* Front Desk & Operations */}
                   <tr className="bg-slate-50/50">
-                    <td colSpan={3} className="py-2.5 px-6 font-bold uppercase tracking-wider text-[11px] text-slate-500">
+                    <td colSpan={3} className="py-2.5 px-4 sm:px-6 font-bold uppercase tracking-wider text-[11px] text-violet-800 bg-violet-50/50">
                       Booking &amp; Point of Sale
                     </td>
                   </tr>
                   <tr className="hover:bg-slate-50/30">
-                    <td className="py-3 px-6 font-medium text-slate-900">Salon Branches Supported</td>
-                    <td className="py-3 px-6 text-center text-slate-600">1 Branch</td>
-                    <td className="py-3 px-6 text-center font-bold text-violet-700 bg-violet-50/20 border-l border-slate-200">
+                    <td className="py-3 px-4 sm:px-6 font-medium text-slate-900">Salon Branches Supported</td>
+                    <td className="py-3 px-3 sm:px-5 text-center text-slate-700 bg-violet-50/25">1 Branch</td>
+                    <td className="py-3 px-3 sm:px-5 text-center font-bold text-violet-800 bg-violet-100/50 border-l border-violet-200">
                       Up to 3 Branches
                     </td>
                   </tr>
                   <tr className="hover:bg-slate-50/30">
-                    <td className="py-3 px-6 font-medium text-slate-900">Smart Calendar &amp; Booking Timeline</td>
-                    <td className="py-3 px-6 text-center text-emerald-600 font-bold">✓ Included</td>
-                    <td className="py-3 px-6 text-center text-emerald-600 font-bold bg-violet-50/20 border-l border-slate-200">
+                    <td className="py-3 px-4 sm:px-6 font-medium text-slate-900">Smart Calendar &amp; Booking Timeline</td>
+                    <td className="py-3 px-3 sm:px-5 text-center text-emerald-700 font-bold bg-violet-50/25">✓ Included</td>
+                    <td className="py-3 px-3 sm:px-5 text-center text-emerald-700 font-bold bg-violet-100/50 border-l border-violet-200">
                       ✓ Included
                     </td>
                   </tr>
                   <tr className="hover:bg-slate-50/30">
-                    <td className="py-3 px-6 font-medium text-slate-900">Express POS &amp; Thermal Printing</td>
-                    <td className="py-3 px-6 text-center text-emerald-600 font-bold">✓ Included</td>
-                    <td className="py-3 px-6 text-center text-emerald-600 font-bold bg-violet-50/20 border-l border-slate-200">
+                    <td className="py-3 px-4 sm:px-6 font-medium text-slate-900">Express POS &amp; Thermal Printing</td>
+                    <td className="py-3 px-3 sm:px-5 text-center text-emerald-700 font-bold bg-violet-50/25">✓ Included</td>
+                    <td className="py-3 px-3 sm:px-5 text-center text-emerald-700 font-bold bg-violet-100/50 border-l border-violet-200">
                       ✓ Included
                     </td>
                   </tr>
                   <tr className="hover:bg-slate-50/30">
-                    <td className="py-3 px-6 font-medium text-slate-900">SMS &amp; WhatsApp E-Receipts</td>
-                    <td className="py-3 px-6 text-center text-slate-600">250 / month</td>
-                    <td className="py-3 px-6 text-center font-bold text-violet-700 bg-violet-50/20 border-l border-slate-200">
+                    <td className="py-3 px-4 sm:px-6 font-medium text-slate-900">SMS &amp; WhatsApp E-Receipts</td>
+                    <td className="py-3 px-3 sm:px-5 text-center text-slate-700 bg-violet-50/25">250 / month</td>
+                    <td className="py-3 px-3 sm:px-5 text-center font-bold text-violet-800 bg-violet-100/50 border-l border-violet-200">
                       1,500 / month
                     </td>
                   </tr>
 
                   {/* Staff & Inventory */}
                   <tr className="bg-slate-50/50">
-                    <td colSpan={3} className="py-2.5 px-6 font-bold uppercase tracking-wider text-[11px] text-slate-500">
+                    <td colSpan={3} className="py-2.5 px-4 sm:px-6 font-bold uppercase tracking-wider text-[11px] text-violet-800 bg-violet-50/50">
                       Team &amp; Inventory Management
                     </td>
                   </tr>
                   <tr className="hover:bg-slate-50/30">
-                    <td className="py-3 px-6 font-medium text-slate-900">Staff Members &amp; Logins</td>
-                    <td className="py-3 px-6 text-center text-slate-600">Up to 5 Staff</td>
-                    <td className="py-3 px-6 text-center font-bold text-violet-700 bg-violet-50/20 border-l border-slate-200">
+                    <td className="py-3 px-4 sm:px-6 font-medium text-slate-900">Staff Members &amp; Logins</td>
+                    <td className="py-3 px-3 sm:px-5 text-center text-slate-700 bg-violet-50/25">Up to 5 Staff</td>
+                    <td className="py-3 px-3 sm:px-5 text-center font-bold text-violet-800 bg-violet-100/50 border-l border-violet-200">
                       Up to 25 Staff
                     </td>
                   </tr>
                   <tr className="hover:bg-slate-50/30">
-                    <td className="py-3 px-6 font-medium text-slate-900">Stylist Split Commissions</td>
-                    <td className="py-3 px-6 text-center text-slate-600">Single Stylist</td>
-                    <td className="py-3 px-6 text-center text-emerald-600 font-bold bg-violet-50/20 border-l border-slate-200">
+                    <td className="py-3 px-4 sm:px-6 font-medium text-slate-900">Stylist Split Commissions</td>
+                    <td className="py-3 px-3 sm:px-5 text-center text-slate-700 bg-violet-50/25">Single Stylist</td>
+                    <td className="py-3 px-3 sm:px-5 text-center text-emerald-700 font-bold bg-violet-100/50 border-l border-violet-200">
                       ✓ Multi-Stylist Split
                     </td>
                   </tr>
                   <tr className="hover:bg-slate-50/30">
-                    <td className="py-3 px-6 font-medium text-slate-900">Inventory Tracking &amp; Low-Stock Alerts</td>
-                    <td className="py-3 px-6 text-center text-slate-600">Basic Stock</td>
-                    <td className="py-3 px-6 text-center text-emerald-600 font-bold bg-violet-50/20 border-l border-slate-200">
+                    <td className="py-3 px-4 sm:px-6 font-medium text-slate-900">Inventory Tracking &amp; Low-Stock Alerts</td>
+                    <td className="py-3 px-3 sm:px-5 text-center text-slate-700 bg-violet-50/25">Basic Stock</td>
+                    <td className="py-3 px-3 sm:px-5 text-center text-emerald-700 font-bold bg-violet-100/50 border-l border-violet-200">
                       ✓ Back-Bar &amp; GRN Invoicing
                     </td>
                   </tr>
                   <tr className="hover:bg-slate-50/30">
-                    <td className="py-3 px-6 font-medium text-slate-900">Client CRM &amp; Color Formula Cards</td>
-                    <td className="py-3 px-6 text-center text-emerald-600 font-bold">✓ Included</td>
-                    <td className="py-3 px-6 text-center text-emerald-600 font-bold bg-violet-50/20 border-l border-slate-200">
+                    <td className="py-3 px-4 sm:px-6 font-medium text-slate-900">Client CRM &amp; Color Formula Cards</td>
+                    <td className="py-3 px-3 sm:px-5 text-center text-emerald-700 font-bold bg-violet-50/25">✓ Included</td>
+                    <td className="py-3 px-3 sm:px-5 text-center text-emerald-700 font-bold bg-violet-100/50 border-l border-violet-200">
                       ✓ Advanced Notes &amp; History
                     </td>
                   </tr>
 
                   {/* Analytics & Support */}
                   <tr className="bg-slate-50/50">
-                    <td colSpan={3} className="py-2.5 px-6 font-bold uppercase tracking-wider text-[11px] text-slate-500">
+                    <td colSpan={3} className="py-2.5 px-4 sm:px-6 font-bold uppercase tracking-wider text-[11px] text-violet-800 bg-violet-50/50">
                       Reporting &amp; Priority Support
                     </td>
                   </tr>
                   <tr className="hover:bg-slate-50/30">
-                    <td className="py-3 px-6 font-medium text-slate-900">Revenue &amp; P&amp;L Dashboards</td>
-                    <td className="py-3 px-6 text-center text-slate-600">Daily Sales Summary</td>
-                    <td className="py-3 px-6 text-center text-emerald-600 font-bold bg-violet-50/20 border-l border-slate-200">
+                    <td className="py-3 px-4 sm:px-6 font-medium text-slate-900">Revenue &amp; P&amp;L Dashboards</td>
+                    <td className="py-3 px-3 sm:px-5 text-center text-slate-700 bg-violet-50/25">Daily Sales Summary</td>
+                    <td className="py-3 px-3 sm:px-5 text-center text-emerald-700 font-bold bg-violet-100/50 border-l border-violet-200">
                       ✓ Full Analytics Suite
                     </td>
                   </tr>
                   <tr className="hover:bg-slate-50/30">
-                    <td className="py-3 px-6 font-medium text-slate-900">Customer Support Service Level</td>
-                    <td className="py-3 px-6 text-center text-slate-600">Standard Email Support</td>
-                    <td className="py-3 px-6 text-center font-bold text-violet-700 bg-violet-50/20 border-l border-slate-200">
+                    <td className="py-3 px-4 sm:px-6 font-medium text-slate-900">Customer Support Service Level</td>
+                    <td className="py-3 px-3 sm:px-5 text-center text-slate-700 bg-violet-50/25">Standard Email Support</td>
+                    <td className="py-3 px-3 sm:px-5 text-center font-bold text-violet-800 bg-violet-100/50 border-l border-violet-200">
                       Priority WhatsApp &amp; Phone
                     </td>
                   </tr>

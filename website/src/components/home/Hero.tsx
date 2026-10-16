@@ -1,308 +1,263 @@
 'use client';
 
 import * as React from 'react';
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
   ArrowRight,
   Play,
   Check,
-  TrendingUp,
-  LayoutDashboard,
-  Calendar,
-  CreditCard,
-  Package,
-  Users,
-  BarChart3,
-  X,
+  ChevronLeft,
+  ChevronRight,
   Sparkles,
+  BarChart3,
+  Layers,
+  CreditCard,
+  X,
   ShieldCheck,
   Star,
-  Zap,
+  TrendingUp,
 } from 'lucide-react';
-import { FeatureMarquee } from './FeatureMarquee';
-import { AnimatedDesktopDashboard } from './AnimatedDesktopDashboard';
-import { AnimatedMobileDashboard } from './AnimatedMobileDashboard';
 
-interface FeatureNavItem {
-  id: string;
-  icon: typeof LayoutDashboard;
-  title: string;
-  label: string;
-  kpiValue: string;
+interface HeroSlide {
+  id: number;
+  image: string;
+  alt: string;
+  badge: string;
+  tagline: string;
+  kpi: string;
   kpiLabel: string;
 }
 
-const HERO_FEATURES: FeatureNavItem[] = [
+const HERO_SLIDES: HeroSlide[] = [
   {
-    id: 'dashboard',
-    icon: LayoutDashboard,
-    title: 'Live Register',
-    label: 'Real-time sales & cashflow',
-    kpiValue: 'LKR 84,500',
-    kpiLabel: "Today's Net Collections",
+    id: 1,
+    image: '/landing/hero-marketing-analytics.jpg',
+    alt: 'Executive salon business analytics and revenue dashboard',
+    badge: 'Salon Performance at a Glance',
+    tagline: 'Real-Time Revenue, Cashflow & Multi-Branch Insights',
+    kpi: '+38% Net Profit',
+    kpiLabel: 'Average Owner Revenue Growth',
   },
   {
-    id: 'appointments',
-    icon: Calendar,
-    title: 'Smart Calendar',
-    label: 'Zero conflict bookings',
-    kpiValue: '24 Bookings',
-    kpiLabel: '100% On-Time · Auto SMS',
+    id: 2,
+    image: '/landing/3rd.png',
+    alt: 'Cloud-based scalable salon operations and automated systems',
+    badge: 'Unified Cloud Operations',
+    tagline: 'Zero-Conflict Smart Booking & Automated Commission Math',
+    kpi: '100% Conflict-Free',
+    kpiLabel: 'Automated Rosters & Payroll',
   },
   {
-    id: 'pos',
-    icon: CreditCard,
-    title: 'Express POS',
-    label: 'Sub-5s ticket checkout',
-    kpiValue: 'Sub-5s',
-    kpiLabel: 'Thermal & WhatsApp Bills',
-  },
-  {
-    id: 'inventory',
-    icon: Package,
-    title: 'Inventory & GRN',
-    label: 'Stock deduction & alerts',
-    kpiValue: '184 Items',
-    kpiLabel: 'Auto Back-Bar Deductions',
-  },
-  {
-    id: 'staff',
-    icon: Users,
-    title: 'Team & Payroll',
-    label: 'Commissions & rosters',
-    kpiValue: 'Auto Math',
-    kpiLabel: 'Split Commissions Ready',
+    id: 3,
+    image: '/landing/hero-marketing-pos.jpg',
+    alt: 'Sub-5s smart checkout terminal and digital receipts',
+    badge: 'Express Front Desk Checkout',
+    tagline: 'Sub-5s Station Billing, Split Tenders & WhatsApp Receipts',
+    kpi: '< 5s Checkout',
+    kpiLabel: 'Zero Front-Desk Queues',
   },
 ];
 
-export function Hero() {
-  const [activeFeature, setActiveFeature] = useState<string>('dashboard');
-  const [isDemoModalOpen, setIsDemoModalOpen] = useState<boolean>(false);
+const SLIDE_DURATION = 6000; // 6 seconds per slide
 
-  const selectedFeature = HERO_FEATURES.find((f) => f.id === activeFeature) || HERO_FEATURES[0];
+export function Hero() {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isDemoModalOpen, setIsDemoModalOpen] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const nextSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+  }, []);
+
+  const prevSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length);
+  }, []);
+
+  // Auto-advance slides with pause-on-hover
+  useEffect(() => {
+    if (isPaused) return;
+
+    timerRef.current = setInterval(() => {
+      nextSlide();
+    }, SLIDE_DURATION);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [nextSlide, isPaused]);
+
+  const active = HERO_SLIDES[currentSlide];
 
   return (
     <section
       id="hero"
-      aria-label="Dart Smart Salon Overview"
-      className="relative w-full overflow-hidden bg-slate-950 text-white pt-8 sm:pt-14 pb-0"
+      aria-label="Dart Smart Salon Management Platform"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      className="relative w-full min-h-[640px] sm:min-h-[720px] lg:min-h-[800px] flex flex-col justify-between overflow-hidden bg-slate-950 text-white"
     >
-      {/* ── Background Subtle Ambient Lighting (No neon flares) ── */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        <Image
-          src="/landing/hero-salon-premium.jpg"
-          alt="Premium salon interior"
-          fill
-          priority
-          unoptimized
-          className="object-cover object-center opacity-25"
-        />
-        {/* Soft dark vignette */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/95 to-slate-950" />
-        {/* Subtle, restrained violet wash */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[450px] bg-violet-600/10 blur-[120px] rounded-full" />
+      {/* ════ BACKGROUND IMAGE CAROUSEL WITH KEN BURNS ZOOM ANIMATION ════ */}
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none">
+        {HERO_SLIDES.map((slide, index) => {
+          const isActive = index === currentSlide;
+          return (
+            <div
+              key={slide.id}
+              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+              }`}
+            >
+              <div
+                className={`relative w-full h-full transition-transform duration-[6500ms] ease-out will-change-transform ${
+                  isActive ? 'scale-110' : 'scale-100'
+                }`}
+              >
+                <Image
+                  src={slide.image}
+                  alt={slide.alt}
+                  fill
+                  priority={index === 0}
+                  unoptimized
+                  sizes="100vw"
+                  className="object-cover object-center brightness-[0.72] contrast-[1.08]"
+                />
+              </div>
+            </div>
+          );
+        })}
+
+        {/* ── Brand Color Overlay & Vignette (Palette: #7C3AED, #5B21B6) ── */}
+        <div className="absolute inset-0 z-15 bg-slate-950/45" />
+
+        {/* Subtle radial purple ambient glow */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] sm:w-[1000px] h-[500px] bg-gradient-to-br from-[#7C3AED]/25 via-[#5B21B6]/20 to-transparent blur-[120px] rounded-full z-15 pointer-events-none" />
+
+        {/* Top subtle vignette */}
+        <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-slate-950/70 to-transparent z-15 pointer-events-none" />
+
+        {/* ── Bottom Fade Transition: Seamlessly merges into page background in both Light and Dark mode ── */}
+        <div className="absolute bottom-0 inset-x-0 h-40 sm:h-52 bg-gradient-to-t from-[#fafbfc] dark:from-[#090d16] via-[#fafbfc]/80 dark:via-[#090d16]/80 to-transparent z-20 pointer-events-none transition-colors duration-300" />
       </div>
 
-      {/* ── Main Hero Content Container ── */}
-      <div className="relative z-10 section-container flex flex-col justify-between">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-          
-          {/* ════ LEFT COLUMN: Value Proposition ════ */}
-          <div className="lg:col-span-6 flex flex-col items-start max-w-xl">
-            {/* Pill Eyebrow */}
-            <div className="inline-flex items-center gap-2 rounded-full bg-violet-950/80 border border-violet-800/50 px-3.5 py-1 text-xs font-semibold text-violet-300 shadow-xs mb-5">
-              <span className="size-2 rounded-full bg-violet-400 animate-pulse" aria-hidden="true" />
-              <span>Dedicated Cloud Salon Software</span>
+      {/* ════ CENTERED HERO CONTENT CONTAINER ════ */}
+      <div className="relative z-30 section-container flex-1 flex flex-col justify-center items-center text-center pt-16 sm:pt-24 lg:pt-28 pb-20 sm:pb-28">
+        
+        {/* Rotating supporting line replaces the former badge */}
+        <p className="mb-5 text-xs sm:text-sm font-semibold uppercase tracking-[0.18em] text-violet-200/90 animate-in fade-in slide-in-from-top-3 duration-500">
+          {active.tagline}
+        </p>
+
+        {/* 2. Bold, High-Impact Centered Headline */}
+        <h1 className="max-w-4xl text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-[4rem] font-extrabold tracking-tight text-white leading-[1.12] sm:leading-[1.1] drop-shadow-sm">
+          Welcome to{' '}
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#A78BFA] via-[#C4B5FD] to-[#7C3AED]">
+            Dart Smart Salon
+          </span>
+        </h1>
+
+        {/* 3. Refined Value Proposition (Targeting Salon Owners, Not Customers) */}
+        <p className="mt-5 sm:mt-6 max-w-2xl text-sm sm:text-base md:text-lg text-slate-200 leading-relaxed font-normal drop-shadow-xs">
+            All-in-one salon management software for bookings, POS, staff commissions, and multi-branch analytics.        </p>
+
+        {/* 4. Side-by-Side Call to Action Buttons */}
+        <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-4 w-full max-w-md sm:max-w-none">
+          {/* Primary CTA (Palette: Primary #7C3AED, hover #5B21B6) */}
+          <Link
+            href="/pricing"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#7C3AED] hover:bg-[#5B21B6] active:bg-[#4C1D95] px-8 py-3.5 sm:py-4 text-sm sm:text-base font-bold text-white shadow-xl shadow-violet-700/35 hover:shadow-2xl hover:shadow-violet-700/50 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+          >
+            <span>Start 21-Day Free Trial</span>
+            <ArrowRight className="size-4.5" />
+          </Link>
+
+          {/* Secondary CTA (Clean Glass Backdrop) */}
+          <button
+            type="button"
+            onClick={() => setIsDemoModalOpen(true)}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 rounded-full border border-white/25 bg-white/10 hover:bg-white/20 active:bg-white/25 backdrop-blur-md px-7 py-3.5 sm:py-4 text-sm sm:text-base font-semibold text-white hover:text-white shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+          >
+            <span className="flex size-6 items-center justify-center rounded-full bg-white text-[#7C3AED]">
+              <Play className="size-2.5 fill-current ml-0.5" />
+            </span>
+            <span>Watch Product Tour</span>
+          </button>
+        </div>
+        {/* 6. Active Slide Context KPI Card */}
+        <div className="mt-8 transition-all duration-500 ease-out">
+          <div className="inline-flex items-center gap-3 rounded-2xl border border-white/15 bg-slate-900/80 backdrop-blur-md px-4 py-2 shadow-xl">
+            <div className="flex size-7 items-center justify-center rounded-lg bg-[#7C3AED] text-white">
+              <TrendingUp className="size-4" />
             </div>
-
-            {/* Main Headline */}
-            <h1 className="text-4xl sm:text-5xl lg:text-[3.25rem] font-extrabold tracking-tight text-white leading-[1.12]">
-              Modern Salon Management.{' '}
-              <span className="text-gradient-purple">
-                Built for Growth.
+            <div className="text-left">
+              <span className="text-xs font-bold text-white block leading-tight">
+                {active.kpi}
               </span>
-            </h1>
+              <span className="text-[10px] text-violet-200/80 font-medium block">
+                {active.kpiLabel}
+              </span>
+            </div>
+          </div>
+        </div>
 
-            {/* Concise Supporting Description */}
-            <p className="mt-4 sm:mt-5 text-sm sm:text-base text-slate-300 leading-relaxed">
-              Appointments, express POS, inventory, automated stylist commissions, and multi-branch analytics — unified in one reliable system built for Sri Lankan salons.
-            </p>
+      </div>
 
-            {/* Call-to-Action Buttons */}
-            <div className="mt-7 flex flex-wrap items-center gap-3.5 sm:gap-4 w-full sm:w-auto">
-              <Link
-                href="/pricing"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-violet-600 hover:bg-violet-700 px-7 py-3.5 text-sm sm:text-base font-semibold text-white shadow-md shadow-violet-900/40 hover:shadow-lg transition-all active:scale-[0.98] cursor-pointer"
-              >
-                <span>Start 21-Day Free Trial</span>
-                <ArrowRight className="size-4" />
-              </Link>
-
+      {/* ════ CAROUSEL CONTROLS & BOTTOM SLIDE INDICATORS (Matching User Reference Image) ════ */}
+      <div className="relative z-30 w-full flex flex-col items-center pb-8 sm:pb-12 pointer-events-auto">
+        
+        {/* Slide Indicators: 3 Dots/Pills exactly like reference screenshot */}
+        <div className="flex items-center justify-center gap-2.5 bg-slate-950/60 backdrop-blur-md border border-white/10 px-4 py-2 rounded-full shadow-lg">
+          {HERO_SLIDES.map((slide, index) => {
+            const isActive = index === currentSlide;
+            return (
               <button
+                key={slide.id}
                 type="button"
-                onClick={() => setIsDemoModalOpen(true)}
-                className="inline-flex items-center justify-center gap-2.5 rounded-full border border-slate-700 bg-slate-900/80 hover:bg-slate-800 px-6 py-3.5 text-sm sm:text-base font-semibold text-white transition-all active:scale-[0.98] cursor-pointer"
-              >
-                <span className="flex size-6 items-center justify-center rounded-full bg-white text-violet-700">
-                  <Play className="size-2.5 fill-current ml-0.5" />
-                </span>
-                <span>Watch Product Tour</span>
-              </button>
-            </div>
-
-            {/* Social Proof & Trust Badges */}
-            <div className="mt-8 pt-6 border-t border-slate-800/80 flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full">
-              <div className="flex items-center gap-1 text-amber-400">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className="size-4 fill-amber-400 text-amber-400" />
-                ))}
-              </div>
-              <div className="text-xs text-slate-400">
-                <strong className="text-white font-semibold">100+ Premier Salons & Spas</strong> trust Dart Smart Salon across Colombo, Kandy, Galle & island-wide.
-              </div>
-            </div>
-
-            {/* Feature Checklist */}
-            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-medium text-slate-400">
-              <span className="flex items-center gap-1.5">
-                <Check className="size-3.5 text-emerald-400 stroke-[3]" />
-                <span>No credit card required</span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Check className="size-3.5 text-emerald-400 stroke-[3]" />
-                <span>Free 21-day trial</span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Check className="size-3.5 text-emerald-400 stroke-[3]" />
-                <span>Instant cloud activation</span>
-              </span>
-            </div>
-          </div>
-
-          {/* ════ RIGHT COLUMN: Professional Device Presentation ════ */}
-          <div className="lg:col-span-6 relative flex flex-col items-center lg:items-end justify-center w-full">
-            <div className="relative w-full max-w-[560px] xl:max-w-[620px]">
-              
-              {/* Dynamic Live Indicator Card */}
-              <div className="absolute -top-4 sm:-top-5 right-2 sm:right-4 z-30 transition-all duration-300">
-                <div className="rounded-2xl p-3 flex items-center gap-3 border border-slate-700/80 bg-slate-900/90 shadow-xl backdrop-blur-md">
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-600 text-white">
-                    <TrendingUp className="size-4.5" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-extrabold text-white leading-tight">
-                      {selectedFeature.kpiValue}
-                    </div>
-                    <div className="text-[11px] text-slate-400 font-medium">
-                      {selectedFeature.kpiLabel}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Laptop Screen Frame */}
-              <div className="relative rounded-t-2xl bg-slate-900 p-2 sm:p-2.5 border border-slate-700 shadow-2xl">
-                {/* Screen frame */}
-                <div className="relative w-full aspect-[16/10] bg-slate-950 rounded-lg sm:rounded-xl overflow-hidden border border-slate-800">
-                  <Image
-                    src="/assets/landing/desktop-dashboard.png"
-                    alt="Dart Smart Salon live desktop interface"
-                    fill
-                    priority
-                    unoptimized
-                    sizes="(max-width: 1024px) 100vw, 620px"
-                    className="object-cover object-top"
-                  />
-                </div>
-              </div>
-
-              {/* Laptop Aluminum Base */}
-              <div className="relative w-[104%] -ml-[2%] h-3 sm:h-3.5 bg-gradient-to-b from-slate-400 to-slate-600 rounded-b-xl shadow-lg flex justify-center items-start">
-                <div className="w-16 h-1 bg-slate-700 rounded-b-xs" />
-              </div>
-
-              {/* Companion Mobile Device Mockup */}
-              <div className="absolute -right-3 -bottom-5 sm:-bottom-7 z-20 w-[115px] sm:w-[145px] transition-all">
-                <div className="relative rounded-[24px] sm:rounded-[30px] bg-slate-900 p-1 sm:p-1.5 border-2 border-slate-700 shadow-2xl">
-                  {/* Speaker Notch */}
-                  <div className="absolute top-1.5 left-1/2 -translate-x-1/2 w-8 h-1.5 bg-black rounded-full z-30" />
-                  {/* Screen Frame */}
-                  <div className="relative w-full aspect-[9/18.5] bg-slate-950 rounded-[18px] sm:rounded-[24px] overflow-hidden">
-                    <Image
-                      src="/assets/landing/mobile-dashboard.png"
-                      alt="Dart Smart Salon mobile companion app"
-                      fill
-                      priority
-                      unoptimized
-                      sizes="145px"
-                      className="object-cover object-top"
-                    />
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-
+                onClick={() => setCurrentSlide(index)}
+                aria-label={`Jump to slide ${index + 1}: ${slide.badge}`}
+                className={`transition-all duration-300 rounded-full cursor-pointer ${
+                  isActive
+                    ? 'w-7 sm:w-8 h-2.5 bg-[#A78BFA] shadow-md shadow-violet-500/50'
+                    : 'w-2.5 h-2.5 bg-white/40 hover:bg-white/70'
+                }`}
+              />
+            );
+          })}
         </div>
 
-        {/* ════ BOTTOM MODULE SELECTOR BAR ════ */}
-        <div className="w-full mt-12 sm:mt-16 flex flex-col items-center">
-          <div className="w-full max-w-4xl rounded-2xl bg-slate-900/80 border border-slate-800 p-1.5 shadow-lg">
-            <div className="flex items-center justify-between overflow-x-auto no-scrollbar gap-1">
-              {HERO_FEATURES.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeFeature === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setActiveFeature(item.id)}
-                    className={`flex flex-1 items-center gap-3 rounded-xl py-2.5 px-3.5 text-left transition-all shrink-0 cursor-pointer min-w-[160px] md:min-w-0 ${
-                      isActive
-                        ? 'bg-violet-700 text-white shadow-sm'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-                    }`}
-                  >
-                    <span
-                      className={`flex size-8 items-center justify-center rounded-lg shrink-0 ${
-                        isActive ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-300'
-                      }`}
-                    >
-                      <Icon className="size-4" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-xs font-bold leading-tight truncate">
-                        {item.title}
-                      </div>
-                      <div
-                        className={`text-[10px] leading-tight truncate mt-0.5 ${
-                          isActive ? 'text-violet-100' : 'text-slate-500'
-                        }`}
-                      >
-                        {item.label}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+        {/* Subtle Next/Prev Arrow Controls */}
+        <div className="hidden sm:flex items-center gap-3 mt-3">
+          <button
+            type="button"
+            onClick={prevSlide}
+            aria-label="Previous slide"
+            className="flex size-8 items-center justify-center rounded-full bg-slate-900/60 hover:bg-slate-900/90 text-white/70 hover:text-white border border-white/10 backdrop-blur-xs transition-colors cursor-pointer"
+          >
+            <ChevronLeft className="size-4" />
+          </button>
+
+          <span className="text-[11px] font-mono text-slate-400 select-none">
+            0{currentSlide + 1} / 0{HERO_SLIDES.length}
+          </span>
+
+          <button
+            type="button"
+            onClick={nextSlide}
+            aria-label="Next slide"
+            className="flex size-8 items-center justify-center rounded-full bg-slate-900/60 hover:bg-slate-900/90 text-white/70 hover:text-white border border-white/10 backdrop-blur-xs transition-colors cursor-pointer"
+          >
+            <ChevronRight className="size-4" />
+          </button>
         </div>
 
       </div>
 
-      {/* ── Feature Ticker Marquee ── */}
-      <div className="w-full mt-10">
-        <FeatureMarquee />
-      </div>
-
-      {/* ── Video Demo Modal ── */}
+      {/* ════ VIDEO PRODUCT TOUR MODAL ════ */}
       {isDemoModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-150"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200"
           role="dialog"
           aria-modal="true"
           aria-label="Product Tour Video"
@@ -311,7 +266,7 @@ export function Hero() {
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-800">
               <div className="flex items-center gap-2.5">
-                <span className="flex size-8 items-center justify-center rounded-lg bg-violet-600/20 text-violet-400">
+                <span className="flex size-8 items-center justify-center rounded-lg bg-[#7C3AED]/20 text-[#A78BFA]">
                   <Sparkles className="size-4" />
                 </span>
                 <div>
@@ -319,63 +274,53 @@ export function Hero() {
                     Dart Smart Salon Product Tour
                   </h3>
                   <p className="text-xs text-slate-400">
-                    See how fast front desks schedule, bill, and manage inventory
+                    See how salon owners automate front-desk bookings, POS checkout & commissions
                   </p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsDemoModalOpen(false)}
-                className="flex size-8 items-center justify-center rounded-full bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors cursor-pointer"
+                className="flex size-8 items-center justify-center rounded-full bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors cursor-pointer"
                 aria-label="Close modal"
               >
-                <X className="size-4.5" />
+                <X className="size-4" />
               </button>
             </div>
 
-            {/* Video Preview Frame */}
-            <div className="mt-5 relative w-full aspect-video rounded-2xl overflow-hidden bg-slate-950 border border-slate-800">
+            {/* Video Showcase Frame */}
+            <div className="mt-5 relative w-full aspect-video rounded-2xl bg-slate-950 overflow-hidden border border-slate-800 flex items-center justify-center group">
               <Image
-                src="/assets/landing/desktop-dashboard.png"
-                alt="Product Demo Interface"
+                src="/landing/hero-marketing-analytics.jpg"
+                alt="Product preview"
                 fill
-                unoptimized
-                className="object-cover object-top opacity-80"
+                className="object-cover opacity-60 group-hover:scale-105 transition-transform duration-700"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent flex flex-col justify-end p-6">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-600 text-white px-3 py-1 text-xs font-semibold w-fit mb-2 shadow-xs">
-                  <Play className="size-3 fill-current" /> Live Walkthrough
-                </span>
-                <h4 className="text-white text-base sm:text-lg font-bold">
-                  Complete Salon Operations Workflow
-                </h4>
-                <p className="text-slate-300 text-xs max-w-lg mt-1">
-                  Watch receptionists book conflict-free appointments, cashiers process sub-5s thermal checkouts, and directors inspect live revenue by branch.
-                </p>
+              <div className="absolute inset-0 bg-slate-950/50" />
+              <div className="relative z-10 flex flex-col items-center gap-3">
+                <div className="flex size-16 items-center justify-center rounded-full bg-[#7C3AED] text-white shadow-xl shadow-violet-600/40 group-hover:scale-110 transition-transform">
+                  <Play className="size-6 fill-current ml-1" />
+                </div>
+                <div className="text-center">
+                  <div className="text-sm font-bold text-white">Full Platform Interactive Walkthrough</div>
+                </div>
               </div>
             </div>
 
-            {/* Modal Actions */}
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-800">
-              <div className="text-xs text-slate-400 font-medium">
-                Ready to set up your salon?
+            {/* Modal Footer */}
+            <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-800">
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <ShieldCheck className="size-4 text-emerald-400" />
+                <span>21-day trial includes full access to all 10 enterprise modules</span>
               </div>
-              <div className="flex items-center gap-3">
-                <Link
-                  href="/contact"
-                  onClick={() => setIsDemoModalOpen(false)}
-                  className="rounded-full border border-slate-700 hover:bg-slate-800 px-5 py-2 text-xs font-semibold text-white transition-colors"
-                >
-                  Book 1-on-1 Call
-                </Link>
-                <Link
-                  href="/pricing"
-                  onClick={() => setIsDemoModalOpen(false)}
-                  className="rounded-full bg-violet-600 hover:bg-violet-700 px-5 py-2 text-xs font-semibold text-white shadow-xs transition-all"
-                >
-                  Start Free 21-Day Trial
-                </Link>
-              </div>
+              <Link
+                href="/pricing"
+                onClick={() => setIsDemoModalOpen(false)}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#7C3AED] hover:bg-[#5B21B6] px-5 py-2.5 text-xs font-bold text-white transition-all shadow-sm"
+              >
+                <span>Start Free Trial Now</span>
+                <ArrowRight className="size-3.5" />
+              </Link>
             </div>
           </div>
         </div>
