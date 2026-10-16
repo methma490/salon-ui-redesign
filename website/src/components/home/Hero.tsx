@@ -22,9 +22,6 @@ import {
   Zap,
 } from 'lucide-react';
 import { FeatureMarquee } from './FeatureMarquee';
-import { AnimatedDesktopDashboard } from './AnimatedDesktopDashboard';
-import { AnimatedMobileDashboard } from './AnimatedMobileDashboard';
-
 interface FeatureNavItem {
   id: string;
   icon: typeof LayoutDashboard;
