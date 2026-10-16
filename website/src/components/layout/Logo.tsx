@@ -10,7 +10,7 @@ export function Logo({ variant = 'light' }: LogoProps) {
   return (
     <Link href="/" className="inline-flex items-center gap-2 sm:gap-3 group shrink-0">
       {/* Refined Salon Emblem Icon: Elegant Hairdressing Shears in Purple Brand Palette */}
-      <span className="relative flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-full border border-violet-200/90 dark:border-violet-800/60 bg-gradient-to-br from-violet-50 via-white to-purple-50/70 dark:from-slate-900 dark:via-slate-800 dark:to-violet-950/50 p-1 shadow-sm transition-all duration-300 group-hover:border-violet-500 group-hover:shadow-md group-hover:scale-105 shrink-0">
+      <span className="relative flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-full border border-violet-200/90 dark:border-[#553585]/70 bg-gradient-to-br from-violet-50 via-white to-purple-50/70 dark:from-[#171026] dark:via-[#1f1633] dark:to-[#2a1b46] p-1 shadow-sm transition-all duration-300 group-hover:border-violet-500 group-hover:shadow-md group-hover:scale-105 shrink-0">
         <svg
           viewBox="0 0 32 32"
           fill="none"
@@ -61,7 +61,7 @@ export function Logo({ variant = 'light' }: LogoProps) {
           className={`text-sm sm:text-lg font-bold tracking-tight transition-colors leading-tight ${
             isDark
               ? 'text-white group-hover:text-violet-300'
-              : 'text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-300'
+              : 'text-slate-900 dark:text-[#f8f6ff] group-hover:text-violet-600 dark:group-hover:text-violet-300'
           }`}
           style={{ fontFamily: 'var(--font-jakarta), serif' }}
         >

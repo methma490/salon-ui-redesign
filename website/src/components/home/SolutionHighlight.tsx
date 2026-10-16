@@ -6,76 +6,76 @@ import { ShieldCheck, Users, Zap, CheckCircle2, ArrowRight } from 'lucide-react'
 
 export function SolutionHighlight() {
   return (
-    <section className="py-10 sm:py-12 lg:py-14 bg-[#fafbfc] dark:bg-[#1c1a20] transition-colors duration-200" aria-labelledby="value-prop-heading">
+    <section className="py-10 sm:py-12 lg:py-14 bg-[#fafbfc] dark:bg-[#0d0915] transition-colors duration-200" aria-labelledby="value-prop-heading">
       <div className="section-container">
-        <div className="grid overflow-hidden rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 shadow-sm lg:grid-cols-12 items-stretch">
+        <div className="grid overflow-hidden rounded-3xl border border-slate-200/90 dark:border-[#362453] bg-white/70 dark:bg-[#171026]/90 shadow-sm lg:grid-cols-12 items-stretch">
           
           {/* Left Column: Value Highlights */}
           <div className="p-5 sm:p-7 lg:p-9 lg:col-span-7 flex flex-col justify-between">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-violet-100/70 dark:bg-violet-950/70 border border-violet-200 dark:border-violet-800 px-3.5 py-1 text-xs font-semibold text-violet-700 dark:text-violet-300 mb-4">
+              <div className="inline-flex items-center gap-2 rounded-full bg-violet-100/70 dark:bg-[#24193d] border border-violet-200 dark:border-[#362453] px-3.5 py-1 text-xs font-semibold text-violet-700 dark:text-violet-300 mb-4">
                 <span className="size-1.5 rounded-full bg-violet-600 dark:bg-violet-400" />
                 <span>Operational Excellence</span>
               </div>
 
               <h2
                 id="value-prop-heading"
-                className="text-2xl sm:text-3xl lg:text-[2.15rem] font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight"
+                className="text-2xl sm:text-3xl lg:text-[2.15rem] font-extrabold tracking-tight text-slate-900 dark:text-[#f8f6ff] leading-tight"
               >
                 Engineered for the Realities of <br className="hidden sm:inline" />
                 <span className="text-gradient-purple">Busy Salon Floors</span>
               </h2>
 
-              <p className="mt-3 text-sm sm:text-[15px] text-slate-600 dark:text-slate-300 leading-relaxed max-w-xl">
+              <p className="mt-3 text-sm sm:text-[15px] text-slate-600 dark:text-[#d8cde8] leading-relaxed max-w-xl">
                 Replace slow manual paper books, missing receipts, and fragmented spreadsheets with a single intuitive operating system designed for salon owners and their teams.
               </p>
 
               {/* 4 Core Value Cards */}
               <div className="mt-5 sm:mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="flex items-start gap-3 p-3 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300">
+                <div className="flex items-start gap-3 p-3 rounded-2xl bg-white dark:bg-[#1f1633] border border-slate-200/80 dark:border-[#362453] shadow-2xs">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 dark:bg-[#2a1b46] text-violet-700 dark:text-violet-300">
                     <Zap className="size-4.5" />
                   </span>
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">Sub-5s Express Checkout</h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Quick split tender, discounts, and thermal/WhatsApp receipts</p>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-[#f8f6ff]">Sub-5s Express Checkout</h4>
+                    <p className="text-xs text-slate-500 dark:text-[#a694be] mt-0.5">Quick split tender, discounts, and thermal/WhatsApp receipts</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300">
+                <div className="flex items-start gap-3 p-3 rounded-2xl bg-white dark:bg-[#1f1633] border border-slate-200/80 dark:border-[#362453] shadow-2xs">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 dark:bg-[#2a1b46] text-violet-700 dark:text-violet-300">
                     <CheckCircle2 className="size-4.5" />
                   </span>
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">Zero Double-Bookings</h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Smart conflict detection and automatic SMS reminders</p>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-[#f8f6ff]">Zero Double-Bookings</h4>
+                    <p className="text-xs text-slate-500 dark:text-[#a694be] mt-0.5">Smart conflict detection and automatic SMS reminders</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300">
+                <div className="flex items-start gap-3 p-3 rounded-2xl bg-white dark:bg-[#1f1633] border border-slate-200/80 dark:border-[#362453] shadow-2xs">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 dark:bg-[#2a1b46] text-violet-700 dark:text-violet-300">
                     <Users className="size-4.5" />
                   </span>
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">Automated Stylist Math</h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Tiered commissions, tips, and deductions calculated live</p>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-[#f8f6ff]">Automated Stylist Math</h4>
+                    <p className="text-xs text-slate-500 dark:text-[#a694be] mt-0.5">Tiered commissions, tips, and deductions calculated live</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3 p-3 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300">
+                <div className="flex items-start gap-3 p-3 rounded-2xl bg-white dark:bg-[#1f1633] border border-slate-200/80 dark:border-[#362453] shadow-2xs">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 dark:bg-[#2a1b46] text-violet-700 dark:text-violet-300">
                     <ShieldCheck className="size-4.5" />
                   </span>
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">Branch Cash & Stock Audits</h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Zero unrecorded cash drawer openings or missing inventory</p>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-[#f8f6ff]">Branch Cash & Stock Audits</h4>
+                    <p className="text-xs text-slate-500 dark:text-[#a694be] mt-0.5">Zero unrecorded cash drawer openings or missing inventory</p>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Bottom Actions */}
-            <div className="mt-6 sm:mt-7 pt-5 border-t border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="mt-6 sm:mt-7 pt-5 border-t border-slate-200/80 dark:border-[#26183d] flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <Link
                 href="/pricing"
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-violet-600 hover:bg-violet-700 text-white px-6 py-3 text-sm font-semibold shadow-xs hover:shadow-md transition-all active:scale-[0.98] w-full sm:w-auto"
@@ -85,7 +85,7 @@ export function SolutionHighlight() {
               </Link>
               <Link
                 href="/features"
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 px-6 py-3 text-sm font-semibold transition-all w-full sm:w-auto"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 dark:border-[#362453] bg-white dark:bg-[#1f1633] hover:bg-slate-50 dark:hover:bg-[#2a1b46] text-slate-800 dark:text-[#f8f6ff] px-6 py-3 text-sm font-semibold transition-all w-full sm:w-auto"
               >
                 <span>Explore Full Module Tour</span>
               </Link>
@@ -93,7 +93,7 @@ export function SolutionHighlight() {
           </div>
 
           {/* Right Column: Premium Multi-Device Showcase (Desktop + Mobile) */}
-          <div className="relative lg:col-span-5 flex flex-col justify-center items-center p-6 sm:p-8 lg:p-7 overflow-hidden bg-gradient-to-br from-violet-50/60 via-slate-50 to-slate-100/90 dark:from-slate-900 dark:via-violet-950/20 dark:to-slate-950 border-t lg:border-t-0 lg:border-l border-slate-200/80 dark:border-slate-800/80 min-h-[380px] sm:min-h-[460px] lg:min-h-0">
+          <div className="relative lg:col-span-5 flex flex-col justify-center items-center p-6 sm:p-8 lg:p-7 overflow-hidden bg-gradient-to-br from-violet-50/60 via-slate-50 to-slate-100/90 dark:from-[#171026] dark:via-[#1f1633]/50 dark:to-[#0d0915] border-t lg:border-t-0 lg:border-l border-slate-200/80 dark:border-[#362453] min-h-[380px] sm:min-h-[460px] lg:min-h-0">
             {/* Ambient Lighting & Blueprint Grid */}
             <div className="absolute -top-16 -right-16 size-64 rounded-full bg-violet-400/15 dark:bg-violet-600/15 blur-3xl pointer-events-none" />
             <div className="absolute -bottom-16 -left-16 size-64 rounded-full bg-indigo-400/15 dark:bg-indigo-600/15 blur-3xl pointer-events-none" />
@@ -103,7 +103,7 @@ export function SolutionHighlight() {
             <div className="relative w-full max-w-[480px] my-auto py-3">
               
               {/* Floating Badge 1: Top-Left Real-Time Sync */}
-              <div className="absolute -top-1 left-2 sm:-top-2 sm:left-3 z-30 inline-flex items-center gap-2 rounded-xl bg-white/95 dark:bg-slate-900/95 px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-100 shadow-md border border-slate-200/80 dark:border-slate-700/80 backdrop-blur-md animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="absolute -top-1 left-2 sm:-top-2 sm:left-3 z-30 inline-flex items-center gap-2 rounded-xl bg-white/95 dark:bg-[#1f1633]/95 px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-[#f8f6ff] shadow-md border border-slate-200/80 dark:border-[#362453] backdrop-blur-md animate-in fade-in slide-in-from-top-2 duration-300">
                 <span className="flex size-5 items-center justify-center rounded-lg bg-violet-600 text-white shadow-xs">
                   <Zap className="size-3" />
                 </span>
@@ -115,10 +115,10 @@ export function SolutionHighlight() {
               </div>
 
               {/* ── 1. Desktop Workstation Window ── */}
-              <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700/80 shadow-[0_20px_50px_-15px_rgba(15,23,42,0.18)] dark:shadow-[0_25px_65px_-15px_rgba(0,0,0,0.7)] ring-1 ring-black/5 dark:ring-white/5 transition-transform duration-300 hover:scale-[1.01]">
+              <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-[#171026] border border-slate-200/90 dark:border-[#362453] shadow-[0_20px_50px_-15px_rgba(15,23,42,0.18)] dark:shadow-[0_25px_65px_-15px_rgba(0,0,0,0.7)] ring-1 ring-black/5 dark:ring-white/5 transition-transform duration-300 hover:scale-[1.01]">
                 
                 {/* macOS / Web App Header Bar */}
-                <div className="flex h-8 sm:h-9 items-center justify-between px-3 sm:px-3.5 bg-slate-100/90 dark:bg-slate-800/90 border-b border-slate-200/80 dark:border-slate-700/80 select-none">
+                <div className="flex h-8 sm:h-9 items-center justify-between px-3 sm:px-3.5 bg-slate-100/90 dark:bg-[#1f1633] border-b border-slate-200/80 dark:border-[#26183d] select-none">
                   {/* Traffic Light Window Controls */}
                   <div className="flex items-center gap-1.5">
                     <span className="size-2.5 rounded-full bg-[#ff5f56] ring-1 ring-[#e0443e]/40" />
@@ -127,7 +127,7 @@ export function SolutionHighlight() {
                   </div>
 
                   {/* Browser Pill */}
-                  <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-0.5 rounded-full bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-700/70 text-[10px] sm:text-[10.5px] font-medium text-slate-500 dark:text-slate-400 shadow-2xs">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-0.5 rounded-full bg-white dark:bg-[#171026] border border-slate-200/70 dark:border-[#362453] text-[10px] sm:text-[10.5px] font-medium text-slate-500 dark:text-[#a694be] shadow-2xs">
                     <span className="size-1.5 rounded-full bg-emerald-500" />
                     <span className="truncate max-w-[170px] sm:max-w-none">app.dartsalon.com/dashboard</span>
                   </div>
@@ -140,7 +140,7 @@ export function SolutionHighlight() {
                 </div>
 
                 {/* Desktop Dashboard Image */}
-                <div className="relative aspect-[1024/540] w-full overflow-hidden bg-slate-50 dark:bg-slate-900">
+                <div className="relative aspect-[1024/540] w-full overflow-hidden bg-slate-50 dark:bg-[#0d0915]">
                   <Image
                     src="/assets/landing/desktop-dashboard.png"
                     alt="Dart Smart Salon desktop management interface showing revenue and appointment analytics"

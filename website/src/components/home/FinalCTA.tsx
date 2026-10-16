@@ -5,9 +5,9 @@ import { ArrowRight, Check, Sparkles } from 'lucide-react';
 
 export function FinalCTA() {
   return (
-    <section className="py-10 sm:py-12 lg:py-14 bg-white" aria-labelledby="final-cta-heading">
+    <section className="py-10 sm:py-12 lg:py-14 bg-white dark:bg-[#0d0915]" aria-labelledby="final-cta-heading">
       <div className="section-container">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-800 via-violet-800 to-indigo-950 px-5 py-10 sm:px-10 sm:py-12 lg:px-12 lg:py-14 text-center text-white shadow-lg shadow-violet-950/10">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-800 via-violet-800 to-indigo-950 dark:from-[#36195c] dark:via-[#2b124c] dark:to-[#170a2c] dark:border dark:border-[#553585]/70 px-5 py-10 sm:px-10 sm:py-12 lg:px-12 lg:py-14 text-center text-white shadow-lg shadow-violet-950/20">
           {/* Subtle ambient lighting */}
           <div className="pointer-events-none absolute -top-24 -left-24 size-72 rounded-full bg-violet-400/20 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 -right-24 size-72 rounded-full bg-indigo-400/15 blur-3xl" />

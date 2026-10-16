@@ -144,7 +144,7 @@ export function Testimonials() {
 
   return (
     <section
-      className="py-8 sm:py-10 bg-[#EDE9FE]/40 dark:bg-[#1c1a20] transition-colors duration-300"
+      className="py-8 sm:py-10 bg-[#EDE9FE]/40 dark:bg-[#0d0915] transition-colors duration-300"
       aria-labelledby="testimonials-heading"
       aria-roledescription="testimonial carousel"
       onMouseEnter={() => setIsHovered(true)}
@@ -158,16 +158,16 @@ export function Testimonials() {
     >
       <div className="section-container max-w-5xl">
         {/* ════ MAIN PROPORTIONAL CONTAINER CARD (Scaled & balanced to page) ════ */}
-        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/90 dark:border-slate-700 bg-white dark:bg-[#25232c] p-5 sm:p-7 lg:p-8 shadow-lg shadow-purple-900/5 transition-all">
+        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/90 dark:border-[#362453] bg-white dark:bg-[#171026] p-5 sm:p-7 lg:p-8 shadow-lg shadow-purple-900/5 transition-all">
           
           {/* Subtle top lavender ambient glow */}
-          <div className="absolute top-0 right-0 w-80 h-52 bg-gradient-to-bl from-violet-200/35 dark:from-violet-900/15 to-transparent blur-2xl pointer-events-none" />
+          <div className="absolute top-0 right-0 w-80 h-52 bg-gradient-to-bl from-violet-200/35 dark:from-violet-900/25 to-transparent blur-2xl pointer-events-none" />
 
           {/* ── CARD HEADER: Compact Eyebrow + Headline on Left, Description on Right ── */}
-          <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-6 pb-4 sm:pb-5 mb-5 sm:mb-6 border-b border-slate-100 dark:border-slate-800/80">
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-6 pb-4 sm:pb-5 mb-5 sm:mb-6 border-b border-slate-100 dark:border-[#26183d]">
             <div>
               {/* Eyebrow Pill */}
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-violet-100/80 dark:bg-violet-950/80 border border-violet-200 dark:border-violet-800 px-3 py-0.5 text-[11px] font-semibold text-violet-700 dark:text-violet-300 mb-2">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-violet-100/80 dark:bg-violet-950/80 border border-violet-200 dark:border-violet-800/80 px-3 py-0.5 text-[11px] font-semibold text-violet-700 dark:text-violet-300 mb-2">
                 <span className="size-1.5 rounded-full bg-amber-400" />
                 <span>Testimonials</span>
               </div>
@@ -175,7 +175,7 @@ export function Testimonials() {
               {/* Proportional Headline */}
               <h2
                 id="testimonials-heading"
-                className="text-xl sm:text-2xl lg:text-[1.75rem] font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight"
+                className="text-xl sm:text-2xl lg:text-[1.75rem] font-extrabold tracking-tight text-slate-900 dark:text-[#f8f6ff] leading-tight"
               >
                 Trusted by Salon &amp; Spa Directors{' '}
                 <span className="text-gradient-purple">Across Sri Lanka</span>
@@ -183,7 +183,7 @@ export function Testimonials() {
             </div>
 
             {/* Right Subtext */}
-            <p className="max-w-xs text-xs text-slate-500 dark:text-slate-400 leading-relaxed sm:text-right">
+            <p className="max-w-xs text-xs text-slate-500 dark:text-[#d8cde8] leading-relaxed sm:text-right">
               See how verified salon directors eliminate disputes, accelerate POS billing, and scale profits.
             </p>
           </div>
@@ -198,7 +198,7 @@ export function Testimonials() {
                 type="button"
                 onClick={() => goToSlide(prev2Idx)}
                 title={`View ${TESTIMONIALS[prev2Idx].name}`}
-                className="group relative size-10 xl:size-11 rounded-xl overflow-hidden border border-slate-200/80 dark:border-slate-700/60 opacity-35 hover:opacity-100 hover:scale-105 hover:border-violet-400 transition-all cursor-pointer shadow-2xs"
+                className="group relative size-10 xl:size-11 rounded-xl overflow-hidden border border-slate-200/80 dark:border-[#362453] opacity-35 hover:opacity-100 hover:scale-105 hover:border-violet-400 transition-all cursor-pointer shadow-2xs"
               >
                 <Image
                   src={TESTIMONIALS[prev2Idx].avatar}
@@ -215,7 +215,7 @@ export function Testimonials() {
                 type="button"
                 onClick={() => goToSlide(prev1Idx)}
                 title={`View ${TESTIMONIALS[prev1Idx].name}`}
-                className="group relative size-12 xl:size-13 rounded-xl overflow-hidden border-2 border-slate-200 dark:border-slate-700 opacity-60 hover:opacity-100 hover:scale-105 hover:border-violet-500 transition-all cursor-pointer shadow-xs"
+                className="group relative size-12 xl:size-13 rounded-xl overflow-hidden border-2 border-slate-200 dark:border-[#362453] opacity-60 hover:opacity-100 hover:scale-105 hover:border-violet-500 transition-all cursor-pointer shadow-xs"
               >
                 <Image
                   src={TESTIMONIALS[prev1Idx].avatar}
@@ -229,7 +229,7 @@ export function Testimonials() {
             </div>
 
             {/* 2. PROMINENT CENTRAL SLIDING TRACK (Smooth horizontal sliding transition) */}
-            <div className="overflow-hidden w-full max-w-2xl rounded-2xl border border-violet-100/90 dark:border-slate-800 bg-[#F5F3FF]/40 dark:bg-slate-900/60 shadow-xs">
+            <div className="overflow-hidden w-full max-w-2xl rounded-2xl border border-violet-100/90 dark:border-[#362453] bg-[#F5F3FF]/40 dark:bg-[#1f1633] shadow-xs">
               <div
                 className="flex transition-transform duration-600 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform"
                 style={{ transform: `translateX(-${activeIndex * 100}%)` }}
@@ -240,7 +240,7 @@ export function Testimonials() {
                     className={`w-full shrink-0 p-4 sm:p-5 lg:p-6 flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5 min-w-0 ${index === activeIndex ? 'testimonial-slide-active' : ''}`}
                   >
                     {/* Featured Reviewer Photo */}
-                    <div className="relative shrink-0 w-22 h-22 sm:w-26 sm:h-28 md:w-28 md:h-30 rounded-xl sm:rounded-2xl overflow-hidden border border-white dark:border-slate-700 shadow-md">
+                    <div className="relative shrink-0 w-22 h-22 sm:w-26 sm:h-28 md:w-28 md:h-30 rounded-xl sm:rounded-2xl overflow-hidden border border-white dark:border-[#362453] shadow-md">
                       <Image
                         src={t.avatar}
                         alt={t.name}
@@ -250,7 +250,7 @@ export function Testimonials() {
                         unoptimized
                       />
                       <div className="absolute bottom-1 inset-x-1 flex justify-center">
-                        <span className="inline-flex items-center gap-0.5 rounded-full bg-white/95 dark:bg-slate-900/95 px-1.5 py-0.2 text-[8px] sm:text-[9px] font-bold text-emerald-700 dark:text-emerald-400 shadow-2xs border border-emerald-200/60 dark:border-emerald-800/60">
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-white/95 dark:bg-[#171026]/95 px-1.5 py-0.2 text-[8px] sm:text-[9px] font-bold text-emerald-700 dark:text-emerald-400 shadow-2xs border border-emerald-200/60 dark:border-emerald-800/60">
                           <CheckCircle className="size-2.5 text-emerald-600 dark:text-emerald-400" />
                           <span>Verified</span>
                         </span>
@@ -272,21 +272,21 @@ export function Testimonials() {
 
                         {/* Customer Quote */}
                         <blockquote className="min-h-[4rem] sm:min-h-[4.5rem] flex items-center">
-                          <p className="text-xs sm:text-sm md:text-[14px] text-slate-800 dark:text-slate-100 leading-relaxed font-normal">
+                          <p className="text-xs sm:text-sm md:text-[14px] text-slate-800 dark:text-[#f8f6ff] leading-relaxed font-normal">
                             &ldquo;{t.quote}&rdquo;
                           </p>
                         </blockquote>
                       </div>
 
                       {/* Author Line & 5 Stars */}
-                      <div className="mt-3 pt-3 border-t border-violet-200/50 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                      <div className="mt-3 pt-3 border-t border-violet-200/50 dark:border-[#26183d] flex flex-wrap items-center justify-between gap-2">
                         <div>
-                          <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+                          <div className="text-xs sm:text-sm font-bold text-slate-900 dark:text-[#f8f6ff]">
                             — {t.name}
                           </div>
-                          <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400">
-                            {t.role} · <strong className="text-slate-700 dark:text-slate-300 font-semibold">{t.salon}</strong>
-                            <span className="text-violet-600 dark:text-violet-400 ml-1 font-medium">({t.location})</span>
+                          <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-[#a694be]">
+                            {t.role} · <strong className="text-slate-700 dark:text-[#d8cde8] font-semibold">{t.salon}</strong>
+                            <span className="text-violet-600 dark:text-violet-300 ml-1 font-medium">({t.location})</span>
                           </div>
                         </div>
 
@@ -313,7 +313,7 @@ export function Testimonials() {
                 type="button"
                 onClick={() => goToSlide(next1Idx)}
                 title={`View ${TESTIMONIALS[next1Idx].name}`}
-                className="group relative size-12 xl:size-13 rounded-xl overflow-hidden border-2 border-slate-200 dark:border-slate-700 opacity-60 hover:opacity-100 hover:scale-105 hover:border-violet-500 transition-all cursor-pointer shadow-xs"
+                className="group relative size-12 xl:size-13 rounded-xl overflow-hidden border-2 border-slate-200 dark:border-[#362453] opacity-60 hover:opacity-100 hover:scale-105 hover:border-violet-500 transition-all cursor-pointer shadow-xs"
               >
                 <Image
                   src={TESTIMONIALS[next1Idx].avatar}
@@ -330,7 +330,7 @@ export function Testimonials() {
                 type="button"
                 onClick={() => goToSlide(next2Idx)}
                 title={`View ${TESTIMONIALS[next2Idx].name}`}
-                className="group relative size-10 xl:size-11 rounded-xl overflow-hidden border border-slate-200/80 dark:border-slate-700/60 opacity-35 hover:opacity-100 hover:scale-105 hover:border-violet-400 transition-all cursor-pointer shadow-2xs"
+                className="group relative size-10 xl:size-11 rounded-xl overflow-hidden border border-slate-200/80 dark:border-[#362453] opacity-35 hover:opacity-100 hover:scale-105 hover:border-violet-400 transition-all cursor-pointer shadow-2xs"
               >
                 <Image
                   src={TESTIMONIALS[next2Idx].avatar}
@@ -352,7 +352,7 @@ export function Testimonials() {
               type="button"
               onClick={prevSlide}
               aria-label="Previous testimonial"
-              className="flex size-8 sm:size-9 items-center justify-center rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-violet-600 hover:border-violet-300 active:scale-95 transition-all shadow-2xs cursor-pointer"
+              className="flex size-8 sm:size-9 items-center justify-center rounded-full border border-slate-200 dark:border-[#362453] bg-white dark:bg-[#1f1633] text-slate-700 dark:text-[#f8f6ff] hover:bg-slate-50 dark:hover:bg-[#2a1b46] hover:text-violet-600 hover:border-violet-300 active:scale-95 transition-all shadow-2xs cursor-pointer"
             >
               <ChevronLeft className="size-4" />
             </button>
@@ -368,7 +368,7 @@ export function Testimonials() {
                   className={`transition-all duration-300 rounded-full cursor-pointer ${
                     idx === activeIndex
                       ? 'w-5 h-1.5 bg-[#7C3AED] dark:bg-violet-400'
-                      : 'w-1.5 h-1.5 bg-slate-300 dark:bg-slate-700 hover:bg-slate-400'
+                      : 'w-1.5 h-1.5 bg-slate-300 dark:bg-[#362453] hover:bg-slate-400 dark:hover:bg-violet-700'
                   }`}
                 />
               ))}

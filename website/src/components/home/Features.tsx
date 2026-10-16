@@ -235,27 +235,27 @@ export function Features() {
   return (
     <section
       id="features"
-      className="relative overflow-hidden py-10 sm:py-12 lg:py-14 bg-slate-50/60"
+      className="relative overflow-hidden py-10 sm:py-12 lg:py-14 bg-slate-50/60 dark:bg-[#0d0915]"
       aria-labelledby="features-heading"
     >
       <div className="section-container">
         {/* Section Heading & Category Filter */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full bg-violet-100/70 border border-violet-200 px-3.5 py-1 text-xs font-semibold text-violet-700 mb-3.5">
-              <Sparkles className="size-3.5 text-violet-700" />
+            <div className="inline-flex items-center gap-2 rounded-full bg-violet-100/70 dark:bg-[#24193d] border border-violet-200 dark:border-[#362453] px-3.5 py-1 text-xs font-semibold text-violet-700 dark:text-violet-300 mb-3.5">
+              <Sparkles className="size-3.5 text-violet-700 dark:text-violet-300" />
               <span>Modular Salon Suite</span>
             </div>
 
             <h2
               id="features-heading"
-              className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 leading-[1.12]"
+              className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-[#f8f6ff] leading-[1.12]"
             >
               Every Module Connected.{' '}
               <span className="text-gradient-purple">Zero Friction.</span>
             </h2>
 
-            <p className="mt-3.5 text-sm sm:text-base text-slate-600 leading-relaxed">
+            <p className="mt-3.5 text-sm sm:text-base text-slate-600 dark:text-[#d8cde8] leading-relaxed">
               Purpose-built for hair salons, aesthetic clinics, spas, nail lounges, and barbershops.
             </p>
           </div>
@@ -267,8 +267,8 @@ export function Features() {
               onClick={toggleAutoScroll}
               className={`inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer shadow-2xs ${
                 isAutoScrolling
-                  ? 'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100'
-                  : 'border-slate-300 bg-white text-slate-600 hover:text-slate-900'
+                  ? 'border-violet-200 dark:border-violet-700/60 bg-violet-50 dark:bg-[#24193d] text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-[#2f1f50]'
+                  : 'border-slate-300 dark:border-[#362453] bg-white dark:bg-[#1f1633] text-slate-600 dark:text-[#d8cde8] hover:text-slate-900 dark:hover:text-white'
               }`}
               title={isAutoScrolling ? 'Pause auto-scroll' : 'Resume auto-scroll'}
             >
@@ -285,9 +285,9 @@ export function Features() {
               <span>{isAutoScrolling ? 'Auto-Scrolling' : 'Paused'}</span>
             </button>
 
-            <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-slate-600 bg-white border border-slate-200 px-3.5 py-1.5 rounded-full shadow-2xs">
+            <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-[#d8cde8] bg-white dark:bg-[#1f1633] border border-slate-200 dark:border-[#362453] px-3.5 py-1.5 rounded-full shadow-2xs">
               <span>Module</span>
-              <span className="text-violet-700 font-bold">{current}</span>
+              <span className="text-violet-700 dark:text-violet-300 font-bold">{current}</span>
               <span>of</span>
               <span>{count || filteredFeatures.length}</span>
             </div>
@@ -309,7 +309,7 @@ export function Features() {
                 className={`rounded-full px-4 py-2 text-xs sm:text-sm font-semibold whitespace-nowrap transition-all duration-150 cursor-pointer ${
                   isSelected
                     ? 'bg-violet-700 text-white shadow-xs'
-                    : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    : 'bg-white dark:bg-[#1f1633] border border-slate-200 dark:border-[#362453] text-slate-600 dark:text-[#d8cde8] hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-[#2a1b46]'
                 }`}
               >
                 {cat}
@@ -339,9 +339,9 @@ export function Features() {
                   >
                     <div className="py-2 h-full">
                       <Link href={feature.href} className="block h-full group">
-                        <Card className="group h-full flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 bg-white transition-all duration-300 hover:-translate-y-2 hover:border-violet-400 hover:shadow-xl cursor-pointer">
+                        <Card className="group h-full flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 dark:border-[#362453] bg-white dark:bg-[#171026] transition-all duration-300 hover:-translate-y-2 hover:border-violet-400 dark:hover:border-violet-500 hover:shadow-xl cursor-pointer">
                           {/* Visual Image Header */}
-                          <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100">
+                          <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100 dark:bg-[#0d0915]">
                             <Image
                               src={feature.image}
                               alt={feature.title}
@@ -353,7 +353,7 @@ export function Features() {
 
                             {/* Floating Badges on Image */}
                             <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between">
-                              <span className="flex items-center gap-1.5 rounded-full bg-white/95 backdrop-blur-md px-2.5 py-1 text-[11px] font-bold text-violet-700 shadow-xs">
+                              <span className="flex items-center gap-1.5 rounded-full bg-white/95 dark:bg-[#171026]/95 backdrop-blur-md px-2.5 py-1 text-[11px] font-bold text-violet-700 dark:text-violet-300 shadow-xs border border-transparent dark:border-[#362453]">
                                 <Icon className="size-3.5" />
                                 <span>{feature.badge}</span>
                               </span>
@@ -367,28 +367,28 @@ export function Features() {
                           {/* Card Content */}
                           <CardContent className="p-5 sm:p-6 flex flex-col justify-between flex-1">
                             <div>
-                              <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-violet-700 transition-colors leading-snug">
+                              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#f8f6ff] group-hover:text-violet-700 dark:group-hover:text-violet-300 transition-colors leading-snug">
                                 {feature.title}
                               </h3>
 
-                              <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                              <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-[#d8cde8] leading-relaxed">
                                 {feature.description}
                               </p>
                             </div>
 
                             {/* Key Highlight & Link */}
-                            <div className="mt-5 pt-3.5 border-t border-slate-100 space-y-3">
-                              <div className="flex items-center gap-2 text-xs font-semibold text-slate-800">
-                                <CheckCircle2 className="size-4 text-violet-600 shrink-0" />
+                            <div className="mt-5 pt-3.5 border-t border-slate-100 dark:border-[#26183d] space-y-3">
+                              <div className="flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-[#f8f6ff]">
+                                <CheckCircle2 className="size-4 text-violet-600 dark:text-violet-400 shrink-0" />
                                 <span className="truncate">{feature.keyHighlight}</span>
                               </div>
 
                               <div className="flex items-center justify-between pt-1">
-                                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                                <span className="text-[11px] font-semibold text-slate-400 dark:text-[#a694be] uppercase tracking-wider">
                                   Live Module
                                 </span>
 
-                                <span className="inline-flex items-center gap-1 text-xs font-bold text-violet-700 transition-all">
+                                <span className="inline-flex items-center gap-1 text-xs font-bold text-violet-700 dark:text-violet-300 transition-all">
                                   <span>Explore Module</span>
                                   <ArrowRight className="size-3.5 group-hover:translate-x-1 transition-transform" />
                                 </span>
@@ -415,10 +415,10 @@ export function Features() {
         <div className="mt-10 text-center">
           <Link
             href="/features"
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 px-6 sm:px-7 py-3 text-xs sm:text-sm font-semibold shadow-2xs hover:shadow-xs transition-all w-full sm:w-auto"
+            className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 dark:border-[#362453] bg-white dark:bg-[#171026] hover:bg-slate-50 dark:hover:bg-[#1f1633] text-slate-800 dark:text-[#f8f6ff] px-6 sm:px-7 py-3 text-xs sm:text-sm font-semibold shadow-2xs hover:shadow-xs transition-all w-full sm:w-auto"
           >
             <span>View All Features in the Interactive Tour</span>
-            <ArrowRight className="size-4 text-violet-700" />
+            <ArrowRight className="size-4 text-violet-700 dark:text-violet-300" />
           </Link>
         </div>
       </div>

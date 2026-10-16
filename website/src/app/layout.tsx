@@ -43,7 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className="min-h-full font-sans antialiased bg-[#fafbfc] dark:bg-[#1c1a20] text-slate-900 dark:text-slate-100 selection:bg-violet-600 selection:text-white transition-colors duration-200">
+      <body className="min-h-full font-sans antialiased bg-[#fafbfc] dark:bg-[#0d0915] text-slate-900 dark:text-[#f8f6ff] selection:bg-violet-600 selection:text-white transition-colors duration-200">
         <ThemeProvider>
           <JsonLd
             data={[organizationJsonLd(), webSiteJsonLd(), softwareApplicationJsonLd()]}

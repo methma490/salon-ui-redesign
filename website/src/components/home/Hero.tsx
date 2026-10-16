@@ -139,7 +139,7 @@ export function Hero() {
         <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-slate-950/70 to-transparent z-15 pointer-events-none" />
 
         {/* ── Bottom Fade Transition: Seamlessly merges into page background in both Light and Dark mode ── */}
-        <div className="absolute bottom-0 inset-x-0 h-40 sm:h-52 bg-gradient-to-t from-[#fafbfc] dark:from-[#090d16] via-[#fafbfc]/80 dark:via-[#090d16]/80 to-transparent z-20 pointer-events-none transition-colors duration-300" />
+        <div className="absolute bottom-0 inset-x-0 h-40 sm:h-52 bg-gradient-to-t from-[#fafbfc] dark:from-[#0d0915] via-[#fafbfc]/80 dark:via-[#0d0915]/80 to-transparent z-20 pointer-events-none transition-colors duration-300" />
       </div>
 
       {/* ════ CENTERED HERO CONTENT CONTAINER ════ */}

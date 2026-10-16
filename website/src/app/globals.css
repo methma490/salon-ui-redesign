@@ -31,31 +31,31 @@
 }
 
 .dark {
-  --color-primary: #7c3aed;
-  --color-primary-hover: #6d28d9;
-  --color-primary-light: #a78bfa;
-  --color-primary-soft: rgba(167, 139, 250, 0.14);
-  --color-lavender: rgba(167, 139, 250, 0.1);
+  --color-primary: #8b5cf6;
+  --color-primary-hover: #7c3aed;
+  --color-primary-light: #c4b5fd;
+  --color-primary-soft: rgba(139, 92, 246, 0.16);
+  --color-lavender: rgba(167, 139, 250, 0.14);
   --color-accent: #a78bfa;
   --color-accent-gold: #fbbf24;
 
-  --color-text-primary: #f5f2f7;
-  --color-text-secondary: #d0cbd6;
-  --color-text-muted: #a39daa;
+  --color-text-primary: #f8f6ff;
+  --color-text-secondary: #d8cde8;
+  --color-text-muted: #a694be;
 
-  --color-surface: #25232c;
-  --color-surface-subtle: #302d38;
-  --color-surface-purple: #30263b;
+  --color-surface: #171026;
+  --color-surface-subtle: #1f1633;
+  --color-surface-purple: #2a1b46;
 
-  --color-border: #45404c;
-  --color-border-subtle: #3b3742;
-  --color-border-accent: #51425f;
+  --color-border: #362453;
+  --color-border-subtle: #26183d;
+  --color-border-accent: #553585;
 
-  --gradient-btn-primary: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
-  --gradient-brand-subtle: linear-gradient(180deg, rgba(67, 52, 79, 0.5) 0%, rgba(28, 26, 32, 1) 100%);
+  --gradient-btn-primary: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  --gradient-brand-subtle: linear-gradient(180deg, rgba(88, 48, 133, 0.45) 0%, rgba(13, 9, 21, 1) 100%);
 
-  --background: #1c1a20;
-  --foreground: #f5f2f7;
+  --background: #0d0915;
+  --foreground: #f8f6ff;
 }
 
 @theme inline {
@@ -96,45 +96,62 @@ body {
   transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-/* Keep marketing page surfaces and copy in step with the dark palette,
-   including older sections that still use the light theme utility classes. */
-.dark main section.bg-white {
+/* ── Cohesive Purple Dark Theme Global Surface and Text Overrides ── */
+.dark main section.bg-white,
+.dark main div.bg-white:not([class*="rounded"]):not([class*="aspect"]):not([class*="max-w"]):not([class*="shadow"]) {
   background-color: var(--background);
 }
 
-.dark main .bg-white:not(button):not(a):not(span),
-.dark main .bg-slate-50:not(button):not(a):not(span),
-.dark main .bg-slate-50\/50:not(button):not(a):not(span),
-.dark main .bg-slate-50\/70:not(button):not(a):not(span) {
+.dark main .bg-white:not([class~="text-violet-900"]):not([class~="text-[#7C3AED]"]):not([class~="text-violet-700"]):not([class*="fill-"]),
+.dark main .bg-slate-50,
+.dark main .bg-slate-50\/50,
+.dark main .bg-slate-50\/60,
+.dark main .bg-slate-50\/70,
+.dark main .bg-slate-50\/80 {
   background-color: var(--color-surface);
 }
 
-.dark main a.bg-white:not(.text-violet-900),
-.dark main a.bg-slate-50:not(.text-violet-900),
-.dark main a.bg-slate-50\/50:not(.text-violet-900),
-.dark main a.bg-slate-50\/70:not(.text-violet-900) {
-  background-color: var(--color-surface);
-}
+/* Purple dark surfaces for Tailwind utility classes */
+.dark .dark\:bg-slate-900 { background-color: #171026; }
+.dark .dark\:bg-slate-800 { background-color: #1f1633; }
+.dark .dark\:bg-slate-950 { background-color: #0d0915; }
+.dark .dark\:bg-slate-900\/60 { background-color: rgb(23 16 38 / 0.86); }
+.dark .dark\:bg-slate-900\/70 { background-color: rgb(23 16 38 / 0.90); }
+.dark .dark\:bg-slate-900\/80 { background-color: rgb(23 16 38 / 0.93); }
+.dark .dark\:bg-slate-900\/90 { background-color: rgb(23 16 38 / 0.96); }
+.dark .dark\:bg-slate-900\/95 { background-color: rgb(23 16 38 / 0.98); }
 
-/* Lift common dark utility surfaces so nested cards remain distinct. */
-.dark .dark\:bg-slate-900 { background-color: #302d38; }
-.dark .dark\:bg-slate-800 { background-color: #373340; }
-.dark .dark\:bg-slate-900\/60 { background-color: rgb(48 45 56 / 0.8); }
-.dark .dark\:bg-slate-900\/70 { background-color: rgb(48 45 56 / 0.86); }
-.dark .dark\:bg-slate-900\/80 { background-color: rgb(48 45 56 / 0.9); }
-.dark .dark\:bg-slate-900\/90 { background-color: rgb(48 45 56 / 0.94); }
-.dark .dark\:bg-slate-900\/95 { background-color: rgb(48 45 56 / 0.97); }
+.dark .dark\:border-slate-800 { border-color: #362453; }
+.dark .dark\:border-slate-700 { border-color: #362453; }
+.dark .dark\:border-slate-700\/80 { border-color: #362453; }
+.dark .dark\:border-slate-800\/80 { border-color: #26183d; }
+.dark .dark\:border-slate-800\/70 { border-color: #26183d; }
 
-.dark main .text-slate-900 { color: #f5f2f7; }
-.dark main .text-slate-800 { color: #e6e1eb; }
-.dark main .text-slate-700 { color: #d0cbd6; }
-.dark main .text-slate-600 { color: #b7b1bf; }
-.dark main .text-slate-500 { color: #a39daa; }
-.dark main .text-violet-700 { color: #c4a7ff; }
-.dark main .hover\:text-violet-900:hover { color: #d9c8ff; }
+/* Luxury High-Contrast Purple Dark Text Styles */
+.dark main .text-slate-900 { color: #f8f6ff; }
+.dark main .text-slate-800 { color: #ede4f7; }
+.dark main .text-slate-700 { color: #d8cde8; }
+.dark main .text-slate-600 { color: #c5b5dc; }
+.dark main .text-slate-500 { color: #a694be; }
+.dark main .text-slate-400 { color: #8c78a5; }
+.dark main .text-violet-700 { color: #c4b5fd; }
+.dark main .hover\:text-violet-900:hover { color: #ede4f7; }
+.dark .dark\:text-slate-100 { color: #f8f6ff; }
+.dark .dark\:text-slate-200 { color: #ede4f7; }
+.dark .dark\:text-slate-300 { color: #d8cde8; }
+.dark .dark\:text-slate-400 { color: #a694be; }
+.dark .dark\:text-slate-500 { color: #8c78a5; }
+.dark footer .text-slate-400 { color: #a694be; }
+.dark footer .text-slate-500 { color: #8c78a5; }
+.dark main .placeholder\:text-slate-400::placeholder { color: #7d6b98; }
+.dark main input::placeholder,
+.dark main textarea::placeholder { color: #7d6b98; }
+
 .dark main .border-slate-200,
 .dark main .border-slate-200\/90,
-.dark main .border-slate-300 { border-color: var(--color-border); }
+.dark main .border-slate-200\/80,
+.dark main .border-slate-300,
+.dark main .border-slate-100 { border-color: var(--color-border); }
 
 .section-container {
   width: 100%;

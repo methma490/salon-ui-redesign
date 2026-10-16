@@ -90,9 +90,9 @@ export default function SolutionsPage() {
       />
 
       {/* ── Page Header ── */}
-      <section className="bg-slate-950 text-white pt-16 pb-14 border-b border-slate-800">
+      <section className="bg-[#150d24] dark:bg-[#0d0915] text-white pt-16 pb-14 border-b border-violet-950/80 dark:border-[#26183d]">
         <div className="section-container text-center max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 rounded-full bg-violet-950 border border-violet-800/60 px-3.5 py-1 text-xs font-semibold text-violet-300 mb-4">
+          <div className="inline-flex items-center gap-2 rounded-full bg-violet-950/80 border border-violet-800/60 px-3.5 py-1 text-xs font-semibold text-violet-300 mb-4">
             <Sparkles className="size-3.5 text-violet-400" />
             <span>Tailored by Salon Scale</span>
           </div>
@@ -102,7 +102,7 @@ export default function SolutionsPage() {
             <span className="text-gradient-purple">Engineered for Your Salon Stage.</span>
           </h1>
 
-          <p className="mt-4 text-base sm:text-lg text-slate-300 leading-relaxed max-w-2xl mx-auto">
+          <p className="mt-4 text-base sm:text-lg text-slate-300 dark:text-[#d8cde8] leading-relaxed max-w-2xl mx-auto">
             Whether you operate an independent styling studio, a bustling boutique salon, or a multi-branch network, Dart Smart Salon adapts to your exact operational workflow.
           </p>
 
@@ -116,7 +116,7 @@ export default function SolutionsPage() {
             </Link>
             <Link
               href="/contact"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-700 bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 text-sm font-semibold transition-all w-full sm:w-auto"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-700 dark:border-[#362453] bg-slate-900/80 dark:bg-[#171026] hover:bg-slate-800 dark:hover:bg-[#1f1633] text-white px-6 py-3 text-sm font-semibold transition-all w-full sm:w-auto"
             >
               <span>Schedule a 1-on-1 Consultation</span>
             </Link>
@@ -125,16 +125,16 @@ export default function SolutionsPage() {
       </section>
 
       {/* ── Solutions Cards Section ── */}
-      <section className="py-18 lg:py-24 bg-white" aria-labelledby="solutions-grid-heading">
+      <section className="py-18 lg:py-24 bg-white dark:bg-[#0d0915]" aria-labelledby="solutions-grid-heading">
         <div className="section-container">
           <div className="text-center max-w-2xl mx-auto mb-14">
             <h2
               id="solutions-grid-heading"
-              className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight"
+              className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-[#f8f6ff] tracking-tight"
             >
               Select Your Salon Category
             </h2>
-            <p className="mt-2 text-sm sm:text-base text-slate-600">
+            <p className="mt-2 text-sm sm:text-base text-slate-600 dark:text-[#d8cde8]">
               Discover how Dart Smart Salon eliminates daily friction based on your team size and chair count.
             </p>
           </div>
@@ -145,39 +145,39 @@ export default function SolutionsPage() {
               return (
                 <article
                   key={arch.id}
-                  className="flex flex-col justify-between rounded-3xl border border-slate-200 bg-slate-50/50 p-7 sm:p-8 shadow-xs hover:shadow-xl hover:shadow-slate-900/5 transition-all duration-200 hover:-translate-y-1 hover:border-violet-300 hover:bg-white"
+                  className="flex flex-col justify-between rounded-3xl border border-slate-200 dark:border-[#362453] bg-slate-50/50 dark:bg-[#171026] p-7 sm:p-8 shadow-xs hover:shadow-xl hover:shadow-slate-900/5 transition-all duration-200 hover:-translate-y-1 hover:border-violet-300 dark:hover:border-violet-500/60 hover:bg-white dark:hover:bg-[#1f1633]"
                 >
                   <div>
                     {/* Badge & Icon */}
                     <div className="flex items-center justify-between mb-4">
-                      <span className="flex size-11 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
+                      <span className="flex size-11 items-center justify-center rounded-2xl bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300 border border-transparent dark:border-violet-800/60">
                         <Icon className="size-5" />
                       </span>
-                      <span className="rounded-full bg-slate-100 border border-slate-200 px-3 py-1 text-xs font-bold text-slate-700">
+                      <span className="rounded-full bg-slate-100 dark:bg-[#1f1633] border border-slate-200 dark:border-[#362453] px-3 py-1 text-xs font-bold text-slate-700 dark:text-[#f8f6ff]">
                         {arch.badge}
                       </span>
                     </div>
 
-                    <h3 className="text-xl font-bold text-slate-900 leading-snug">
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-[#f8f6ff] leading-snug">
                       {arch.title}
                     </h3>
-                    <p className="text-xs font-semibold text-violet-700 mt-1">
+                    <p className="text-xs font-semibold text-violet-700 dark:text-violet-400 mt-1">
                       {arch.subtitle}
                     </p>
 
-                    <p className="mt-4 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                    <p className="mt-4 text-xs sm:text-sm text-slate-600 dark:text-[#d8cde8] leading-relaxed">
                       {arch.description}
                     </p>
 
                     {/* Operational Highlights */}
-                    <div className="mt-6 pt-5 border-t border-slate-200/80 space-y-2.5">
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    <div className="mt-6 pt-5 border-t border-slate-200/80 dark:border-[#26183d] space-y-2.5">
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#a694be]">
                         Operational Superpowers
                       </p>
                       {arch.keyProblems.map((prob, i) => (
                         <div key={i} className="flex items-start gap-2">
-                          <CheckCircle2 className="size-4 text-emerald-600 shrink-0 mt-0.5" />
-                          <span className="text-xs text-slate-700 leading-relaxed font-medium">
+                          <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                          <span className="text-xs text-slate-700 dark:text-[#d8cde8] leading-relaxed font-medium">
                             {prob}
                           </span>
                         </div>
@@ -186,13 +186,13 @@ export default function SolutionsPage() {
                   </div>
 
                   {/* Card Bottom CTA */}
-                  <div className="mt-8 pt-5 border-t border-slate-200/80">
-                    <div className="text-xs text-slate-500 mb-2">
-                      Recommended: <strong className="text-slate-900">{arch.recommendedPlan}</strong>
+                  <div className="mt-8 pt-5 border-t border-slate-200/80 dark:border-[#26183d]">
+                    <div className="text-xs text-slate-500 dark:text-[#a694be] mb-2">
+                      Recommended: <strong className="text-slate-900 dark:text-[#f8f6ff]">{arch.recommendedPlan}</strong>
                     </div>
                     <Link
                       href={arch.recommendedHref}
-                      className="inline-flex items-center justify-center gap-1.5 w-full rounded-full bg-slate-900 hover:bg-violet-700 text-white py-2.5 px-4 text-xs font-bold transition-colors cursor-pointer"
+                      className="inline-flex items-center justify-center gap-1.5 w-full rounded-full bg-slate-900 dark:bg-[#1f1633] border border-transparent dark:border-[#362453] hover:bg-violet-700 dark:hover:bg-violet-700 text-white py-2.5 px-4 text-xs font-bold transition-colors cursor-pointer"
                     >
                       <span>Explore {arch.recommendedPlan}</span>
                       <ArrowRight className="size-3.5" />
@@ -206,18 +206,18 @@ export default function SolutionsPage() {
       </section>
 
       {/* ── Operational Comparison Callout ── */}
-      <section className="py-16 bg-slate-50 border-y border-slate-200">
+      <section className="py-16 bg-slate-50 dark:bg-[#0d0915] border-y border-slate-200 dark:border-[#26183d]">
         <div className="section-container">
-          <div className="max-w-4xl mx-auto rounded-3xl border border-slate-200 bg-white p-8 sm:p-12 shadow-sm">
+          <div className="max-w-4xl mx-auto rounded-3xl border border-slate-200 dark:border-[#362453] bg-white dark:bg-[#171026] p-8 sm:p-12 shadow-sm">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div>
-                <span className="inline-block text-xs font-bold uppercase tracking-wider text-violet-700 bg-violet-50 border border-violet-200 px-3 py-0.5 rounded-full mb-2">
+                <span className="inline-block text-xs font-bold uppercase tracking-wider text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/60 border border-violet-200 dark:border-violet-800/60 px-3 py-0.5 rounded-full mb-2">
                   Seamless Upgrades
                 </span>
-                <h3 className="text-2xl font-bold text-slate-900">
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-[#f8f6ff]">
                   Start with 1 chair. Scale to 10 branches.
                 </h3>
-                <p className="mt-2 text-sm text-slate-600 max-w-xl">
+                <p className="mt-2 text-sm text-slate-600 dark:text-[#d8cde8] max-w-xl">
                   You never have to switch software or migrate databases as your salon expands. Keep your client records, service formulas, and historic sales intact as you open new branches.
                 </p>
               </div>

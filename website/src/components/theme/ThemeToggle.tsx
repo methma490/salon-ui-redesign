@@ -19,7 +19,7 @@ export function ThemeToggle({ className = '', showLabel = false }: ThemeTogglePr
       onClick={toggleTheme}
       aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
       title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-      className={`relative inline-flex items-center justify-center gap-2 rounded-full p-2 text-slate-600 transition-all duration-300 hover:text-violet-600 hover:bg-violet-50 dark:text-slate-300 dark:hover:text-violet-300 dark:hover:bg-violet-950/50 border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer ${className}`}
+      className={`relative inline-flex items-center justify-center gap-2 rounded-full p-2 text-slate-600 transition-all duration-300 hover:text-violet-600 hover:bg-violet-50 dark:text-[#f8f6ff] dark:hover:text-violet-300 dark:hover:bg-[#2a1b46] border border-slate-200 dark:border-[#362453] bg-white/80 dark:bg-[#171026]/90 backdrop-blur-xs shadow-2xs hover:shadow-xs active:scale-95 cursor-pointer ${className}`}
     >
       <div className="relative size-4.5 flex items-center justify-center">
         <Sun

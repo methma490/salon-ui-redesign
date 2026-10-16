@@ -86,10 +86,10 @@ export function PricingCard({ plan, billingCycle }: PricingCardProps) {
   return (
     <Link href={signupUrl(plan.id, billingCycle)} className="block h-full group">
       <article
-        className={`relative flex flex-col justify-between rounded-3xl p-5 sm:p-8 w-full max-w-md mx-auto transition-all duration-300 bg-white box-border h-full cursor-pointer ${
+        className={`relative flex flex-col justify-between rounded-3xl p-5 sm:p-8 w-full max-w-md mx-auto transition-all duration-300 bg-white dark:bg-[#171026] box-border h-full cursor-pointer ${
           popular
-            ? 'border-2 border-violet-600 shadow-xl shadow-violet-950/5 ring-4 ring-violet-100 z-10 group-hover:-translate-y-1 group-hover:shadow-2xl'
-            : 'border border-slate-200 shadow-sm hover:border-violet-300 hover:shadow-lg hover:-translate-y-1'
+            ? 'border-2 border-violet-600 dark:border-violet-500 shadow-xl shadow-violet-950/20 ring-4 ring-violet-100 dark:ring-violet-950/40 z-10 group-hover:-translate-y-1 group-hover:shadow-2xl dark:shadow-purple-950/30'
+            : 'border border-slate-200 dark:border-[#362453] shadow-sm hover:border-violet-300 dark:hover:border-violet-500 hover:shadow-lg hover:-translate-y-1'
         }`}
       >
       {/* Most Popular badge centered on top border */}
@@ -107,26 +107,26 @@ export function PricingCard({ plan, billingCycle }: PricingCardProps) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2.5 sm:gap-3">
             {meta.iconType === 'gold' ? (
-              <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 shadow-2xs">
+              <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-600 dark:text-amber-400 shadow-2xs">
                 <Sparkles className="size-4.5 sm:size-5 fill-amber-300 text-amber-500" />
               </div>
             ) : (
-              <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-50 border border-violet-200 text-violet-700 shadow-2xs">
-                <Gem className="size-4.5 sm:size-5 text-violet-700" />
+              <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-50 dark:bg-[#24193d] border border-violet-200 dark:border-[#362453] text-violet-700 dark:text-violet-300 shadow-2xs">
+                <Gem className="size-4.5 sm:size-5 text-violet-700 dark:text-violet-300" />
               </div>
             )}
 
             <div>
-              <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900">
+              <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-[#f8f6ff]">
                 {meta.displayName}
               </h3>
-              <p className="text-xs text-slate-500 font-normal mt-0.5">
+              <p className="text-xs text-slate-500 dark:text-[#a694be] font-normal mt-0.5">
                 {meta.subtitle}
               </p>
             </div>
           </div>
 
-          <span className="shrink-0 rounded-full bg-slate-100 border border-slate-200 px-2.5 py-1 text-[10px] sm:text-[11px] font-semibold text-slate-700 whitespace-nowrap">
+          <span className="shrink-0 rounded-full bg-slate-100 dark:bg-[#24193d] border border-slate-200 dark:border-[#362453] px-2.5 py-1 text-[10px] sm:text-[11px] font-semibold text-slate-700 dark:text-[#d8cde8] whitespace-nowrap">
             {meta.branchTag}
           </span>
         </div>
@@ -137,10 +137,10 @@ export function PricingCard({ plan, billingCycle }: PricingCardProps) {
           <div className="min-h-[22px] flex items-center gap-2">
             {discount && compareAtPrice ? (
               <>
-                <span className="text-xs sm:text-sm font-semibold text-slate-400 line-through">
+                <span className="text-xs sm:text-sm font-semibold text-slate-400 dark:text-[#a694be] line-through">
                   {formatPrice(compareAtPrice, currency)}
                 </span>
-                <span className="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-700">
+                <span className="inline-flex items-center rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
                   Save {discount.percentage}% with Annual Billing
                 </span>
               </>
@@ -151,32 +151,32 @@ export function PricingCard({ plan, billingCycle }: PricingCardProps) {
 
           {/* Large dominant price */}
           <div className="mt-1 flex items-baseline gap-1.5 flex-wrap">
-            <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 leading-none">
+            <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-[#f8f6ff] leading-none">
               {formatPrice(amount, currency)}
             </span>
-            <span className="text-xs sm:text-sm font-semibold text-slate-500">
+            <span className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-[#a694be]">
               /{billingCycleLabel(billingCycle)}
             </span>
           </div>
 
-          <p className="mt-1.5 text-xs text-slate-600 font-normal">
+          <p className="mt-1.5 text-xs text-slate-600 dark:text-[#d8cde8] font-normal">
             {meta.caption}
           </p>
         </div>
 
         {/* Key Features Included */}
-        <div className="mt-6 pt-5 border-t border-slate-100 flex-1">
-          <p className="text-[10px] sm:text-[11px] font-bold tracking-wider text-slate-400 uppercase mb-3">
+        <div className="mt-6 pt-5 border-t border-slate-100 dark:border-[#26183d] flex-1">
+          <p className="text-[10px] sm:text-[11px] font-bold tracking-wider text-slate-400 dark:text-[#a694be] uppercase mb-3">
             What&apos;s Included
           </p>
 
           <ul className="space-y-2.5">
             {keyFeatures.map((feature, idx) => (
               <li key={idx} className="flex items-start gap-2.5">
-                <span className="flex size-4.5 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-700 mt-0.5">
+                <span className="flex size-4.5 shrink-0 items-center justify-center rounded-full bg-violet-100 dark:bg-[#2a1b46] text-violet-700 dark:text-violet-300 mt-0.5">
                   <Check className="size-3 stroke-[3]" aria-hidden />
                 </span>
-                <span className="text-xs sm:text-[13px] font-medium text-slate-800 leading-snug">
+                <span className="text-xs sm:text-[13px] font-medium text-slate-800 dark:text-[#f8f6ff] leading-snug">
                   {feature}
                 </span>
               </li>
@@ -190,8 +190,8 @@ export function PricingCard({ plan, billingCycle }: PricingCardProps) {
         <div
           className={`w-full py-3 sm:py-3.5 px-5 rounded-full text-white font-bold text-xs sm:text-sm shadow-xs transition-all flex items-center justify-center gap-2 active:scale-[0.98] focus-ring cursor-pointer group-hover:scale-102 ${
             popular
-              ? 'bg-violet-700 hover:bg-violet-800 shadow-md shadow-violet-900/10'
-              : 'bg-slate-900 hover:bg-slate-800'
+              ? 'bg-violet-700 hover:bg-violet-800 shadow-md shadow-violet-900/20'
+              : 'bg-slate-900 hover:bg-slate-800 dark:bg-[#24193d] dark:hover:bg-[#2f1f50] dark:border dark:border-[#553585]'
           }`}
         >
           <span>Start 21-Day Free Trial</span>
@@ -199,17 +199,17 @@ export function PricingCard({ plan, billingCycle }: PricingCardProps) {
         </div>
 
         {/* Trust Badges */}
-        <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[10px] sm:text-[11px] text-slate-500 font-medium">
+        <div className="mt-4 pt-3 border-t border-slate-100 dark:border-[#26183d] flex flex-wrap items-center justify-between gap-2 text-[10px] sm:text-[11px] text-slate-500 dark:text-[#a694be] font-medium">
           <div className="flex items-center gap-1">
-            <CreditCard className="size-3.5 text-violet-600 shrink-0" />
+            <CreditCard className="size-3.5 text-violet-600 dark:text-violet-400 shrink-0" />
             <span>No card required</span>
           </div>
           <div className="flex items-center gap-1">
-            <Calendar className="size-3.5 text-violet-600 shrink-0" />
+            <Calendar className="size-3.5 text-violet-600 dark:text-violet-400 shrink-0" />
             <span>21-day trial</span>
           </div>
           <div className="flex items-center gap-1">
-            <ShieldCheck className="size-3.5 text-violet-600 shrink-0" />
+            <ShieldCheck className="size-3.5 text-violet-600 dark:text-violet-400 shrink-0" />
             <span>Cancel anytime</span>
           </div>
         </div>

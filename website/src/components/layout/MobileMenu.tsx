@@ -149,7 +149,7 @@ export function MobileMenu() {
 
       {/* Slide-Over Drawer */}
       <div
-        className={`fixed inset-y-0 right-0 z-[10000] flex h-full w-full max-w-[340px] sm:max-w-[380px] flex-col justify-between bg-white dark:bg-[#25232c] shadow-2xl transition-transform duration-300 ease-out border-l border-slate-200/90 dark:border-slate-700 ${
+        className={`fixed inset-y-0 right-0 z-[10000] flex h-full w-full max-w-[340px] sm:max-w-[380px] flex-col justify-between bg-white dark:bg-[#171026] shadow-2xl transition-transform duration-300 ease-out border-l border-slate-200/90 dark:border-[#362453] ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
         role="dialog"
@@ -157,16 +157,16 @@ export function MobileMenu() {
         aria-label="Mobile Navigation"
       >
         {/* Drawer Header */}
-        <div className="flex h-16 sm:h-17 shrink-0 items-center justify-between border-b border-slate-200/90 dark:border-slate-800 px-4 sm:px-5 bg-slate-50/70 dark:bg-slate-900/70">
+        <div className="flex h-16 sm:h-17 shrink-0 items-center justify-between border-b border-slate-200/90 dark:border-[#26183d] px-4 sm:px-5 bg-slate-50/70 dark:bg-[#1f1633]">
           <div className="flex items-center gap-2 min-w-0">
             <Logo />
-            <span className="hidden xs:inline-block rounded-full bg-violet-100 dark:bg-violet-950/80 px-2 py-0.5 text-[10px] font-bold text-violet-700 dark:text-violet-300">
+            <span className="hidden xs:inline-block rounded-full bg-violet-100 dark:bg-[#2a1b46] px-2 py-0.5 text-[10px] font-bold text-violet-700 dark:text-violet-300">
               v2.4
             </span>
           </div>
           <button
             type="button"
-            className="flex size-10 items-center justify-center rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-violet-600 active:scale-95 transition-all cursor-pointer shadow-2xs shrink-0"
+            className="flex size-10 items-center justify-center rounded-full border border-slate-200 dark:border-[#362453] bg-white dark:bg-[#1f1633] text-slate-700 dark:text-[#f8f6ff] hover:text-violet-600 active:scale-95 transition-all cursor-pointer shadow-2xs shrink-0"
             onClick={() => setOpen(false)}
             aria-label="Close navigation menu"
           >
@@ -177,8 +177,8 @@ export function MobileMenu() {
         {/* Drawer Scrollable Content */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
           {/* Theme switcher bar for mobile */}
-          <div className="flex items-center justify-between p-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/60">
-            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+          <div className="flex items-center justify-between p-2.5 rounded-2xl border border-slate-200/80 dark:border-[#362453] bg-slate-50/80 dark:bg-[#1f1633]">
+            <span className="text-xs font-semibold text-slate-700 dark:text-[#d8cde8]">
               Interface Theme
             </span>
             <ThemeToggle showLabel />
@@ -272,19 +272,19 @@ export function MobileMenu() {
           </div>
 
           {/* Quick Support Card */}
-          <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 p-3 space-y-2">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+          <div className="rounded-2xl border border-slate-200/80 dark:border-[#362453] bg-slate-50/70 dark:bg-[#1f1633] p-3 space-y-2">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#a694be]">
               Direct Assistance
             </p>
             <div className="grid grid-cols-2 gap-2">
               <a
                 href={`tel:${CONTACT_PHONE_RAW}`}
-                className="flex items-center gap-2 p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:border-violet-300 dark:hover:border-violet-700 transition-all text-left"
+                className="flex items-center gap-2 p-2 rounded-xl border border-slate-200 dark:border-[#362453] bg-white dark:bg-[#171026] hover:border-violet-300 dark:hover:border-violet-500 transition-all text-left"
               >
-                <Phone className="h-3.5 w-3.5 text-violet-600 shrink-0" />
+                <Phone className="h-3.5 w-3.5 text-violet-500 shrink-0" />
                 <div className="min-w-0">
-                  <div className="text-[9px] font-bold uppercase text-slate-400 dark:text-slate-500">Call Now</div>
-                  <div className="text-xs font-bold text-slate-900 dark:text-white truncate">{CONTACT_PHONE}</div>
+                  <div className="text-[9px] font-bold uppercase text-slate-400 dark:text-[#a694be]">Call Now</div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-[#f8f6ff] truncate">{CONTACT_PHONE}</div>
                 </div>
               </a>
 
@@ -292,12 +292,12 @@ export function MobileMenu() {
                 href={WHATSAPP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 p-2 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-all text-left"
+                className="flex items-center gap-2 p-2 rounded-xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-all text-left"
               >
-                <MessageCircle className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                <MessageCircle className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
                 <div className="min-w-0">
                   <div className="text-[9px] font-bold uppercase text-emerald-700 dark:text-emerald-400">WhatsApp</div>
-                  <div className="text-xs font-bold text-emerald-900 dark:text-white truncate">Chat Live</div>
+                  <div className="text-xs font-bold text-emerald-900 dark:text-[#f8f6ff] truncate">Chat Live</div>
                 </div>
               </a>
             </div>
@@ -305,13 +305,13 @@ export function MobileMenu() {
         </div>
 
         {/* Drawer Bottom Actions */}
-        <div className="border-t border-slate-200/90 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900/90 p-4 space-y-2 shrink-0">
+        <div className="border-t border-slate-200/90 dark:border-[#26183d] bg-slate-50/90 dark:bg-[#1f1633] p-4 space-y-2 shrink-0">
           <Link
             href={loginUrl()}
             onClick={() => setOpen(false)}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-5 py-2.5 text-sm font-semibold text-slate-800 dark:text-white hover:text-violet-600 dark:hover:text-violet-300 transition-all shadow-2xs"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 dark:border-[#362453] bg-white dark:bg-[#171026] px-5 py-2.5 text-sm font-semibold text-slate-800 dark:text-[#f8f6ff] hover:text-violet-600 dark:hover:text-violet-300 transition-all shadow-2xs"
           >
-            <LogIn className="h-4 w-4 text-slate-500 dark:text-slate-400" />
+            <LogIn className="h-4 w-4 text-slate-500 dark:text-[#a694be]" />
             <span>Salon Admin Log In</span>
           </Link>
 
@@ -332,7 +332,7 @@ export function MobileMenu() {
     <div className="lg:hidden">
       <button
         type="button"
-        className="inline-flex size-11 items-center justify-center rounded-full border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-violet-600 hover:border-violet-300 active:scale-95 transition-all cursor-pointer shadow-2xs shrink-0"
+        className="inline-flex size-11 items-center justify-center rounded-full border border-slate-200/90 dark:border-[#362453] bg-white dark:bg-[#1f1633] text-slate-700 dark:text-[#f8f6ff] hover:text-violet-600 hover:border-violet-300 active:scale-95 transition-all cursor-pointer shadow-2xs shrink-0"
         aria-expanded={open}
         aria-label={open ? 'Close menu' : 'Open menu'}
         onClick={() => setOpen((prev) => !prev)}

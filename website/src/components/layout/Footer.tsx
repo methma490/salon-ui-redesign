@@ -40,9 +40,9 @@ export function Footer() {
   };
 
   return (
-    <footer className="overflow-x-clip border-t border-violet-900/60 bg-gradient-to-b from-[#342842] via-[#292330] to-[#211f26] text-white">
+    <footer className="overflow-x-clip border-t border-[#362453] bg-gradient-to-b from-[#150d24] via-[#0f0a1b] to-[#090611] text-white">
       {/* ── Top Contact Highlights Bar ── */}
-      <div className="border-b border-violet-300/10 bg-violet-300/[0.04]">
+      <div className="border-b border-[#26183d] bg-violet-500/[0.03]">
         <div className="section-container py-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 items-center">
             {/* Phone */}

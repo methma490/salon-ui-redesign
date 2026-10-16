@@ -79,9 +79,9 @@ export default function AboutPage() {
       />
 
       {/* ── Page Header ── */}
-      <section className="bg-slate-950 text-white pt-16 pb-14 border-b border-slate-800">
+      <section className="bg-[#150d24] dark:bg-[#0d0915] text-white pt-16 pb-14 border-b border-violet-950/80 dark:border-[#26183d]">
         <div className="section-container text-center max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 rounded-full bg-violet-950 border border-violet-800/60 px-3.5 py-1 text-xs font-semibold text-violet-300 mb-4">
+          <div className="inline-flex items-center gap-2 rounded-full bg-violet-950/80 border border-violet-800/60 px-3.5 py-1 text-xs font-semibold text-violet-300 mb-4">
             <Sparkles className="size-3.5 text-violet-400" />
             <span>Our Purpose & Mission</span>
           </div>
@@ -91,28 +91,28 @@ export default function AboutPage() {
             <span className="text-gradient-purple">Modern Salons in Sri Lanka</span>
           </h1>
 
-          <p className="mt-4 text-base sm:text-lg text-slate-300 leading-relaxed max-w-2xl mx-auto">
+          <p className="mt-4 text-base sm:text-lg text-slate-300 dark:text-[#d8cde8] leading-relaxed max-w-2xl mx-auto">
             {APP_NAME} was created by {COMPANY_NAME} to eliminate the daily operational headaches that hold salon owners, stylists, and clients back.
           </p>
         </div>
       </section>
 
       {/* ── The Origin & Mission Story ── */}
-      <section className="py-18 lg:py-24 bg-white">
+      <section className="py-18 lg:py-24 bg-white dark:bg-[#0d0915]">
         <div className="section-container">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             
             {/* Story Text */}
             <div className="lg:col-span-7">
-              <span className="inline-block text-xs font-bold uppercase tracking-wider text-violet-700 bg-violet-50 border border-violet-200 px-3 py-0.5 rounded-full mb-3">
+              <span className="inline-block text-xs font-bold uppercase tracking-wider text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/60 border border-violet-200 dark:border-violet-800/60 px-3 py-0.5 rounded-full mb-3">
                 The Dart Smart Salon Story
               </span>
 
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight leading-snug">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 dark:text-[#f8f6ff] tracking-tight leading-snug">
                 Why We Built Dart Smart Salon
               </h2>
 
-              <div className="mt-5 space-y-4 text-sm sm:text-base text-slate-600 leading-relaxed">
+              <div className="mt-5 space-y-4 text-sm sm:text-base text-slate-600 dark:text-[#d8cde8] leading-relaxed">
                 <p>
                   Before Dart Smart Salon, we saw salon owners in Colombo, Kandy, and Galle trapped between two flawed extremes: either struggling with messy paper appointment books and lost receipts, or wrestling with expensive foreign software that did not support local payment gateways, lacked WhatsApp receipts, and felt bloated and complicated to use.
                 </p>
@@ -134,7 +134,7 @@ export default function AboutPage() {
                 </Link>
                 <Link
                   href="/contact"
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 px-6 py-3 text-sm font-semibold transition-all w-full sm:w-auto"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 dark:border-[#362453] bg-white dark:bg-[#171026] hover:bg-slate-50 dark:hover:bg-[#1f1633] text-slate-800 dark:text-[#f8f6ff] px-6 py-3 text-sm font-semibold transition-all w-full sm:w-auto"
                 >
                   <span>Talk with Our Team</span>
                 </Link>
@@ -143,34 +143,34 @@ export default function AboutPage() {
 
             {/* Visual Image / Stats Card */}
             <div className="lg:col-span-5">
-              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 sm:p-8 shadow-sm">
-                <h3 className="text-lg font-bold text-slate-900 mb-6">
+              <div className="rounded-3xl border border-slate-200 dark:border-[#362453] bg-slate-50 dark:bg-[#171026] p-6 sm:p-8 shadow-sm">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-[#f8f6ff] mb-6">
                   Platform Milestones
                 </h3>
 
                 <div className="grid grid-cols-2 gap-3.5 sm:gap-6">
                   {STATS.map((s, i) => (
-                    <div key={i} className="p-3.5 sm:p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs">
-                      <div className="text-2xl sm:text-3xl font-extrabold text-violet-700">
+                    <div key={i} className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-[#1f1633] border border-slate-200/80 dark:border-[#362453] shadow-2xs">
+                      <div className="text-2xl sm:text-3xl font-extrabold text-violet-700 dark:text-violet-400">
                         {s.value}
                       </div>
-                      <div className="text-[11px] sm:text-xs text-slate-500 font-medium mt-1 leading-snug">
+                      <div className="text-[11px] sm:text-xs text-slate-500 dark:text-[#a694be] font-medium mt-1 leading-snug">
                         {s.label}
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <div className="mt-8 pt-6 border-t border-slate-200">
+                <div className="mt-8 pt-6 border-t border-slate-200 dark:border-[#26183d]">
                   <div className="flex items-center gap-3">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300 border border-transparent dark:border-violet-800/60">
                       <ShieldCheck className="size-5" />
                     </span>
                     <div>
-                      <div className="text-xs font-bold text-slate-900">
+                      <div className="text-xs font-bold text-slate-900 dark:text-[#f8f6ff]">
                         Private Cloud Infrastructure
                       </div>
-                      <div className="text-[11px] text-slate-500">
+                      <div className="text-[11px] text-slate-500 dark:text-[#a694be]">
                         Encrypted databases with automatic daily snapshots.
                       </div>
                     </div>
@@ -184,16 +184,16 @@ export default function AboutPage() {
       </section>
 
       {/* ── Core Principles ── */}
-      <section className="py-18 lg:py-24 bg-slate-50/70 border-t border-slate-200">
+      <section className="py-18 lg:py-24 bg-slate-50/70 dark:bg-[#0d0915] border-t border-slate-200 dark:border-[#26183d]">
         <div className="section-container">
           <div className="text-center max-w-2xl mx-auto mb-14">
-            <span className="inline-block text-xs font-bold uppercase tracking-wider text-violet-700 bg-violet-50 border border-violet-200 px-3 py-0.5 rounded-full mb-2">
+            <span className="inline-block text-xs font-bold uppercase tracking-wider text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/60 border border-violet-200 dark:border-violet-800/60 px-3 py-0.5 rounded-full mb-2">
               Our Principles
             </span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-[#f8f6ff] tracking-tight">
               What Guides Our Engineering
             </h2>
-            <p className="mt-2 text-sm sm:text-base text-slate-600">
+            <p className="mt-2 text-sm sm:text-base text-slate-600 dark:text-[#d8cde8]">
               The foundational design values behind every screen, button, and module in Dart Smart Salon.
             </p>
           </div>
@@ -204,15 +204,15 @@ export default function AboutPage() {
               return (
                 <div
                   key={idx}
-                  className="rounded-2xl border border-slate-200 bg-white p-7 shadow-2xs hover:shadow-md transition-all duration-200 hover:-translate-y-1 hover:border-violet-300"
+                  className="rounded-2xl border border-slate-200 dark:border-[#362453] bg-white dark:bg-[#171026] p-7 shadow-2xs hover:shadow-md transition-all duration-200 hover:-translate-y-1 hover:border-violet-300 dark:hover:border-violet-500/60 dark:hover:bg-[#1f1633]"
                 >
-                  <span className="flex size-11 items-center justify-center rounded-xl bg-violet-100 text-violet-700 mb-4">
+                  <span className="flex size-11 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950/80 text-violet-700 dark:text-violet-300 border border-transparent dark:border-violet-800/60 mb-4">
                     <Icon className="size-5" />
                   </span>
-                  <h3 className="text-lg font-bold text-slate-900">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-[#f8f6ff]">
                     {p.title}
                   </h3>
-                  <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                  <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-[#d8cde8] leading-relaxed">
                     {p.description}
                   </p>
                 </div>
@@ -223,30 +223,30 @@ export default function AboutPage() {
       </section>
 
       {/* ── Company Contact & Location Card ── */}
-      <section className="py-16 bg-white border-t border-slate-200">
+      <section className="py-16 bg-white dark:bg-[#0d0915] border-t border-slate-200 dark:border-[#26183d]">
         <div className="section-container max-w-4xl mx-auto">
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-8 sm:p-10 shadow-xs">
+          <div className="rounded-3xl border border-slate-200 dark:border-[#362453] bg-slate-50 dark:bg-[#171026] p-8 sm:p-10 shadow-xs">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div>
-                <span className="inline-block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                <span className="inline-block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-[#a694be] mb-1">
                   Company Headquarters
                 </span>
-                <h3 className="text-xl font-bold text-slate-900">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-[#f8f6ff]">
                   {COMPANY_NAME}
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">{COMPANY_ADDRESS}</p>
+                <p className="text-xs text-slate-500 dark:text-[#a694be] mt-0.5">{COMPANY_ADDRESS}</p>
                 
-                <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-slate-600">
+                <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-slate-600 dark:text-[#d8cde8]">
                   <span className="flex items-center gap-1.5 font-medium">
-                    <Phone className="size-3.5 text-violet-700" />
+                    <Phone className="size-3.5 text-violet-700 dark:text-violet-400" />
                     <span>{CONTACT_PHONE}</span>
                   </span>
                   <span className="flex items-center gap-1.5 font-medium">
-                    <Mail className="size-3.5 text-violet-700" />
+                    <Mail className="size-3.5 text-violet-700 dark:text-violet-400" />
                     <span>{CONTACT_EMAIL}</span>
                   </span>
                   <span className="flex items-center gap-1.5 font-medium">
-                    <Clock className="size-3.5 text-violet-700" />
+                    <Clock className="size-3.5 text-violet-700 dark:text-violet-400" />
                     <span>{CONTACT_HOURS}</span>
                   </span>
                 </div>

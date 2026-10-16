@@ -28,9 +28,9 @@ export default function FAQPage() {
       />
 
       {/* ── Page Header ── */}
-      <section className="bg-slate-950 text-white pt-16 pb-12 border-b border-slate-800">
+      <section className="bg-[#150d24] dark:bg-[#0d0915] text-white pt-16 pb-12 border-b border-violet-950/80 dark:border-[#26183d]">
         <div className="section-container text-center max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 rounded-full bg-violet-950 border border-violet-800/60 px-3.5 py-1 text-xs font-semibold text-violet-300 mb-4">
+          <div className="inline-flex items-center gap-2 rounded-full bg-violet-950/80 border border-violet-800/60 px-3.5 py-1 text-xs font-semibold text-violet-300 mb-4">
             <Sparkles className="size-3.5 text-violet-400" />
             <span>Knowledgebase & Support</span>
           </div>
@@ -39,11 +39,11 @@ export default function FAQPage() {
             Frequently Asked <span className="text-gradient-purple">Questions</span>
           </h1>
 
-          <p className="mt-4 text-base sm:text-lg text-slate-300 leading-relaxed max-w-xl mx-auto">
+          <p className="mt-4 text-base sm:text-lg text-slate-300 dark:text-[#d8cde8] leading-relaxed max-w-xl mx-auto">
             Everything you need to know about setting up Dart Smart Salon, data migration, hardware requirements, and starting your 21-day trial.
           </p>
 
-          <div className="mt-6 flex flex-wrap justify-center items-center gap-x-6 gap-y-2 text-xs text-slate-400 font-medium">
+          <div className="mt-6 flex flex-wrap justify-center items-center gap-x-6 gap-y-2 text-xs text-slate-400 dark:text-[#a694be] font-medium">
             <span className="flex items-center gap-1.5">
               <CheckCircle2 className="size-4 text-emerald-400" />
               <span>Full 21-day trial</span>

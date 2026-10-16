@@ -55,23 +55,23 @@ const STEPS: StepItem[] = [
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="py-10 sm:py-12 lg:py-14 bg-white" aria-labelledby="how-it-works-heading">
+    <section id="how-it-works" className="py-10 sm:py-12 lg:py-14 bg-white dark:bg-[#0d0915]" aria-labelledby="how-it-works-heading">
       <div className="section-container">
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-2 rounded-full bg-violet-100/70 border border-violet-200 px-3.5 py-1 text-xs font-semibold text-violet-700 mb-3.5">
-            <span className="size-1.5 rounded-full bg-violet-700" />
+          <div className="inline-flex items-center gap-2 rounded-full bg-violet-100/70 dark:bg-violet-950/60 border border-violet-200 dark:border-violet-800/60 px-3.5 py-1 text-xs font-semibold text-violet-700 dark:text-violet-300 mb-3.5">
+            <span className="size-1.5 rounded-full bg-violet-700 dark:bg-violet-400" />
             <span>Effortless Onboarding</span>
           </div>
 
           <h2
             id="how-it-works-heading"
-            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 leading-tight"
+            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-[#f8f6ff] leading-tight"
           >
             How Dart Smart Salon <span className="text-gradient-purple">Works</span>
           </h2>
 
-          <p className="mt-3.5 text-base text-slate-600 leading-relaxed">
+          <p className="mt-3.5 text-base text-slate-600 dark:text-[#d8cde8] leading-relaxed">
             From setup to live register checkout in minutes — built for speed on busy salon floors.
           </p>
         </div>
@@ -79,17 +79,17 @@ export function HowItWorks() {
         {/* 4 Steps Grid */}
         <div className="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative">
           {/* Subtle connecting line on desktop */}
-          <div className="hidden lg:block absolute top-[85px] left-[15%] right-[15%] h-px bg-slate-200 z-0" />
+          <div className="hidden lg:block absolute top-[85px] left-[15%] right-[15%] h-px bg-slate-200 dark:bg-[#362453] z-0" />
 
           {STEPS.map((item) => {
             const Icon = item.icon;
             return (
               <div
                 key={item.number}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 bg-slate-50/50 shadow-2xs hover:shadow-lg hover:shadow-slate-900/5 transition-all duration-200 hover:-translate-y-1 hover:border-violet-300 hover:bg-white z-10"
+                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 dark:border-[#362453] bg-slate-50/50 dark:bg-[#171026] shadow-2xs hover:shadow-lg dark:hover:shadow-violet-950/20 transition-all duration-200 hover:-translate-y-1 hover:border-violet-300 dark:hover:border-violet-500/60 hover:bg-white dark:hover:bg-[#1f1633] z-10"
               >
                 {/* Visual Image Header */}
-                <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100 border-b border-slate-100">
+                <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-100 dark:bg-[#1f1633] border-b border-slate-100 dark:border-[#26183d]">
                   <Image
                     src={item.image}
                     alt={item.title}
@@ -97,11 +97,11 @@ export function HowItWorks() {
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                     className="object-cover object-center transition-transform duration-300 group-hover:scale-102"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-slate-950/10 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-slate-950/20 to-transparent" />
 
                   {/* Top Floating Badges */}
                   <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5 rounded-full bg-white/95 backdrop-blur-md px-2.5 py-0.5 text-xs font-bold text-violet-700 shadow-xs">
+                    <span className="flex items-center gap-1.5 rounded-full bg-white/95 dark:bg-[#171026]/95 dark:border dark:border-[#362453] backdrop-blur-md px-2.5 py-0.5 text-xs font-bold text-violet-700 dark:text-violet-300 shadow-xs">
                       <span>{item.step}</span>
                     </span>
 
@@ -119,19 +119,19 @@ export function HowItWorks() {
                 {/* Card Body */}
                 <div className="p-5 flex flex-col justify-between flex-1">
                   <div>
-                    <h3 className="text-base font-bold text-slate-900 leading-snug group-hover:text-violet-700 transition-colors">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-[#f8f6ff] leading-snug group-hover:text-violet-700 dark:group-hover:text-violet-300 transition-colors">
                       {item.title}
                     </h3>
 
-                    <p className="mt-1.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                    <p className="mt-1.5 text-xs sm:text-sm text-slate-600 dark:text-[#d8cde8] leading-relaxed">
                       {item.description}
                     </p>
                   </div>
 
                   {/* Key Takeaway */}
-                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-2">
-                    <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
-                    <span className="text-xs font-semibold text-slate-800">{item.highlight}</span>
+                  <div className="mt-4 pt-3 border-t border-slate-100 dark:border-[#26183d] flex items-center gap-2">
+                    <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span className="text-xs font-semibold text-slate-800 dark:text-[#f8f6ff]">{item.highlight}</span>
                   </div>
                 </div>
               </div>

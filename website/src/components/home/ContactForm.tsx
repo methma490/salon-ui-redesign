@@ -74,17 +74,17 @@ export function ContactForm() {
 
   if (submitted) {
     return (
-      <div className="rounded-3xl border border-emerald-200 bg-emerald-50/40 p-8 sm:p-10 shadow-xs text-center animate-in fade-in duration-200">
-        <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 shadow-2xs mb-4">
+      <div className="rounded-3xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/40 dark:bg-emerald-950/20 p-8 sm:p-10 shadow-xs text-center animate-in fade-in duration-200">
+        <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 shadow-2xs mb-4">
           <CheckCircle2 className="size-8" />
         </div>
 
-        <h3 className="text-xl sm:text-2xl font-bold text-slate-900">
+        <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#f8f6ff]">
           Message Received!
         </h3>
 
-        <p className="mt-2 text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
-          Thank you, <strong className="text-slate-900 font-semibold">{formData.name || 'there'}</strong>.
+        <p className="mt-2 text-sm text-slate-600 dark:text-[#d8cde8] max-w-md mx-auto leading-relaxed">
+          Thank you, <strong className="text-slate-900 dark:text-[#f8f6ff] font-semibold">{formData.name || 'there'}</strong>.
           We have received your inquiry and a salon technology specialist will reach out to you shortly.
         </p>
 
@@ -92,7 +92,7 @@ export function ContactForm() {
           <button
             type="button"
             onClick={handleReset}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white hover:bg-slate-50 px-5 py-2.5 text-xs font-semibold text-slate-700 transition-all cursor-pointer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 dark:border-[#362453] bg-white dark:bg-[#1f1633] hover:bg-slate-50 dark:hover:bg-[#2a1b46] px-5 py-2.5 text-xs font-semibold text-slate-700 dark:text-[#f8f6ff] transition-all cursor-pointer"
           >
             <span>Send Another Message</span>
           </button>
@@ -110,18 +110,18 @@ export function ContactForm() {
   }
 
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-xs">
-      <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
+    <div className="rounded-3xl border border-slate-200 dark:border-[#362453] bg-white dark:bg-[#171026] p-6 sm:p-8 shadow-xs">
+      <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#f8f6ff]">
         Send an Inquiry
       </h2>
-      <p className="mt-1 text-xs sm:text-sm text-slate-600">
+      <p className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-[#d8cde8]">
         Fill in your salon details and our team will get back to you promptly.
       </p>
 
       <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="contact-name" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+            <label htmlFor="contact-name" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-[#d8cde8] mb-1.5">
               Your Name <span className="text-rose-500">*</span>
             </label>
             <input
@@ -138,14 +138,14 @@ export function ContactForm() {
                 if (errors.name) validate();
               }}
               placeholder="e.g. Kasun Fernando"
-              className={`w-full rounded-xl border px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all ${
+              className={`w-full rounded-xl border px-3.5 py-2.5 text-sm text-slate-900 dark:text-[#f8f6ff] dark:bg-[#1f1633] placeholder:text-slate-400 dark:placeholder:text-[#a694be]/60 outline-none transition-all ${
                 touched.name && errors.name
-                  ? 'border-rose-400 bg-rose-50/20 focus:border-rose-600'
-                  : 'border-slate-200 focus:border-violet-600 focus:ring-2 focus:ring-violet-600/20'
+                  ? 'border-rose-400 bg-rose-50/20 dark:border-rose-500/80 dark:bg-rose-950/20 focus:border-rose-600'
+                  : 'border-slate-200 dark:border-[#362453] focus:border-violet-600 focus:ring-2 focus:ring-violet-600/20'
               }`}
             />
             {touched.name && errors.name && (
-              <p id="contact-name-error" className="mt-1.5 text-xs text-rose-600 flex items-center gap-1 font-medium">
+              <p id="contact-name-error" className="mt-1.5 text-xs text-rose-600 dark:text-rose-400 flex items-center gap-1 font-medium">
                 <AlertCircle className="size-3.5 shrink-0" />
                 <span>{errors.name}</span>
               </p>
@@ -153,7 +153,7 @@ export function ContactForm() {
           </div>
 
           <div>
-            <label htmlFor="contact-salon" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+            <label htmlFor="contact-salon" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-[#d8cde8] mb-1.5">
               Salon / Studio Name
             </label>
             <input
@@ -162,14 +162,14 @@ export function ContactForm() {
               value={formData.salon}
               onChange={(e) => setFormData({ ...formData, salon: e.target.value })}
               placeholder="e.g. Glitz Hair Studio"
-              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-600/20 transition-all"
+              className="w-full rounded-xl border border-slate-200 dark:border-[#362453] bg-transparent dark:bg-[#1f1633] px-3.5 py-2.5 text-sm text-slate-900 dark:text-[#f8f6ff] placeholder:text-slate-400 dark:placeholder:text-[#a694be]/60 outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-600/20 transition-all"
             />
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="contact-email" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+            <label htmlFor="contact-email" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-[#d8cde8] mb-1.5">
               Email Address <span className="text-rose-500">*</span>
             </label>
             <input
@@ -186,14 +186,14 @@ export function ContactForm() {
                 if (errors.email) validate();
               }}
               placeholder="you@example.com"
-              className={`w-full rounded-xl border px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all ${
+              className={`w-full rounded-xl border px-3.5 py-2.5 text-sm text-slate-900 dark:text-[#f8f6ff] dark:bg-[#1f1633] placeholder:text-slate-400 dark:placeholder:text-[#a694be]/60 outline-none transition-all ${
                 touched.email && errors.email
-                  ? 'border-rose-400 bg-rose-50/20 focus:border-rose-600'
-                  : 'border-slate-200 focus:border-violet-600 focus:ring-2 focus:ring-violet-600/20'
+                  ? 'border-rose-400 bg-rose-50/20 dark:border-rose-500/80 dark:bg-rose-950/20 focus:border-rose-600'
+                  : 'border-slate-200 dark:border-[#362453] focus:border-violet-600 focus:ring-2 focus:ring-violet-600/20'
               }`}
             />
             {touched.email && errors.email && (
-              <p id="contact-email-error" className="mt-1.5 text-xs text-rose-600 flex items-center gap-1 font-medium">
+              <p id="contact-email-error" className="mt-1.5 text-xs text-rose-600 dark:text-rose-400 flex items-center gap-1 font-medium">
                 <AlertCircle className="size-3.5 shrink-0" />
                 <span>{errors.email}</span>
               </p>
@@ -201,7 +201,7 @@ export function ContactForm() {
           </div>
 
           <div>
-            <label htmlFor="contact-phone" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+            <label htmlFor="contact-phone" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-[#d8cde8] mb-1.5">
               Phone Number
             </label>
             <input
@@ -210,13 +210,13 @@ export function ContactForm() {
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               placeholder="+94 7X XXX XXXX"
-              className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-900 outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-600/20 transition-all"
+              className="w-full rounded-xl border border-slate-200 dark:border-[#362453] bg-transparent dark:bg-[#1f1633] px-3.5 py-2.5 text-sm text-slate-900 dark:text-[#f8f6ff] placeholder:text-slate-400 dark:placeholder:text-[#a694be]/60 outline-none focus:border-violet-600 focus:ring-2 focus:ring-violet-600/20 transition-all"
             />
           </div>
         </div>
 
         <div>
-          <label htmlFor="contact-message" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
+          <label htmlFor="contact-message" className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-[#d8cde8] mb-1.5">
             How Can We Help Your Salon? <span className="text-rose-500">*</span>
           </label>
           <textarea
@@ -233,14 +233,14 @@ export function ContactForm() {
               if (errors.message) validate();
             }}
             placeholder="Tell us about your salon, staff count, branches, or questions about hardware & setup..."
-            className={`w-full rounded-xl border px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-all resize-none ${
+            className={`w-full rounded-xl border px-3.5 py-2.5 text-sm text-slate-900 dark:text-[#f8f6ff] dark:bg-[#1f1633] placeholder:text-slate-400 dark:placeholder:text-[#a694be]/60 outline-none transition-all resize-none ${
               touched.message && errors.message
-                ? 'border-rose-400 bg-rose-50/20 focus:border-rose-600'
-                : 'border-slate-200 focus:border-violet-600 focus:ring-2 focus:ring-violet-600/20'
+                ? 'border-rose-400 bg-rose-50/20 dark:border-rose-500/80 dark:bg-rose-950/20 focus:border-rose-600'
+                : 'border-slate-200 dark:border-[#362453] focus:border-violet-600 focus:ring-2 focus:ring-violet-600/20'
             }`}
           />
           {touched.message && errors.message && (
-            <p id="contact-message-error" className="mt-1.5 text-xs text-rose-600 flex items-center gap-1 font-medium">
+            <p id="contact-message-error" className="mt-1.5 text-xs text-rose-600 dark:text-rose-400 flex items-center gap-1 font-medium">
               <AlertCircle className="size-3.5 shrink-0" />
               <span>{errors.message}</span>
             </p>

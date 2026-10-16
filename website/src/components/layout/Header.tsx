@@ -125,10 +125,10 @@ export function Header() {
       ref={headerRef}
       onMouseLeave={closeDropdown}
       onMouseEnter={() => closeTimerRef.current && clearTimeout(closeTimerRef.current)}
-      className={`fixed inset-x-0 top-0 z-50 w-full transition-all duration-200 bg-white/95 dark:bg-[#25232c]/95 backdrop-blur-md ${
+      className={`fixed inset-x-0 top-0 z-50 w-full transition-all duration-200 bg-white/95 dark:bg-[#0d0915]/95 backdrop-blur-md ${
         isScrolled
-          ? 'border-b border-slate-200/90 dark:border-slate-800 shadow-xs'
-          : 'border-b border-slate-100 dark:border-slate-800/70'
+          ? 'border-b border-slate-200/90 dark:border-[#362453] shadow-xs'
+          : 'border-b border-slate-100 dark:border-[#26183d]'
       }`}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -268,13 +268,13 @@ export function Header() {
       {activeDropdown && (
         <div
           onMouseEnter={() => {}}
-          className="absolute left-0 right-0 top-full w-full border-b border-slate-200/90 dark:border-slate-700 bg-white dark:bg-[#25232c] shadow-xl z-50 animate-in fade-in slide-in-from-top-1 duration-150 max-h-[calc(100vh-5rem)] overflow-y-auto"
+          className="absolute left-0 right-0 top-full w-full border-b border-slate-200/90 dark:border-[#362453] bg-white dark:bg-[#171026] shadow-xl z-50 animate-in fade-in slide-in-from-top-1 duration-150 max-h-[calc(100vh-5rem)] overflow-y-auto"
         >
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-5 lg:gap-8 items-start">
                 {(activeDropdown === 'solutions' ? SOLUTION_COLUMNS : PRODUCT_COLUMNS).map((col) => (
                   <div key={col.heading} className="space-y-2.5">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-[#f8f6ff]">
                       {col.heading}
                     </h3>
                     <ul className="space-y-1.5">
@@ -283,13 +283,13 @@ export function Header() {
                           <Link
                             href={link.href}
                             onClick={closeDropdown}
-                            className="group flex items-center justify-between text-sm text-slate-600 dark:text-slate-300 hover:text-violet-600 dark:hover:text-violet-400 transition-colors py-0.5"
+                            className="group flex items-center justify-between text-sm text-slate-600 dark:text-[#d8cde8] hover:text-violet-600 dark:hover:text-violet-400 transition-colors py-0.5"
                           >
                             <span className="font-medium group-hover:translate-x-0.5 transition-transform">
                               {link.label}
                             </span>
                             {link.badge && (
-                              <span className="ml-1.5 shrink-0 rounded-full bg-violet-100 dark:bg-violet-950/80 px-2 py-0.5 text-[9px] font-bold text-violet-700 dark:text-violet-300">
+                              <span className="ml-1.5 shrink-0 rounded-full bg-violet-100 dark:bg-[#2a1b46] px-2 py-0.5 text-[9px] font-bold text-violet-700 dark:text-violet-300">
                                 {link.badge}
                               </span>
                             )}
@@ -300,7 +300,7 @@ export function Header() {
                   </div>
                 ))}
             </div>
-            <div className="mt-5 border-t border-slate-100 dark:border-slate-800 pt-3">
+            <div className="mt-5 border-t border-slate-100 dark:border-[#26183d] pt-3">
               <Link
                 href={activeDropdown === 'solutions' ? '/solutions' : '/features'}
                 onClick={closeDropdown}

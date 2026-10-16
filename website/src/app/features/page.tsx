@@ -204,9 +204,9 @@ export default function FeaturesPage() {
       />
 
       {/* ── Page Header / Hero ── */}
-      <section className="bg-slate-950 text-white pt-16 pb-14 border-b border-slate-800">
+      <section className="bg-[#150d24] dark:bg-[#0d0915] text-white pt-16 pb-14 border-b border-violet-950/80 dark:border-[#26183d]">
         <div className="section-container text-center max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 rounded-full bg-violet-950 border border-violet-800/60 px-3.5 py-1 text-xs font-semibold text-violet-300 mb-4">
+          <div className="inline-flex items-center gap-2 rounded-full bg-violet-950/80 border border-violet-800/60 px-3.5 py-1 text-xs font-semibold text-violet-300 mb-4">
             <Sparkles className="size-3.5 text-violet-400" />
             <span>Complete Module Overview</span>
           </div>
@@ -216,7 +216,7 @@ export default function FeaturesPage() {
             <span className="text-gradient-purple">Work Together Seamlessly</span>
           </h1>
 
-          <p className="mt-4 text-base sm:text-lg text-slate-300 leading-relaxed max-w-2xl mx-auto">
+          <p className="mt-4 text-base sm:text-lg text-slate-300 dark:text-[#d8cde8] leading-relaxed max-w-2xl mx-auto">
             From daily appointment bookings to express counter POS, inventory alerts, and automated stylist commissions — explore every capability included in Dart Smart Salon.
           </p>
 
@@ -230,7 +230,7 @@ export default function FeaturesPage() {
             </Link>
             <Link
               href="/contact"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-700 bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 text-sm font-semibold transition-all w-full sm:w-auto"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-700 dark:border-[#362453] bg-slate-900/80 dark:bg-[#171026] hover:bg-slate-800 dark:hover:bg-[#1f1633] text-white px-6 py-3 text-sm font-semibold transition-all w-full sm:w-auto"
             >
               <span>Book a Live Walkthrough</span>
             </Link>
@@ -238,8 +238,8 @@ export default function FeaturesPage() {
         </div>
 
         {/* Quick Jump Module Nav Strip */}
-        <div className="section-container mt-12 pt-6 border-t border-slate-800/80">
-          <p className="text-center text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">
+        <div className="section-container mt-12 pt-6 border-t border-slate-800/80 dark:border-[#26183d]">
+          <p className="text-center text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-[#a694be] mb-3">
             Jump Directly to Module
           </p>
           <div className="flex items-center justify-center gap-1.5 flex-wrap">
@@ -247,7 +247,7 @@ export default function FeaturesPage() {
               <a
                 key={m.id}
                 href={`#${m.id}`}
-                className="rounded-full bg-slate-900 border border-slate-800 hover:border-violet-600 hover:text-white px-3 py-1 text-xs text-slate-300 font-medium transition-colors"
+                className="rounded-full bg-slate-900/90 dark:bg-[#171026] border border-slate-800 dark:border-[#362453] hover:border-violet-500 hover:text-white px-3 py-1 text-xs text-slate-300 dark:text-[#d8cde8] font-medium transition-colors"
               >
                 {m.badge}
               </a>
@@ -260,7 +260,7 @@ export default function FeaturesPage() {
       <SystemUIShowcase />
 
       {/* ── Deep-Dive Feature Modules (Alternating Layouts) ── */}
-      <div className="py-12 bg-white">
+      <div className="py-12 bg-white dark:bg-[#0d0915]">
         <div className="section-container space-y-20 lg:space-y-28">
           {MODULE_SECTIONS.map((mod, index) => {
             const isEven = index % 2 === 1;
@@ -270,7 +270,7 @@ export default function FeaturesPage() {
               <section
                 key={mod.id}
                 id={mod.id}
-                className="scroll-mt-24 pt-4 border-t border-slate-100 first:border-t-0"
+                className="scroll-mt-24 pt-4 border-t border-slate-100 dark:border-[#26183d] first:border-t-0"
                 aria-labelledby={`feature-title-${mod.id}`}
               >
                 <div
@@ -280,19 +280,19 @@ export default function FeaturesPage() {
                 >
                   {/* Text Column */}
                   <div className={`lg:col-span-6 ${isEven ? 'lg:order-2' : 'lg:order-1'}`}>
-                    <div className="inline-flex items-center gap-2 rounded-full bg-violet-50 border border-violet-200 px-3 py-0.5 text-xs font-bold text-violet-700 mb-3">
+                    <div className="inline-flex items-center gap-2 rounded-full bg-violet-50 dark:bg-violet-950/60 border border-violet-200 dark:border-violet-800/60 px-3 py-0.5 text-xs font-bold text-violet-700 dark:text-violet-300 mb-3">
                       <Icon className="size-3.5" />
                       <span>{mod.eyebrow}</span>
                     </div>
 
                     <h2
                       id={`feature-title-${mod.id}`}
-                      className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight leading-snug"
+                      className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-[#f8f6ff] tracking-tight leading-snug"
                     >
                       {mod.title}
                     </h2>
 
-                    <p className="mt-3.5 text-sm sm:text-base text-slate-600 leading-relaxed">
+                    <p className="mt-3.5 text-sm sm:text-base text-slate-600 dark:text-[#d8cde8] leading-relaxed">
                       {mod.description}
                     </p>
 
@@ -300,8 +300,8 @@ export default function FeaturesPage() {
                     <div className="mt-6 space-y-2.5">
                       {mod.highlights.map((h, i) => (
                         <div key={i} className="flex items-start gap-2.5">
-                          <CheckCircle2 className="size-4.5 text-violet-700 shrink-0 mt-0.5" />
-                          <span className="text-xs sm:text-sm font-medium text-slate-800 leading-relaxed">
+                          <CheckCircle2 className="size-4.5 text-violet-700 dark:text-violet-400 shrink-0 mt-0.5" />
+                          <span className="text-xs sm:text-sm font-medium text-slate-800 dark:text-[#d8cde8] leading-relaxed">
                             {h}
                           </span>
                         </div>
@@ -311,7 +311,7 @@ export default function FeaturesPage() {
                     <div className="mt-7">
                       <Link
                         href="/pricing"
-                        className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-violet-700 hover:text-violet-900 transition-colors"
+                        className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-violet-700 dark:text-violet-400 hover:text-violet-900 dark:hover:text-violet-300 transition-colors"
                       >
                         <span>Try {mod.badge} with 21-Day Trial</span>
                         <ArrowRight className="size-4" />
@@ -321,7 +321,7 @@ export default function FeaturesPage() {
 
                   {/* Visual Card / Illustration Column */}
                   <div className={`lg:col-span-6 ${isEven ? 'lg:order-1' : 'lg:order-2'}`}>
-                    <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 p-6 sm:p-10 shadow-sm flex items-center justify-center min-h-[300px]">
+                    <div className="relative overflow-hidden rounded-3xl border border-slate-200 dark:border-[#362453] bg-slate-50 dark:bg-[#171026] p-6 sm:p-10 shadow-sm flex items-center justify-center min-h-[300px]">
                       <div className="relative w-full aspect-[16/11] max-w-md">
                         <Image
                           src={mod.image}
@@ -334,7 +334,7 @@ export default function FeaturesPage() {
 
                       {/* Pill Badge */}
                       <div className="absolute top-4 right-4">
-                        <span className="inline-flex items-center rounded-full bg-white border border-slate-200 px-3 py-1 text-xs font-bold text-slate-700 shadow-2xs">
+                        <span className="inline-flex items-center rounded-full bg-white dark:bg-[#1f1633] border border-slate-200 dark:border-[#362453] px-3 py-1 text-xs font-bold text-slate-700 dark:text-[#f8f6ff] shadow-2xs">
                           {mod.badge}
                         </span>
                       </div>
