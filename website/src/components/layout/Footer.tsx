@@ -8,9 +8,6 @@ import {
   Clock,
   ArrowRight,
   CheckCircle2,
-  ShieldCheck,
-  Building2,
-  Lock,
 } from 'lucide-react';
 import { Logo } from '@/components/layout/Logo';
 import {
@@ -20,7 +17,6 @@ import {
   CONTACT_PHONE_RAW,
   CONTACT_HOURS,
   COMPANY_NAME,
-  COMPANY_ADDRESS,
   WHATSAPP_URL,
 } from '@/lib/constants';
 import { loginUrl } from '@/lib/api';
@@ -40,7 +36,7 @@ export function Footer() {
   };
 
   return (
-    <footer className="overflow-x-clip bg-[#0B0F17] text-white border-t border-slate-800">
+    <footer className="overflow-x-clip bg-[#0B0F17] text-white border-t border-[#1E293B]">
       {/* ── Top Contact Highlights Bar ── */}
       <div className="border-b border-white/[0.08] bg-white/[0.02]">
         <div className="section-container py-6">
@@ -48,16 +44,16 @@ export function Footer() {
             {/* Phone */}
             <a
               href={`tel:${CONTACT_PHONE_RAW}`}
-              className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] transition-all group"
+              className="flex items-center gap-3.5 p-3 rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] transition-all group"
             >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-600 text-white shadow-xs group-hover:scale-105 transition-transform">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#7C3AED] to-[#D946EF] text-white shadow-xs group-hover:scale-105 transition-transform">
                 <Phone className="h-5 w-5" />
               </span>
               <div>
-                <span className="block text-[11px] font-semibold uppercase tracking-wider text-violet-300">
-                  Call Direct
+                <span className="block text-[11px] font-semibold uppercase tracking-wider text-[#F8B4F7]">
+                  Call Us Directly
                 </span>
-                <span className="text-sm sm:text-base font-bold text-white group-hover:text-violet-200 transition-colors">
+                <span className="text-sm sm:text-base font-bold text-white group-hover:text-[#F8B4F7] transition-colors">
                   {CONTACT_PHONE}
                 </span>
               </div>
@@ -66,29 +62,29 @@ export function Footer() {
             {/* Email */}
             <a
               href={`mailto:${CONTACT_EMAIL}`}
-              className="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] transition-all group"
+              className="flex items-center gap-3.5 p-3 rounded-2xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] transition-all group"
             >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-600 text-white shadow-xs group-hover:scale-105 transition-transform">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#7C3AED] to-[#D946EF] text-white shadow-xs group-hover:scale-105 transition-transform">
                 <Mail className="h-5 w-5" />
               </span>
               <div>
-                <span className="block text-[11px] font-semibold uppercase tracking-wider text-violet-300">
-                  Support & Inquiries
+                <span className="block text-[11px] font-semibold uppercase tracking-wider text-[#F8B4F7]">
+                  Email Support & Sales
                 </span>
-                <span className="text-sm sm:text-base font-bold text-white group-hover:text-violet-200 transition-colors">
+                <span className="text-sm sm:text-base font-bold text-white group-hover:text-[#F8B4F7] transition-colors">
                   {CONTACT_EMAIL}
                 </span>
               </div>
             </a>
 
             {/* Working Hours */}
-            <div className="hidden lg:flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-violet-300">
+            <div className="hidden lg:flex items-center gap-3.5 p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-[#F8B4F7]">
                 <Clock className="h-5 w-5" />
               </span>
               <div>
                 <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                  Customer Hours
+                  Support Hours
                 </span>
                 <span className="text-sm sm:text-base font-medium text-slate-200">
                   {CONTACT_HOURS}
@@ -100,121 +96,115 @@ export function Footer() {
       </div>
 
       {/* ── Main Footer Navigation ── */}
-      <div className="section-container py-14 lg:py-18">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-8 items-start">
+      <div className="section-container py-12 lg:py-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-8 xl:gap-12 items-start">
+          
           {/* Brand & Mission (Column 1) */}
-          <div className="lg:col-span-4 flex flex-col items-start">
+          <div className="lg:col-span-5 flex flex-col items-start">
             <Logo variant="dark" />
-
+            
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-slate-400">
-              The all-in-one salon management operating system built for modern beauty salons, spas, nail bars, and barbershops in Sri Lanka.
+              The modern salon management platform designed to streamline appointments, POS checkout, inventory, employee commissions, and business growth.
             </p>
 
-            <div className="mt-5 space-y-2 text-xs text-slate-400">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="size-4 text-emerald-400 shrink-0" />
-                <span>Dedicated Private Cloud Database</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Lock className="size-4 text-emerald-400 shrink-0" />
-                <span>PayHere Certified Secure Payments</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Building2 className="size-4 text-slate-400 shrink-0" />
-                <span>{COMPANY_ADDRESS}</span>
-              </div>
+            <div className="mt-4 text-xs text-slate-400 space-y-1">
+              <p className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#A855F7]" />
+                <span>Enterprise Cloud Infrastructure</span>
+              </p>
+              <p className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#A855F7]" />
+                <span>Dedicated Salon Data Protection</span>
+              </p>
+            </div>
+
+            {/* Social Media Links */}
+            <div className="mt-6 flex items-center gap-3">
+              <a
+                href="#"
+                aria-label="LinkedIn"
+                className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.05] hover:bg-[#7C3AED] text-slate-400 hover:text-white transition-all"
+              >
+                <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
+                  <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9v8.37H9.2V10.9H6.46M7.83 6.64a1.64 1.64 0 1 0 0 3.28 1.64 1.64 0 0 0 0-3.28Z" />
+                </svg>
+              </a>
+
+              <a
+                href="#"
+                aria-label="Facebook"
+                className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.05] hover:bg-[#7C3AED] text-slate-400 hover:text-white transition-all"
+              >
+                <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
+                  <path d="M12 2.04C6.5 2.04 2 6.53 2 12.06C2 17.06 5.66 21.21 10.44 21.96V14.96H7.9V12.06H10.44V9.85C10.44 7.34 11.93 5.96 14.22 5.96C15.31 5.96 16.45 6.15 16.45 6.15V8.62H15.19C13.95 8.62 13.56 9.39 13.56 10.18V12.06H16.34L15.89 14.96H13.56V21.96A10 10 0 0 0 22 12.06C22 6.53 17.5 2.04 12 2.04Z" />
+                </svg>
+              </a>
+
+              <a
+                href="https://www.youtube.com/shorts/nLk-zfaiQik"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="YouTube"
+                className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/[0.05] hover:bg-[#7C3AED] text-slate-400 hover:text-white transition-all"
+              >
+                <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
+                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                </svg>
+              </a>
             </div>
           </div>
 
-          {/* Product Modules (Column 2) */}
+          {/* Support & Contact (Column 2) */}
           <div className="lg:col-span-3">
-            <h3 className="text-xs font-bold tracking-wider uppercase text-white">
-              Product Modules
+            <h3 className="text-sm font-semibold tracking-wider uppercase text-white">
+              Support & Portal
             </h3>
             <ul className="mt-4 space-y-2.5 text-sm text-slate-400">
               <li>
-                <Link href="/features#appointments" className="hover:text-white transition-colors">
-                  Appointments & Calendar
+                <Link href="/#faq" className="hover:text-[#F8B4F7] transition-colors">
+                  Help Center & FAQ
                 </Link>
               </li>
               <li>
-                <Link href="/features#pos" className="hover:text-white transition-colors">
-                  Express Station POS
+                <Link href="/contact" className="hover:text-[#F8B4F7] transition-colors">
+                  Customer Support
                 </Link>
               </li>
               <li>
-                <Link href="/features#customers" className="hover:text-white transition-colors">
-                  Client CRM & Color Formulas
+                <a
+                  href={WHATSAPP_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-[#F8B4F7] transition-colors flex items-center gap-1.5"
+                >
+                  <span>WhatsApp Chat</span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#A855F7]" />
+                </a>
+              </li>
+              <li>
+                <Link href={loginUrl()} className="hover:text-[#F8B4F7] transition-colors">
+                  Salon Admin Login
                 </Link>
               </li>
               <li>
-                <Link href="/features#inventory" className="hover:text-white transition-colors">
-                  Inventory & Stock Control
-                </Link>
-              </li>
-              <li>
-                <Link href="/features#payroll" className="hover:text-white transition-colors">
-                  Stylist Commissions & Payroll
-                </Link>
-              </li>
-              <li>
-                <Link href="/features#branches" className="hover:text-white transition-colors">
-                  Multi-Branch Oversight
-                </Link>
+                <a href={`tel:${CONTACT_PHONE_RAW}`} className="hover:text-[#F8B4F7] transition-colors font-medium">
+                  {CONTACT_PHONE}
+                </a>
               </li>
             </ul>
           </div>
 
-          {/* Solutions & Company (Column 3) */}
-          <div className="lg:col-span-2">
-            <h3 className="text-xs font-bold tracking-wider uppercase text-white">
-              Company
-            </h3>
-            <ul className="mt-4 space-y-2.5 text-sm text-slate-400">
-              <li>
-                <Link href="/solutions" className="hover:text-white transition-colors">
-                  Solutions by Salon Size
-                </Link>
-              </li>
-              <li>
-                <Link href="/pricing" className="hover:text-white transition-colors">
-                  Plans & Pricing
-                </Link>
-              </li>
-              <li>
-                <Link href="/about" className="hover:text-white transition-colors">
-                  About DartCodes
-                </Link>
-              </li>
-              <li>
-                <Link href="/faq" className="hover:text-white transition-colors">
-                  FAQ & Knowledgebase
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="hover:text-white transition-colors">
-                  Contact & Live Demos
-                </Link>
-              </li>
-              <li>
-                <Link href={loginUrl()} className="hover:text-white transition-colors text-violet-300">
-                  Salon Portal Login
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Stay Updated / Newsletter (Column 4) */}
-          <div className="lg:col-span-3 flex flex-col items-start">
-            <h3 className="text-xs font-bold tracking-wider uppercase text-white">
-              Stay Informed
+          {/* Stay Updated / Newsletter (Column 3) */}
+          <div className="lg:col-span-4 flex flex-col items-start">
+            <h3 className="text-sm font-semibold tracking-wider uppercase text-white">
+              Stay Updated
             </h3>
             <p className="mt-4 text-xs leading-relaxed text-slate-400">
-              Get salon business growth tips, feature updates, and technology releases directly to your inbox.
+              Get product updates, salon growth insights and important platform releases.
             </p>
 
             <form onSubmit={handleSubscribe} className="mt-4 w-full">
-              <div className="flex h-11 w-full items-center rounded-full border border-white/10 bg-white/[0.05] pr-1 focus-within:border-violet-500 transition-colors">
+              <div className="flex h-11 w-full items-center rounded-full border border-white/10 bg-white/[0.06] pr-1 focus-within:border-[#A855F7] transition-colors">
                 <label htmlFor="footer-newsletter-email" className="sr-only">
                   Email address
                 </label>
@@ -222,39 +212,29 @@ export function Footer() {
                   id="footer-newsletter-email"
                   type="email"
                   required
-                  placeholder="Enter your email"
+                  placeholder="Your email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="h-full min-w-0 flex-1 bg-transparent px-3.5 text-xs sm:text-sm text-white outline-none placeholder:text-slate-500"
+                  className="h-full min-w-0 flex-1 bg-transparent px-3.5 text-xs sm:text-sm text-white outline-none placeholder:text-slate-400"
                 />
                 <button
                   type="submit"
                   aria-label="Subscribe to updates"
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-600 hover:bg-violet-700 text-white transition-all transform active:scale-95 shadow-xs cursor-pointer"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#7C3AED] to-[#D946EF] text-white transition-all transform active:scale-95 shadow-xs"
                 >
                   <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
 
               {subscribed && (
-                <div className="mt-2.5 flex items-center gap-1.5 text-xs text-emerald-400 animate-in fade-in">
-                  <CheckCircle2 className="h-4 w-4 shrink-0" />
-                  <span>Subscribed! We will keep you updated.</span>
+                <div className="mt-2 flex items-center gap-1.5 text-xs text-[#F8B4F7] animate-in fade-in">
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                  <span>Thank you for subscribing!</span>
                 </div>
               )}
             </form>
-
-            <div className="mt-5">
-              <a
-                href={WHATSAPP_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-xs text-emerald-400 hover:text-emerald-300 font-semibold"
-              >
-                <span>Need immediate help? WhatsApp us ↗</span>
-              </a>
-            </div>
           </div>
+
         </div>
       </div>
 
@@ -271,18 +251,18 @@ export function Footer() {
 
           <ul className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
             <li>
-              <Link href="/privacy" className="hover:text-white transition-colors">
+              <Link href="/privacy" className="hover:text-[#F8B4F7] transition-colors">
                 Privacy Policy
               </Link>
             </li>
             <li>
-              <Link href="/terms" className="hover:text-white transition-colors">
+              <Link href="/terms" className="hover:text-[#F8B4F7] transition-colors">
                 Terms of Service
               </Link>
             </li>
             <li>
-              <Link href="/faq" className="hover:text-white transition-colors">
-                Support
+              <Link href="/privacy" className="hover:text-[#F8B4F7] transition-colors">
+                Cookie Policy
               </Link>
             </li>
           </ul>

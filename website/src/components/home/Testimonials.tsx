@@ -1,7 +1,5 @@
-'use client';
-
-import Image from 'next/image';
-import { Star, CheckCircle, TrendingUp, Clock, Shield, Quote } from 'lucide-react';
+import { Star, CheckCircle, TrendingUp, Clock, Shield } from 'lucide-react';
+import { SectionHeading } from '@/components/ui/SectionHeading';
 
 interface TestimonialItem {
   name: string;
@@ -12,7 +10,7 @@ interface TestimonialItem {
   metric: string;
   metricLabel: string;
   icon: typeof TrendingUp;
-  avatar: string;
+  initials: string;
 }
 
 const TESTIMONIALS: TestimonialItem[] = [
@@ -22,11 +20,11 @@ const TESTIMONIALS: TestimonialItem[] = [
     salon: 'Luxe Hair Studio',
     location: 'Colombo 07',
     quote:
-      'Dart Smart Salon completely streamlined our daily reception. Booking conflicts dropped to zero and staff commissions calculate automatically without any monthly accounting headache.',
+      'Dart Smart Salon completely streamlined our daily reception. Our booking conflicts dropped to zero and staff commissions calculate automatically without any monthly headache.',
     metric: '+38%',
     metricLabel: 'Revenue Efficiency',
     icon: TrendingUp,
-    avatar: '/testimonials/avatar-1.jpg',
+    initials: 'KL',
   },
   {
     name: 'Nadeesha Perera',
@@ -34,11 +32,11 @@ const TESTIMONIALS: TestimonialItem[] = [
     salon: 'Glow Beauty Lounge',
     location: 'Kandy',
     quote:
-      'The multi-device sync is brilliant. Stylists update client job cards on tablets while I monitor total collections and net profit live on my phone. Sub-5s POS checkout keeps clients moving effortlessly.',
+      'The multi-device sync is a lifesaver. Stylists update client job cards on tablets at their stations while I monitor total collections and net profit live on my phone.',
     metric: '40% Faster',
     metricLabel: 'Station Checkout',
     icon: Clock,
-    avatar: '/testimonials/avatar-2.jpg',
+    initials: 'NP',
   },
   {
     name: 'Chamath Fernando',
@@ -46,44 +44,31 @@ const TESTIMONIALS: TestimonialItem[] = [
     salon: 'Urban Waves Salon & Spa',
     location: 'Galle & Mount Lavinia',
     quote:
-      'Managing inventory across two locations used to take entire weekends. Now GRN, low-stock alerts, and billing happen in one unified system. It is by far the most reliable salon platform in Sri Lanka.',
+      'Managing inventory across multiple branches used to take whole weekends. Now GRN, stock alerts, and billing happen in one unified system. Unmatched value for Sri Lankan salons.',
     metric: '99.9%',
     metricLabel: 'Stock Accuracy',
     icon: Shield,
-    avatar: '/testimonials/avatar-3.jpg',
+    initials: 'CF',
   },
 ];
 
 export function Testimonials() {
   return (
-    <section className="py-18 lg:py-24 bg-slate-50/60" aria-labelledby="testimonials-heading">
+    <section className="py-20 lg:py-28 bg-slate-50/60" aria-labelledby="testimonials-heading">
       <div className="section-container">
-        <div className="text-center max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-2 rounded-full bg-violet-100/70 border border-violet-200 px-3.5 py-1 text-xs font-semibold text-violet-700 mb-3.5">
-            <span className="size-1.5 rounded-full bg-violet-700" />
-            <span>Proven Salon Results</span>
-          </div>
+        <SectionHeading
+          eyebrow="Customer Stories"
+          title="Trusted by Fast-Growing Salons Across Sri Lanka"
+          description="See how salon owners, managers, and stylists use Dart Smart Salon to eliminate administrative chaos and grow profits."
+        />
 
-          <h2
-            id="testimonials-heading"
-            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 leading-tight"
-          >
-            Trusted by Premier Salons <br className="hidden sm:inline" />
-            <span className="text-gradient-purple">Across Sri Lanka</span>
-          </h2>
-
-          <p className="mt-3.5 text-base text-slate-600 leading-relaxed">
-            Real feedback from salon directors, stylists, and managers operating high-volume salons daily.
-          </p>
-        </div>
-
-        <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-14 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {TESTIMONIALS.map((t, idx) => {
             const Icon = t.icon;
             return (
               <div
                 key={idx}
-                className="group relative flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-7 shadow-2xs transition-all duration-200 hover:-translate-y-1 hover:border-violet-300 hover:shadow-lg hover:shadow-slate-900/5"
+                className="group relative flex flex-col justify-between rounded-3xl border border-slate-200/80 bg-white p-7 sm:p-8 card-shadow transition-all duration-300 hover:-translate-y-1 hover:border-[#10b981]/40 hover:shadow-xl"
               >
                 <div>
                   {/* Rating Stars & Verified Badge */}
@@ -98,52 +83,39 @@ export function Testimonials() {
                         />
                       ))}
                     </div>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200">
-                      <CheckCircle className="size-3" />
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[#EDE9FE] px-2.5 py-0.5 text-[11px] font-bold text-[#7C3AED] border border-[#DDD6FE]">
+                      <CheckCircle className="h-3 w-3" />
                       Verified Salon
                     </span>
                   </div>
 
-                  {/* Quote Icon */}
-                  <div className="mt-5 mb-2">
-                    <Quote className="size-6 text-violet-300" />
-                  </div>
-
                   {/* Testimonial Quote */}
-                  <blockquote>
+                  <blockquote className="mt-5">
                     <p className="text-sm sm:text-base leading-relaxed text-slate-700 font-normal">
                       &ldquo;{t.quote}&rdquo;
                     </p>
                   </blockquote>
                 </div>
 
-                <div className="mt-8 pt-5 border-t border-slate-100">
+                <div className="mt-8 pt-6 border-t border-slate-100">
                   {/* Metric Pill */}
-                  <div className="mb-4 inline-flex items-center gap-1.5 rounded-lg bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-700">
-                    <Icon className="size-3.5" />
+                  <div className="mb-4 inline-flex items-center gap-2 rounded-xl bg-[#EDE9FE] px-3 py-1.5 text-xs font-bold text-[#7C3AED]">
+                    <Icon className="h-3.5 w-3.5" />
                     <span>
                       {t.metric} {t.metricLabel}
                     </span>
                   </div>
 
-                  {/* Author Details with avatar image */}
+                  {/* Author Details */}
                   <div className="flex items-center gap-3">
-                    <div className="relative shrink-0 size-11 rounded-full overflow-hidden ring-2 ring-violet-100">
-                      <Image
-                        src={t.avatar}
-                        alt={t.name}
-                        fill
-                        sizes="44px"
-                        className="object-cover"
-                        unoptimized
-                      />
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#7C3AED] to-[#D946EF] text-sm font-bold text-white shadow-xs">
+                      {t.initials}
                     </div>
                     <div>
                       <div className="text-sm font-bold text-slate-900">{t.name}</div>
                       <div className="text-xs text-slate-500">
-                        {t.role} · <strong className="text-slate-700 font-semibold">{t.salon}</strong>
+                        {t.role} · <span className="text-slate-700 font-medium">{t.salon}</span> ({t.location})
                       </div>
-                      <div className="text-[11px] text-violet-700 font-medium mt-0.5">{t.location}</div>
                     </div>
                   </div>
                 </div>

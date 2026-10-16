@@ -78,15 +78,15 @@ export function FeatureMarquee() {
   return (
     <div
       aria-label="System features live ticker"
-      className="relative w-full overflow-hidden border-t border-slate-800/80 bg-slate-950 py-3.5 sm:py-4"
+      className="relative w-full overflow-hidden border-t border-[#DDD6FE]/80 bg-white/75 backdrop-blur-md py-4 sm:py-5 shadow-[0_-4px_25px_rgba(124,58,237,0.04)]"
     >
       {/* ── Left & Right Edge Vignette Fades ── */}
       <div
-        className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 sm:w-28 bg-gradient-to-r from-slate-950 to-transparent"
+        className="pointer-events-none absolute inset-y-0 left-0 z-10 w-20 sm:w-32 bg-gradient-to-r from-white via-white/80 to-transparent"
         aria-hidden="true"
       />
       <div
-        className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 sm:w-28 bg-gradient-to-l from-slate-950 to-transparent"
+        className="pointer-events-none absolute inset-y-0 right-0 z-10 w-20 sm:w-32 bg-gradient-to-l from-white via-white/80 to-transparent"
         aria-hidden="true"
       />
 
@@ -98,32 +98,32 @@ export function FeatureMarquee() {
           return (
             <div
               key={`${item.text}-${index}`}
-              className="flex items-center shrink-0 mx-3 sm:mx-4 group/item cursor-default"
+              className="flex items-center shrink-0 mx-3.5 sm:mx-4.5 group/item cursor-default"
             >
               {/* Feature Capsule */}
-              <div className="flex items-center gap-2.5 rounded-full bg-slate-900/90 border border-slate-800 px-4 py-2 shadow-xs transition-all duration-200 group-hover/item:border-violet-700/60 group-hover/item:bg-slate-800">
-                {/* Violet Icon Squircle */}
-                <span className="flex size-6 sm:size-7 items-center justify-center rounded-full bg-violet-950 text-violet-400 shrink-0">
-                  <Icon className="size-3.5" />
+              <div className="flex items-center gap-3 rounded-full bg-white/95 border border-[#DDD6FE]/85 px-4.5 sm:px-5 py-2.5 sm:py-3 shadow-xs transition-all duration-300 group-hover/item:border-[#7C3AED] group-hover/item:shadow-lg group-hover/item:shadow-purple-500/10 group-hover/item:-translate-y-0.5">
+                {/* Purple Icon Squircle */}
+                <span className="flex size-7 sm:size-8 items-center justify-center rounded-full bg-[#EDE9FE] text-[#7C3AED] transition-transform duration-300 group-hover/item:scale-110 shrink-0">
+                  <Icon className="size-4" />
                 </span>
 
                 {/* Feature Name */}
-                <span className="text-xs sm:text-[13px] font-semibold text-slate-200 whitespace-nowrap group-hover/item:text-white transition-colors">
+                <span className="text-xs sm:text-sm font-bold text-[#0F172A] whitespace-nowrap group-hover/item:text-[#7C3AED] transition-colors tracking-tight">
                   {item.text}
                 </span>
 
-                {/* Accent Pill */}
-                <span className="rounded-full bg-slate-800 border border-slate-700/60 px-2 py-0.5 text-[10px] font-bold text-violet-300 whitespace-nowrap">
+                {/* Small Accent Pill */}
+                <span className="rounded-full bg-[#F5F3FF] border border-[#DDD6FE] px-2.5 py-1 text-[10px] sm:text-[11px] font-semibold text-[#7C3AED] whitespace-nowrap">
                   {item.badge}
                 </span>
               </div>
 
               {/* Scissors Divider Icon */}
               <div
-                className="flex items-center pl-3 sm:pl-4 text-slate-700 group-hover/item:text-violet-500 transition-colors"
+                className="flex items-center pl-3.5 sm:pl-4.5 text-[#A855F7] group-hover/item:text-[#7C3AED] transition-colors"
                 aria-hidden="true"
               >
-                <Scissors className="size-3.5 transform -rotate-45 opacity-60" />
+                <Scissors className="size-4 transform -rotate-45 opacity-70" />
               </div>
             </div>
           );

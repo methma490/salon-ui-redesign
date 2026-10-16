@@ -1,7 +1,6 @@
 import { Footer } from '@/components/layout/Footer';
 import { Header } from '@/components/layout/Header';
 import { WhatsAppWidget } from '@/components/ui/WhatsAppWidget';
-import { ScrollToTop } from '@/components/ui/ScrollToTop';
 
 export function MarketingShell({ children }: { children: React.ReactNode }) {
   return (
@@ -10,7 +9,6 @@ export function MarketingShell({ children }: { children: React.ReactNode }) {
       <main>{children}</main>
       <Footer />
       <WhatsAppWidget />
-      <ScrollToTop />
     </>
   );
 }
