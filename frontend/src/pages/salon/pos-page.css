@@ -3160,13 +3160,23 @@
 
     .pos-branch-select {
       width: auto;
-      max-width: 46%;
+      max-width: 52%;
       margin-left: auto;
     }
 
     .pos-branch-select button[role='combobox'] {
-      width: auto;
+      width: 100%;
       max-width: 100%;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .pos-branch-select button[role='combobox'] span {
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+      display: block;
     }
 
     .pos-toolbar-grid > .pos-btn-outline {
@@ -3257,7 +3267,7 @@
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding-bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(9.5rem + env(safe-area-inset-bottom, 0px));
   }
 
   .pos-wizard-step {
@@ -3388,12 +3398,24 @@
   .pos-wizard-payment-panel .pos-mix-mobile-trigger { display: block; width: 100%; margin-top: 0.65rem; border: 1px solid color-mix(in srgb, var(--pos-primary) 24%, white); border-radius: 10px; padding: 0.7rem; background: var(--pos-primary-light); color: var(--pos-primary); font-size: 0.74rem; font-weight: 700; text-align: left; }
   .pos-wizard-error { margin: 0 0 0.75rem; }
 
-  .pos-wizard-footer { position: fixed; z-index: 30; right: 0; bottom: 0; left: 0; display: flex; align-items: center; gap: 0.45rem; border-top: 1px solid #e5e9ef; padding: 0.65rem 0.75rem calc(0.65rem + env(safe-area-inset-bottom, 0px)); background: rgba(255,255,255,0.97); box-shadow: 0 -5px 20px rgba(15,23,42,0.06); }
-  .pos-wizard-back, .pos-wizard-save, .pos-wizard-continue { display: inline-flex; min-height: 2.9rem; align-items: center; justify-content: center; gap: 0.35rem; border-radius: 11px; padding: 0 0.75rem; font-size: 0.74rem; font-weight: 700; white-space: nowrap; }
-  .pos-wizard-back { flex: 0 0 auto; border: 1px solid #dce3ed; background: #fff; color: #15213a; }
-  .pos-wizard-save { flex: 0 0 auto; border: 1px solid color-mix(in srgb, var(--pos-primary) 24%, white); background: var(--pos-primary-light); color: var(--pos-primary); }
+  .pos-wizard-footer {
+    position: fixed !important;
+    z-index: 45 !important;
+    right: 0 !important;
+    bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px)) !important;
+    left: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.45rem !important;
+    border-top: 1px solid #e5e9ef !important;
+    padding: 0.65rem 0.75rem !important;
+    background: rgba(255, 255, 255, 0.98) !important;
+    backdrop-filter: blur(8px) !important;
+    box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.08) !important;
+  }
+  .pos-wizard-save, .pos-wizard-continue { display: inline-flex; min-height: 2.9rem; align-items: center; justify-content: center; gap: 0.35rem; border-radius: 12px; padding: 0 0.85rem; font-size: 0.8rem; font-weight: 700; white-space: nowrap; text-overflow: ellipsis; cursor: pointer; }
+  .pos-wizard-save { flex: 0 0 auto; min-width: 6.5rem; border: 1px solid color-mix(in srgb, var(--pos-primary) 24%, white); background: var(--pos-primary-light); color: var(--pos-primary); }
   .pos-wizard-save:disabled { opacity: 0.45; }
-  .pos-wizard-footer.is-step-1 .pos-wizard-save { flex: 1; }
   .pos-wizard-continue { min-width: 0; flex: 1; border: 0; background: var(--pos-primary); color: #fff; }
   .pos-wizard-continue:disabled { opacity: 0.48; }
   .pos-wizard-continue span { font-size: 1.1rem; }
@@ -3402,23 +3424,27 @@
   .pos-mix-sheet,
   .pos-draft-history-sheet {
     position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
-    right: auto !important;
-    bottom: auto !important;
-    transform: translate(-50%, -50%) !important;
-    --tw-translate-x: -50% !important;
-    --tw-translate-y: -50% !important;
+    inset: 0 !important;
+    margin: auto !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    transform: none !important;
+    -webkit-transform: none !important;
     translate: none !important;
-    width: calc(100% - 1.5rem) !important;
-    max-width: min(28rem, calc(100% - 1.5rem)) !important;
-    max-height: calc(100dvh - 1.5rem) !important;
-    margin: 0 !important;
+    --tw-translate-x: 0 !important;
+    --tw-translate-y: 0 !important;
+    width: min(28rem, calc(100% - 1.5rem)) !important;
+    max-width: calc(100% - 1.5rem) !important;
+    height: fit-content !important;
+    max-height: calc(100dvh - 2rem) !important;
     padding: 1.5rem 1.25rem !important;
     border-radius: 18px !important;
     box-shadow: 0 20px 40px rgba(15, 23, 42, 0.22) !important;
     overflow-y: auto !important;
     box-sizing: border-box !important;
+    z-index: 100 !important;
   }
   .pos-employee-sheet-handle { display: none !important; }
   .pos-new-customer-sheet::before { display: none !important; }
@@ -3585,26 +3611,33 @@
   }
 }
 
-/* Dedicated POS New Customer Modal */
+/* Dedicated POS New Customer Modal, Employee Sheet & E-bill */
 .pos-new-customer-modal,
 .pos-ebill-dialog,
-.pos-assign-sheet {
+.pos-assign-sheet,
+.pos-employee-sheet,
+.pos-mix-sheet,
+.pos-draft-history-sheet {
   position: fixed !important;
-  top: 50% !important;
-  left: 50% !important;
-  right: auto !important;
-  bottom: auto !important;
+  inset: 0 !important;
+  margin: auto !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
   transform: none !important;
-  translate: -50% -50% !important;
-  --tw-translate-x: -50% !important;
-  --tw-translate-y: -50% !important;
+  -webkit-transform: none !important;
+  translate: none !important;
+  --tw-translate-x: 0 !important;
+  --tw-translate-y: 0 !important;
   width: min(440px, calc(100% - 1.5rem)) !important;
   max-width: calc(100% - 1.5rem) !important;
-  margin: 0 !important;
+  height: fit-content !important;
+  max-height: calc(100dvh - 2rem) !important;
   box-sizing: border-box !important;
-  max-height: calc(100dvh - 1.5rem) !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
+  z-index: 100 !important;
 }
 
 .pos-new-customer-modal {
@@ -3614,12 +3647,13 @@
   color: #0f172a !important;
   border: 1px solid #e2e8f0 !important;
   box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25) !important;
-  z-index: 100 !important;
 }
 
 .pos-assign-sheet {
   width: min(28rem, calc(100% - 1.5rem)) !important;
   padding: 0 !important;
+  border-radius: 1rem !important;
+  background: #ffffff !important;
 }
 
 .pos-ebill-dialog {
@@ -3631,23 +3665,26 @@
 @media (max-width: 767px), (max-width: 1024px) and (orientation: portrait) {
   .pos-new-customer-modal,
   .pos-assign-sheet,
-  .pos-ebill-dialog,
   .pos-mix-sheet,
   .pos-draft-history-sheet,
   .pos-employee-sheet {
-    top: 0.75rem !important;
-    right: 0.75rem !important;
-    bottom: auto !important;
-    left: 0.75rem !important;
-    width: auto !important;
-    max-width: none !important;
-    height: auto !important;
-    max-height: calc(100dvh - 1.5rem - env(safe-area-inset-bottom, 0px)) !important;
-    margin: 0 !important;
+    position: fixed !important;
+    inset: 0 !important;
+    margin: auto !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
     transform: none !important;
+    -webkit-transform: none !important;
     translate: none !important;
     --tw-translate-x: 0 !important;
     --tw-translate-y: 0 !important;
+    width: min(440px, calc(100% - 1.5rem)) !important;
+    max-width: calc(100% - 1.5rem) !important;
+    height: fit-content !important;
+    max-height: calc(100dvh - 2rem - env(safe-area-inset-bottom, 0px)) !important;
+    z-index: 100 !important;
   }
 }
 

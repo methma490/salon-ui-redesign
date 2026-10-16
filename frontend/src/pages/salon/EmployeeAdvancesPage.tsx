@@ -1,5 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Banknote,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Search,
+  SlidersHorizontal,
+} from 'lucide-react';
 import { tenantApi, type Employee, type EmployeeAdvance, type PaginatedResponse } from '@/api/tenant.api';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,7 +29,6 @@ import {
   OpsEditButton,
   OpsError,
   OpsLoading,
-  OpsPageHeader,
   SimpleForm,
   SimpleFormDialog,
 } from './salon-ops-ui';
@@ -71,6 +79,7 @@ const emptyForm = (employeeId = ''): AdvanceForm => ({
 });
 
 export default function EmployeeAdvancesPage() {
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ACTIVE');
@@ -173,39 +182,159 @@ export default function EmployeeAdvancesPage() {
     });
   };
 
-  const activeAdvances = advances.filter((a) => a.status === 'ACTIVE');
-  const totalOutstanding = activeAdvances.reduce((sum, a) => sum + a.remainingBalance, 0);
-
   if (isLoading) return <OpsLoading />;
   if (isError) return <OpsError message={getErrorMessage(error)} onRetry={() => void refetch()} />;
 
   const systemDefaultPct = Number(payrollSettings?.maxSalaryAdvancePercentage ?? 50);
 
   return (
-    <div className="emp-page payroll-page">
-      <OpsPageHeader
-        title="Advance Payments"
-        subtitle="Record salary advances. Full amount is deducted from the same month’s payroll."
-        action={
-          <button type="button" className="emp-btn emp-btn-primary" onClick={() => openCreate()}>
-            + Give Advance
-          </button>
-        }
-      />
+    <div className="emp-page payroll-page max-w-4xl mx-auto py-2 sm:py-4 px-2 sm:px-4">
+      {/* Back button to Payroll Hub */}
+      <div className="flex items-center gap-2 mb-3">
+        <button
+          type="button"
+          onClick={() => navigate('/salon/payroll')}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors py-1 px-2 rounded-lg hover:bg-slate-100"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          <span>Back to Payroll</span>
+        </button>
+      </div>
 
-      <div className="emp-stats">
-        <div className="emp-stat">
-          <div className="emp-stat-value">{advances.length}</div>
-          <div className="emp-stat-label">Advances</div>
+      {/* Screen 4 Hero Banner */}
+      <div className="flex items-center gap-3.5 p-4 sm:p-5 bg-white rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.03)] mb-4">
+        <div className="w-12 h-12 rounded-2xl bg-[#fff1f2] border border-[#ffe4e6] flex items-center justify-center shrink-0">
+          <Banknote className="w-6 h-6 text-[#f43f5e]" strokeWidth={2.2} />
         </div>
-        <div className="emp-stat">
-          <div className="emp-stat-value">{activeAdvances.length}</div>
-          <div className="emp-stat-label">Active</div>
+        <div>
+          <h1 className="text-xl sm:text-2xl font-extrabold text-[#0f172a] tracking-tight">
+            Salary Advances
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
+            Manage employee salary advances
+          </p>
         </div>
-        <div className="emp-stat">
-          <div className="emp-stat-value">{formatMoneyLkr(totalOutstanding, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-          <div className="emp-stat-label">Outstanding</div>
+      </div>
+
+      {/* Screen 4 Status Filter Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 mb-3">
+        {[
+          { label: 'All', value: 'all' },
+          { label: 'Pending', value: 'CANCELLED' },
+          { label: 'Approved', value: 'ACTIVE' },
+          { label: 'Paid', value: 'COMPLETED' },
+        ].map((pill) => (
+          <button
+            key={pill.value}
+            type="button"
+            onClick={() => setStatusFilter(pill.value)}
+            className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
+              statusFilter === pill.value
+                ? 'bg-[#7c3aed] text-white shadow-xs'
+                : 'bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50'
+            }`}
+          >
+            {pill.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Screen 4 Search + Add Advance Action */}
+      <div className="space-y-3 mb-4">
+        <div className="relative">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search employees..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-10 py-2.5 text-xs sm:text-sm bg-white rounded-xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-[#7c3aed]"
+          />
+          <button
+            type="button"
+            onClick={() => setStatusFilter('all')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+          </button>
         </div>
+
+        <button
+          type="button"
+          onClick={() => openCreate()}
+          className="w-full py-2.5 sm:py-3 px-4 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-bold rounded-xl shadow-[0_2px_8px_rgba(124,58,237,0.25)] flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
+        >
+          <Plus className="w-4 h-4 stroke-[2.5]" />
+          <span>Add Advance</span>
+        </button>
+      </div>
+
+      {/* Screen 4 Advances List Cards */}
+      <div className="space-y-2.5 mb-6">
+        {advances.length === 0 ? (
+          <div className="p-8 text-center bg-white rounded-2xl border border-slate-100 text-xs text-slate-400">
+            No advance payments found for selected criteria.
+          </div>
+        ) : (
+          advances.map((advance) => {
+            const initials = advance.employeeName
+              ? advance.employeeName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+              : 'EM';
+            return (
+              <div
+                key={advance.id}
+                onClick={() => setDetailId(advance.id)}
+                className="flex items-center justify-between p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:border-purple-200 transition-all cursor-pointer active:scale-[0.99]"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-purple-50 border border-purple-100 text-[#7c3aed] font-bold text-xs flex items-center justify-center shrink-0">
+                    {initials}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-900 leading-tight truncate">
+                      {advance.employeeName}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-0.5 truncate">
+                      {advance.employeeCode || 'Stylist'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-end shrink-0 ml-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm font-bold text-slate-900">
+                      {formatMoneyLkr(Number(advance.originalAmount))}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                  </div>
+                  <span className="text-[11px] text-slate-400 mt-0.5">
+                    {new Date(advance.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
+                  <div className="mt-1">
+                    {advance.status === 'ACTIVE' && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                        Approved
+                      </span>
+                    )}
+                    {advance.status === 'COMPLETED' && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        Paid
+                      </span>
+                    )}
+                    {advance.status !== 'ACTIVE' && advance.status !== 'COMPLETED' && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                        Pending
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
 
       <div className="emp-panel">

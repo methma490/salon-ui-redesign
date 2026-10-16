@@ -4,12 +4,8 @@
  * browser modal dialogs, overlays, transforms, or scroll containers from clipping the preview.
  */
 export function printReceipt(elementId = 'pos-printable-invoice'): void {
-  const isMobile =
-    typeof window !== 'undefined' &&
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
   const element = document.getElementById(elementId);
-  if (!element || isMobile) {
+  if (!element) {
     window.print();
     return;
   }
@@ -19,12 +15,14 @@ export function printReceipt(elementId = 'pos-printable-invoice'): void {
     iframe = document.createElement('iframe');
     iframe.id = 'receipt-print-frame';
     iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
+    iframe.style.top = '-9999px';
+    iframe.style.left = '-9999px';
+    iframe.style.width = '600px';
+    iframe.style.height = '800px';
     iframe.style.border = '0';
-    iframe.style.visibility = 'hidden';
+    iframe.style.opacity = '0';
+    iframe.style.pointerEvents = 'none';
+    iframe.style.zIndex = '-9999';
     document.body.appendChild(iframe);
   }
 
@@ -614,12 +612,18 @@ export function printReceipt(elementId = 'pos-printable-invoice'): void {
   `);
   doc.close();
 
-  setTimeout(() => {
+  const doPrint = () => {
     try {
-      iframe?.contentWindow?.focus();
-      iframe?.contentWindow?.print();
-    } catch (e) {
-      window.print();
+      if (iframe?.contentWindow) {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        return;
+      }
+    } catch {
+      // Fallback
     }
-  }, 200);
+    window.print();
+  };
+
+  setTimeout(doPrint, 150);
 }

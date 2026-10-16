@@ -229,6 +229,18 @@ export default function PosPage() {
     wizardBodyRef.current?.scrollTo({ top: 0 });
   }, [mobileWizardStep]);
 
+  useEffect(() => {
+    const handleAppBack = (e: Event) => {
+      if (mobileWizardStep > 1) {
+        e.preventDefault();
+        setFormError(null);
+        setMobileWizardStep((prev) => (prev - 1) as 1 | 2 | 3 | 4);
+      }
+    };
+    window.addEventListener('app:back', handleAppBack);
+    return () => window.removeEventListener('app:back', handleAppBack);
+  }, [mobileWizardStep]);
+
   const [branchId, setBranchId] = useState<string>(() =>
     ribbonBranchId !== 'all' ? ribbonBranchId : activeBranches[0]?.id || '',
   );
@@ -1749,19 +1761,46 @@ export default function PosPage() {
         </div>
 
         <footer className={`pos-wizard-footer ${mobileWizardStep === 1 ? 'is-step-1' : ''}`}>
-          {mobileWizardStep > 1 && <button type="button" className="pos-wizard-back" onClick={() => setMobileWizardStep((mobileWizardStep - 1) as 1 | 2 | 3 | 4)}>← <span>Back</span></button>}
-          <button type="button" className="pos-wizard-save" disabled={draftDisabled} onClick={saveDraftSale}><FileText size={17} /> Save Draft</button>
-          {mobileWizardStep > 1 && (
-            mobileWizardStep < 4 ? (
-              <button
-                type="button"
-                className="pos-wizard-continue"
-                disabled={(mobileWizardStep === 2 || mobileWizardStep === 3) && cartCount === 0}
-                onClick={() => { setFormError(null); setMobileWizardStep((mobileWizardStep + 1) as 2 | 3 | 4); }}
-              >{mobileWizardStep === 2 ? 'Continue to Details' : 'Continue to Payment'} <span>→</span></button>
-            ) : (
-              <button type="button" className="pos-wizard-continue" disabled={completeDisabled} onClick={completeSale}>{createSaleMutation.isPending ? 'Processing…' : `Complete Sale · ${formatMoneyLkr(total)}`} <span>→</span></button>
-            )
+          <button
+            type="button"
+            className="pos-wizard-save"
+            disabled={draftDisabled}
+            onClick={saveDraftSale}
+          >
+            <FileText size={17} /> Save Draft
+          </button>
+          {mobileWizardStep === 1 ? (
+            <button
+              type="button"
+              className="pos-wizard-continue"
+              onClick={() => {
+                setFormError(null);
+                setMobileWizardStep(2);
+              }}
+            >
+              Continue to Services <span>→</span>
+            </button>
+          ) : mobileWizardStep < 4 ? (
+            <button
+              type="button"
+              className="pos-wizard-continue"
+              disabled={(mobileWizardStep === 2 || mobileWizardStep === 3) && cartCount === 0}
+              onClick={() => {
+                setFormError(null);
+                setMobileWizardStep((mobileWizardStep + 1) as 2 | 3 | 4);
+              }}
+            >
+              {mobileWizardStep === 2 ? 'Continue to Details' : 'Continue to Payment'} <span>→</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="pos-wizard-continue"
+              disabled={completeDisabled}
+              onClick={completeSale}
+            >
+              {createSaleMutation.isPending ? 'Processing…' : 'Complete Sale'} <span>→</span>
+            </button>
           )}
         </footer>
       </main>

@@ -161,7 +161,13 @@ export default function SaleDetailsPage() {
           <button
             type="button"
             className="sale-print-btn"
-            onClick={() => printReceipt('sale-printable-invoice')}
+            onClick={() => {
+              try {
+                printReceipt('sale-printable-invoice');
+              } catch {
+                window.print();
+              }
+            }}
           >
             <Printer size={16} />
             Print invoice

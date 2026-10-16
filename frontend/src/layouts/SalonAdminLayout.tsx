@@ -3,16 +3,18 @@ import {
   Boxes,
   CalendarDays,
   ChevronDown,
+  ChevronLeft,
   Coins,
   CreditCard,
   FileText,
   GitBranch,
+  Home,
   LayoutDashboard,
   LogOut,
-  Menu,
   Package,
   PanelLeftClose,
   PanelLeftOpen,
+  Printer,
   Receipt,
   Scissors,
   Settings,
@@ -24,6 +26,8 @@ import {
   Users,
   UserSquare2,
   Wallet,
+  Calendar,
+  Grid2X2,
   type LucideIcon,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -33,8 +37,7 @@ import { tenantApi } from '@/api/tenant.api';
 import { Button } from '@/components/ui/button';
 import { NotificationBell } from '@/components/salon/NotificationBell';
 import { Separator } from '@/components/ui/separator';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { SalonBranchProvider } from '@/contexts/SalonBranchContext';
+import { SalonBranchProvider, useSalonBranch } from '@/contexts/SalonBranchContext';
 import { TenantThemeProvider } from '@/contexts/TenantThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { resolveUploadUrl } from '@/lib/upload-url';
@@ -298,6 +301,13 @@ const navGroups: NavGroup[] = [
     children: [
       {
         to: '/salon/payroll',
+        label: 'Payroll Hub',
+        icon: Wallet,
+        feature: 'PAYROLL',
+        module: 'PAYROLL',
+      },
+      {
+        to: '/salon/payroll/runs',
         label: 'Run Payroll',
         icon: Wallet,
         feature: 'PAYROLL',
@@ -600,9 +610,9 @@ function SalonAdminHeader({
   salonName,
   salonLogoUrl,
   onLogout,
-  enabledFeatures,
+  enabledFeatures: _enabledFeatures,
   roles,
-  permissions,
+  permissions: _permissions,
   collapsed = false,
   onToggleCollapse,
 }: {
@@ -617,9 +627,14 @@ function SalonAdminHeader({
 }) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { branchId, branches } = useSalonBranch();
   const [profileOpen, setProfileOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+
+  const currentBranch = branches.find((b) => b.id === branchId);
+  const branchName = branchId === 'all' || !currentBranch ? 'All Branches' : currentBranch.name;
+  const isSubPage = location.pathname !== '/salon/dashboard' && location.pathname !== '/salon/more';
 
   const roleLabel = primaryRoleLabel(roles);
 
@@ -700,62 +715,50 @@ function SalonAdminHeader({
   return (
     <header className="salon-app-header flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-3 md:h-16 md:px-6">
       <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-3">
-        {/* Mobile: menu + brand */}
-        <div className="flex min-w-0 flex-1 items-center gap-2 md:hidden">
-          <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="h-9 w-9 shrink-0">
-                <Menu className="h-4 w-4" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="salon-mobile-sheet">
-              <div className="salon-mobile-sheet-header">
-                <SalonBrand salonName={salonName} logoUrl={salonLogoUrl} />
-              </div>
-              <div className="salon-mobile-sheet-nav">
-                <NavItems
-                  enabledFeatures={enabledFeatures}
-                  roles={roles}
-                  permissions={permissions}
-                  onNavigate={() => setMenuOpen(false)}
-                />
-              </div>
-              <div className="salon-mobile-sheet-footer">
-                {user?.email && (
-                  <div className="mb-3 px-1">
-                    {roleLabel && (
-                      <p className="truncate text-xs font-medium text-foreground">{roleLabel}</p>
-                    )}
-                    <p className="truncate text-xs text-muted-foreground">{user.email}</p>
-                  </div>
-                )}
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    onLogout();
-                  }}
-                >
-                  <LogOut className="h-4 w-4" />
-                  Logout
-                </Button>
-              </div>
-            </SheetContent>
-          </Sheet>
+        {/* Mobile & Tablet: Screen 1-4 Top Header with Menu/Back and Branch Dropdown */}
+        <div className="flex min-w-0 flex-1 items-center justify-between xl:hidden">
+          {/* Left button: < Back on sub-pages; on root pages, keep balanced spacer without hamburger icon */}
+          <div className="flex items-center shrink-0">
+            {isSubPage ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const event = new CustomEvent('app:back', { cancelable: true });
+                  const notPrevented = window.dispatchEvent(event);
+                  if (notPrevented) {
+                    navigate(-1);
+                  }
+                }}
+                className="w-9 h-9 rounded-xl border border-slate-200/80 bg-white flex items-center justify-center text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
+                title="Back"
+                aria-label="Back"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+            ) : (
+              <div className="w-9 shrink-0" />
+            )}
+          </div>
 
-          {/* Centered Mobile Salon Brand */}
-          <div className="flex min-w-0 flex-1 items-center justify-center gap-2 pr-2">
-            <SalonLogo logoUrl={salonLogoUrl} size="sm" />
-            <div className="min-w-0 text-left">
-              <p className="salon-mobile-header-title truncate">{salonName}</p>
+          {/* Centered Brand: Salon Logo + Name + All Branches ⌵ dropdown */}
+          <div className="flex flex-col items-center justify-center min-w-0 px-2 text-center">
+            <div className="flex items-center justify-center gap-1.5">
+              <SalonLogo logoUrl={salonLogoUrl} size="sm" />
+              <span className="font-bold text-sm text-slate-900 leading-tight truncate">{salonName}</span>
+            </div>
+            <div className="text-[10px] text-slate-500 font-medium flex items-center justify-center gap-0.5 leading-none mt-0.5">
+              <span className="truncate max-w-[120px]">{branchName}</span>
+              <ChevronDown className="w-2.5 h-2.5 text-slate-400 shrink-0" />
             </div>
           </div>
+
+          {/* Spacer to balance left button */}
+          <div className="w-9 shrink-0" />
         </div>
 
         {/* Desktop: expand a collapsed sidebar from the top header ribbon */}
         {collapsed && onToggleCollapse && (
-          <div className="hidden items-center md:flex">
+          <div className="hidden items-center xl:flex">
             <button
               type="button"
               className="salon-header-expand-btn"
@@ -840,7 +843,7 @@ function SalonAdminLayoutInner() {
     <div className="flex h-dvh overflow-hidden bg-background">
       <aside
         className={cn(
-          'salon-sidebar-aside hidden h-dvh shrink-0 flex-col border-r border-border md:flex',
+          'salon-sidebar-aside hidden h-dvh shrink-0 flex-col border-r border-border xl:flex',
           collapsed ? 'is-collapsed w-[72px]' : 'w-[260px]',
         )}
       >
@@ -922,7 +925,7 @@ function SalonAdminLayoutInner() {
 
         <main
           ref={mainRef}
-          className="salon-admin-main min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-[#f8fafc] p-4 md:p-6"
+          className="salon-admin-main min-h-0 flex-1 overflow-x-hidden overflow-y-auto bg-[#f8fafc] p-3 sm:p-4 md:p-6 pb-20 xl:pb-6"
         >
           <SalonPermissionGate>
             <div className="admin-page-content">
@@ -930,6 +933,104 @@ function SalonAdminLayoutInner() {
             </div>
           </SalonPermissionGate>
         </main>
+
+        {/* Mobile & Tablet App Bottom Dock - Exactly Matching Screenshot Reference */}
+        <nav
+          className="xl:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/70 px-2.5 py-1.5 flex items-center justify-around shadow-[0_-4px_20px_rgba(0,0,0,0.04)]"
+          aria-label="Mobile and Tablet Navigation"
+        >
+          <NavLink
+            to="/salon/dashboard"
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all ${
+                isActive
+                  ? 'bg-[#ede9fe] text-[#7c3aed] font-bold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <Home className={`w-5 h-5 ${isActive ? 'text-[#7c3aed] fill-[#7c3aed]' : 'text-slate-500'}`} />
+                <span className="text-[10px] mt-0.5 font-semibold">Dashboard</span>
+              </>
+            )}
+          </NavLink>
+
+          <NavLink
+            to="/salon/pos"
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all ${
+                isActive
+                  ? 'bg-[#ede9fe] text-[#7c3aed] font-bold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <Printer className={`w-5 h-5 ${isActive ? 'text-[#7c3aed]' : 'text-slate-500'}`} />
+                <span className="text-[10px] mt-0.5 font-semibold">POS</span>
+              </>
+            )}
+          </NavLink>
+
+          <NavLink
+            to="/salon/appointments"
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all ${
+                isActive
+                  ? 'bg-[#ede9fe] text-[#7c3aed] font-bold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <Calendar className={`w-5 h-5 ${isActive ? 'text-[#7c3aed]' : 'text-slate-500'}`} />
+                <span className="text-[10px] mt-0.5 font-semibold">Appointments</span>
+              </>
+            )}
+          </NavLink>
+
+          <NavLink
+            to="/salon/sales"
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl transition-all ${
+                isActive
+                  ? 'bg-[#ede9fe] text-[#7c3aed] font-bold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <Receipt className={`w-5 h-5 ${isActive ? 'text-[#7c3aed]' : 'text-slate-500'}`} />
+                <span className="text-[10px] mt-0.5 font-semibold">Transactions</span>
+              </>
+            )}
+          </NavLink>
+
+          <NavLink
+            to="/salon/more"
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center py-1 px-2.5 rounded-2xl transition-all ${
+                isActive
+                  ? 'text-[#ea580c] font-bold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <div className={`p-1 rounded-xl transition-all ${isActive ? 'bg-[#ffedd5] text-[#ea580c]' : ''}`}>
+                  <Grid2X2 className={`w-5 h-5 ${isActive ? 'text-[#ea580c]' : 'text-slate-500'}`} />
+                </div>
+                <span className={`text-[10px] mt-0.5 font-semibold ${isActive ? 'text-[#ea580c]' : 'text-slate-500'}`}>More</span>
+              </>
+            )}
+          </NavLink>
+        </nav>
       </div>
     </div>
   );

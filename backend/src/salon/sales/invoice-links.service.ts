@@ -175,16 +175,75 @@ export class InvoiceLinksService {
   /**
    * Fetches the invoice link details for a given sale.
    */
-  async getLinkForSale(tenantId: string, saleId: string) {
-    const link = await this.prisma.invoiceLink.findFirst({
+  async getLinkForSale(tenantId: string, schemaName: string, saleId: string) {
+    let link = await this.prisma.invoiceLink.findFirst({
       where: { saleId, tenantId },
       orderBy: { createdAt: 'desc' },
     });
 
-    if (!link) return null;
+    let customerPhone = link?.customerPhone ?? null;
+    let saleNumber = link?.saleNumber ?? null;
+
+    // If customer phone is missing from link (or link not yet created), query the tenant schema
+    if (!customerPhone) {
+      try {
+        const sales = tenantTable(schemaName, 'sales');
+        const customers = tenantTable(schemaName, 'customers');
+        const rows = await this.tenantSchemaService.withTenantSchema(schemaName, ({ tx }) =>
+          tx.$queryRawUnsafe<Array<{ saleNumber: string; customerPhone: string | null }>>(
+            `SELECT s.sale_number AS "saleNumber", c.phone AS "customerPhone"
+             FROM ${sales} s
+             LEFT JOIN ${customers} c ON s.customer_id = c.id
+             WHERE s.id = $1::uuid LIMIT 1`,
+            saleId,
+          ),
+        );
+        if (rows.length > 0) {
+          customerPhone = rows[0].customerPhone ?? null;
+          if (!saleNumber) {
+            saleNumber = rows[0].saleNumber ?? null;
+          }
+          // Backfill phone onto existing invoice link if present
+          if (link && customerPhone && !link.customerPhone) {
+            link = await this.prisma.invoiceLink.update({
+              where: { id: link.id },
+              data: { customerPhone },
+            });
+          }
+        }
+      } catch (err: any) {
+        this.logger.warn(`Could not resolve customer phone for sale ${saleId}: ${err.message}`);
+      }
+    }
+
+    if (!link) {
+      // Auto-create the link so the modal can immediately provide the ebill URL and phone
+      try {
+        link = await this.createOrGetLink({
+          tenantId,
+          schemaName,
+          saleId,
+          saleNumber: saleNumber ?? undefined,
+          customerPhone: customerPhone ?? undefined,
+        });
+      } catch {
+        return {
+          id: '',
+          token: '',
+          ebillUrl: '',
+          customerPhone,
+          smsStatus: 'NOT_SENT' as const,
+          smsSentAt: null,
+          smsAttempts: 0,
+          smsFailureReason: null,
+          expiresAt: null,
+        };
+      }
+    }
 
     return {
       ...link,
+      customerPhone: link.customerPhone || customerPhone,
       ebillUrl: this.buildEbillUrl(link.token),
     };
   }

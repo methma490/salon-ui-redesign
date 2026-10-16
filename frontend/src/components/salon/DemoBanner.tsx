@@ -13,7 +13,10 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { tenantApi } from '@/api/tenant.api';
 
-export function DemoBanner() {
+/**
+ * Hook to execute the demo data reset logic with modal confirmation.
+ */
+export function useResetDemoData() {
   const { user, refreshUser } = useAuth();
   const queryClient = useQueryClient();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -21,10 +24,6 @@ export function DemoBanner() {
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
   const isDemo = Boolean(user?.tenant?.isDemo);
-
-  if (!isDemo) {
-    return null;
-  }
 
   const handleReset = async () => {
     try {
@@ -52,97 +51,111 @@ export function DemoBanner() {
     }
   };
 
+  const dialog = (
+    <Dialog open={confirmOpen} onOpenChange={(open) => !isResetting && setConfirmOpen(open)}>
+      <DialogContent className="sm:max-w-[440px]">
+        <DialogHeader>
+          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10 text-amber-500">
+            <AlertTriangle className="h-6 w-6" />
+          </div>
+          <DialogTitle className="text-center text-lg font-semibold">
+            Reset Demo Data?
+          </DialogTitle>
+          <DialogDescription className="text-center text-sm text-muted-foreground pt-1">
+            All changes made during this demonstration will be removed and the original sample data will be restored.
+          </DialogDescription>
+        </DialogHeader>
+
+        <DialogFooter className="mt-4 flex flex-row items-center justify-end gap-2 sm:justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isResetting}
+            onClick={() => setConfirmOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            disabled={isResetting}
+            className="bg-amber-600 hover:bg-amber-700 text-white font-medium"
+            onClick={() => void handleReset()}
+          >
+            {isResetting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Restoring Data…
+              </>
+            ) : (
+              'Reset Demo'
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
+  return {
+    isDemo,
+    isResetting,
+    feedbackMessage,
+    openConfirm: () => setConfirmOpen(true),
+    dialog,
+  };
+}
+
+/**
+ * Settings page header demo reset action button.
+ */
+export function SettingsDemoResetAction() {
+  const { isDemo, isResetting, feedbackMessage, openConfirm, dialog } = useResetDemoData();
+
+  if (!isDemo) return null;
+
   return (
     <>
-      <div
-        role="region"
-        aria-label="Demo Sales Environment"
-        className="relative z-10 w-full border-b border-amber-200 bg-gradient-to-r from-amber-50 via-amber-100/50 to-amber-50 px-4 py-2 text-amber-950 shadow-xs transition-all"
-      >
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 text-sm">
-          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-2.5 py-0.5 text-[11px] font-bold tracking-wider text-white shadow-xs">
-              <Sparkles className="h-3 w-3" />
-              <span>DEMO ACCOUNT</span>
-            </span>
+      <div className="settings-hero-demo-action flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/25 px-2.5 py-0.5 text-[11px] font-bold tracking-wider text-amber-200 border border-amber-300/30">
+          <Sparkles className="h-3 w-3 text-amber-300" />
+          <span>DEMO</span>
+        </span>
 
-            <span className="text-xs sm:text-sm font-medium text-amber-900 leading-snug">
-              This is a sales demo environment. Changes can be restored to the original demo state anytime.
-            </span>
+        <button
+          type="button"
+          disabled={isResetting}
+          onClick={openConfirm}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300/40 bg-white/10 hover:bg-white/20 text-white text-xs font-semibold px-3 py-1.5 backdrop-blur-xs transition-all cursor-pointer shadow-xs"
+          title="Restore baseline sample data"
+        >
+          {isResetting ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-300" />
+              <span>Restoring…</span>
+            </>
+          ) : (
+            <>
+              <RotateCcw className="h-3.5 w-3.5 text-amber-300" />
+              <span>Reset Demo Data</span>
+            </>
+          )}
+        </button>
 
-            {feedbackMessage && (
-              <span className="inline-flex items-center rounded bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800 border border-emerald-300">
-                {feedbackMessage}
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={isResetting}
-              className="group inline-flex items-center gap-1.5 rounded-lg border-amber-300 bg-white hover:bg-amber-100/80 text-amber-900 text-xs h-7 px-3 font-semibold shadow-xs transition-all"
-              onClick={() => setConfirmOpen(true)}
-            >
-              {isResetting ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-600" />
-                  <span>Restoring…</span>
-                </>
-              ) : (
-                <>
-                  <RotateCcw className="h-3.5 w-3.5 text-amber-600 transition-transform duration-200 group-hover:-rotate-45" />
-                  <span>Reset Demo Data</span>
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
+        {feedbackMessage && (
+          <span className="inline-flex items-center rounded-lg bg-emerald-500/20 border border-emerald-400/40 px-2 py-0.5 text-xs font-semibold text-emerald-200">
+            {feedbackMessage}
+          </span>
+        )}
       </div>
 
-      <Dialog open={confirmOpen} onOpenChange={(open) => !isResetting && setConfirmOpen(open)}>
-        <DialogContent className="sm:max-w-[440px]">
-          <DialogHeader>
-            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10 text-amber-500">
-              <AlertTriangle className="h-6 w-6" />
-            </div>
-            <DialogTitle className="text-center text-lg font-semibold">
-              Reset Demo Data?
-            </DialogTitle>
-            <DialogDescription className="text-center text-sm text-muted-foreground pt-1">
-              All changes made during this demonstration will be removed and the original sample data will be restored.
-            </DialogDescription>
-          </DialogHeader>
-
-          <DialogFooter className="mt-4 flex flex-row items-center justify-end gap-2 sm:justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isResetting}
-              onClick={() => setConfirmOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              disabled={isResetting}
-              className="bg-amber-600 hover:bg-amber-700 text-white font-medium"
-              onClick={() => void handleReset()}
-            >
-              {isResetting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Restoring Data…
-                </>
-              ) : (
-                'Reset Demo'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {dialog}
     </>
   );
+}
+
+/**
+ * Default global DemoBanner - removed from global top layout per user request.
+ * Kept here if ever needed on specific demo views.
+ */
+export function DemoBanner() {
+  return null;
 }

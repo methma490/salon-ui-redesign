@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   AlertCircle,
   Truck,
@@ -8,6 +8,7 @@ import {
   Search,
   Clock,
   CheckCircle2,
+  ChevronLeft,
 } from 'lucide-react';
 import { suppliersApi } from '@/api/suppliers.api';
 import { tenantApi, type Branch } from '@/api/tenant.api';
@@ -195,6 +196,17 @@ export default function SupplierOutstandingPage() {
 
   return (
     <div className="emp-page space-y-6">
+      {/* Back button to Suppliers & GRN hub */}
+      <div className="flex items-center gap-2 mb-2">
+        <Link
+          to="/salon/suppliers-hub"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors py-1.5 px-2.5 rounded-lg hover:bg-slate-100"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          <span>Back to Suppliers &amp; GRN</span>
+        </Link>
+      </div>
+
       <OpsPageHeader
         title="Supplier Outstanding & Credit"
         subtitle="Track open supplier balances, overdue purchase invoices, and settle supplier credits."

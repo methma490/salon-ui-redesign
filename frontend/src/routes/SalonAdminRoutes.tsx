@@ -13,23 +13,31 @@ import CustomersPage from '@/pages/salon/CustomersPage';
 import AppointmentsPage from '@/pages/salon/AppointmentsPage';
 import ServiceCategoriesPage from '@/pages/salon/ServiceCategoriesPage';
 import ServicesPage from '@/pages/salon/ServicesPage';
+import ServicesHubPage from '@/pages/salon/ServicesHubPage';
 import ProductCategoriesPage from '@/pages/salon/ProductCategoriesPage';
 import ProductsPage from '@/pages/salon/ProductsPage';
 import StockPage from '@/pages/salon/StockPage';
 import PosPage from '@/pages/salon/PosPage';
 import SalesPage from '@/pages/salon/SalesPage';
+import SalesHubPage from '@/pages/salon/SalesHubPage';
 import SaleDetailsPage from '@/pages/salon/SaleDetailsPage';
 import QuotationsPage from '@/pages/salon/QuotationsPage';
 import QuotationFormPage from '@/pages/salon/QuotationFormPage';
 import QuotationDetailPage from '@/pages/salon/QuotationDetailPage';
 import ExpensesPage from '@/pages/salon/ExpensesPage';
+import ExpensesHubPage from '@/pages/salon/ExpensesHubPage';
 import ExpenseCategoriesPage from '@/pages/salon/ExpenseCategoriesPage';
+import InventoryHubPage from '@/pages/salon/InventoryHubPage';
+import SuppliersHubPage from '@/pages/salon/SuppliersHubPage';
 import PayrollRunsPage from '@/pages/salon/PayrollRunsPage';
+import PayrollHubPage from '@/pages/salon/PayrollHubPage';
 import EmployeeLoansPage from '@/pages/salon/EmployeeLoansPage';
 import EmployeeAdvancesPage from '@/pages/salon/EmployeeAdvancesPage';
 import PayslipsPage from '@/pages/salon/PayslipsPage';
 import ReportsPage from '@/pages/salon/ReportsPage';
+import ReportsHubPage from '@/pages/salon/ReportsHubPage';
 import SettingsPage from '@/pages/salon/SettingsPage';
+import MorePage from '@/pages/salon/MorePage';
 import SubscriptionPage from '@/pages/salon/SubscriptionPage';
 import SuppliersPage from '@/pages/salon/SuppliersPage';
 import SupplierDetailPage from '@/pages/salon/SupplierDetailPage';
@@ -55,10 +63,13 @@ export default function SalonAdminRoutes() {
           <Route path="appointments" element={<AppointmentsPage />} />
           <Route path="service-categories" element={<ServiceCategoriesPage />} />
           <Route path="services" element={<ServicesPage />} />
+          <Route path="services-hub" element={<ServicesHubPage />} />
           <Route path="product-categories" element={<ProductCategoriesPage />} />
           <Route path="products" element={<ProductsPage />} />
           <Route path="stock" element={<StockPage />} />
+          <Route path="inventory-hub" element={<InventoryHubPage />} />
           <Route path="suppliers" element={<SuppliersPage />} />
+          <Route path="suppliers-hub" element={<SuppliersHubPage />} />
           <Route path="suppliers/:id" element={<SupplierDetailPage />} />
           <Route path="grns" element={<GrnsPage />} />
           <Route path="grns/new" element={<GrnFormPage />} />
@@ -68,6 +79,7 @@ export default function SalonAdminRoutes() {
           <Route path="supplier-outstanding" element={<SupplierOutstandingPage />} />
           <Route path="pos" element={<PosPage />} />
           <Route path="sales" element={<SalesPage />} />
+          <Route path="sales-hub" element={<SalesHubPage />} />
           <Route path="sales/:id" element={<SaleDetailsPage />} />
           <Route path="quotations" element={<QuotationsPage />} />
           <Route path="quotations/new" element={<QuotationFormPage />} />
@@ -75,14 +87,18 @@ export default function SalonAdminRoutes() {
           <Route path="quotations/:id" element={<QuotationDetailPage />} />
           <Route path="sales-analytics" element={<Navigate to="/salon/reports?tab=sales" replace />} />
           <Route path="expenses" element={<ExpensesPage />} />
+          <Route path="expenses-hub" element={<ExpensesHubPage />} />
           <Route path="expense-categories" element={<ExpenseCategoriesPage />} />
-          <Route path="payroll" element={<PayrollRunsPage />} />
+          <Route path="payroll" element={<PayrollHubPage />} />
+          <Route path="payroll/runs" element={<PayrollRunsPage />} />
           <Route path="payroll/advances" element={<EmployeeAdvancesPage />} />
           <Route path="payroll/loans" element={<EmployeeLoansPage />} />
           <Route path="payroll/payslips" element={<PayslipsPage />} />
           <Route path="reports" element={<ReportsPage />} />
+          <Route path="reports-hub" element={<ReportsHubPage />} />
           <Route path="subscription" element={<SubscriptionPage />} />
           <Route path="settings" element={<SettingsPage />} />
+          <Route path="more" element={<MorePage />} />
         </Route>
       </Route>
     </Routes>

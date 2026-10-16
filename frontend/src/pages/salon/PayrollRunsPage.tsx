@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ChevronLeft } from 'lucide-react';
 import {
   tenantApi,
   type PaginatedResponse,
@@ -246,6 +248,17 @@ export default function PayrollRunsPage() {
     <div
       className={`emp-page settings-shell payroll-page${showStickyActions ? ' has-sticky-actions' : ''}`}
     >
+      {/* Back button to Payroll Hub */}
+      <div className="flex items-center gap-2 mb-3">
+        <Link
+          to="/salon/payroll"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors py-1.5 px-2.5 rounded-lg hover:bg-slate-100"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          <span>Back to Payroll</span>
+        </Link>
+      </div>
+
       <header className="pr-hero">
         <div className="pr-hero-main">
           <div className="pr-hero-icon" aria-hidden>

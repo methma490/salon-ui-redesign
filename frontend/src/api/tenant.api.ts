@@ -766,6 +766,7 @@ export interface SaleListItem {
   branchName: string;
   customerId: string | null;
   customerName: string | null;
+  customerPhone?: string | null;
   cashierId: string | null;
   cashierName: string | null;
   createdAt: string;
