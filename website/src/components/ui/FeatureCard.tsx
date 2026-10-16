@@ -13,22 +13,26 @@ type FeatureCardProps = {
 export function FeatureCard({ icon: Icon, title, description, href }: FeatureCardProps) {
   const inner = (
     <>
-      <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-xl bg-[#EDE9FE] text-[#7C3AED] group-hover:bg-[#7C3AED] group-hover:text-white transition-colors shadow-xs">
+      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-700 group-hover:bg-violet-700 group-hover:text-white transition-colors shadow-2xs">
         <Icon className="h-5 w-5" strokeWidth={2} aria-hidden />
       </div>
-      <h3 className="font-bold text-lg text-[#0F172A] group-hover:text-[#7C3AED] transition-colors">{title}</h3>
-      <p className="mt-2 flex-1 text-sm leading-relaxed text-[#64748B]">{description}</p>
+      <h3 className="font-bold text-base sm:text-lg text-slate-900 group-hover:text-violet-700 transition-colors">
+        {title}
+      </h3>
+      <p className="mt-1.5 flex-1 text-xs sm:text-sm leading-relaxed text-slate-600">
+        {description}
+      </p>
       {href ? (
-        <span className="mt-6 inline-flex items-center gap-1 text-sm font-semibold text-[#7C3AED] group-hover:translate-x-0.5 transition-all">
-          Learn more
-          <ArrowUpRight className="h-4 w-4" strokeWidth={2} aria-hidden />
+        <span className="mt-5 inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-violet-700 group-hover:translate-x-0.5 transition-all">
+          Explore
+          <ArrowUpRight className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
         </span>
       ) : null}
     </>
   );
 
   const className =
-    'group glass-card flex h-full flex-col rounded-2xl border border-[#FCE7F3] bg-white/95 p-6 transition-all duration-200 hover:-translate-y-1 hover:border-[#DDD6FE] hover:shadow-xl hover:shadow-purple-900/5';
+    'group flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs transition-all duration-150 hover:-translate-y-1 hover:border-violet-300 hover:shadow-md';
 
   if (href) {
     return (
