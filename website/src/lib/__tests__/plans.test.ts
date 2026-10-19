@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   calculateDiscount,
+  DEFAULT_FALLBACK_PLANS,
   doesFeatureDiffer,
   featureLabel,
   formatPrice,
@@ -214,12 +215,13 @@ describe('Pricing & Plan Comparison Tests', () => {
 
     it('includes all default fallback plans with real data', () => {
       assert.ok(DEFAULT_FALLBACK_PLANS.length >= 4);
-      const codes = DEFAULT_FALLBACK_PLANS.map((p) => p.code);
+      const codes = DEFAULT_FALLBACK_PLANS.map((plan: PublicPlan) => plan.code);
       assert.ok(codes.includes('SILVER'));
       assert.ok(codes.includes('GOLD'));
       assert.ok(codes.includes('PLATINUM'));
       assert.ok(codes.includes('ENTERPRISE'));
     });
+
   });
 
   describe('5. Duplicate Plan Selection Prevention Logic', () => {
