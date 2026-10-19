@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { bootstrapDatabase } from '../src/database/bootstrap-database';
 
 async function main() {
@@ -6,8 +7,7 @@ async function main() {
   console.log('✓ Database setup completed successfully!');
 }
 
-main()
-  .catch((err) => {
-    console.error('Database setup failed:', err);
-    process.exit(1);
-  });
+main().catch((err: unknown): void => {
+  console.error('Database setup failed:', err);
+  process.exitCode = 1;
+});

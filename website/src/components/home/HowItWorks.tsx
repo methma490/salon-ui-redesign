@@ -19,7 +19,7 @@ const STEPS: StepItem[] = [
     step: 'Step 1',
     number: '01',
     title: 'Create Your Account',
-    description: 'Sign up in under 2 minutes — full access with zero credit card required.',
+    description: 'Sign up in 2 minutes. No card required.',
     highlight: '21-day full access trial',
     image: '/images/steps/step-1-account.jpg',
     icon: UserPlus,
@@ -28,7 +28,7 @@ const STEPS: StepItem[] = [
     step: 'Step 2',
     number: '02',
     title: 'Set Up Services & Staff',
-    description: 'Add your service menu, pricing tiers, and stylist commission rules.',
+    description: 'Add services, prices, and commission rules.',
     highlight: 'Custom menu & commissions',
     image: '/images/steps/step-2-services-staff.jpg',
     icon: Settings2,
@@ -37,7 +37,7 @@ const STEPS: StepItem[] = [
     step: 'Step 3',
     number: '03',
     title: 'Run Daily Operations',
-    description: 'Book conflict-free appointments and process sub-5s station checkouts.',
+    description: 'Book appointments and check out in seconds.',
     highlight: 'Express POS & smart calendar',
     image: '/images/steps/step-3-operations.jpg',
     icon: CalendarCheck,
@@ -46,7 +46,7 @@ const STEPS: StepItem[] = [
     step: 'Step 4',
     number: '04',
     title: 'Track Profit & Grow',
-    description: 'Review real-time net profits, stylist leaderboards, and client returns.',
+    description: 'Track profit, staff performance, and returning clients.',
     highlight: 'Live revenue & KPI reports',
     image: '/images/steps/step-4-growth.jpg',
     icon: TrendingUp,
@@ -61,7 +61,7 @@ export function HowItWorks() {
         <div className="text-center max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-2 rounded-full bg-violet-100/70 dark:bg-violet-950/60 border border-violet-200 dark:border-violet-800/60 px-3.5 py-1 text-xs font-semibold text-violet-700 dark:text-violet-300 mb-3.5">
             <span className="size-1.5 rounded-full bg-violet-700 dark:bg-violet-400" />
-            <span>Effortless Onboarding</span>
+            <span>Get started</span>
           </div>
 
           <h2
@@ -72,7 +72,7 @@ export function HowItWorks() {
           </h2>
 
           <p className="mt-3.5 text-base text-slate-600 dark:text-[#d8cde8] leading-relaxed">
-            From setup to live register checkout in minutes — built for speed on busy salon floors.
+            Set up in minutes and run your salon from one place.
           </p>
         </div>
 
@@ -145,7 +145,7 @@ export function HowItWorks() {
             href="/pricing"
             className="inline-flex items-center justify-center gap-2 rounded-full bg-violet-700 hover:bg-violet-800 px-7 py-3.5 text-sm font-semibold text-white shadow-xs hover:shadow-md transition-all active:scale-[0.98] w-full sm:w-auto"
           >
-            <span>Start Free 21-Day Trial Today</span>
+            <span>Start free 21-day trial</span>
             <ArrowRight className="size-4" />
           </Link>
         </div>

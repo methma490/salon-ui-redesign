@@ -31,7 +31,7 @@ export function FAQPreview() {
           </h2>
 
           <p className="mt-3.5 text-base text-slate-600 dark:text-[#d8cde8] leading-relaxed max-w-md">
-            Everything you need to know about setting up Dart Smart Salon, data security, hardware compatibility, and starting your free trial.
+            Quick answers about setup, security, hardware, and your free trial.
           </p>
 
           <div className="mt-8">
@@ -39,7 +39,7 @@ export function FAQPreview() {
               href="/contact"
               className="inline-flex items-center justify-center gap-2 rounded-full bg-violet-700 hover:bg-violet-800 text-white px-6 py-3 text-sm font-semibold shadow-xs hover:shadow-md transition-all active:scale-[0.98] w-full sm:w-auto"
             >
-              <span>Have a Custom Question? Talk to Us</span>
+              <span>Ask us a question</span>
               <ArrowRight className="size-4" />
             </Link>
           </div>
@@ -99,7 +99,7 @@ export function FAQPreview() {
               href="/faq"
               className="text-xs font-semibold text-violet-700 dark:text-violet-400 hover:text-violet-900 dark:hover:text-violet-300 inline-flex items-center gap-1"
             >
-              <span>View all questions on FAQ page</span>
+              <span>View all FAQs</span>
               <ArrowRight className="size-3.5" />
             </Link>
           </div>

@@ -33,15 +33,15 @@ export const metadata: Metadata = buildMetadata({
 const MODULE_SECTIONS = [
   {
     id: 'appointments',
-    eyebrow: 'Front Desk & Reception',
-    title: 'Visual Appointment Calendar & Scheduling',
+    eyebrow: 'Appointments',
+    title: 'Appointment calendar',
     description:
-      'Eliminate double-booking chaos with color-coded stylist schedule columns, customizable service durations, and automated client SMS and WhatsApp reminders.',
+      'Schedule staff, set service times, and send SMS or WhatsApp reminders.',
     highlights: [
-      'Multi-stylist side-by-side day, week, and monthly views',
-      'Double-booking protection with automatic room/chair conflict checks',
-      'Automated 24-hour SMS & WhatsApp reminder pings to cut no-shows',
-      'Rapid drag-and-drop reschedule with client notification in seconds',
+      'Day, week, and month views for every stylist',
+      'Prevent double bookings across chairs and rooms',
+      'Send SMS and WhatsApp reminders',
+      'Reschedule appointments and notify clients',
     ],
     image: '/images/features/feat-calendar.jpg',
     badge: 'Zero Conflicts',
@@ -49,15 +49,15 @@ const MODULE_SECTIONS = [
   },
   {
     id: 'pos',
-    eyebrow: 'Point of Sale & Billing',
-    title: 'Express Station POS & Invoicing',
+    eyebrow: 'Checkout',
+    title: 'Fast checkout and billing',
     description:
-      'Fast counter checkout engineered for peak salon rush hours. Process multi-service tickets, split payments across cards and cash, apply promo codes, and print thermal receipts in under 5 seconds.',
+      'Check out multiple services, split payments, apply discounts, and print receipts in under 5 seconds.',
     highlights: [
-      'Sub-5 second checkout designed for high station turnover',
-      'Flexible split-tender payments (Cash, Credit Card, Mobile Pay)',
-      'Direct integration with standard 80mm/58mm thermal receipt printers',
-      'Paperless digital receipts sent straight to client WhatsApp',
+      'Complete checkout in under 5 seconds',
+      'Split cash, card, and mobile payments',
+      'Print receipts on standard thermal printers',
+      'Send digital receipts by WhatsApp',
     ],
     image: '/images/features/feat-pos.jpg',
     badge: 'Sub-5s Checkout',
@@ -65,15 +65,15 @@ const MODULE_SECTIONS = [
   },
   {
     id: 'customers',
-    eyebrow: 'Client CRM & Retention',
-    title: 'Client Profiles, History & Formula Dossiers',
+    eyebrow: 'Client profiles',
+    title: 'Client history and formulas',
     description:
-      'Build enduring client loyalty. Track personal color formulations, bleach ratios, hair treatments, allergies, visit history, and total lifetime spend in a single secure dossier.',
+      'Keep formulas, allergies, treatments, visits, and spending in one client profile.',
     highlights: [
-      'Detailed chemical and color formula notes with photo attachments',
-      'Complete chronological service history and product purchase records',
-      'Allergy, sensitivity, and client preference alerts at booking time',
-      'VIP tags and automated retention tracking for recurring clients',
+      'Save color formulas and photos',
+      'Review service and purchase history',
+      'See allergy and preference alerts',
+      'Tag VIPs and track returning clients',
     ],
     image: '/images/features/feat-crm.jpg',
     badge: 'Formula Cards',
@@ -81,15 +81,15 @@ const MODULE_SECTIONS = [
   },
   {
     id: 'services',
-    eyebrow: 'Service Catalog',
-    title: 'Customizable Service Menu & Bridal Packages',
+    eyebrow: 'Services',
+    title: 'Service menu and packages',
     description:
-      'Structure your complete service offering with tiered stylist pricing (Junior, Senior, Master), custom service add-ons, required preparation buffers, and multi-service packages.',
+      'Set prices by staff level, add service options, and bundle treatments into packages.',
     highlights: [
-      'Tiered stylist pricing based on seniority and experience level',
-      'Configurable prep and cleanup buffer intervals between bookings',
-      'Bundled packages (e.g. Bridal packages, Hair spa + blowdry specials)',
-      'Categorized menus for hair, nails, aesthetics, and spa treatments',
+      'Set prices by staff level',
+      'Add prep and cleanup time to bookings',
+      'Create bridal and treatment packages',
+      'Organize hair, nail, beauty, and spa services',
     ],
     image: '/images/features/feat-services.jpg',
     badge: 'Tiered Pricing',
@@ -97,15 +97,15 @@ const MODULE_SECTIONS = [
   },
   {
     id: 'inventory',
-    eyebrow: 'Inventory & Supply',
-    title: 'Stock Management & Back-Bar Consumption',
+    eyebrow: 'Inventory',
+    title: 'Stock and product use',
     description:
-      'Keep retail shelves stocked and back-bar professional treatment supplies monitored. Automatic stock deductions as services are billed, low-inventory notifications, and supplier purchase orders.',
+      'Track retail and salon supplies, get low-stock alerts, and manage supplier orders.',
     highlights: [
-      'Separate tracking for retail sales stock and internal back-bar salon usage',
-      'Instant low-stock alerts before essential hair colors and shampoos run out',
-      'Goods Received Notes (GRN) logging with vendor cost ledgers',
-      'Barcode scanner compatibility for fast annual stock auditing',
+      'Track retail stock and salon supply use separately',
+      'Get alerts when stock is low',
+      'Record deliveries and supplier costs',
+      'Scan barcodes during stock counts',
     ],
     image: '/images/features/feat-inventory.jpg',
     badge: 'Auto Deductions',
@@ -113,15 +113,15 @@ const MODULE_SECTIONS = [
   },
   {
     id: 'staff',
-    eyebrow: 'Staff & Team',
-    title: 'Staff Rosters, Permissions & Attendance',
+    eyebrow: 'Staff',
+    title: 'Staff, shifts, and attendance',
     description:
-      'Manage stylists, colorists, assistants, and receptionists seamlessly. Define granular role permissions, assign weekly working rosters, and monitor daily check-in times.',
+      'Manage staff access, weekly shifts, and daily attendance.',
     highlights: [
-      'Custom role permissions (Admins see financials, stylists see only their clients)',
-      'Flexible weekly shift schedules and holiday roster planning',
-      'Individual staff logins for desktop terminals, tablets, and smartphones',
-      'Live daily staff attendance and active service status tracking',
+      'Control what each role can see',
+      'Plan weekly shifts and holidays',
+      'Give each team member a secure login',
+      'Track attendance and active services',
     ],
     image: '/images/features/feat-staff.jpg',
     badge: 'Role Security',
@@ -129,15 +129,15 @@ const MODULE_SECTIONS = [
   },
   {
     id: 'payroll',
-    eyebrow: 'Commissions & Payroll',
-    title: 'Automated Commission Math & Salary Advances',
+    eyebrow: 'Payroll',
+    title: 'Commissions and payslips',
     description:
-      'Eliminate tedious end-of-month manual math. Automatically calculate service commissions, retail product bonuses, deduct salary advances, and generate ready-to-pay stylist payslips.',
+      'Calculate service and retail commissions, track salary advances, and create payslips.',
     highlights: [
-      'Custom commission percentage rules per service category or staff seniority',
-      'Split-commission support when multiple team members assist on a ticket',
-      'Employee loan and salary advance balance tracking',
-      'One-click itemized payroll summaries and printable payslips',
+      'Set commission rates by service or staff level',
+      'Split commissions between team members',
+      'Track loans and salary advances',
+      'Create payroll summaries and payslips',
     ],
     image: '/images/features/feat-payroll.jpg',
     badge: 'Automated Math',
@@ -145,15 +145,15 @@ const MODULE_SECTIONS = [
   },
   {
     id: 'branches',
-    eyebrow: 'Enterprise & Multi-Location',
-    title: 'Multi-Branch Central Command',
+    eyebrow: 'Branches',
+    title: 'Manage multiple branches',
     description:
-      'Oversee multiple salon branches from one unified master dashboard. Compare daily sales side-by-side, transfer stock between locations, and standardize pricing across your entire chain.',
+      'Compare sales, transfer stock, and manage prices across branches.',
     highlights: [
-      'Single master login with instant branch switcher for directors and owners',
-      'Inter-branch stock transfers and consolidated inventory tracking',
-      'Comparative revenue, average ticket size, and profit benchmarking',
-      'Standardized service menus with localized branch pricing overrides',
+      'Switch between branches with one login',
+      'Transfer stock between locations',
+      'Compare sales and profits',
+      'Set shared menus with branch-specific prices',
     ],
     image: '/images/features/feat-branches.jpg',
     badge: 'Master Control',
@@ -161,15 +161,15 @@ const MODULE_SECTIONS = [
   },
   {
     id: 'reports',
-    eyebrow: 'Analytics & Reporting',
-    title: 'Real-Time Financial Analytics & P&L',
+    eyebrow: 'Reports',
+    title: 'Sales and profit reports',
     description:
-      'Make data-backed decisions. Track daily net collections, register cash drawer balancing, profit margins, top-grossing services, and client rebooking rates.',
+      'Track daily sales, cash balance, profit, popular services, and returning clients.',
     highlights: [
-      'Real-time revenue, gross profit, and operating expense dashboards',
-      'Daily register balancing with petty cash audit trails to prevent leaks',
-      'Stylist productivity leaderboards and client retention rates',
-      'Exportable financial reports formatted for accountants and tax filings',
+      'View sales, profit, and expenses',
+      'Balance cash and track petty cash',
+      'Compare staff performance and client returns',
+      'Export reports for accounting',
     ],
     image: '/images/features/feat-reports.jpg',
     badge: 'P&L Reports',
@@ -177,15 +177,15 @@ const MODULE_SECTIONS = [
   },
   {
     id: 'expenses',
-    eyebrow: 'Finance & Overhead',
-    title: 'Salon Expense Tracking & Petty Cash Control',
+    eyebrow: 'Expenses',
+    title: 'Expenses and cash tracking',
     description:
-      'Log everyday salon operational expenses by category (rent, utilities, tea & refreshments, equipment maintenance) and ensure register drawer reconciliation at the close of every shift.',
+      'Record daily expenses and balance the cash drawer at each shift end.',
     highlights: [
-      'Categorized expense entry with branch and shift tagging',
-      'Daily opening and closing cash drawer balance audits',
-      'Petty cash expense receipts and employee disbursement logs',
-      'Integrated net margin calculations factoring daily operational costs',
+      'Organize expenses by category, branch, and shift',
+      'Check opening and closing cash balances',
+      'Record petty cash and staff payments',
+      'See profit after expenses',
     ],
     image: '/images/features/feat-expenses.jpg',
     badge: 'Cashflow Control',
@@ -208,16 +208,15 @@ export default function FeaturesPage() {
         <div className="section-container text-center max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 rounded-full bg-violet-950/80 border border-violet-800/60 px-3.5 py-1 text-xs font-semibold text-violet-300 mb-4">
             <Sparkles className="size-3.5 text-violet-400" />
-            <span>Complete Module Overview</span>
+            <span>Features</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
-            Every Salon Module Built to <br />
-            <span className="text-gradient-purple">Work Together Seamlessly</span>
+            Everything your salon needs.
           </h1>
 
           <p className="mt-4 text-base sm:text-lg text-slate-300 dark:text-[#d8cde8] leading-relaxed max-w-2xl mx-auto">
-            From daily appointment bookings to express counter POS, inventory alerts, and automated stylist commissions — explore every capability included in Dart Smart Salon.
+            Manage appointments, checkout, stock, staff, and more in one place.
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3.5 w-full sm:w-auto">
@@ -225,14 +224,14 @@ export default function FeaturesPage() {
               href="/pricing"
               className="inline-flex items-center justify-center gap-2 rounded-full bg-violet-600 hover:bg-violet-700 text-white px-7 py-3 text-sm font-semibold shadow-md transition-all active:scale-[0.98] w-full sm:w-auto"
             >
-              <span>Start Free 21-Day Trial</span>
+              <span>Start free trial</span>
               <ArrowRight className="size-4" />
             </Link>
             <Link
               href="/contact"
               className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-700 dark:border-[#362453] bg-slate-900/80 dark:bg-[#171026] hover:bg-slate-800 dark:hover:bg-[#1f1633] text-white px-6 py-3 text-sm font-semibold transition-all w-full sm:w-auto"
             >
-              <span>Book a Live Walkthrough</span>
+              <span>Book a demo</span>
             </Link>
           </div>
         </div>
@@ -240,7 +239,7 @@ export default function FeaturesPage() {
         {/* Quick Jump Module Nav Strip */}
         <div className="section-container mt-12 pt-6 border-t border-slate-800/80 dark:border-[#26183d]">
           <p className="text-center text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-[#a694be] mb-3">
-            Jump Directly to Module
+            Jump to a feature
           </p>
           <div className="flex items-center justify-center gap-1.5 flex-wrap">
             {MODULE_SECTIONS.map((m) => (
@@ -313,7 +312,7 @@ export default function FeaturesPage() {
                         href="/pricing"
                         className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-violet-700 dark:text-violet-400 hover:text-violet-900 dark:hover:text-violet-300 transition-colors"
                       >
-                        <span>Try {mod.badge} with 21-Day Trial</span>
+                        <span>Try it free</span>
                         <ArrowRight className="size-4" />
                       </Link>
                     </div>

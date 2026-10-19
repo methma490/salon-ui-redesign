@@ -11,28 +11,28 @@ import { FinalCTA } from '@/components/home/FinalCTA';
 export default function HomePage() {
   return (
     <MarketingShell>
-      {/* 1. Hero Section with executive styling, live device preview & feature selector */}
+      {/* Hero */}
       <Hero />
 
-      {/* 2. Value Proposition & Operational Floor Highlights */}
+      {/* Salon benefits */}
       <SolutionHighlight />
 
-      {/* 3. Interactive Salon Management Feature Suite */}
+      {/* Features */}
       <Features />
 
-      {/* 4. How It Works — 4-Step Operational Flow */}
+      {/* How it works */}
       <HowItWorks />
 
-      {/* 5. Verified Salon Owner Testimonials */}
-      <Testimonials />
+      {/* Testimonials hidden until ready. */}
+      {/* <Testimonials /> */}
 
-      {/* 6. Transparent Live Pricing Catalogue */}
+      {/* Pricing */}
       <PricingPreview />
 
-      {/* 7. Frequently Asked Questions (Accessible Accordion) */}
+      {/* FAQs */}
       <FAQPreview />
 
-      {/* 8. Final Conversion CTA Section */}
+      {/* Final call to action */}
       <FinalCTA />
     </MarketingShell>
   );

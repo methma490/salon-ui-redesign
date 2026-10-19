@@ -15,19 +15,18 @@ export function SolutionHighlight() {
             <div>
               <div className="inline-flex items-center gap-2 rounded-full bg-violet-100/70 dark:bg-[#24193d] border border-violet-200 dark:border-[#362453] px-3.5 py-1 text-xs font-semibold text-violet-700 dark:text-violet-300 mb-4">
                 <span className="size-1.5 rounded-full bg-violet-600 dark:bg-violet-400" />
-                <span>Operational Excellence</span>
+                <span>Made for salons</span>
               </div>
 
               <h2
                 id="value-prop-heading"
                 className="text-2xl sm:text-3xl lg:text-[2.15rem] font-extrabold tracking-tight text-slate-900 dark:text-[#f8f6ff] leading-tight"
               >
-                Engineered for the Realities of <br className="hidden sm:inline" />
-                <span className="text-gradient-purple">Busy Salon Floors</span>
+                Run your salon with less busywork.
               </h2>
 
               <p className="mt-3 text-sm sm:text-[15px] text-slate-600 dark:text-[#d8cde8] leading-relaxed max-w-xl">
-                Replace slow manual paper books, missing receipts, and fragmented spreadsheets with a single intuitive operating system designed for salon owners and their teams.
+                Manage bookings, sales, staff, and stock in one simple system.
               </p>
 
               {/* 4 Core Value Cards */}
@@ -37,8 +36,8 @@ export function SolutionHighlight() {
                     <Zap className="size-4.5" />
                   </span>
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-[#f8f6ff]">Sub-5s Express Checkout</h4>
-                    <p className="text-xs text-slate-500 dark:text-[#a694be] mt-0.5">Quick split tender, discounts, and thermal/WhatsApp receipts</p>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-[#f8f6ff]">Fast checkout</h4>
+                    <p className="text-xs text-slate-500 dark:text-[#a694be] mt-0.5">Split payments and send receipts</p>
                   </div>
                 </div>
 
@@ -47,8 +46,8 @@ export function SolutionHighlight() {
                     <CheckCircle2 className="size-4.5" />
                   </span>
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-[#f8f6ff]">Zero Double-Bookings</h4>
-                    <p className="text-xs text-slate-500 dark:text-[#a694be] mt-0.5">Smart conflict detection and automatic SMS reminders</p>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-[#f8f6ff]">Fewer booking conflicts</h4>
+                    <p className="text-xs text-slate-500 dark:text-[#a694be] mt-0.5">Conflict checks and SMS reminders</p>
                   </div>
                 </div>
 
@@ -57,8 +56,8 @@ export function SolutionHighlight() {
                     <Users className="size-4.5" />
                   </span>
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-[#f8f6ff]">Automated Stylist Math</h4>
-                    <p className="text-xs text-slate-500 dark:text-[#a694be] mt-0.5">Tiered commissions, tips, and deductions calculated live</p>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-[#f8f6ff]">Automatic commissions</h4>
+                    <p className="text-xs text-slate-500 dark:text-[#a694be] mt-0.5">Calculate commissions and deductions</p>
                   </div>
                 </div>
 
@@ -67,8 +66,8 @@ export function SolutionHighlight() {
                     <ShieldCheck className="size-4.5" />
                   </span>
                   <div>
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-[#f8f6ff]">Branch Cash & Stock Audits</h4>
-                    <p className="text-xs text-slate-500 dark:text-[#a694be] mt-0.5">Zero unrecorded cash drawer openings or missing inventory</p>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-[#f8f6ff]">Branch cash and stock</h4>
+                    <p className="text-xs text-slate-500 dark:text-[#a694be] mt-0.5">Track cash and inventory at each branch</p>
                   </div>
                 </div>
               </div>
@@ -87,7 +86,7 @@ export function SolutionHighlight() {
                 href="/features"
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 dark:border-[#362453] bg-white dark:bg-[#1f1633] hover:bg-slate-50 dark:hover:bg-[#2a1b46] text-slate-800 dark:text-[#f8f6ff] px-6 py-3 text-sm font-semibold transition-all w-full sm:w-auto"
               >
-                <span>Explore Full Module Tour</span>
+                <span>Explore all features</span>
               </Link>
             </div>
           </div>

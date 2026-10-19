@@ -107,17 +107,17 @@ export function Footer() {
             <Logo variant="dark" />
 
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-slate-400">
-              The all-in-one salon management operating system built for modern beauty salons, spas, nail bars, and barbershops in Sri Lanka.
+              Salon management for salons, spas, and barbershops in Sri Lanka.
             </p>
 
             <div className="mt-5 space-y-2 text-xs text-slate-400">
               <div className="flex items-center gap-2">
                 <ShieldCheck className="size-4 text-emerald-400 shrink-0" />
-                <span>Dedicated Private Cloud Database</span>
+                <span>Private cloud database</span>
               </div>
               <div className="flex items-center gap-2">
                 <Lock className="size-4 text-emerald-400 shrink-0" />
-                <span>PayHere Certified Secure Payments</span>
+                <span>Secure PayHere payments</span>
               </div>
               <div className="flex items-center gap-2">
                 <Building2 className="size-4 text-slate-400 shrink-0" />
@@ -210,7 +210,7 @@ export function Footer() {
               Stay Informed
             </h3>
             <p className="mt-4 text-xs leading-relaxed text-slate-400">
-              Get salon business growth tips, feature updates, and technology releases directly to your inbox.
+              Get product news and salon tips by email.
             </p>
 
             <form onSubmit={handleSubscribe} className="mt-4 w-full">
@@ -251,7 +251,7 @@ export function Footer() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 text-xs text-emerald-400 hover:text-emerald-300 font-semibold"
               >
-                <span>Need immediate help? WhatsApp us ↗</span>
+              <span>WhatsApp support ↗</span>
               </a>
             </div>
           </div>

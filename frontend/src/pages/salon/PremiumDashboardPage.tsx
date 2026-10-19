@@ -246,22 +246,22 @@ export default function PremiumDashboardPage() {
 
   const topCustomerSpending = topCustomersSummary?.topBySpending?.customer
     ? {
-        name: topCustomersSummary.topBySpending.customer.name,
-        totalSpend: topCustomersSummary.topBySpending.metric ?? topCustomersSummary.topBySpending.customer.totalSpend ?? 0,
-      }
+      name: topCustomersSummary.topBySpending.customer.name,
+      totalSpend: topCustomersSummary.topBySpending.metric ?? topCustomersSummary.topBySpending.customer.totalSpend ?? 0,
+    }
     : null;
 
   const topCustomerActive = topCustomersSummary?.topByVisits?.customer
     ? {
-        name: topCustomersSummary.topByVisits.customer.name,
-        visits: topCustomersSummary.topByVisits.metric ?? topCustomersSummary.topByVisits.customer.visitCount ?? 0,
-      }
+      name: topCustomersSummary.topByVisits.customer.name,
+      visits: topCustomersSummary.topByVisits.metric ?? topCustomersSummary.topByVisits.customer.visitCount ?? 0,
+    }
     : topCustomersSummary?.topByServices?.customer
-    ? {
+      ? {
         name: topCustomersSummary.topByServices.customer.name,
         servicesTaken: topCustomersSummary.topByServices.metric ?? topCustomersSummary.topByServices.customer.servicesTaken ?? 0,
       }
-    : null;
+      : null;
 
   const top5Customers = topCustomersListResponse?.data ?? [];
   const top5Services = dashboardData?.topServices ?? [];

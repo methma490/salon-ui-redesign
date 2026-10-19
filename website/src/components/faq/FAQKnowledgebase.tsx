@@ -162,10 +162,10 @@ export function FAQKnowledgebase() {
       <div className="mt-14 rounded-3xl border border-slate-200 dark:border-[#362453] bg-slate-50 dark:bg-[#171026] p-8 text-center sm:text-left sm:flex sm:items-center sm:justify-between gap-6">
         <div>
           <h3 className="text-lg font-bold text-slate-900 dark:text-[#f8f6ff]">
-            Still Have Questions About Your Salon?
+            Still have questions?
           </h3>
           <p className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-[#d8cde8] max-w-lg">
-            Our onboarding team can answer specific questions regarding custom thermal printer models, multi-stylist commissions, or database imports.
+            Ask us about printers, commissions, or data imports.
           </p>
         </div>
 

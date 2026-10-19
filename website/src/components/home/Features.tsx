@@ -49,7 +49,7 @@ const ALL_FEATURES: FeatureItem[] = [
     category: 'Front Desk',
     badge: 'Zero Conflicts',
     title: 'Visual Appointment Calendar',
-    description: 'Easy scheduling and rescheduling.',
+    description: 'Schedule and reschedule with ease.',
     keyHighlight: 'Double-booking detection & SMS reminders',
     image: '/images/features/feat-calendar.jpg',
     icon: Calendar,
@@ -60,7 +60,7 @@ const ALL_FEATURES: FeatureItem[] = [
     category: 'Billing & POS',
     badge: 'Sub-5s Checkout',
     title: 'Express Station POS & Invoicing',
-    description: 'Fast billing, split payments, and receipts..',
+    description: 'Fast checkout, split payments, and receipts.',
     keyHighlight: 'Split payment checkout & instant receipt printing',
     image: '/images/features/feat-pos.jpg',
     icon: Receipt,
@@ -71,7 +71,7 @@ const ALL_FEATURES: FeatureItem[] = [
     category: 'Front Desk',
     badge: 'Client CRM',
     title: 'Customer Profiles & History',
-    description: 'Store client details,hair/skin formulas, treatment history, allergies, and spending trends.',
+    description: 'Keep client details, formulas, allergies, and visit history.',
     keyHighlight: 'Dossier notes, visit history & VIP tags',
     image: '/images/features/feat-crm.jpg',
     icon: Users,
@@ -82,7 +82,7 @@ const ALL_FEATURES: FeatureItem[] = [
     category: 'Front Desk',
     badge: 'Dynamic Menu',
     title: 'Service Catalog & Packages',
-    description: 'Tiered stylist pricing, buffer durations, and bundled promotional treatment packages.',
+    description: 'Set staff prices, service buffers, and packages.',
     keyHighlight: 'Tiered stylist pricing & bridal packages',
     image: '/images/features/feat-services.jpg',
     icon: Scissors,
@@ -93,7 +93,7 @@ const ALL_FEATURES: FeatureItem[] = [
     category: 'Staff & Team',
     badge: 'Roster & Roles',
     title: 'Staff Management & Rosters',
-    description: 'Role-based controls for stylists and receptionists with live attendance tracking and shift rosters.',
+    description: 'Manage staff access, shifts, and attendance.',
     keyHighlight: 'Role permissions & shift schedule rosters',
     image: '/images/features/feat-staff.jpg',
     icon: Users,
@@ -104,7 +104,7 @@ const ALL_FEATURES: FeatureItem[] = [
     category: 'Staff & Payroll',
     badge: 'Automated Math',
     title: 'Staff Commissions & Payroll',
-    description: 'Automatic commission calculation for services and retail with salary advance tracking and payslips.',
+    description: 'Calculate commissions, advances, and payslips.',
     keyHighlight: 'Auto commission math & salary advances',
     image: '/images/features/feat-payroll.jpg',
     icon: Wallet,
@@ -115,7 +115,7 @@ const ALL_FEATURES: FeatureItem[] = [
     category: 'Inventory',
     badge: 'Stock Alerts',
     title: 'Inventory & Back-Bar Stock',
-    description: 'Track retail products and internal salon consumption with instant low-stock alerts and usage logs.',
+    description: 'Track stock, product use, and low-stock alerts.',
     keyHighlight: 'Live stock deductions & low-stock alerts',
     image: '/images/features/feat-inventory.jpg',
     icon: Package,
@@ -126,7 +126,7 @@ const ALL_FEATURES: FeatureItem[] = [
     category: 'Inventory',
     badge: 'GRN Invoicing',
     title: 'Suppliers & Goods Received',
-    description: 'Vendor management, Goods Received Notes (GRN), and balance ledger tracking.',
+    description: 'Manage suppliers, purchases, and balances.',
     keyHighlight: 'GRN shipment logging & vendor debt ledgers',
     image: '/images/features/feat-suppliers.jpg',
     icon: Truck,
@@ -137,7 +137,7 @@ const ALL_FEATURES: FeatureItem[] = [
     category: 'Operations',
     badge: 'Multi-Branch',
     title: 'Multi-Branch Central Command',
-    description: 'Manage multiple salon branches with revenue comparisons and inventory transfers.',
+    description: 'Compare branch sales and transfer stock.',
     keyHighlight: 'Unified master login & branch comparisons',
     image: '/images/features/feat-branches.jpg',
     icon: Building2,
@@ -148,7 +148,7 @@ const ALL_FEATURES: FeatureItem[] = [
     category: 'Analytics',
     badge: 'Real-Time KPI',
     title: 'Reports & Financial Analytics',
-    description: 'Instant clarity on net profits, top-earning stylists, client retention rates, and daily reconciliations.',
+    description: 'Track profit, staff performance, and client returns.',
     keyHighlight: 'Live P&L margins & top stylist leaderboards',
     image: '/images/features/feat-reports.jpg',
     icon: BarChart3,
@@ -159,7 +159,7 @@ const ALL_FEATURES: FeatureItem[] = [
     category: 'Front Desk',
     badge: 'Cut No-Shows',
     title: 'WhatsApp & SMS Auto-Alerts',
-    description: 'Automated WhatsApp confirmations, 24-hour reminder pings, and review requests.',
+    description: 'Send WhatsApp confirmations and reminders.',
     keyHighlight: 'Automated 24h WhatsApp & SMS reminders',
     image: '/images/features/feat-whatsapp.jpg',
     icon: MessageSquare,
@@ -170,7 +170,7 @@ const ALL_FEATURES: FeatureItem[] = [
     category: 'Billing & POS',
     badge: 'Cashflow Control',
     title: 'Expenses & Daily Cash Drawer',
-    description: 'Track petty cash, salon overheads, and reconcile daily register drawer balances.',
+    description: 'Track expenses and balance the cash drawer.',
     keyHighlight: 'Daily cash drawer balancing & audit proof',
     image: '/images/features/feat-expenses.jpg',
     icon: CreditCard,
@@ -244,19 +244,18 @@ export function Features() {
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 rounded-full bg-violet-100/70 dark:bg-[#24193d] border border-violet-200 dark:border-[#362453] px-3.5 py-1 text-xs font-semibold text-violet-700 dark:text-violet-300 mb-3.5">
               <Sparkles className="size-3.5 text-violet-700 dark:text-violet-300" />
-              <span>Modular Salon Suite</span>
+              <span>Salon tools</span>
             </div>
 
             <h2
               id="features-heading"
               className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-[#f8f6ff] leading-[1.12]"
             >
-              Every Module Connected.{' '}
-              <span className="text-gradient-purple">Zero Friction.</span>
+              Everything your salon needs.
             </h2>
 
             <p className="mt-3.5 text-sm sm:text-base text-slate-600 dark:text-[#d8cde8] leading-relaxed">
-              Purpose-built for hair salons, aesthetic clinics, spas, nail lounges, and barbershops.
+              One simple system for salons, spas, and barbershops.
             </p>
           </div>
 
@@ -417,7 +416,7 @@ export function Features() {
             href="/features"
             className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 dark:border-[#362453] bg-white dark:bg-[#171026] hover:bg-slate-50 dark:hover:bg-[#1f1633] text-slate-800 dark:text-[#f8f6ff] px-6 sm:px-7 py-3 text-xs sm:text-sm font-semibold shadow-2xs hover:shadow-xs transition-all w-full sm:w-auto"
           >
-            <span>View All Features in the Interactive Tour</span>
+            <span>Explore all features</span>
             <ArrowRight className="size-4 text-violet-700 dark:text-violet-300" />
           </Link>
         </div>

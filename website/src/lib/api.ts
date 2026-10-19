@@ -1,5 +1,5 @@
-import { DEFAULT_FALLBACK_PLANS } from '@/lib/plans';
 import type { PublicPlan } from '@/types/plans';
+import { DEFAULT_FALLBACK_PLANS } from '@/lib/plans';
 
 export function getApiBaseUrl(): string {
   const internal = process.env.INTERNAL_API_URL?.replace(/\/$/, '');
@@ -110,12 +110,19 @@ export async function fetchPublicPlans(): Promise<PublicPlan[]> {
 
   try {
     const data = await requestJson(url, 8000);
-    if (Array.isArray(data) && data.length > 0) {
-      return data as PublicPlan[];
+    if (Array.isArray(data)) {
+      return (data as PublicPlan[])
+        .filter((plan) => !plan.status || plan.status === 'ACTIVE')
+        .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
     }
-    return DEFAULT_FALLBACK_PLANS;
+    throw new Error('Backend returned an invalid plans response');
   } catch (error) {
-    console.warn(`[Plans API] Note: Using offline/fallback plans catalogue (${(error as Error)?.message || error})`);
+    // The marketing site must remain usable when the plans service is down or
+    // unreachable (for example, during local development without network access).
+    // Keep this at warn level so Next.js does not show its server console-error overlay.
+    console.warn(
+      `[Plans API] Could not load plans from ${url}; using built-in plan data: ${(error as Error)?.message || error}`,
+    );
     return DEFAULT_FALLBACK_PLANS;
   }
 }

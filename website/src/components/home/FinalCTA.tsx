@@ -16,18 +16,18 @@ export function FinalCTA() {
             {/* Pill badge */}
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1 text-xs font-semibold text-violet-100">
               <Sparkles className="size-3.5" />
-              <span>Modernize Your Salon Floor</span>
+              <span>For your salon</span>
             </div>
 
             <h2
               id="final-cta-heading"
               className="mx-auto max-w-2xl text-2xl font-extrabold leading-tight tracking-tight text-white sm:text-3xl lg:text-4xl"
             >
-              Ready to Run Your Salon Smarter?
+              Run your salon with ease.
             </h2>
 
             <p className="mx-auto mt-3 max-w-2xl text-sm leading-relaxed text-violet-100/90 sm:text-base lg:text-lg">
-              Join leading hair studios, beauty clinics, nail bars, and spas operating with Dart Smart Salon. Experience zero booking conflicts, sub-5s checkouts, and total control.
+              Manage bookings, sales, staff, and stock in one place.
             </p>
 
             {/* CTAs */}
@@ -44,7 +44,7 @@ export function FinalCTA() {
                 href="/contact"
                 className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/30 bg-white/10 px-7 py-3 text-sm font-semibold text-white transition-all hover:bg-white/20 active:scale-[0.98] sm:w-auto sm:text-base"
               >
-                <span>Book a Guided Demo</span>
+                <span>Book a demo</span>
               </Link>
             </div>
 
@@ -56,7 +56,7 @@ export function FinalCTA() {
               </div>
               <div className="flex items-center gap-1.5">
                 <Check className="size-3.5 text-emerald-400 stroke-[3]" />
-                <span>Instant 2-minute setup</span>
+                <span>Set up in 2 minutes</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Check className="size-3.5 text-emerald-400 stroke-[3]" />

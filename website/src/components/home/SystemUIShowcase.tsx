@@ -173,19 +173,18 @@ export function SystemUIShowcase() {
         <div className="mx-auto max-w-2xl text-center">
           <div className="inline-flex items-center gap-2 rounded-full bg-violet-100/70 dark:bg-violet-950/60 border border-violet-200 dark:border-violet-800/60 px-3.5 py-1 text-xs font-semibold text-violet-700 dark:text-violet-300 mb-3.5">
             <Sparkles className="size-3.5 text-violet-700 dark:text-violet-400" />
-            <span>Interactive Device Showcase</span>
+            <span>Works on every device</span>
           </div>
 
           <h2
             id="ui-showcase-heading"
             className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-[#f8f6ff] leading-tight"
           >
-            Crafted for Speed. <br />
-            <span className="text-gradient-purple">Engineered for Every Screen.</span>
+            Use it on any screen.
           </h2>
 
           <p className="mt-3.5 text-base text-slate-600 dark:text-[#d8cde8] leading-relaxed max-w-xl mx-auto">
-            From busy front desk reception monitors to chairside stylist tablets and owner smartphones on the go.
+            Use Dart Smart Salon on desktop, tablet, or mobile.
           </p>
         </div>
 

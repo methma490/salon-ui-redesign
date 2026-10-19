@@ -25,7 +25,7 @@ const PRODUCT_COLUMNS: MegaMenuColumn[] = [
   {
     heading: 'Appointments',
     links: [
-      { label: 'Calendar & Bookings', href: '/features#appointments' },
+      { label: 'Appointments', href: '/features#appointments' },
     ],
   },
   {
@@ -37,14 +37,14 @@ const PRODUCT_COLUMNS: MegaMenuColumn[] = [
   {
     heading: 'Clients & Team',
     links: [
-      { label: 'Client Profiles & History', href: '/features#customers' },
+      { label: 'Client profiles', href: '/features#customers' },
       { label: 'Staff & Payroll', href: '/features#payroll' },
     ],
   },
   {
     heading: 'Manage & Grow',
     links: [
-      { label: 'Inventory & Stock', href: '/features#inventory' },
+      { label: 'Inventory', href: '/features#inventory' },
       { label: 'Reports & Branches', href: '/features#branches' },
     ],
   },
@@ -54,19 +54,19 @@ const SOLUTION_COLUMNS: MegaMenuColumn[] = [
   {
     heading: 'Solo Stylists',
     links: [
-      { label: 'Independent stylists & barbers', href: '/solutions#solo' },
+      { label: 'Solo salons', href: '/solutions#solo' },
     ],
   },
   {
     heading: 'Salons & Spas',
     links: [
-      { label: 'Tools for growing teams', href: '/solutions#boutique' },
+      { label: 'Growing salons', href: '/solutions#boutique' },
     ],
   },
   {
     heading: 'Salon Groups',
     links: [
-      { label: 'Multi-branch management', href: '/solutions#chain' },
+      { label: 'Salon chains', href: '/solutions#chain' },
     ],
   },
   {

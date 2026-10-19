@@ -14,7 +14,7 @@ export async function PricingPreview() {
           href="/pricing#plan-comparison"
           className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white text-slate-800 hover:bg-slate-50 dark:border-[#362453] dark:bg-[#171026] dark:text-[#f8f6ff] dark:hover:bg-[#1f1633] px-6 py-2.5 text-xs sm:text-sm font-semibold shadow-2xs hover:shadow-xs transition-all w-full sm:w-auto"
         >
-          <span>View Full Feature Comparison Table</span>
+          <span>Compare plans</span>
           <ArrowRight className="size-4 text-violet-700 dark:text-violet-300" />
         </Link>
       </div>

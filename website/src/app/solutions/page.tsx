@@ -28,53 +28,53 @@ export const metadata: Metadata = buildMetadata({
 const SALON_ARCHETYPES = [
   {
     id: 'independent',
-    title: 'Independent Stylists & Solo Studios',
-    subtitle: '1 – 3 Chairs · Low Overhead · Mobile-First Simplicity',
+    title: 'Solo salons and studios',
+    subtitle: '1–3 chairs · Simple setup',
     description:
-      'For boutique chair renters, solo hairstylists, and independent lash/nail artists who need fast mobile booking, client formula cards, and simple cashflow tracking without bloated software complexity.',
+      'For independent stylists who need mobile booking, client records, and simple cash tracking.',
     keyProblems: [
-      'Stop losing booking details scribbled on scrap paper or messaging apps',
-      'Instant access to hair color formulas and client allergies on your phone',
-      'Automatic WhatsApp confirmation pings so clients arrive on time',
-      'Simple daily cash & card totals ready for tax time without bookkeeping stress',
+      'Keep bookings in one calendar',
+      'View client formulas and allergies on your phone',
+      'Send WhatsApp booking confirmations',
+      'Track daily cash and card sales',
     ],
-    recommendedPlan: 'Basic (Silver) Plan',
+    recommendedPlan: 'Basic plan',
     recommendedHref: '/pricing',
-    badge: 'Solo & Micro Salons',
+    badge: 'Solo salons',
     icon: Scissors,
   },
   {
     id: 'boutique',
-    title: 'Busy Boutique Salons & Spas',
-    subtitle: '4 – 15 Staff · High Daily Volume · Multi-Stylist Floor',
+    title: 'Busy salons and spas',
+    subtitle: '4–15 staff · Multiple stylists',
     description:
-      'For established hair studios, beauty clinics, and day spas balancing busy appointment schedules, express counter checkout, retail inventory, and automated staff commission payroll.',
+      'For teams managing busy bookings, checkout, retail stock, and staff commissions.',
     keyProblems: [
-      'Visual timeline calendar prevents double-booking chairs or treatment rooms',
-      'Express POS checkouts under 5 seconds with thermal receipts and split-tender',
-      'Automatic commission math calculated per service and retail sale',
-      'Real-time back-bar consumption tracking and instant low-stock alerts',
+      'Prevent double bookings',
+      'Fast checkout with split payments',
+      'Calculate service and retail commissions',
+      'Track product use and low stock',
     ],
-    recommendedPlan: 'Gold Plan (Recommended)',
+    recommendedPlan: 'Gold plan',
     recommendedHref: '/pricing',
-    badge: 'Growing Boutiques',
+    badge: 'Growing salons',
     icon: Sparkles,
   },
   {
     id: 'chains',
-    title: 'Multi-Branch Salon Chains & Franchises',
-    subtitle: 'Multiple Locations · Central Oversight · Master Permissions',
+    title: 'Salon chains',
+    subtitle: 'Multiple locations · Central control',
     description:
-      'For salon owners and franchise operators running multiple branches. Monitor live revenue across all locations, standardize pricing menus, transfer inventory between branches, and maintain centralized accountability.',
+      'Manage sales, prices, stock, and staff access across all locations.',
     keyProblems: [
-      'One master login to switch between salon locations and compare sales',
-      'Inter-branch stock transfers and consolidated supplier purchase ledgers',
-      'Role-based permissions ensuring managers only see their branch figures',
-      'Standardized service menus with localized pricing overrides where needed',
+      'Switch branches and compare sales',
+      'Transfer stock between locations',
+      'Control staff access by branch',
+      'Use shared menus with local prices',
     ],
-    recommendedPlan: 'Gold Multi-Branch Tier',
+    recommendedPlan: 'Gold multi-branch',
     recommendedHref: '/pricing',
-    badge: 'Multi-Branch Chains',
+    badge: 'Multiple branches',
     icon: Store,
   },
 ];
@@ -94,16 +94,15 @@ export default function SolutionsPage() {
         <div className="section-container text-center max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 rounded-full bg-violet-950/80 border border-violet-800/60 px-3.5 py-1 text-xs font-semibold text-violet-300 mb-4">
             <Sparkles className="size-3.5 text-violet-400" />
-            <span>Tailored by Salon Scale</span>
+            <span>Solutions</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
-            One Operating System. <br />
-            <span className="text-gradient-purple">Engineered for Your Salon Stage.</span>
+            The right tools for your salon.
           </h1>
 
           <p className="mt-4 text-base sm:text-lg text-slate-300 dark:text-[#d8cde8] leading-relaxed max-w-2xl mx-auto">
-            Whether you operate an independent styling studio, a bustling boutique salon, or a multi-branch network, Dart Smart Salon adapts to your exact operational workflow.
+            Choose tools for a solo studio, busy salon, or growing chain.
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-3.5 w-full sm:w-auto">
@@ -111,14 +110,14 @@ export default function SolutionsPage() {
               href="/pricing"
               className="inline-flex items-center justify-center gap-2 rounded-full bg-violet-600 hover:bg-violet-700 text-white px-7 py-3 text-sm font-semibold shadow-md transition-all active:scale-[0.98] w-full sm:w-auto"
             >
-              <span>Compare Plan Tiers</span>
+              <span>Compare plans</span>
               <ArrowRight className="size-4" />
             </Link>
             <Link
               href="/contact"
               className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-700 dark:border-[#362453] bg-slate-900/80 dark:bg-[#171026] hover:bg-slate-800 dark:hover:bg-[#1f1633] text-white px-6 py-3 text-sm font-semibold transition-all w-full sm:w-auto"
             >
-              <span>Schedule a 1-on-1 Consultation</span>
+              <span>Book a demo</span>
             </Link>
           </div>
         </div>
@@ -132,10 +131,10 @@ export default function SolutionsPage() {
               id="solutions-grid-heading"
               className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-[#f8f6ff] tracking-tight"
             >
-              Select Your Salon Category
+              Find your salon type
             </h2>
             <p className="mt-2 text-sm sm:text-base text-slate-600 dark:text-[#d8cde8]">
-              Discover how Dart Smart Salon eliminates daily friction based on your team size and chair count.
+              See which tools fit your team.
             </p>
           </div>
 
@@ -172,7 +171,7 @@ export default function SolutionsPage() {
                     {/* Operational Highlights */}
                     <div className="mt-6 pt-5 border-t border-slate-200/80 dark:border-[#26183d] space-y-2.5">
                       <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#a694be]">
-                        Operational Superpowers
+                        Key features
                       </p>
                       {arch.keyProblems.map((prob, i) => (
                         <div key={i} className="flex items-start gap-2">
@@ -194,7 +193,7 @@ export default function SolutionsPage() {
                       href={arch.recommendedHref}
                       className="inline-flex items-center justify-center gap-1.5 w-full rounded-full bg-slate-900 dark:bg-[#1f1633] border border-transparent dark:border-[#362453] hover:bg-violet-700 dark:hover:bg-violet-700 text-white py-2.5 px-4 text-xs font-bold transition-colors cursor-pointer"
                     >
-                      <span>Explore {arch.recommendedPlan}</span>
+                      <span>View plan</span>
                       <ArrowRight className="size-3.5" />
                     </Link>
                   </div>
@@ -212,13 +211,13 @@ export default function SolutionsPage() {
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div>
                 <span className="inline-block text-xs font-bold uppercase tracking-wider text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/60 border border-violet-200 dark:border-violet-800/60 px-3 py-0.5 rounded-full mb-2">
-                  Seamless Upgrades
+                  Grow with your salon
                 </span>
                 <h3 className="text-2xl font-bold text-slate-900 dark:text-[#f8f6ff]">
-                  Start with 1 chair. Scale to 10 branches.
+                  Start small. Grow with ease.
                 </h3>
                 <p className="mt-2 text-sm text-slate-600 dark:text-[#d8cde8] max-w-xl">
-                  You never have to switch software or migrate databases as your salon expands. Keep your client records, service formulas, and historic sales intact as you open new branches.
+                  Keep your client records, formulas, and sales as you add branches.
                 </p>
               </div>
 
@@ -227,7 +226,7 @@ export default function SolutionsPage() {
                   href="/pricing"
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-violet-700 hover:bg-violet-800 text-white px-6 py-3 text-sm font-semibold shadow-xs transition-all w-full md:w-auto"
                 >
-                  <span>Start Free Trial</span>
+                  <span>Start free trial</span>
                   <ArrowRight className="size-4" />
                 </Link>
               </div>

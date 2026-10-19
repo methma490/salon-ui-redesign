@@ -122,7 +122,7 @@ export function Hero() {
                   priority={index === 0}
                   unoptimized
                   sizes="100vw"
-                  className="object-cover object-center brightness-[0.72] contrast-[1.08]"
+                  className="object-cover object-center blur-[3px] scale-[1.04] brightness-[0.72] contrast-[1.08]"
                 />
               </div>
             </div>

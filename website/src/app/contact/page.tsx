@@ -29,30 +29,29 @@ export default function ContactPage() {
         <div className="section-container text-center max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 rounded-full bg-violet-950/80 border border-violet-800/60 px-3.5 py-1 text-xs font-semibold text-violet-300 mb-4">
             <Sparkles className="size-3.5 text-violet-400" />
-            <span>Direct Support & Demos</span>
+            <span>Contact</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
-            Let’s Talk About Smarter <br />
-            <span className="text-gradient-purple">Salon Operations</span>
+            How can we help?
           </h1>
 
           <p className="mt-4 text-base sm:text-lg text-slate-300 dark:text-[#d8cde8] leading-relaxed max-w-xl mx-auto">
-            Schedule a personalized screen walkthrough, ask about receipt printer setup, or get help migrating existing salon records.
+            Book a demo or ask us about setup, printers, and data migration.
           </p>
 
           <div className="mt-6 flex flex-wrap justify-center items-center gap-x-6 gap-y-2 text-xs text-slate-400 dark:text-[#a694be] font-medium">
             <span className="flex items-center gap-1.5">
               <CheckCircle2 className="size-4 text-emerald-400" />
-              <span>Prompt 1-business-day reply</span>
+              <span>Reply within 1 business day</span>
             </span>
             <span className="flex items-center gap-1.5">
               <CheckCircle2 className="size-4 text-emerald-400" />
-              <span>Direct WhatsApp chat available</span>
+              <span>Chat on WhatsApp</span>
             </span>
             <span className="flex items-center gap-1.5">
               <CheckCircle2 className="size-4 text-emerald-400" />
-              <span>Free onboarding guidance</span>
+              <span>Free setup help</span>
             </span>
           </div>
         </div>

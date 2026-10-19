@@ -37,27 +37,27 @@ export const metadata: Metadata = buildMetadata({
 const PILLARS = [
   {
     icon: Zap,
-    title: 'Floor Speed Above All',
+    title: 'Fast workflows',
     description:
-      'We know that during peak weekend rush hours, front desks cannot tolerate slow loading screens. Every workflow — from booking an appointment to printing a thermal receipt — is engineered to complete in under 5 seconds.',
+      'Bookings and checkout are designed to stay fast, even during busy hours.',
   },
   {
     icon: Lock,
-    title: 'Absolute Salon Data Privacy',
+    title: 'Private salon data',
     description:
-      'Your client formulas, client contact lists, and daily financial receipts belong exclusively to your salon. Data is isolated in dedicated private cloud databases with automated daily backups and zero cross-tenant leakage.',
+      'Your salon data stays private in a dedicated cloud database with daily backups.',
   },
   {
     icon: Building2,
-    title: 'Built for Local Realities',
+    title: 'Built for Sri Lanka',
     description:
-      'Unlike generic international software that ignores local payment methods, Dart Smart Salon integrates with PayHere, connects to standard local receipt printers, and sends automated receipts directly via WhatsApp and SMS.',
+      'Use PayHere, standard receipt printers, and WhatsApp or SMS receipts.',
   },
   {
     icon: Users,
-    title: 'Zero Learning Curve',
+    title: 'Easy to learn',
     description:
-      'Salon teams are artistic professionals, not software engineers. Our clean, visual interface ensures new receptionists and stylists master booking, job cards, and express checkouts in under 15 minutes of training.',
+      'A clear interface helps staff learn bookings and checkout quickly.',
   },
 ];
 
@@ -83,16 +83,15 @@ export default function AboutPage() {
         <div className="section-container text-center max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 rounded-full bg-violet-950/80 border border-violet-800/60 px-3.5 py-1 text-xs font-semibold text-violet-300 mb-4">
             <Sparkles className="size-3.5 text-violet-400" />
-            <span>Our Purpose & Mission</span>
+            <span>About us</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
-            Building the Operating System for <br />
-            <span className="text-gradient-purple">Modern Salons in Sri Lanka</span>
+            Salon management, made simple.
           </h1>
 
           <p className="mt-4 text-base sm:text-lg text-slate-300 dark:text-[#d8cde8] leading-relaxed max-w-2xl mx-auto">
-            {APP_NAME} was created by {COMPANY_NAME} to eliminate the daily operational headaches that hold salon owners, stylists, and clients back.
+            {APP_NAME} by {COMPANY_NAME} helps salons manage daily operations.
           </p>
         </div>
       </section>
@@ -105,22 +104,22 @@ export default function AboutPage() {
             {/* Story Text */}
             <div className="lg:col-span-7">
               <span className="inline-block text-xs font-bold uppercase tracking-wider text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/60 border border-violet-200 dark:border-violet-800/60 px-3 py-0.5 rounded-full mb-3">
-                The Dart Smart Salon Story
+                Our story
               </span>
 
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 dark:text-[#f8f6ff] tracking-tight leading-snug">
-                Why We Built Dart Smart Salon
+                Why we built it
               </h2>
 
               <div className="mt-5 space-y-4 text-sm sm:text-base text-slate-600 dark:text-[#d8cde8] leading-relaxed">
                 <p>
-                  Before Dart Smart Salon, we saw salon owners in Colombo, Kandy, and Galle trapped between two flawed extremes: either struggling with messy paper appointment books and lost receipts, or wrestling with expensive foreign software that did not support local payment gateways, lacked WhatsApp receipts, and felt bloated and complicated to use.
+                  Salons needed an easier way to manage bookings, payments, and client records.
                 </p>
                 <p>
-                  When a salon is busy on a Saturday afternoon, chaos quickly multiplies. A double-booked bride causes embarrassment at reception. Lost color formulas force stylists to guess bleach ratios. Manual commission calculations at the end of every month lead to staff arguments and sleepless nights.
+                  Missed bookings, lost formulas, and manual payroll make busy days harder.
                 </p>
                 <p>
-                  We built {APP_NAME} to fix this completely. By pairing high-speed visual calendars with sub-5s point-of-sale checkout, automated commission rules, and private cloud data protection, we give salon directors the freedom to focus on client artistry and salon expansion.
+                  {APP_NAME} brings scheduling, checkout, commissions, and secure records together.
                 </p>
               </div>
 
@@ -129,14 +128,14 @@ export default function AboutPage() {
                   href="/features"
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-violet-700 hover:bg-violet-800 text-white px-6 py-3 text-sm font-semibold shadow-xs transition-all w-full sm:w-auto"
                 >
-                  <span>Explore Our Features</span>
+                <span>Explore features</span>
                   <ArrowRight className="size-4" />
                 </Link>
                 <Link
                   href="/contact"
                   className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 dark:border-[#362453] bg-white dark:bg-[#171026] hover:bg-slate-50 dark:hover:bg-[#1f1633] text-slate-800 dark:text-[#f8f6ff] px-6 py-3 text-sm font-semibold transition-all w-full sm:w-auto"
                 >
-                  <span>Talk with Our Team</span>
+                <span>Contact us</span>
                 </Link>
               </div>
             </div>
@@ -145,7 +144,7 @@ export default function AboutPage() {
             <div className="lg:col-span-5">
               <div className="rounded-3xl border border-slate-200 dark:border-[#362453] bg-slate-50 dark:bg-[#171026] p-6 sm:p-8 shadow-sm">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-[#f8f6ff] mb-6">
-                  Platform Milestones
+                  At a glance
                 </h3>
 
                 <div className="grid grid-cols-2 gap-3.5 sm:gap-6">
@@ -191,10 +190,10 @@ export default function AboutPage() {
               Our Principles
             </span>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-[#f8f6ff] tracking-tight">
-              What Guides Our Engineering
+              What guides us
             </h2>
             <p className="mt-2 text-sm sm:text-base text-slate-600 dark:text-[#d8cde8]">
-              The foundational design values behind every screen, button, and module in Dart Smart Salon.
+              The principles behind every feature.
             </p>
           </div>
 
@@ -229,7 +228,7 @@ export default function AboutPage() {
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div>
                 <span className="inline-block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-[#a694be] mb-1">
-                  Company Headquarters
+                  Headquarters
                 </span>
                 <h3 className="text-xl font-bold text-slate-900 dark:text-[#f8f6ff]">
                   {COMPANY_NAME}

@@ -85,7 +85,7 @@ export function ContactForm() {
 
         <p className="mt-2 text-sm text-slate-600 dark:text-[#d8cde8] max-w-md mx-auto leading-relaxed">
           Thank you, <strong className="text-slate-900 dark:text-[#f8f6ff] font-semibold">{formData.name || 'there'}</strong>.
-          We have received your inquiry and a salon technology specialist will reach out to you shortly.
+          Our team will be in touch soon.
         </p>
 
         <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -94,14 +94,14 @@ export function ContactForm() {
             onClick={handleReset}
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 dark:border-[#362453] bg-white dark:bg-[#1f1633] hover:bg-slate-50 dark:hover:bg-[#2a1b46] px-5 py-2.5 text-xs font-semibold text-slate-700 dark:text-[#f8f6ff] transition-all cursor-pointer"
           >
-            <span>Send Another Message</span>
+            <span>Send another message</span>
           </button>
 
           <a
             href="/"
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-violet-700 hover:bg-violet-800 text-white px-6 py-2.5 text-xs font-semibold shadow-xs transition-all cursor-pointer"
           >
-            <span>Back to Home</span>
+            <span>Home</span>
             <ArrowRight className="size-3.5" />
           </a>
         </div>
@@ -112,10 +112,10 @@ export function ContactForm() {
   return (
     <div className="rounded-3xl border border-slate-200 dark:border-[#362453] bg-white dark:bg-[#171026] p-6 sm:p-8 shadow-xs">
       <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#f8f6ff]">
-        Send an Inquiry
+        Send us a message
       </h2>
       <p className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-[#d8cde8]">
-        Fill in your salon details and our team will get back to you promptly.
+        Share your details and we’ll reply soon.
       </p>
 
       <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">

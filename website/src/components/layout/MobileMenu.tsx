@@ -49,8 +49,8 @@ const PRIMARY_PAGES: NavItem[] = [
   },
   {
     href: '/features',
-    label: 'Product Tour',
-    description: 'All 10 operational modules',
+    label: 'Features',
+    description: 'Explore salon tools',
     icon: Sparkles,
     badge: '10 Modules',
   },
@@ -62,37 +62,37 @@ const PRIMARY_PAGES: NavItem[] = [
   },
   {
     href: '/pricing',
-    label: 'Pricing & Plans',
-    description: 'Compare Basic & Gold plans',
+    label: 'Pricing',
+    description: 'Plans and features',
     icon: CreditCard,
     badge: '21-Day Trial',
   },
   {
     href: '/about',
-    label: 'About Company',
-    description: 'DartCodes story & engineering',
+    label: 'About',
+    description: 'Our story',
     icon: Info,
   },
   {
     href: '/faq',
-    label: 'Knowledgebase / FAQ',
-    description: 'Hardware, printers & data security',
+    label: 'FAQ',
+    description: 'Common questions',
     icon: HelpCircle,
   },
   {
     href: '/contact',
-    label: 'Contact Specialists',
-    description: 'Book 1-on-1 demo or talk to support',
+    label: 'Contact',
+    description: 'Get help or book a demo',
     icon: Phone,
   },
 ];
 
 const FEATURE_SHORTCUTS = [
-  { label: 'Appointments & SMS', href: '/features#appointments', icon: Calendar },
-  { label: 'Express Station POS', href: '/features#pos', icon: CreditCard },
-  { label: 'Client CRM & Formulas', href: '/features#customers', icon: Users },
-  { label: 'Inventory & Stock Alerts', href: '/features#inventory', icon: Package },
-  { label: 'Multi-Branch Oversight', href: '/features#branches', icon: Store },
+  { label: 'Appointments', href: '/features#appointments', icon: Calendar },
+  { label: 'Checkout', href: '/features#pos', icon: CreditCard },
+  { label: 'Client profiles', href: '/features#customers', icon: Users },
+  { label: 'Inventory', href: '/features#inventory', icon: Package },
+  { label: 'Branches', href: '/features#branches', icon: Store },
 ];
 
 export function MobileMenu() {
@@ -179,7 +179,7 @@ export function MobileMenu() {
           {/* Theme switcher bar for mobile */}
           <div className="flex items-center justify-between p-2.5 rounded-2xl border border-slate-200/80 dark:border-[#362453] bg-slate-50/80 dark:bg-[#1f1633]">
             <span className="text-xs font-semibold text-slate-700 dark:text-[#d8cde8]">
-              Interface Theme
+              Theme
             </span>
             <ThemeToggle showLabel />
           </div>
@@ -251,7 +251,7 @@ export function MobileMenu() {
           {/* Direct Module Shortcuts */}
           <div>
             <p className="px-2 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              Quick Module Jumps
+              Quick links
             </p>
             <div className="grid grid-cols-1 gap-1">
               {FEATURE_SHORTCUTS.map((feat) => {
@@ -274,7 +274,7 @@ export function MobileMenu() {
           {/* Quick Support Card */}
           <div className="rounded-2xl border border-slate-200/80 dark:border-[#362453] bg-slate-50/70 dark:bg-[#1f1633] p-3 space-y-2">
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#a694be]">
-              Direct Assistance
+              Contact us
             </p>
             <div className="grid grid-cols-2 gap-2">
               <a
@@ -312,7 +312,7 @@ export function MobileMenu() {
             className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 dark:border-[#362453] bg-white dark:bg-[#171026] px-5 py-2.5 text-sm font-semibold text-slate-800 dark:text-[#f8f6ff] hover:text-violet-600 dark:hover:text-violet-300 transition-all shadow-2xs"
           >
             <LogIn className="h-4 w-4 text-slate-500 dark:text-[#a694be]" />
-            <span>Salon Admin Log In</span>
+            <span>Salon login</span>
           </Link>
 
           <Link
@@ -320,7 +320,7 @@ export function MobileMenu() {
             onClick={() => setOpen(false)}
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-violet-600 hover:bg-violet-700 active:bg-violet-800 px-5 py-2.5 text-sm font-semibold text-white shadow-sm active:scale-[0.98] transition-all"
           >
-            <span>START FREE 21-DAY TRIAL</span>
+            <span>Start free trial</span>
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>

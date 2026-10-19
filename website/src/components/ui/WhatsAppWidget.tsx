@@ -23,7 +23,7 @@ export function WhatsAppWidget() {
               </span>
               <div>
                 <h4 className="text-sm font-bold text-slate-900">Dart Smart Salon</h4>
-                <p className="text-[11px] text-slate-500">Typically replies instantly</p>
+                <p className="text-[11px] text-slate-500">We’re online</p>
               </div>
             </div>
             <button
@@ -46,7 +46,7 @@ export function WhatsAppWidget() {
             className="mt-3 flex items-center justify-center gap-2 w-full rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-2.5 text-xs font-bold shadow-md transition-all active:scale-98"
           >
             <MessageCircle className="h-4 w-4 fill-white" />
-            <span>Start WhatsApp Chat</span>
+            <span>Chat on WhatsApp</span>
           </a>
         </div>
       )}
