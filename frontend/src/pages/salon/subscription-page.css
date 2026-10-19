@@ -138,11 +138,11 @@
   overflow: hidden;
 }
 
-.sub-panel + .sub-panel {
+.sub-panel+.sub-panel {
   margin-top: 1rem;
 }
 
-.sub-layout .sub-panel + .sub-panel {
+.sub-layout .sub-panel+.sub-panel {
   margin-top: 0;
 }
 

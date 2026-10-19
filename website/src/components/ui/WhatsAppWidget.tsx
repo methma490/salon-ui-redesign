@@ -11,10 +11,10 @@ export function WhatsAppWidget() {
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${defaultMessage}`;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex flex-col items-end">
       {/* Optional Popup / Tooltip Card */}
       {isOpen && (
-        <div className="mb-3 w-72 rounded-2xl bg-white p-4 shadow-2xl border border-slate-100 transition-all duration-300 animate-in fade-in slide-in-from-bottom-2">
+        <div className="mb-3 w-[calc(100vw-2rem)] sm:w-72 max-w-xs rounded-2xl bg-white p-4 shadow-2xl border border-slate-100 transition-all duration-300 animate-in fade-in slide-in-from-bottom-2">
           <div className="flex items-start justify-between pb-2 border-b border-slate-100">
             <div className="flex items-center gap-2">
               <span className="relative flex h-3 w-3">
@@ -23,7 +23,7 @@ export function WhatsAppWidget() {
               </span>
               <div>
                 <h4 className="text-sm font-bold text-slate-900">Dart Smart Salon</h4>
-                <p className="text-[11px] text-slate-500">Typically replies instantly</p>
+                <p className="text-[11px] text-slate-500">We’re online</p>
               </div>
             </div>
             <button
@@ -46,7 +46,7 @@ export function WhatsAppWidget() {
             className="mt-3 flex items-center justify-center gap-2 w-full rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-2.5 text-xs font-bold shadow-md transition-all active:scale-98"
           >
             <MessageCircle className="h-4 w-4 fill-white" />
-            <span>Start WhatsApp Chat</span>
+            <span>Chat on WhatsApp</span>
           </a>
         </div>
       )}
@@ -57,7 +57,7 @@ export function WhatsAppWidget() {
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Chat on WhatsApp"
-        className="group relative flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 active:scale-95"
+        className="group relative flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 active:scale-95"
       >
         {/* Pulse ring */}
         <span className="absolute -inset-1 rounded-full bg-[#25D366]/40 opacity-75 animate-ping -z-10 group-hover:opacity-100" />

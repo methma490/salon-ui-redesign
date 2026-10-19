@@ -204,7 +204,7 @@ const CarouselPrevious = React.forwardRef<
       ref={ref}
       type="button"
       className={cn(
-        "flex size-10 items-center justify-center rounded-full border border-[#DDD6FE] bg-white text-[#0F172A] shadow-xs transition-all hover:border-[#7C3AED] hover:bg-[#F5F3FF] hover:text-[#7C3AED] disabled:pointer-events-none disabled:opacity-40 cursor-pointer",
+        "flex size-10 items-center justify-center rounded-full border border-[#DDD6FE] dark:border-[#362453] bg-white dark:bg-[#1f1633] text-[#0F172A] dark:text-[#f8f6ff] shadow-xs transition-all hover:border-[#7C3AED] dark:hover:border-violet-500 hover:bg-[#F5F3FF] dark:hover:bg-[#2a1b46] hover:text-[#7C3AED] dark:hover:text-violet-300 disabled:pointer-events-none disabled:opacity-40 cursor-pointer",
         orientation === "horizontal"
           ? ""
           : "-top-12 left-1/2 -translate-x-1/2 rotate-90",
@@ -232,7 +232,7 @@ const CarouselNext = React.forwardRef<
       ref={ref}
       type="button"
       className={cn(
-        "flex size-10 items-center justify-center rounded-full border border-[#DDD6FE] bg-white text-[#0F172A] shadow-xs transition-all hover:border-[#7C3AED] hover:bg-[#F5F3FF] hover:text-[#7C3AED] disabled:pointer-events-none disabled:opacity-40 cursor-pointer",
+        "flex size-10 items-center justify-center rounded-full border border-[#DDD6FE] dark:border-[#362453] bg-white dark:bg-[#1f1633] text-[#0F172A] dark:text-[#f8f6ff] shadow-xs transition-all hover:border-[#7C3AED] dark:hover:border-violet-500 hover:bg-[#F5F3FF] dark:hover:bg-[#2a1b46] hover:text-[#7C3AED] dark:hover:text-violet-300 disabled:pointer-events-none disabled:opacity-40 cursor-pointer",
         orientation === "horizontal"
           ? ""
           : "-bottom-12 left-1/2 -translate-x-1/2 rotate-90",

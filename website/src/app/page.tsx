@@ -3,6 +3,7 @@ import { Hero } from '@/components/home/Hero';
 import { SolutionHighlight } from '@/components/home/SolutionHighlight';
 import { Features } from '@/components/home/Features';
 import { HowItWorks } from '@/components/home/HowItWorks';
+import { Testimonials } from '@/components/home/Testimonials';
 import { PricingPreview } from '@/components/home/PricingPreview';
 import { FAQPreview } from '@/components/home/FAQPreview';
 import { FinalCTA } from '@/components/home/FinalCTA';
@@ -10,25 +11,28 @@ import { FinalCTA } from '@/components/home/FinalCTA';
 export default function HomePage() {
   return (
     <MarketingShell>
-      {/* 1. Hero Section with 3D background, layered laptop & mobile, bottom feature bar, and system features ticker */}
+      {/* Hero */}
       <Hero />
 
-      {/* 2. Value Proposition & Business Benefits */}
+      {/* Salon benefits */}
       <SolutionHighlight />
 
-      {/* 3. All-in-One Salon Management Feature Suite */}
+      {/* Features */}
       <Features />
 
-      {/* 4. How It Works — 4-Step Operational Workflow */}
+      {/* How it works */}
       <HowItWorks />
 
-      {/* 6. Professional Live Pricing Catalogue */}
+      {/* Testimonials hidden until ready. */}
+      {/* <Testimonials /> */}
+
+      {/* Pricing */}
       <PricingPreview />
 
-      {/* 7. Frequently Asked Questions (Accessible Accordion) */}
+      {/* FAQs */}
       <FAQPreview />
 
-      {/* 8. Final Conversion CTA Section */}
+      {/* Final call to action */}
       <FinalCTA />
     </MarketingShell>
   );

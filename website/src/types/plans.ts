@@ -24,4 +24,7 @@ export interface PublicPlan {
   billingCycle: BillingCycle;
   prices: PlanPriceOption[];
   features: PlanFeature[];
+  isPopular?: boolean;
+  status?: string;
+  branchLimit?: number | null;
 }

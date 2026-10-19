@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
+import { ShieldCheck, CheckCircle2, Lock, Sparkles, HelpCircle } from 'lucide-react';
 import { MarketingShell } from '@/components/layout/MarketingShell';
 import { FinalCTA } from '@/components/home/FinalCTA';
 import { PricingSection } from '@/components/pricing/PricingSection';
@@ -7,10 +9,30 @@ import { fetchPublicPlans } from '@/lib/api';
 import { buildMetadata, breadcrumbJsonLd } from '@/lib/seo';
 
 export const metadata: Metadata = buildMetadata({
-  title: 'Pricing',
-  description: 'Compare Silver, Gold, and Platinum plans for Dart Smart Salon.',
+  title: 'Pricing & Plans — Transparent Salon Software',
+  description:
+    'Compare flexible subscription plans for Dart Smart Salon. Includes 21-day trial, appointments, POS, staff commissions, and PayHere checkout.',
   path: '/pricing',
 });
+
+const PRICING_FAQS = [
+  {
+    q: 'How does the 21-day free trial work?',
+    a: 'Get full access to your chosen plan for 21 days. No card is required. Try it on your salon devices.',
+  },
+  {
+    q: 'Can I switch between monthly and annual billing?',
+    a: 'Yes. Change your billing cycle anytime. Annual plans save up to 15–20%.',
+  },
+  {
+    q: 'How is payment processed in Sri Lanka?',
+    a: 'PayHere securely processes payments. We accept Visa, Mastercard, AmEx, and local mobile banking.',
+  },
+  {
+    q: 'What happens if our salon opens a second or third branch?',
+    a: 'Upgrade anytime. Your client history, staff records, and service menus stay intact.',
+  },
+];
 
 export default async function PricingPage() {
   const plans = await fetchPublicPlans();
@@ -23,16 +45,93 @@ export default async function PricingPage() {
           { name: 'Pricing', path: '/pricing' },
         ])}
       />
-      <div className="section-container pt-14">
-        <h1 className="sr-only">Pricing</h1>
-      </div>
-      <PricingSection plans={plans} />
-      <section className="section-container pb-12 text-sm text-muted">
-        <p>
-          Checkout uses PayHere via the existing signup flow in the salon app. Custom enterprise
-          arrangements are configured by platform administrators.
-        </p>
+
+      {/* ── Page Header ── */}
+      <section className="bg-slate-950 text-white pt-16 pb-12 border-b border-slate-800">
+        <div className="section-container text-center max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-2 rounded-full bg-violet-950 border border-violet-800/60 px-3.5 py-1 text-xs font-semibold text-violet-300 mb-4">
+            <Sparkles className="size-3.5 text-violet-400" />
+            <span>Pricing</span>
+          </div>
+
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
+            Plans for every salon.
+          </h1>
+
+          <p className="mt-4 text-base sm:text-lg text-slate-300 leading-relaxed max-w-2xl mx-auto">
+            Choose a plan that fits. Upgrade or cancel anytime.
+          </p>
+
+          <div className="mt-6 flex flex-wrap justify-center items-center gap-x-6 gap-y-2 text-xs text-slate-400 font-medium">
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="size-4 text-emerald-400" />
+              <span>Full 21-day trial</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="size-4 text-emerald-400" />
+              <span>No card required</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="size-4 text-emerald-400" />
+              <span>Cancel anytime</span>
+            </span>
+          </div>
+        </div>
       </section>
+
+      {/* ── Main Interactive Pricing Section (Cards & Feature Table) ── */}
+      <PricingSection plans={plans} />
+
+      {/* ── Pricing FAQ & Payment Security Callout ── */}
+      <section className="py-16 bg-white border-t border-slate-200">
+        <div className="section-container max-w-4xl mx-auto">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 border border-slate-200 px-3 py-0.5 text-xs font-bold text-slate-700 mb-2">
+              <HelpCircle className="size-3.5 text-violet-700" />
+              <span>Pricing Questions</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
+              Pricing FAQs
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {PRICING_FAQS.map((faq, i) => (
+              <div key={i} className="p-6 rounded-2xl border border-slate-200 bg-slate-50/50">
+                <h3 className="font-bold text-slate-900 text-sm sm:text-base">
+                  {faq.q}
+                </h3>
+                <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                  {faq.a}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* PayHere Security Reassurance */}
+          <div className="mt-12 p-5 sm:p-6 rounded-2xl border border-slate-200 bg-slate-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-slate-600">
+            <div className="flex items-start sm:items-center gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700 mt-0.5 sm:mt-0">
+                <Lock className="size-5" />
+              </span>
+              <div>
+                <strong className="text-slate-900 block text-sm font-semibold">
+                  Secure Checkout with PayHere
+                </strong>
+                <span className="leading-relaxed">All subscription transactions are encrypted with bank-grade 256-bit SSL protocols.</span>
+              </div>
+            </div>
+            <Link
+              href="/contact"
+              className="shrink-0 text-violet-700 hover:text-violet-900 font-bold self-start sm:self-auto"
+            >
+              Need a custom quote? →
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Final CTA ── */}
       <FinalCTA />
     </MarketingShell>
   );

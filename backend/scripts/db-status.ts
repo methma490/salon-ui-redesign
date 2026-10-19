@@ -1,10 +1,8 @@
+import 'dotenv/config';
 import { readdirSync, existsSync } from 'fs';
 import { join } from 'path';
 import { PrismaClient } from '@prisma/client';
-import {
-  getTenantMigrationFiles,
-  getTenantMigrationStatuses,
-} from '../src/database/tenant-migration-runner';
+import { getTenantMigrationStatuses } from '../src/database/tenant-migration-runner';
 
 const prisma = new PrismaClient();
 
@@ -85,7 +83,6 @@ async function main() {
   console.log('================================================================================\n');
 
   const tenantStatuses = await getTenantMigrationStatuses(prisma);
-  const totalMigrationFiles = getTenantMigrationFiles().length;
 
   if (tenantStatuses.length === 0) {
     console.log('No active tenant schemas found.');

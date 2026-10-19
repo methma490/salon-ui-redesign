@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
-import { Inter, Plus_Jakarta_Sans, Caveat } from 'next/font/google';
+import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import { JsonLd } from '@/components/seo/JsonLd';
+import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import { APP_NAME, SITE_DESCRIPTION } from '@/lib/constants';
 import {
   buildMetadata,
@@ -22,14 +23,8 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   display: 'swap',
 });
 
-const caveat = Caveat({
-  subsets: ['latin'],
-  variable: '--font-caveat',
-  display: 'swap',
-});
-
 export const metadata: Metadata = buildMetadata({
-  title: APP_NAME,
+  title: `${APP_NAME} — All-in-One Salon Management Software`,
   description: SITE_DESCRIPTION,
   path: '/',
 });
@@ -38,13 +33,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${plusJakartaSans.variable} ${caveat.variable} h-full scroll-smooth`}
+      suppressHydrationWarning
+      className={`${inter.variable} ${plusJakartaSans.variable} h-full scroll-smooth`}
     >
-      <body className="min-h-full font-sans antialiased bg-[#F9FAFB] text-[#0F172A] selection:bg-[#E9D5FF] selection:text-[#7C3AED]">
-        <JsonLd
-          data={[organizationJsonLd(), webSiteJsonLd(), softwareApplicationJsonLd()]}
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('dart-salon-theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark');document.documentElement.style.colorScheme='dark';}else{document.documentElement.classList.remove('dark');document.documentElement.style.colorScheme='light';}}catch(e){}})();`,
+          }}
         />
-        {children}
+      </head>
+      <body className="min-h-full font-sans antialiased bg-[#fafbfc] dark:bg-[#0d0915] text-slate-900 dark:text-[#f8f6ff] selection:bg-violet-600 selection:text-white transition-colors duration-200">
+        <ThemeProvider>
+          <JsonLd
+            data={[organizationJsonLd(), webSiteJsonLd(), softwareApplicationJsonLd()]}
+          />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
