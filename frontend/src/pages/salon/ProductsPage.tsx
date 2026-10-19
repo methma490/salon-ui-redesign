@@ -25,9 +25,7 @@ import {
   Trash2,
   Upload,
   X,
-  ChevronLeft,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { appAlert } from '@/lib/app-alerts';
 import { tenantApi, type Product, type ProductCategory } from '@/api/tenant.api';
 import { useDebouncedSearch } from '@/hooks/useDebounce';
@@ -908,23 +906,10 @@ export default function ProductsPage() {
 
   return (
     <div className="emp-page">
-      {/* Back button to Inventory hub */}
-      <div className="flex items-center gap-2 mb-2">
-        <Link
-          to="/salon/inventory-hub"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors py-1.5 px-2.5 rounded-lg hover:bg-slate-100"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          <span>Back to Inventory</span>
-        </Link>
-      </div>
 
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Products</h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">Manage retail products, stock levels, pricing, and operations</p>
-        </div>
+
+      {/* Top Action */}
+      <div className="flex items-center justify-end mb-4">
         <button
           type="button"
           onClick={() => {

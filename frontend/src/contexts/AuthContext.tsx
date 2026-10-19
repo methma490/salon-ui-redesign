@@ -11,7 +11,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   isSuperAdmin: boolean;
   isTenantUser: boolean;
-  login: (email: string, password: string) => Promise<AuthUser>;
+  login: (email: string, password: string, salonCode?: string) => Promise<AuthUser>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -49,8 +49,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   const login = useCallback(
-    async (email: string, password: string) => {
-      const response = await authApi.login(email, password);
+    async (email: string, password: string, salonCode?: string) => {
+      const response = await authApi.login(email, password, salonCode);
       authStorage.setAccessToken(response.accessToken);
       queryClient.setQueryData<AuthUser | null>(authKeys.me, response.user);
       return response.user;

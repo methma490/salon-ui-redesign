@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
+  Calendar,
   Check,
   CheckCircle2,
   ChevronRight,
+  Clock,
   Eye,
   FileText,
   History,
@@ -14,6 +16,7 @@ import {
   Send,
   ShoppingCart,
   Trash2,
+  User,
   UserCheck,
   X,
 } from 'lucide-react';
@@ -109,6 +112,7 @@ interface CartService {
   serviceName: string;
   categoryName?: string;
   price: number;
+  originalPrice: number;
   employeeId: string;
   employeeName: string;
   discount: number;
@@ -196,6 +200,91 @@ function useClock() {
       timeZone: 'Asia/Colombo',
     }),
   };
+}
+
+function CartItemPriceInput({
+  value,
+  originalPrice,
+  onChange,
+  onReset,
+}: {
+  value: number;
+  originalPrice?: number;
+  onChange?: (val: number) => void;
+  onReset?: () => void;
+}) {
+  const [localVal, setLocalVal] = useState(() => String(value));
+  const [isFocused, setIsFocused] = useState(false);
+
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalVal(String(value));
+    }
+  }, [value, isFocused]);
+
+  const isCustom = originalPrice !== undefined && Math.abs(value - originalPrice) > 0.001;
+
+  return (
+    <div
+      className={`pos-cart-price-input-wrap ${isCustom ? 'is-custom-price' : ''}`}
+      title={
+        isCustom && originalPrice !== undefined
+          ? `Custom price (Catalog: Rs. ${originalPrice.toLocaleString()})`
+          : 'Edit service price'
+      }
+    >
+      <span className="pos-cart-price-currency">Rs.</span>
+      <input
+        type="number"
+        min="0"
+        step="1"
+        aria-label="Service price"
+        className="pos-cart-price-input"
+        value={localVal}
+        onFocus={(e) => {
+          setIsFocused(true);
+          e.target.select();
+        }}
+        onChange={(e) => {
+          const str = e.target.value;
+          setLocalVal(str);
+          const parsed = parseFloat(str);
+          if (!isNaN(parsed) && parsed >= 0) {
+            onChange?.(parsed);
+          }
+        }}
+        onBlur={() => {
+          setIsFocused(false);
+          const parsed = parseFloat(localVal);
+          if (isNaN(parsed) || parsed < 0) {
+            setLocalVal(String(value));
+          } else {
+            setLocalVal(String(parsed));
+            onChange?.(parsed);
+          }
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+      />
+      {isCustom && onReset && (
+        <button
+          type="button"
+          className="pos-cart-price-reset-btn"
+          title={`Reset to catalog price (Rs. ${originalPrice?.toLocaleString()})`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onReset();
+          }}
+          aria-label="Reset price"
+        >
+          ↺
+        </button>
+      )}
+    </div>
+  );
 }
 
 export default function PosPage() {
@@ -388,6 +477,16 @@ export default function PosPage() {
       ),
     );
   };
+
+  const updateCartServicePrice = (cartKey: string, newPrice: number) => {
+    setCartServices((prev) =>
+      prev.map((s) =>
+        s.key === cartKey
+          ? { ...s, price: Math.max(0, newPrice) }
+          : s,
+      ),
+    );
+  };
   const { data: services = [] } = useQuery({
     queryKey: ['services', 'pos-all'],
     queryFn: () => tenantApi.services.list({ all: true }),
@@ -422,9 +521,11 @@ export default function PosPage() {
       setCustomerSearch(sale.customerName || '');
       setCartServices(serviceItems.map((item: any) => {
         const performer = item.employees?.[0];
+        const matchingSvc = (services as any[]).find((s) => s.id === item.serviceId);
+        const catalogPrice = matchingSvc ? Number(matchingSvc.price) : Number(item.unitPrice);
         return {
           key: crypto.randomUUID(), serviceId: item.serviceId, serviceName: item.name,
-          price: Number(item.unitPrice), employeeId: performer?.id || '',
+          price: Number(item.unitPrice), originalPrice: catalogPrice, employeeId: performer?.id || '',
           employeeName: performer?.name || '', discount: Number(item.discount) || 0,
         };
       }));
@@ -690,6 +791,22 @@ export default function PosPage() {
           referenceNumber: paymentReference,
         },
       ]);
+    } else if (paymentMode === 'MIX' && total > 0) {
+      setPaymentLines((prev) => {
+        if (prev.length === 2) {
+          if (prev[0].amount.trim() !== '') {
+            const first = parseFloat(prev[0].amount);
+            if (!isNaN(first)) {
+              const rem = Math.max(0, Math.round((total - first) * 100) / 100);
+              const remStr = rem > 0 ? (Number.isInteger(rem) ? String(rem) : rem.toFixed(2)) : '0';
+              if (prev[1].amount !== remStr) {
+                return [prev[0], { ...prev[1], amount: remStr }];
+              }
+            }
+          }
+        }
+        return prev;
+      });
     }
   }, [total, paymentMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -706,6 +823,7 @@ export default function PosPage() {
         serviceName: svc.name,
         categoryName: svc.categoryName ?? undefined,
         price: svc.price,
+        originalPrice: svc.price,
         employeeId: emp.id,
         employeeName: emp.name,
         discount: 0,
@@ -785,14 +903,63 @@ export default function PosPage() {
   };
 
   const updatePaymentLine = (key: string, patch: Partial<PaymentLine>) => {
-    setPaymentLines((prev) => prev.map((line) => (line.key === key ? { ...line, ...patch } : line)));
+    setPaymentLines((prev) => {
+      const targetIndex = prev.findIndex((l) => l.key === key);
+      if (targetIndex === -1) return prev;
+
+      const nextLines = prev.map((line) => (line.key === key ? { ...line, ...patch } : line));
+
+      // Auto-calculate remaining payment amounts when editing MIX split lines
+      if (paymentMode === 'MIX' && patch.amount !== undefined) {
+        const rawAmount = patch.amount.trim();
+
+        if (nextLines.length === 2) {
+          const otherIndex = targetIndex === 0 ? 1 : 0;
+          if (rawAmount === '') {
+            nextLines[otherIndex] = { ...nextLines[otherIndex], amount: '' };
+          } else {
+            const parsed = parseFloat(rawAmount);
+            if (!isNaN(parsed)) {
+              const rem = Math.max(0, Math.round((total - parsed) * 100) / 100);
+              const remStr = rem > 0 ? (Number.isInteger(rem) ? String(rem) : rem.toFixed(2)) : '0';
+              nextLines[otherIndex] = { ...nextLines[otherIndex], amount: remStr };
+            }
+          }
+        } else if (nextLines.length > 2 && targetIndex < nextLines.length - 1) {
+          const lastIdx = nextLines.length - 1;
+          let sumOthers = 0;
+          for (let i = 0; i < lastIdx; i++) {
+            const val = parseFloat(nextLines[i].amount);
+            if (!isNaN(val)) sumOthers += val;
+          }
+          const rem = Math.max(0, Math.round((total - sumOthers) * 100) / 100);
+          const remStr = rem > 0 ? (Number.isInteger(rem) ? String(rem) : rem.toFixed(2)) : '0';
+          nextLines[lastIdx] = { ...nextLines[lastIdx], amount: remStr };
+        }
+      }
+
+      return nextLines;
+    });
   };
 
   const removePaymentLine = (key: string) => {
     const minLines = 1;
-    setPaymentLines((prev) =>
-      prev.length <= minLines ? prev : prev.filter((line) => line.key !== key),
-    );
+    setPaymentLines((prev) => {
+      if (prev.length <= minLines) return prev;
+      const remaining = prev.filter((line) => line.key !== key);
+      if (paymentMode === 'MIX' && remaining.length >= 2) {
+        const lastIdx = remaining.length - 1;
+        let sumOthers = 0;
+        for (let i = 0; i < lastIdx; i++) {
+          const val = parseFloat(remaining[i].amount);
+          if (!isNaN(val)) sumOthers += val;
+        }
+        const rem = Math.max(0, Math.round((total - sumOthers) * 100) / 100);
+        const remStr = rem > 0 ? (Number.isInteger(rem) ? String(rem) : rem.toFixed(2)) : '0';
+        remaining[lastIdx] = { ...remaining[lastIdx], amount: remStr };
+      }
+      return remaining;
+    });
   };
 
   const saveDraftSale = () => {
@@ -841,11 +1008,13 @@ export default function PosPage() {
       services: cartServices.map((s) => ({
         serviceId: s.serviceId,
         employeeId: s.employeeId,
+        unitPrice: s.price,
         discount: s.discount || undefined,
       })),
       products: cartProducts.map((p) => ({
         productId: p.productId,
         quantity: p.quantity,
+        unitPrice: p.price,
         discount: p.discount || undefined,
       })),
       employees: derivedSaleEmployees,
@@ -902,11 +1071,13 @@ export default function PosPage() {
       services: cartServices.map((s) => ({
         serviceId: s.serviceId,
         employeeId: s.employeeId,
+        unitPrice: s.price,
         discount: s.discount || undefined,
       })),
       products: cartProducts.map((p) => ({
         productId: p.productId,
         quantity: p.quantity,
+        unitPrice: p.price,
         discount: p.discount || undefined,
       })),
       employees: derivedSaleEmployees,
@@ -949,11 +1120,14 @@ export default function PosPage() {
       employeeId: s.employeeId,
       employeeName: s.employeeName,
       price: s.price,
+      originalPrice: s.originalPrice,
       qty: 1,
-      total: s.price,
+      total: s.price - (s.discount || 0),
       onRemove: () => setCartServices((prev) => prev.filter((x) => x.key !== s.key)),
       onQtyChange: null as null | ((next: number) => void),
       onEmployeeChange: (employeeId: string) => updateCartServiceEmployee(s.key, employeeId),
+      onPriceChange: (nextPrice: number) => updateCartServicePrice(s.key, nextPrice),
+      onResetPrice: () => updateCartServicePrice(s.key, s.originalPrice),
     })),
     ...cartProducts.flatMap((p, baseIndex) => {
       const index = cartServices.length + baseIndex + 1;
@@ -967,8 +1141,9 @@ export default function PosPage() {
         employeeId: '',
         employeeName: '',
         price: p.price,
+        originalPrice: p.price,
         qty: p.quantity,
-        total: p.price * p.quantity,
+        total: p.price * p.quantity - (p.discount || 0),
         onRemove: () => setCartProducts((prev) => prev.filter((x) => x.key !== p.key)),
         onQtyChange: (next: number) => {
           if (next <= 0) {
@@ -983,6 +1158,8 @@ export default function PosPage() {
           );
         },
         onEmployeeChange: null as null | ((employeeId: string) => void),
+        onPriceChange: null as null | ((nextPrice: number) => void),
+        onResetPrice: null as null | (() => void),
       };
     }),
   ];
@@ -990,74 +1167,104 @@ export default function PosPage() {
   const renderMobileCartList = () => (
     <div className="pos-mobile-cart-list">
       {cartRows.map((row) => (
-        <div key={row.key} className="pos-mobile-cart-card">
-          <div className="pos-mobile-cart-card-top">
-            <div className="pos-mobile-cart-item-main">
-              <span className="pos-mobile-cart-icon">{row.icon}</span>
-              <div className="pos-mobile-cart-item-text">
-                <div className="pos-mobile-cart-name">{row.name}</div>
-                <div className="pos-mobile-cart-sub">{row.sub}</div>
+        <div key={row.key} className="pos-cart-card">
+          <div className="pos-cart-card-header">
+            <div className="pos-cart-item-info">
+              <span className="pos-cart-item-icon">{row.icon}</span>
+              <div className="pos-cart-item-titles">
+                <span className="pos-cart-item-name">{row.name}</span>
+                {row.sub && <span className="pos-cart-item-badge">{row.sub}</span>}
               </div>
             </div>
-            <button
-              type="button"
-              className="pos-cart-remove"
-              aria-label="Remove item"
-              onClick={row.onRemove}
-            >
-              <Trash2 size={16} />
-            </button>
+            <div className="pos-cart-card-actions">
+              <span className="pos-cart-item-total">{formatMoneyAmount(row.total)}</span>
+              <button
+                type="button"
+                className="pos-cart-remove-btn"
+                aria-label={`Remove ${row.name}`}
+                onClick={row.onRemove}
+                title="Remove item"
+              >
+                <Trash2 size={13} />
+              </button>
+            </div>
           </div>
-          {row.kind === 'service' && row.onEmployeeChange && (
-            <div className="pos-cart-employee">
-              <label className="pos-cart-employee-label">Employee</label>
-              {hasNoEmployees ? (
-                <span className="pos-muted">No employees for this branch</span>
-              ) : employees.length === 1 ? (
-                <span className="pos-cart-employee-solo">{row.employeeName}</span>
-              ) : (
-                <Select value={row.employeeId} onValueChange={row.onEmployeeChange}>
-                  <SelectTrigger className="pos-cart-employee-select">
-                    <SelectValue placeholder="Select employee" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {employees.map((e) => (
-                      <SelectItem key={e.id} value={e.id}>
-                        {e.name}
-                        {e.designation ? ` · ${e.designation}` : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+
+          <div className="pos-cart-card-footer">
+            {row.kind === 'service' && row.onEmployeeChange ? (
+              <div className="pos-cart-stylist-wrapper">
+                {hasNoEmployees ? (
+                  <span className="pos-cart-stylist-empty">No stylist</span>
+                ) : employees.length === 1 ? (
+                  <div className="pos-cart-stylist-solo" title={row.employeeName}>
+                    <User size={12} className="pos-cart-stylist-icon" />
+                    <span className="pos-cart-stylist-text">{row.employeeName}</span>
+                  </div>
+                ) : (
+                  <Select value={row.employeeId} onValueChange={row.onEmployeeChange}>
+                    <SelectTrigger className="pos-cart-stylist-trigger" aria-label="Select stylist">
+                      <div className="pos-cart-stylist-val">
+                        <User size={12} className="pos-cart-stylist-icon" />
+                        <span className="pos-cart-stylist-text">
+                          <SelectValue placeholder="Assign stylist" />
+                        </span>
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {employees.map((e) => (
+                        <SelectItem key={e.id} value={e.id}>
+                          {e.name}
+                          {e.designation ? ` · ${e.designation}` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            ) : (
+              <div className="pos-cart-empty-spacer" />
+            )}
+
+            <div className="pos-cart-pricing-controls">
+              {row.kind === 'service' && row.onPriceChange && (
+                <div className="pos-cart-service-price-edit">
+                  <CartItemPriceInput
+                    value={row.price}
+                    originalPrice={row.originalPrice}
+                    onChange={row.onPriceChange}
+                    onReset={row.onResetPrice}
+                  />
+                </div>
+              )}
+              {row.kind === 'product' && (
+                <div className="pos-cart-product-controls">
+                  <span className="pos-cart-product-unit-price">
+                    @{formatMoneyAmount(row.price)}
+                  </span>
+                  {row.onQtyChange ? (
+                    <div className="pos-qty-stepper">
+                      <button
+                        type="button"
+                        className="pos-qty-btn"
+                        onClick={() => row.onQtyChange!(row.qty - 1)}
+                      >
+                        −
+                      </button>
+                      <span>{row.qty}</span>
+                      <button
+                        type="button"
+                        className="pos-qty-btn"
+                        onClick={() => row.onQtyChange!(row.qty + 1)}
+                      >
+                        +
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="pos-mobile-cart-qty">Qty {row.qty}</span>
+                  )}
+                </div>
               )}
             </div>
-          )}
-          <div className="pos-mobile-cart-card-bottom">
-            {row.kind === 'product' && (
-              <span className="pos-mobile-cart-price">{formatMoneyAmount(row.price)}</span>
-            )}
-            {row.onQtyChange ? (
-              <div className="pos-qty-stepper">
-                <button
-                  type="button"
-                  className="pos-qty-btn"
-                  onClick={() => row.onQtyChange!(row.qty - 1)}
-                >
-                  −
-                </button>
-                <span>{row.qty}</span>
-                <button
-                  type="button"
-                  className="pos-qty-btn"
-                  onClick={() => row.onQtyChange!(row.qty + 1)}
-                >
-                  +
-                </button>
-              </div>
-            ) : row.kind === 'product' ? (
-              <span className="pos-mobile-cart-qty">Qty {row.qty}</span>
-            ) : null}
-            <span className="pos-mobile-cart-line-total">{formatMoneyAmount(row.total)}</span>
           </div>
         </div>
       ))}
@@ -1493,53 +1700,57 @@ export default function PosPage() {
     <div className="pos-page">
       <header className="pos-toolbar">
         <div className="pos-toolbar-grid">
-          <div className="pos-toolbar-brand">
-            <h1 className="pos-title">
-              <span className="pos-title-short">POS</span>
-              <span className="pos-title-full">Point of Sale</span>
-            </h1>
-            <span className="pos-mobile-subtitle">Create a new sale</span>
-            <span className="pos-datetime pos-datetime-inline">{clock.time}</span>
-          </div>
-
-          <div className="pos-branch-select">
-            <Select value={branchId} onValueChange={handleBranchChange}>
-              <SelectTrigger aria-label="Select branch">
-                <SelectValue placeholder="Branch" />
-              </SelectTrigger>
-              <SelectContent>
-                {activeBranches.map((b) => (
-                  <SelectItem key={b.id} value={b.id}>
-                    {b.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <button
-            type="button"
-            className="pos-btn-outline"
-            style={{ justifySelf: 'start', whiteSpace: 'nowrap' }}
-            onClick={() => setDraftHistoryOpen(true)}
-          >
-            <History size={15} /> Draft history
-          </button>
-
-          <div className="pos-datetime-block">
-            <span className="pos-datetime pos-datetime-tablet">{clock.date}</span>
-            <span className="pos-datetime pos-datetime-desktop">{clock.full}</span>
-          </div>
-
-          {user && (
-            <div className="pos-user-chip">
-              <span className="pos-user-avatar">{userInitials(user.name)}</span>
-              <span className="pos-user-meta">
-                <span className="pos-user-name">{user.name}</span>
-                <span className="pos-user-role">{getUserDisplayRole(user)}</span>
-              </span>
+          <div className="pos-toolbar-left">
+            <div className="pos-branch-select">
+              <Select value={branchId} onValueChange={handleBranchChange}>
+                <SelectTrigger aria-label="Select branch">
+                  <SelectValue placeholder="Branch" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeBranches.map((b) => (
+                    <SelectItem key={b.id} value={b.id}>
+                      {b.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          )}
+
+            <button
+              type="button"
+              className="pos-btn-outline pos-draft-history-btn"
+              onClick={() => setDraftHistoryOpen(true)}
+            >
+              <History size={15} />
+              <span>Draft history</span>
+            </button>
+          </div>
+
+          <div className="pos-toolbar-right">
+            <div className="pos-datetime-block">
+              <div className="pos-datetime-badge">
+                <span className="pos-datetime-item">
+                  <Calendar size={13} className="pos-datetime-icon" />
+                  <span>{clock.date}</span>
+                </span>
+                <span className="pos-datetime-divider" aria-hidden="true">•</span>
+                <span className="pos-datetime-item">
+                  <Clock size={13} className="pos-datetime-icon" />
+                  <span>{clock.time}</span>
+                </span>
+              </div>
+            </div>
+
+            {user && (
+              <div className="pos-user-chip">
+                <span className="pos-user-avatar">{userInitials(user.name)}</span>
+                <span className="pos-user-meta">
+                  <span className="pos-user-name">{user.name}</span>
+                  <span className="pos-user-role">{getUserDisplayRole(user)}</span>
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 

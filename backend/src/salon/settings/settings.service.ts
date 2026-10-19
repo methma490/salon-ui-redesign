@@ -17,6 +17,7 @@ import { tenantTable } from '../../tenant/utils/schema-name.util';
 import { TenantSchemaService } from '../../tenant/services/tenant-schema.service';
 import {
   filterPermissionsByFeatures,
+  isReservedPlatformRole,
   isReservedRoleCode,
   moduleAccessToPermissionCodes,
   permissionCodesToModuleAccess,
@@ -284,9 +285,15 @@ export class SettingsService {
 
       const passwordHash = await bcrypt.hash(dto.newPassword, 12);
       await tx.$queryRawUnsafe(
-        `UPDATE ${usersTable} SET password_hash = $2, updated_at = NOW() WHERE id = $1::uuid`,
+        `UPDATE ${usersTable} SET password_hash = $2, token_version = token_version + 1, updated_at = NOW() WHERE id = $1::uuid`,
         userId,
         passwordHash,
+      );
+
+      const refreshTokensTable = tenantTable(schemaName, 'refresh_tokens');
+      await tx.$queryRawUnsafe(
+        `UPDATE ${refreshTokensTable} SET revoked_at = NOW() WHERE user_id = $1::uuid AND revoked_at IS NULL`,
+        userId,
       );
     });
 
@@ -680,9 +687,17 @@ export class SettingsService {
       throw new BadRequestException('At least one feature permission must be granted');
     }
 
+    if (dto.code && (isReservedRoleCode(dto.code) || isReservedPlatformRole(dto.code))) {
+      throw new BadRequestException('This role code is reserved');
+    }
+
+    if (dto.name && (isReservedRoleCode(dto.name) || isReservedPlatformRole(dto.name))) {
+      throw new BadRequestException('This role name is reserved');
+    }
+
     let roleCode = (dto.code?.trim().toUpperCase() || slugifyRoleCode(dto.name)).slice(0, 50);
 
-    if (isReservedRoleCode(roleCode)) {
+    if (isReservedRoleCode(roleCode) || isReservedPlatformRole(roleCode)) {
       throw new BadRequestException('This role code is reserved');
     }
 
@@ -807,6 +822,10 @@ export class SettingsService {
       throw new BadRequestException('Salon Admin role permissions cannot be modified');
     }
 
+    if (isReservedPlatformRole(normalizedRoleCode)) {
+      throw new ForbiddenException('Platform reserved roles cannot be modified');
+    }
+
     const enabledFeatures = subscriptionContext.features;
 
     const moduleAccessMap = Object.fromEntries(
@@ -888,6 +907,10 @@ export class SettingsService {
     }
 
     const roleCode = dto.roleCode.trim().toUpperCase();
+
+    if (isReservedPlatformRole(roleCode)) {
+      throw new ForbiddenException('Cannot assign platform reserved roles in salon context');
+    }
     const subscriptionContext =
       await this.subscriptionsService.getTenantSubscriptionContext(tenantId);
     const enabledFeatures = subscriptionContext.features;
@@ -975,6 +998,11 @@ export class SettingsService {
 
       await tx.$queryRawUnsafe(
         `DELETE FROM ${userPermissionsTable} WHERE user_id = $1::uuid`,
+        targetUserId,
+      );
+
+      await tx.$queryRawUnsafe(
+        `UPDATE ${usersTable} SET token_version = token_version + 1, updated_at = NOW() WHERE id = $1::uuid`,
         targetUserId,
       );
 

@@ -75,6 +75,7 @@ model SuperAdminUser {
   status                     SuperAdminStatus            @default(ACTIVE)
   createdAt                  DateTime                    @default(now())
   updatedAt                  DateTime
+  tokenVersion               Int                         @default(1) @map("token_version")
   auditLogs                  SuperAdminAuditLog[]
   refreshTokens              SuperAdminRefreshToken[]
 
@@ -82,15 +83,20 @@ model SuperAdminUser {
 }
 
 model SuperAdminRefreshToken {
-  id        String         @id @default(uuid()) @db.Uuid
-  userId    String         @db.Uuid
-  tokenHash String         @unique
-  expiresAt DateTime
-  revokedAt DateTime?
-  createdAt DateTime       @default(now())
-  user      SuperAdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                 String         @id @default(uuid()) @db.Uuid
+  userId             String         @db.Uuid
+  tokenHash          String         @unique
+  familyId           String         @default(uuid()) @db.Uuid
+  expiresAt          DateTime
+  absoluteExpiresAt  DateTime       @default(now())
+  revokedAt          DateTime?
+  usedAt             DateTime?
+  replacedByTokenId  String?        @db.Uuid
+  createdAt          DateTime       @default(now())
+  user               SuperAdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([familyId])
   @@map("super_admin_refresh_tokens")
 }
 

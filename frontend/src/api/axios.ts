@@ -48,8 +48,11 @@ const processQueue = (token: string | null) => {
 const AUTH_REDIRECT_MESSAGE_KEY = 'auth_redirect_message';
 
 function getErrorMessage(error: unknown): string | undefined {
-  const message = (error as { response?: { data?: { message?: string | string[] } } })?.response
-    ?.data?.message;
+  const resData = (error as { response?: { data?: { message?: string | string[]; code?: string } } })?.response?.data;
+  if (resData?.code === 'EMAIL_ALREADY_IN_USE') {
+    return 'This email is already in use.';
+  }
+  const message = resData?.message;
   if (Array.isArray(message)) {
     return message[0];
   }
@@ -200,16 +203,16 @@ api.interceptors.response.use(
 );
 
 export const authApi = {
-  login: (email: string, password: string) =>
-    api.post<LoginResponse>('/auth/login', { email, password }).then((r) => r.data),
+  login: (email: string, password: string, salonCode?: string) =>
+    api.post<LoginResponse>('/auth/login', { email, password, salonCode: salonCode?.trim() || undefined }).then((r) => r.data),
   refresh: () =>
     api.post<{ accessToken: string }>('/auth/refresh').then((r) => r.data),
   logout: () =>
     api.post('/auth/logout').then((r) => r.data),
   me: () =>
     api.get<AuthUser>('/auth/me').then((r) => r.data),
-  forgotPassword: (email: string, portal: 'salon' | 'super-admin') =>
-    api.post<{ message: string }>('/auth/forgot-password', { email, portal }).then((r) => r.data),
+  forgotPassword: (email: string, portal: 'salon' | 'super-admin', salonCode?: string) =>
+    api.post<{ message: string }>('/auth/forgot-password', { email, portal, salonCode: salonCode?.trim() || undefined }).then((r) => r.data),
   resetPassword: (token: string, password: string) =>
     api.post<{ message: string }>('/auth/reset-password', { token, password }).then((r) => r.data),
 };

@@ -47,6 +47,7 @@ describe('RBAC & Role Bypass Security Tests', () => {
       id: 'super-1',
       email: 'admin@platform.com',
       roles: ['SUPER_ADMIN'],
+      userType: 'SUPER_ADMIN' as const,
     };
 
     const salonAdminUser = {

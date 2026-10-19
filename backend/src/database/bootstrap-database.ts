@@ -43,6 +43,18 @@ async function ensurePublicFoundation(prisma: PrismaClient): Promise<void> {
 
   try {
     await prisma.$executeRawUnsafe(`
+      ALTER TABLE "public"."super_admin_refresh_tokens" ADD COLUMN IF NOT EXISTS "familyId" UUID DEFAULT gen_random_uuid();
+      ALTER TABLE "public"."super_admin_refresh_tokens" ADD COLUMN IF NOT EXISTS "absoluteExpiresAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+      ALTER TABLE "public"."super_admin_refresh_tokens" ADD COLUMN IF NOT EXISTS "usedAt" TIMESTAMP(3);
+      ALTER TABLE "public"."super_admin_refresh_tokens" ADD COLUMN IF NOT EXISTS "replacedByTokenId" UUID;
+      CREATE INDEX IF NOT EXISTS "super_admin_refresh_tokens_familyId_idx" ON "public"."super_admin_refresh_tokens"("familyId");
+    `);
+  } catch (e: any) {
+    logger.warn(`Could not verify super_admin_refresh_tokens family columns: ${e.message || e}`);
+  }
+
+  try {
+    await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "public"."payments" (
         "id" UUID NOT NULL DEFAULT gen_random_uuid(),
         "payment_order_id" UUID NOT NULL,

@@ -39,6 +39,7 @@ import { NotificationBell } from '@/components/salon/NotificationBell';
 import { Separator } from '@/components/ui/separator';
 import { SalonBranchProvider, useSalonBranch } from '@/contexts/SalonBranchContext';
 import { TenantThemeProvider, useTenantTheme } from '@/contexts/TenantThemeContext';
+import { PageTitleProvider, usePageTitle } from '@/contexts/PageTitleContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { resolveUploadUrl } from '@/lib/upload-url';
 import { cn } from '@/lib/utils';
@@ -299,13 +300,6 @@ const navGroups: NavGroup[] = [
     feature: 'PAYROLL',
     module: 'PAYROLL',
     children: [
-      {
-        to: '/salon/payroll',
-        label: 'Payroll Hub',
-        icon: Wallet,
-        feature: 'PAYROLL',
-        module: 'PAYROLL',
-      },
       {
         to: '/salon/payroll/runs',
         label: 'Run Payroll',
@@ -625,6 +619,7 @@ function SalonAdminHeader({
   collapsed?: boolean;
   onToggleCollapse?: () => void;
 }) {
+  const { title } = usePageTitle();
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -756,9 +751,9 @@ function SalonAdminHeader({
           <div className="w-9 shrink-0" />
         </div>
 
-        {/* Desktop: expand a collapsed sidebar from the top header ribbon */}
-        {collapsed && onToggleCollapse && (
-          <div className="hidden items-center xl:flex">
+        {/* Desktop: left side of top header */}
+        <div className="hidden min-w-0 items-center gap-3 xl:flex">
+          {collapsed && onToggleCollapse && (
             <button
               type="button"
               className="salon-header-expand-btn"
@@ -768,8 +763,13 @@ function SalonAdminHeader({
             >
               <PanelLeftOpen className="h-4 w-4" />
             </button>
-          </div>
-        )}
+          )}
+          {title ? (
+            <h1 className="text-lg md:text-xl font-bold tracking-tight text-slate-900 truncate select-none">
+              {title}
+            </h1>
+          ) : null}
+        </div>
       </div>
 
       <div className="salon-header-actions flex shrink-0 items-center gap-1 md:gap-2">
@@ -999,7 +999,9 @@ export default function SalonAdminLayout() {
   return (
     <TenantThemeProvider>
       <SalonBranchProvider>
-        <SalonAdminLayoutInner />
+        <PageTitleProvider>
+          <SalonAdminLayoutInner />
+        </PageTitleProvider>
       </SalonBranchProvider>
     </TenantThemeProvider>
   );

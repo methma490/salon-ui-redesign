@@ -16,6 +16,7 @@ import { logAudit } from '../utils/audit.util';
 import { generateSequentialCode } from '../utils/code-generator.util';
 import {
   filterPermissionsByFeatures,
+  isReservedPlatformRole,
   ROLE_MANAGEMENT_FEATURE,
   roleEligibleForPlan,
 } from '../utils/permission-feature.util';
@@ -245,13 +246,21 @@ export class EmployeesService {
     const userRolesTable = tenantTable(schemaName, 'user_roles');
     const normalizedEmail = params.email.trim().toLowerCase();
 
+    if (isReservedPlatformRole(params.roleCode)) {
+      throw new BadRequestException('Cannot assign platform reserved roles to tenant users');
+    }
+
     const existing = (await tx.$queryRawUnsafe(
       `SELECT id FROM ${usersTable} WHERE LOWER(email) = $1 LIMIT 1`,
       normalizedEmail,
     )) as Array<{ id: string }>;
 
     if (existing.length > 0) {
-      throw new ConflictException('A user with this email already exists');
+      throw new ConflictException({
+        statusCode: 409,
+        code: 'EMAIL_ALREADY_IN_USE',
+        message: 'This email is already in use.',
+      });
     }
 
     const passwordHash = await bcrypt.hash(params.password, 12);
@@ -296,6 +305,10 @@ export class EmployeesService {
     const userRolesTable = tenantTable(schemaName, 'user_roles');
     const userPermissionsTable = tenantTable(schemaName, 'user_permissions');
 
+    if (isReservedPlatformRole(roleCode)) {
+      throw new BadRequestException('Cannot assign platform reserved roles in salon context');
+    }
+
     const roleRows = (await tx.$queryRawUnsafe(
       `SELECT id FROM ${rolesTable} WHERE code = $1 LIMIT 1`,
       roleCode,
@@ -319,6 +332,12 @@ export class EmployeesService {
       `INSERT INTO ${userRolesTable} (user_id, role_id) VALUES ($1::uuid, $2::uuid)`,
       targetUserId,
       roleRows[0].id,
+    );
+
+    const usersTable = tenantTable(schemaName, 'users');
+    await tx.$queryRawUnsafe(
+      `UPDATE ${usersTable} SET token_version = token_version + 1, updated_at = NOW() WHERE id = $1::uuid`,
+      targetUserId,
     );
   }
 
@@ -676,6 +695,28 @@ export class EmployeesService {
         id,
         dto.status,
       );
+
+      if (emp.userId) {
+        const usersTable = tenantTable(schemaName, 'users');
+        const refreshTokensTable = tenantTable(schemaName, 'refresh_tokens');
+        const newUserStatus = dto.status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE';
+        await tx.$queryRawUnsafe(
+          `UPDATE ${usersTable}
+           SET status = $2::user_status, token_version = token_version + 1, updated_at = NOW()
+           WHERE id = $1::uuid`,
+          emp.userId,
+          newUserStatus,
+        );
+
+        if (dto.status !== 'ACTIVE') {
+          await tx.$queryRawUnsafe(
+            `UPDATE ${refreshTokensTable}
+             SET revoked_at = NOW()
+             WHERE user_id = $1::uuid AND revoked_at IS NULL`,
+            emp.userId,
+          );
+        }
+      }
 
       await logAudit(tx, schemaName, {
         userId,

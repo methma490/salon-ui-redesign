@@ -30,6 +30,8 @@ const portalConfig: Record<
 export default function ForgotPasswordPage({ portal }: { portal: Portal }) {
   const config = portalConfig[portal];
   const [email, setEmail] = useState('');
+  const [salonCode, setSalonCode] = useState('');
+  const [showSalonCode, setShowSalonCode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
@@ -39,10 +41,24 @@ export default function ForgotPasswordPage({ portal }: { portal: Portal }) {
     setError('');
     setLoading(true);
     try {
-      await authApi.forgotPassword(email.trim(), portal);
+      await authApi.forgotPassword(
+        email.trim(),
+        portal,
+        salonCode.trim().toUpperCase() || undefined,
+      );
       setSent(true);
-    } catch {
-      setError('Unable to process request. Please try again.');
+    } catch (err: unknown) {
+      const requestError = err as {
+        response?: { data?: { code?: string; message?: string } };
+      };
+      if (requestError.response?.data?.code === 'AMBIGUOUS_TENANT_RESET') {
+        setShowSalonCode(true);
+        setError('This email is associated with multiple salons. Please enter your Salon Code to reset your password.');
+      } else if (requestError.response?.data?.message) {
+        setError(requestError.response.data.message);
+      } else {
+        setError('Unable to process request. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -84,6 +100,34 @@ export default function ForgotPasswordPage({ portal }: { portal: Portal }) {
                   autoComplete="email"
                 />
               </div>
+              {portal === 'salon' && (
+                showSalonCode ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="salonCode">
+                      Salon Code <span className="text-xs text-primary">(Required for shared email)</span>
+                    </Label>
+                    <Input
+                      id="salonCode"
+                      type="text"
+                      value={salonCode}
+                      onChange={(e) => setSalonCode(e.target.value.toUpperCase())}
+                      placeholder="e.g. SALON-ABC"
+                      className="uppercase tracking-wider"
+                      required
+                    />
+                  </div>
+                ) : (
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setShowSalonCode(true)}
+                      className="text-xs text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                    >
+                      Belong to multiple salons? Enter salon code
+                    </button>
+                  </div>
+                )
+              )}
               {error && <p className="text-sm text-destructive">{error}</p>}
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? 'Sending…' : 'Send reset link'}

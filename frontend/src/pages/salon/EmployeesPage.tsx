@@ -1144,20 +1144,10 @@ export default function EmployeesPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
-      {/* Top Header matching Screenshot 1 */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-            Employees
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            {payrollEnabled
-              ? 'Manage staff profiles, basic salary, and EPF/ETF settings'
-              : 'Manage staff profiles and assign system roles'}
-          </p>
-        </div>
-        {canManageEmployees && (
+    <div className="w-full space-y-4">
+      {/* Top Header Actions */}
+      {canManageEmployees && (
+        <div className="flex items-center justify-end mb-2">
           <button
             type="button"
             onClick={() => {
@@ -1172,8 +1162,8 @@ export default function EmployeesPage() {
             <Plus className="h-4 w-4" />
             <span>Add Employee</span>
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Tabs Navigation */}
       <div className="bg-slate-100/80 p-1 rounded-2xl flex sm:inline-flex border border-slate-200/60 max-w-full">

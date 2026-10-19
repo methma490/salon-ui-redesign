@@ -14,13 +14,17 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { useSetPageTitle } from '@/contexts/PageTitleContext';
 import './employees-page.css';
 
 export function getErrorMessage(
   error: unknown,
   fallback = 'Could not load data. Please try again.',
 ) {
-  const err = error as { response?: { data?: { message?: string | string[] } } };
+  const err = error as { response?: { data?: { message?: string | string[]; code?: string } } };
+  if (err.response?.data?.code === 'EMAIL_ALREADY_IN_USE') {
+    return 'This email is already in use.';
+  }
   const message = err.response?.data?.message;
   if (Array.isArray(message)) return message.join(', ');
   if (typeof message === 'string') return message;
@@ -192,23 +196,21 @@ export function OpsToggleStatusButton({
 
 export function OpsPageHeader({
   title,
-  subtitle,
+  subtitle: _subtitle,
   action,
 }: {
   title: string;
   subtitle?: string;
   action?: ReactNode;
 }) {
+  useSetPageTitle(title);
+
+  if (!action) return null;
+
   return (
-    <header className="emp-header">
-      <div>
-        <div className="emp-title-row">
-          <h1>{title}</h1>
-        </div>
-        {subtitle && <p className="emp-subtitle">{subtitle}</p>}
-      </div>
+    <div className="flex items-center justify-end mb-4">
       {action}
-    </header>
+    </div>
   );
 }
 

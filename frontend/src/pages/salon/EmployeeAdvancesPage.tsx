@@ -1,9 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   Banknote,
-  ChevronLeft,
   ChevronRight,
   Plus,
   Search,
@@ -26,7 +24,6 @@ import {
   FormSubmit,
   FormTextarea,
   getErrorMessage,
-  OpsEditButton,
   OpsError,
   OpsLoading,
   SimpleForm,
@@ -49,16 +46,6 @@ function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const cls =
-    status === 'ACTIVE'
-      ? 'emp-badge emp-badge-active'
-      : status === 'COMPLETED'
-        ? 'emp-badge emp-badge-inactive'
-        : 'emp-badge emp-badge-resigned';
-  return <span className={cls}>{status}</span>;
-}
-
 type AdvanceForm = {
   employeeId: string;
   amount: string;
@@ -79,7 +66,6 @@ const emptyForm = (employeeId = ''): AdvanceForm => ({
 });
 
 export default function EmployeeAdvancesPage() {
-  const navigate = useNavigate();
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ACTIVE');
@@ -188,59 +174,53 @@ export default function EmployeeAdvancesPage() {
   const systemDefaultPct = Number(payrollSettings?.maxSalaryAdvancePercentage ?? 50);
 
   return (
-    <div className="emp-page payroll-page max-w-4xl mx-auto py-2 sm:py-4 px-2 sm:px-4">
-      {/* Back button to Payroll Hub */}
-      <div className="flex items-center gap-2 mb-3">
-        <button
-          type="button"
-          onClick={() => navigate('/salon/payroll')}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors py-1 px-2 rounded-lg hover:bg-slate-100"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          <span>Back to Payroll</span>
-        </button>
-      </div>
-
-      {/* Screen 4 Hero Banner */}
-      <div className="flex items-center gap-3.5 p-4 sm:p-5 bg-white rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.03)] mb-4">
-        <div className="w-12 h-12 rounded-2xl bg-[#fff1f2] border border-[#ffe4e6] flex items-center justify-center shrink-0">
-          <Banknote className="w-6 h-6 text-[#f43f5e]" strokeWidth={2.2} />
-        </div>
-        <div>
-          <h1 className="text-xl sm:text-2xl font-extrabold text-[#0f172a] tracking-tight">
-            Salary Advances
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
-            Manage employee salary advances
-          </p>
-        </div>
-      </div>
-
-      {/* Screen 4 Status Filter Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 mb-3">
-        {[
-          { label: 'All', value: 'all' },
-          { label: 'Pending', value: 'CANCELLED' },
-          { label: 'Approved', value: 'ACTIVE' },
-          { label: 'Paid', value: 'COMPLETED' },
-        ].map((pill) => (
+    <div className="w-full space-y-4">
+      {/* Top Action & Metrics Bar */}
+      <div className="flex items-center justify-end gap-3">
+        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-slate-200/80 shadow-2xs">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              Active:
+            </span>
+            <span className="text-xs font-extrabold text-slate-900">
+              {advances.filter((a) => a.status === 'ACTIVE').length} Records
+            </span>
+          </div>
           <button
-            key={pill.value}
             type="button"
-            onClick={() => setStatusFilter(pill.value)}
-            className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap ${
-              statusFilter === pill.value
-                ? 'bg-[#7c3aed] text-white shadow-xs'
-                : 'bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50'
-            }`}
+            onClick={() => openCreate()}
+            className="hidden sm:inline-flex py-2 px-3.5 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-xs sm:text-sm font-bold rounded-xl shadow-[0_2px_8px_rgba(124,58,237,0.25)] items-center gap-1.5 transition-all active:scale-[0.99] cursor-pointer"
           >
-            {pill.label}
+            <Plus className="w-4 h-4 stroke-[2.5]" />
+            <span>Add Advance</span>
           </button>
-        ))}
-      </div>
+        </div>
 
-      {/* Screen 4 Search + Add Advance Action */}
-      <div className="space-y-3 mb-4">
+      {/* Controls: Filter Pills & Search matching Reference Image 3 */}
+      <div className="space-y-3">
+        {/* Status Filter Tabs */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+          {[
+            { label: 'All', value: 'all' },
+            { label: 'Pending', value: 'CANCELLED' },
+            { label: 'Approved', value: 'ACTIVE' },
+            { label: 'Paid', value: 'COMPLETED' },
+          ].map((pill) => (
+            <button
+              key={pill.value}
+              type="button"
+              onClick={() => setStatusFilter(pill.value)}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
+                statusFilter === pill.value
+                  ? 'bg-[#7c3aed] text-white shadow-xs'
+                  : 'bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50'
+              }`}
+            >
+              {pill.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Search Input with Filter Icon */}
         <div className="relative">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
@@ -248,226 +228,164 @@ export default function EmployeeAdvancesPage() {
             placeholder="Search employees..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-10 py-2.5 text-xs sm:text-sm bg-white rounded-xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-[#7c3aed]"
+            className="w-full pl-10 pr-10 py-2.5 text-xs sm:text-sm bg-white rounded-xl border border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-[#7c3aed]/20 focus:border-[#7c3aed] transition-all shadow-[0_1px_4px_rgba(0,0,0,0.02)]"
           />
-          <button
-            type="button"
-            onClick={() => setStatusFilter('all')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-          >
-            <SlidersHorizontal className="w-4 h-4" />
-          </button>
+          {search ? (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 hover:text-slate-600 px-1 py-0.5 rounded cursor-pointer"
+            >
+              ×
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setStatusFilter('all')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+              title="Clear status filter"
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
+        {/* Mobile-only full-width Add Advance button */}
         <button
           type="button"
           onClick={() => openCreate()}
-          className="w-full py-2.5 sm:py-3 px-4 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-bold rounded-xl shadow-[0_2px_8px_rgba(124,58,237,0.25)] flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
+          className="sm:hidden w-full py-2.5 px-4 bg-[#7c3aed] hover:bg-[#6d28d9] text-white text-sm font-bold rounded-xl shadow-[0_2px_8px_rgba(124,58,237,0.25)] flex items-center justify-center gap-2 transition-all active:scale-[0.99] cursor-pointer"
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
           <span>Add Advance</span>
         </button>
       </div>
 
-      {/* Screen 4 Advances List Cards */}
-      <div className="space-y-2.5 mb-6">
+      {/* Advances Cards List */}
+      <div className="space-y-2.5">
         {advances.length === 0 ? (
-          <div className="p-8 text-center bg-white rounded-2xl border border-slate-100 text-xs text-slate-400">
-            No advance payments found for selected criteria.
+          <div className="p-8 sm:p-12 text-center bg-white rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)] space-y-3">
+            <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center mx-auto text-slate-400">
+              <Banknote className="w-6 h-6 stroke-[1.8]" />
+            </div>
+            <p className="text-xs sm:text-sm text-slate-500 font-medium">
+              No advance payments found for selected criteria.
+            </p>
+            {search || statusFilter !== 'all' ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch('');
+                  setStatusFilter('all');
+                }}
+                className="text-xs font-semibold text-[#7c3aed] hover:underline cursor-pointer"
+              >
+                Clear search & filters
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => openCreate()}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#7c3aed] hover:bg-[#6d28d9] rounded-xl shadow-xs transition-all cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Give Advance</span>
+              </button>
+            )}
           </div>
         ) : (
           advances.map((advance) => {
             const initials = advance.employeeName
-              ? advance.employeeName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+              ? advance.employeeName
+                  .split(' ')
+                  .map((n) => n[0])
+                  .join('')
+                  .slice(0, 2)
+                  .toUpperCase()
               : 'EM';
             return (
               <div
                 key={advance.id}
                 onClick={() => setDetailId(advance.id)}
-                className="flex items-center justify-between p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.03)] hover:border-purple-200 transition-all cursor-pointer active:scale-[0.99]"
+                className="group flex items-center justify-between p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-purple-200 hover:shadow-[0_4px_12px_rgba(124,58,237,0.06)] transition-all cursor-pointer active:scale-[0.99]"
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-full bg-purple-50 border border-purple-100 text-[#7c3aed] font-bold text-xs flex items-center justify-center shrink-0">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-purple-50 border border-purple-100 text-[#7c3aed] font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
                     {initials}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-bold text-slate-900 leading-tight truncate">
+                    <p className="text-sm font-bold text-slate-900 leading-tight truncate group-hover:text-[#7c3aed] transition-colors">
                       {advance.employeeName}
                     </p>
-                    <p className="text-xs text-slate-500 mt-0.5 truncate">
-                      {advance.employeeCode || 'Stylist'}
-                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-xs text-slate-500 truncate">
+                        {advance.employeeCode || 'Stylist'}
+                      </span>
+                      {Number(advance.remainingBalance) > 0 && (
+                        <span className="hidden sm:inline-block text-[11px] font-medium text-slate-400">
+                          · Remaining: {formatMoneyLkr(Number(advance.remainingBalance))}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex flex-col items-end shrink-0 ml-3">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-bold text-slate-900">
-                      {formatMoneyLkr(Number(advance.originalAmount))}
+                <div className="flex items-center gap-3 shrink-0 ml-3">
+                  <div className="flex flex-col items-end">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-bold text-slate-900">
+                        {formatMoneyLkr(Number(advance.originalAmount))}
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-slate-400 mt-0.5">
+                      {new Date(advance.startDate).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
                     </span>
-                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                    <div className="mt-1">
+                      {advance.status === 'ACTIVE' && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                          Approved
+                        </span>
+                      )}
+                      {advance.status === 'COMPLETED' && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          Paid
+                        </span>
+                      )}
+                      {advance.status !== 'ACTIVE' && advance.status !== 'COMPLETED' && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                          Pending
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-[11px] text-slate-400 mt-0.5">
-                    {new Date(advance.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </span>
-                  <div className="mt-1">
+
+                  <div className="flex items-center gap-1 text-slate-400 group-hover:text-[#7c3aed] transition-colors">
                     {advance.status === 'ACTIVE' && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                        Approved
-                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEdit(advance);
+                        }}
+                        className="hidden sm:inline-flex p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 text-xs font-semibold cursor-pointer"
+                        title="Edit status or notes"
+                      >
+                        Edit
+                      </button>
                     )}
-                    {advance.status === 'COMPLETED' && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        Paid
-                      </span>
-                    )}
-                    {advance.status !== 'ACTIVE' && advance.status !== 'COMPLETED' && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                        Pending
-                      </span>
-                    )}
+                    <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                   </div>
                 </div>
               </div>
             );
           })
-        )}
-      </div>
-
-      <div className="emp-panel">
-        <div className="payroll-toolbar">
-          <div className="payroll-toolbar-title">Filters</div>
-          <div className="emp-filter-grid">
-            <div className="emp-filter-field">
-              <Label>Search</Label>
-              <Input
-                placeholder="Employee name, code…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            <div className="emp-filter-field">
-              <Label>Status</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ACTIVE">ACTIVE</SelectItem>
-                  <SelectItem value="COMPLETED">COMPLETED</SelectItem>
-                  <SelectItem value="CANCELLED">CANCELLED</SelectItem>
-                  <SelectItem value="all">All</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-
-        <div className="emp-panel-header">
-          <div>
-            <h2 className="emp-panel-title">Advance records</h2>
-            <p className="emp-panel-desc">
-              {advances.length} advance{advances.length === 1 ? '' : 's'}
-            </p>
-          </div>
-        </div>
-
-        {advances.length === 0 ? (
-          <div className="emp-empty">No advance payments found. Give an advance to get started.</div>
-        ) : (
-          <>
-            <div className="emp-cards">
-              {advances.map((advance) => (
-                <article key={advance.id} className="emp-card">
-                  <div className="emp-card-top">
-                    <div>
-                      <div className="emp-name-cell">{advance.employeeName}</div>
-                      <div className="emp-code">{advance.employeeCode}</div>
-                    </div>
-                    <StatusBadge status={advance.status} />
-                  </div>
-                  <div className="emp-card-meta">
-                    <span>
-                      <strong>Advance:</strong> {formatMoney(advance.originalAmount)}
-                    </span>
-                    <span>
-                      <strong>Remaining:</strong> {formatMoney(advance.remainingBalance)}
-                    </span>
-                    <span>
-                      <strong>Deduct on payroll:</strong> Full amount (same month)
-                    </span>
-                    <span>
-                      <strong>Date:</strong> {advance.startDate.slice(0, 10)}
-                    </span>
-                  </div>
-                  <div className="emp-card-actions">
-                    <button
-                      type="button"
-                      className="emp-btn emp-btn-secondary"
-                      onClick={() => setDetailId(advance.id)}
-                    >
-                      History
-                    </button>
-                    {advance.status === 'ACTIVE' && (
-                      <OpsEditButton onClick={() => openEdit(advance)} />
-                    )}
-                  </div>
-                </article>
-              ))}
-            </div>
-
-            <div className="emp-table-wrap">
-              <table className="emp-table">
-                <thead>
-                  <tr>
-                    <th>Employee</th>
-                    <th className="num">Advance (LKR)</th>
-                    <th className="num">Remaining (LKR)</th>
-                    <th>Deduction</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                    <th style={{ textAlign: 'right' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {advances.map((advance) => (
-                    <tr key={advance.id}>
-                      <td>
-                        <div className="emp-name-cell">{advance.employeeName}</div>
-                        <div className="emp-code">{advance.employeeCode}</div>
-                      </td>
-                      <td className="num">{formatMoney(advance.originalAmount)}</td>
-                      <td className="num" style={{ fontWeight: 700 }}>
-                        {formatMoney(advance.remainingBalance)}
-                      </td>
-                      <td>Full amount (same month)</td>
-                      <td>{advance.startDate.slice(0, 10)}</td>
-                      <td>
-                        <StatusBadge status={advance.status} />
-                      </td>
-                      <td>
-                        <div className="emp-actions">
-                          <button
-                            type="button"
-                            className="emp-btn emp-btn-secondary"
-                            onClick={() => setDetailId(advance.id)}
-                          >
-                            History
-                          </button>
-                          {advance.status === 'ACTIVE' && (
-                            <OpsEditButton onClick={() => openEdit(advance)} />
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
         )}
       </div>
 

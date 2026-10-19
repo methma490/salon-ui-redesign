@@ -700,16 +700,7 @@ export default function SubscriptionPage() {
 
 
   return (
-
     <div className="sub-page">
-
-      <header className="sub-hero">
-
-        <h1>Subscription & Billing</h1>
-
-        <p>Manage your plan, payments, and invoices</p>
-
-      </header>
 
 
 

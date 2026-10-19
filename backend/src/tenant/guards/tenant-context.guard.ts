@@ -66,23 +66,37 @@ export class TenantContextGuard implements CanActivate {
 
     const method = (request.method || '').toUpperCase();
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-      const routePath = request.path || request.url || '';
-      const isTenantBusinessRoute =
-        routePath.includes('/tenant/') || routePath.startsWith('/tenant');
+      if (request.user?.userType !== 'SUPER_ADMIN') {
+        const rawPath = request.path || request.url || '';
+        const normalizedPath = rawPath.split('?')[0].toLowerCase().replace(/\/+/g, '/');
 
-      if (isTenantBusinessRoute) {
-        const canWrite = await this.getFeatureService().canTenantWrite(
-          request.tenantContext.tenantId,
-        );
+        const EXEMPT_PUBLIC_ROUTES = [
+          '/subscriptions/renew',
+          '/subscriptions/checkout',
+          '/subscriptions/upgrade',
+          '/payments/orders',
+          '/payments/checkout',
+          '/payments/webhook',
+          '/auth/logout',
+          '/auth/refresh',
+        ];
 
-        if (!canWrite) {
-          throw new ForbiddenException({
-            statusCode: 403,
-            code: 'SUBSCRIPTION_SUSPENDED',
-            error: 'Subscription Suspended',
-            message:
-              'Your subscription is suspended. Your salon data is currently in read-only mode. Please renew your subscription to perform write actions.',
-          });
+        const isExempt = EXEMPT_PUBLIC_ROUTES.some((exempt) => normalizedPath.includes(exempt));
+
+        if (!isExempt) {
+          const canWrite = await this.getFeatureService().canTenantWrite(
+            request.tenantContext.tenantId,
+          );
+
+          if (!canWrite) {
+            throw new ForbiddenException({
+              statusCode: 403,
+              code: 'SUBSCRIPTION_SUSPENDED',
+              error: 'Subscription Suspended',
+              message:
+                'Your subscription is suspended. Your salon data is currently in read-only mode. Please renew your subscription to perform write actions.',
+            });
+          }
         }
       }
     }

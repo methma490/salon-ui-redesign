@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PasswordResetAccountType, SuperAdminStatus, TenantStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -37,10 +42,11 @@ export class PasswordResetService {
     email: string,
     portal: AuthPortal = 'salon',
     ipAddress?: string,
+    salonCode?: string,
   ): Promise<{ message: string }> {
     const normalizedEmail = email.toLowerCase().trim();
     this.loginSecurityService.assertNotLocked(normalizedEmail, ipAddress);
-    const account = await this.resolveAccount(normalizedEmail, portal);
+    const account = await this.resolveAccount(normalizedEmail, portal, salonCode);
 
     if (account) {
       await this.prisma.passwordResetToken.updateMany({
@@ -107,18 +113,52 @@ export class PasswordResetService {
 
       await this.prisma.superAdminUser.update({
         where: { id: record.superAdminId },
-        data: { passwordHash },
+        data: {
+          passwordHash,
+          tokenVersion: { increment: 1 },
+        },
+      });
+
+      // Revoke all existing super admin refresh token sessions
+      await this.prisma.superAdminRefreshToken.updateMany({
+        where: {
+          userId: record.superAdminId,
+          revokedAt: null,
+        },
+        data: { revokedAt: new Date() },
       });
     } else {
-      if (!record.tenantSchema || !record.tenantUserId) {
+      if (!record.tenantSchema || !record.tenantUserId || !record.tenantId) {
         throw new BadRequestException('Invalid reset token');
       }
 
+      // Verify tenant still exists, active, and matches recorded schema
+      const tenant = await this.prisma.tenant.findUnique({
+        where: { id: record.tenantId },
+        select: { id: true, schemaName: true, status: true },
+      });
+
+      if (!tenant || tenant.schemaName !== record.tenantSchema || tenant.status !== TenantStatus.ACTIVE) {
+        throw new UnauthorizedException('Invalid or expired reset link');
+      }
+
       const usersTable = tenantTable(record.tenantSchema, 'users');
+      const refreshTable = tenantTable(record.tenantSchema, 'refresh_tokens');
+
       await this.tenantSchemaService.withTenantSchema(record.tenantSchema, async ({ tx }) => {
         await tx.$queryRawUnsafe(
-          `UPDATE ${usersTable} SET password_hash = $1, updated_at = NOW() WHERE id = $2::uuid`,
+          `UPDATE ${usersTable}
+           SET password_hash = $1, token_version = token_version + 1, updated_at = NOW()
+           WHERE id = $2::uuid`,
           passwordHash,
+          record.tenantUserId,
+        );
+
+        // Revoke all existing active refresh tokens across devices
+        await tx.$queryRawUnsafe(
+          `UPDATE ${refreshTable}
+           SET revoked_at = NOW()
+           WHERE user_id = $1::uuid AND revoked_at IS NULL`,
           record.tenantUserId,
         );
       });
@@ -151,13 +191,17 @@ export class PasswordResetService {
         loginUrl,
       });
     } catch {
-      // We don't fail the password reset response if email delivery encounters a non-critical error
+      // Non-fatal notification delivery
     }
 
     return { message: 'Password updated successfully. You can sign in now.' };
   }
 
-  private async resolveAccount(email: string, portal: AuthPortal): Promise<ResetAccount | null> {
+  private async resolveAccount(
+    email: string,
+    portal: AuthPortal,
+    salonCode?: string,
+  ): Promise<ResetAccount | null> {
     if (portal === 'super-admin') {
       const superAdmin = await this.prisma.superAdminUser.findUnique({
         where: { email },
@@ -176,12 +220,18 @@ export class PasswordResetService {
       };
     }
 
-    const tenants = await this.prisma.tenant.findMany({
-      where: { status: TenantStatus.ACTIVE },
-      select: { id: true, schemaName: true },
-    });
+    // Explicit tenant resolution when salonCode is provided
+    if (salonCode?.trim()) {
+      const normalizedCode = salonCode.trim().toUpperCase();
+      const tenant = await this.prisma.tenant.findUnique({
+        where: { code: normalizedCode },
+        select: { id: true, schemaName: true, status: true },
+      });
 
-    for (const tenant of tenants) {
+      if (!tenant || tenant.status !== TenantStatus.ACTIVE) {
+        return null;
+      }
+
       const usersTable = tenantTable(tenant.schemaName, 'users');
       const users = await this.tenantSchemaService.withTenantSchema(
         tenant.schemaName,
@@ -205,8 +255,56 @@ export class PasswordResetService {
           resetPath: '/salon/reset-password',
         };
       }
+
+      return null;
     }
 
-    return null;
+    // Email-only lookup across active tenants
+    const tenants = await this.prisma.tenant.findMany({
+      where: { status: TenantStatus.ACTIVE },
+      select: { id: true, schemaName: true, code: true },
+    });
+
+    const matchingAccounts: ResetAccount[] = [];
+
+    for (const tenant of tenants) {
+      const usersTable = tenantTable(tenant.schemaName, 'users');
+      const users = await this.tenantSchemaService.withTenantSchema(
+        tenant.schemaName,
+        async ({ tx }) =>
+          tx.$queryRawUnsafe<Array<{ id: string; email: string }>>(
+            `SELECT id, email FROM ${usersTable}
+             WHERE LOWER(email) = LOWER($1) AND status = 'ACTIVE'
+             LIMIT 1`,
+            email,
+          ),
+      );
+
+      if (users.length > 0) {
+        matchingAccounts.push({
+          email,
+          accountType: PasswordResetAccountType.TENANT_USER,
+          tenantId: tenant.id,
+          tenantUserId: users[0].id,
+          tenantSchema: tenant.schemaName,
+          portalLabel: 'Salon Admin',
+          resetPath: '/salon/reset-password',
+        });
+      }
+    }
+
+    if (matchingAccounts.length === 0) {
+      return null;
+    }
+
+    if (matchingAccounts.length > 1) {
+      throw new ConflictException({
+        code: 'AMBIGUOUS_TENANT_RESET',
+        message:
+          'Multiple salon accounts found for this email. Please provide your salon code to reset your password.',
+      });
+    }
+
+    return matchingAccounts[0];
   }
 }

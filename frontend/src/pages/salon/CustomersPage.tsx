@@ -1235,20 +1235,10 @@ export default function CustomersPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-            Customers
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            {activeTab === 'customers'
-              ? 'Manage customer profiles, contact info, and booking histories'
-              : 'Customer loyalty, spending intelligence, and visit retention analytics'}
-          </p>
-        </div>
-        {activeTab === 'customers' && (
+    <div className="w-full space-y-4">
+      {/* Top Header Actions */}
+      {activeTab === 'customers' && (
+        <div className="flex items-center justify-end mb-2">
           <button
             type="button"
             onClick={() => {
@@ -1262,8 +1252,8 @@ export default function CustomersPage() {
             <Plus className="h-4 w-4" />
             <span>Add Customer</span>
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Tabs navigation: Customers vs Customer Analytics */}
       <div className="flex items-center gap-2 border-b border-slate-200">

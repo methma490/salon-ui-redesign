@@ -225,8 +225,37 @@ export function slugifyRoleCode(name: string): string {
   return slug.length > 0 ? slug : 'CUSTOM_ROLE';
 }
 
+export const PLATFORM_RESERVED_ROLE_CODES = [
+  'SUPER_ADMIN',
+  'PLATFORM_ADMIN',
+  'SYSTEM_ADMIN',
+  'SUPERUSER',
+  'ADMINISTRATOR',
+] as const;
+
+export function normalizeRoleCode(code: string): string {
+  return (code || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+export function isReservedPlatformRole(code: string): boolean {
+  const normalized = normalizeRoleCode(code);
+  return (PLATFORM_RESERVED_ROLE_CODES as readonly string[]).some(
+    (reserved) => normalizeRoleCode(reserved) === normalized,
+  );
+}
+
 export function isReservedRoleCode(code: string): boolean {
-  return (SYSTEM_ROLE_CODES as readonly string[]).includes(code);
+  const normalized = normalizeRoleCode(code);
+  if (isReservedPlatformRole(normalized)) {
+    return true;
+  }
+  return (SYSTEM_ROLE_CODES as readonly string[]).some(
+    (systemRole) => normalizeRoleCode(systemRole) === normalized,
+  );
 }
 
 export function resolveModuleAccess(

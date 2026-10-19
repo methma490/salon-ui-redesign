@@ -145,6 +145,13 @@ body:has(.admin-panel-root) main h1 {
   }
 }
 
+.salon-theme-root .admin-page-content,
+.salon-admin-main .admin-page-content {
+  max-width: 100% !important;
+  margin-inline: 0 !important;
+  padding: 0 !important;
+}
+
 .salon-theme-root .reports-container,
 .salon-theme-root .payslip-modern {
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;

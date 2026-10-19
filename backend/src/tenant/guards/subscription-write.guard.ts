@@ -7,10 +7,11 @@ import {
   Optional,
   forwardRef,
 } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
+import { ModuleRef, Reflector } from '@nestjs/core';
 import { SubscriptionFeatureService } from '../../subscriptions/subscription-feature.service';
 import { TenantContext } from '../interfaces/tenant-context.interface';
 import { AuthenticatedUser } from '../../auth/interfaces/auth.interface';
+import { ALLOW_READ_ONLY_KEY } from '../decorators/allow-read-only.decorator';
 
 @Injectable()
 export class SubscriptionWriteGuard implements CanActivate {
@@ -22,6 +23,8 @@ export class SubscriptionWriteGuard implements CanActivate {
     subscriptionFeatureService?: SubscriptionFeatureService,
     @Optional()
     private readonly moduleRef?: ModuleRef,
+    @Optional()
+    private readonly reflector?: Reflector,
   ) {
     if (subscriptionFeatureService) {
       this.resolvedFeatureService = subscriptionFeatureService;
@@ -51,24 +54,32 @@ export class SubscriptionWriteGuard implements CanActivate {
       method: string;
       path?: string;
       url?: string;
+      originalUrl?: string;
       tenantContext?: TenantContext;
       user?: AuthenticatedUser;
     }>();
 
     const method = (request.method || '').toUpperCase();
 
-    // Read-only operations are always permitted
+    // 1. Read-only HTTP operations are always permitted
     if (['GET', 'HEAD', 'OPTIONS'].includes(method)) {
       return true;
     }
 
-    const routePath = request.path || request.url || '';
-
-    // Only guard tenant business routes (e.g. /api/tenant/* or /tenant/*)
-    // Billing/subscription/payment routes live in public SaaS layer and remain writable
-    const isTenantBusinessRoute = routePath.includes('/tenant/') || routePath.startsWith('/tenant');
-    if (!isTenantBusinessRoute) {
+    // 2. Platform Super Admin operations are always permitted
+    if (request.user?.userType === 'SUPER_ADMIN') {
       return true;
+    }
+
+    // 3. Explicit @AllowReadOnly decorator check on handler or class
+    if (this.reflector && typeof context.getHandler === 'function') {
+      const isExplicitlyAllowed = this.reflector.getAllAndOverride<boolean>(ALLOW_READ_ONLY_KEY, [
+        context.getHandler(),
+        context.getClass(),
+      ]);
+      if (isExplicitlyAllowed) {
+        return true;
+      }
     }
 
     const tenantId = request.tenantContext?.tenantId ?? request.user?.tenantId;
@@ -76,6 +87,31 @@ export class SubscriptionWriteGuard implements CanActivate {
       return true;
     }
 
+    const rawPath = request.path || request.originalUrl || request.url || '';
+    const normalizedPath = rawPath.split('?')[0].toLowerCase().replace(/\/+/g, '/');
+
+    // 4. SaaS billing, renewal, checkout, and auth endpoints remain writable so suspended tenants can renew
+    const isExemptBillingOrAuth =
+      /(^|\/)(subscriptions|payments|auth|public)(\/|$)/i.test(normalizedPath) ||
+      normalizedPath.includes('/renew') ||
+      normalizedPath.includes('/checkout') ||
+      normalizedPath.includes('/webhook');
+
+    if (isExemptBillingOrAuth) {
+      return true;
+    }
+
+    // 5. Any tenant mutation (whether in tenant context, via tenant user, or targeting tenant endpoints)
+    const isTenantMutation =
+      Boolean(request.tenantContext) ||
+      request.user?.userType === 'TENANT_USER' ||
+      /(^|\/)tenant(\/|$)/i.test(normalizedPath);
+
+    if (!isTenantMutation) {
+      return true;
+    }
+
+    // 6. Check subscription write capability
     const canWrite = await this.getFeatureService().canTenantWrite(tenantId);
     if (!canWrite) {
       throw new ForbiddenException({

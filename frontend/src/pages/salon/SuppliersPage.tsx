@@ -13,9 +13,7 @@ import {
   Trash2,
   Truck,
   Users,
-  ChevronLeft,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { suppliersApi } from '@/api/suppliers.api';
 import type { Supplier, CreateSupplierInput, UpdateSupplierInput } from '@/types/supplier.types';
 
@@ -207,33 +205,16 @@ export default function SuppliersPage() {
 
   return (
     <div className="space-y-6">
-      {/* Back button to Suppliers & GRN hub */}
-      <div className="flex items-center gap-2 mb-2">
-        <Link
-          to="/salon/suppliers-hub"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors py-1.5 px-2.5 rounded-lg hover:bg-slate-100"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          <span>Back to Suppliers &amp; GRN</span>
-        </Link>
-      </div>
 
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Suppliers</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage your vendors, procurement channels, and monitor payables.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={() => navigate('/salon/grns')} variant="outline">
-            View GRNs
-          </Button>
-          <Button onClick={handleOpenCreate} className="gap-2">
-            <Plus className="h-4 w-4" /> Add Supplier
-          </Button>
-        </div>
+
+      {/* Header Actions */}
+      <div className="flex items-center justify-end gap-2 mb-4">
+        <Button onClick={() => navigate('/salon/grns')} variant="outline">
+          View GRNs
+        </Button>
+        <Button onClick={handleOpenCreate} className="gap-2">
+          <Plus className="h-4 w-4" /> Add Supplier
+        </Button>
       </div>
 
       {/* KPI Cards */}

@@ -23,9 +23,7 @@ import {
   SlidersHorizontal,
   TrendingDown,
   X,
-  ChevronLeft,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import {
   tenantApi,
   type StockCreditDetail,
@@ -415,16 +413,6 @@ export default function StockPage() {
 
   return (
     <div className="emp-page">
-      {/* Back button to Inventory hub */}
-      <div className="flex items-center gap-2 mb-2">
-        <Link
-          to="/salon/inventory-hub"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors py-1.5 px-2.5 rounded-lg hover:bg-slate-100"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          <span>Back to Inventory</span>
-        </Link>
-      </div>
       <OpsPageHeader
         title="Stock Management & Analytics"
         subtitle="View live stock movements, inventory reports, level metrics, and supplier credits"
