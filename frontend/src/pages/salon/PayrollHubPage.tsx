@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Wallet,
@@ -17,6 +18,13 @@ import { formatMoneyLkr } from '@/lib/money';
 
 export default function PayrollHubPage() {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Payroll Hub is designed for mobile and tablet navigation; desktop users are redirected to Run Payroll
+    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches) {
+      navigate('/salon/payroll/runs', { replace: true });
+    }
+  }, [navigate]);
 
   // Load recent advances and payroll runs for the "Recent Payroll Activities" section
   const { data: advancesData } = useQuery({

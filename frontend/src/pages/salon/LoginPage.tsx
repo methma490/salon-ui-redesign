@@ -12,6 +12,8 @@ export default function SalonLoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [salonCode, setSalonCode] = useState('');
+  const [showSalonCode, setShowSalonCode] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -28,7 +30,11 @@ export default function SalonLoginPage() {
     setError('');
     setLoading(true);
     try {
-      const user = await login(email.trim().toLowerCase(), password);
+      const user = await login(
+        email.trim().toLowerCase(),
+        password,
+        salonCode.trim().toUpperCase() || undefined,
+      );
       if (user.roles.includes('SUPER_ADMIN')) {
         navigate('/super-admin/dashboard');
       } else if (user.tenantId) {
@@ -39,10 +45,15 @@ export default function SalonLoginPage() {
     } catch (err: unknown) {
       const requestError = err as {
         message?: string;
-        response?: { data?: { message?: string | string[] } };
+        response?: { data?: { code?: string; message?: string | string[] } };
       };
+      const errorCode = requestError.response?.data?.code;
       const serverMessage = requestError.response?.data?.message;
-      if (typeof serverMessage === 'string') {
+
+      if (errorCode === 'AMBIGUOUS_TENANT_LOGIN') {
+        setShowSalonCode(true);
+        setError('This email is associated with multiple salons. Please enter your Salon Code to continue.');
+      } else if (typeof serverMessage === 'string') {
         setError(serverMessage);
       } else if (!requestError.response) {
         setError('Cannot reach the server. Check that the backend is running, then try again.');
@@ -78,6 +89,32 @@ export default function SalonLoginPage() {
                 required
               />
             </div>
+            {showSalonCode ? (
+              <div className="space-y-2">
+                <Label htmlFor="salonCode" className="text-xs font-semibold text-slate-700">
+                  Salon Code <span className="text-primary font-normal">(Required for this email)</span>
+                </Label>
+                <Input
+                  id="salonCode"
+                  type="text"
+                  value={salonCode}
+                  onChange={(e) => setSalonCode(e.target.value.toUpperCase())}
+                  placeholder="e.g. SALON-ABC"
+                  className="h-11 rounded-xl border-slate-200 focus-visible:ring-primary focus-visible:border-primary uppercase tracking-wider"
+                  required
+                />
+              </div>
+            ) : (
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowSalonCode(true)}
+                  className="text-xs text-slate-500 hover:text-primary transition-colors cursor-pointer"
+                >
+                  Belong to multiple salons? Enter salon code
+                </button>
+              </div>
+            )}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password" className="text-xs font-semibold text-slate-700">Password</Label>

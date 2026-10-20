@@ -9,6 +9,7 @@ export interface JwtPayload {
   tenantName?: string | null;
   tenantStatus?: string | null;
   tenantCode?: string | null;
+  tokenVersion?: number;
 }
 
 export interface AuthenticatedUser {
@@ -23,6 +24,7 @@ export interface AuthenticatedUser {
   tenantName?: string | null;
   tenantStatus?: string | null;
   tenantCode?: string | null;
+  tokenVersion?: number;
 }
 
 export interface AuthUserResponse {

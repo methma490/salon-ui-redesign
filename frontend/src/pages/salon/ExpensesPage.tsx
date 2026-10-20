@@ -1,7 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ChevronLeft } from 'lucide-react';
 import { tenantApi, type Expense, type ExpenseCategory } from '@/api/tenant.api';
 import { formatMoneyAmount, formatMoneyLkr } from '@/lib/money';
 import { useSalonBranch } from '@/contexts/SalonBranchContext';
@@ -328,17 +326,6 @@ export default function ExpensesPage() {
 
   return (
     <div className="emp-page">
-      {/* Back button to Expenses hub */}
-      <div className="flex items-center gap-2 mb-2">
-        <Link
-          to="/salon/expenses-hub"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors py-1.5 px-2.5 rounded-lg hover:bg-slate-100"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          <span>Back to Expenses</span>
-        </Link>
-      </div>
-
       <OpsPageHeader
         title="Expenses"
         subtitle="Track rent, utilities, supplies, and other salon costs"

@@ -23,6 +23,11 @@ export class PosServiceItemDto {
   @IsOptional()
   @IsNumber()
   @Min(0)
+  unitPrice?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
   discount?: number;
 }
 
@@ -33,6 +38,11 @@ export class PosProductItemDto {
   @IsNumber()
   @Min(0.01)
   quantity!: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  unitPrice?: number;
 
   @IsOptional()
   @IsNumber()

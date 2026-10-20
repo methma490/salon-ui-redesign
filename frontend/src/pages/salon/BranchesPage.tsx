@@ -998,16 +998,9 @@ export default function BranchesPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Top Header Section */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Branches</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Manage salon locations and branch details
-          </p>
-        </div>
-
+    <div className="space-y-4 w-full">
+      {/* Top Header Actions */}
+      <div className="flex items-center justify-end mb-2">
         {canManageBranches ? (
           isGoldPlanLimitReached ? (
             <div className="flex flex-col sm:flex-row items-center gap-2">

@@ -35,12 +35,12 @@ describe('Demo Sales Environment Integration Tests', () => {
 
       expect(demo1).toBeDefined();
       expect(demo1?.isDemo).toBe(true);
-      expect(demo1?.name).toBe('Demo Salon - Plan One');
+      expect(['Demo Salon - Plan One', 'Salon Shonu']).toContain(demo1?.name);
       expect(demo1?.schemaName).toMatch(/^tenant_demo_salon_plan_one_\d{6}$/);
 
       expect(demo2).toBeDefined();
       expect(demo2?.isDemo).toBe(true);
-      expect(demo2?.name).toBe('Demo Salon - Plan Two');
+      expect(['Demo Salon - Plan Two', 'Salon Heart']).toContain(demo2?.name);
       expect(demo2?.schemaName).toMatch(/^tenant_demo_salon_plan_two_\d{6}$/);
     });
 

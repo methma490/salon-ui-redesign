@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft } from 'lucide-react';
 import { tenantApi } from '@/api/tenant.api';
 import { useSalonBranch } from '@/contexts/SalonBranchContext';
 import { Button } from '@/components/ui/button';
@@ -57,17 +56,6 @@ export default function QuotationsPage() {
 
   return (
     <div className="emp-page">
-      {/* Back button to Sales hub */}
-      <div className="flex items-center gap-2 mb-2">
-        <Link
-          to="/salon/sales-hub"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors py-1.5 px-2.5 rounded-lg hover:bg-slate-100"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          <span>Back to Sales</span>
-        </Link>
-      </div>
-
       <OpsPageHeader
         title="Quotations"
         subtitle="Create tenant-branded quotations and convert accepted quotes to invoices"

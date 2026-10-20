@@ -1,7 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ChevronLeft } from 'lucide-react';
 import {
   tenantApi,
   type PaginatedResponse,
@@ -30,6 +28,9 @@ import {
   OpsLoading,
 } from './salon-ops-ui';
 import { toast } from 'sonner';
+import { FileSpreadsheet, FileText } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { printReportDocument } from '@/lib/print-report';
 import './employees-page.css';
 import './settings-page.css';
 import './payroll-page.css';
@@ -232,12 +233,146 @@ export default function PayrollRunsPage() {
     setFinalizeConfirmOpen(true);
   };
 
+  const { user } = useAuth();
+
+  const handleExportExcel = () => {
+    if (!selectedRun) return;
+
+    const runItems = selectedRun.items || [];
+    const periodLabel = `${monthLabel(selectedRun.month)} ${selectedRun.year}`;
+    const salonName = user?.tenant?.name || 'Salon Management System';
+
+    const headers = [
+      '#',
+      'Employee Code',
+      'Employee Name',
+      'Designation',
+      'Basic Salary (Rs.)',
+      'Commission Base (Rs.)',
+      'Commission %',
+      'Commission Amount (Rs.)',
+      'Bonus / Allowance (Rs.)',
+      'Gross Salary (Rs.)',
+      'Advance Deduction (Rs.)',
+      'Loan Deduction (Rs.)',
+      'Employee EPF 8% (Rs.)',
+      'Other Deduction (Rs.)',
+      'Total Deductions (Rs.)',
+      'Net Salary (Rs.)',
+      'Employer EPF 12% (Rs.)',
+      'Employer ETF 3% (Rs.)',
+    ];
+
+    const isDraftRun = selectedRun.status === 'DRAFT';
+
+    const rows = runItems.map((item, idx) => {
+      const draft = itemDrafts[item.id] ?? itemToDraft(item);
+      const liveCommission = previewCommission(draft);
+      const commAmount = isDraftRun ? liveCommission : Number(item.commissionAmount) || 0;
+      const bonusAmount = isDraftRun ? Number(draft.bonus) || 0 : Number(item.bonus) || 0;
+      const otherDed = isDraftRun ? Number(draft.otherDeduction) || 0 : Number(item.otherDeduction) || 0;
+
+      return [
+        idx + 1,
+        `"${(item.employeeCode || '').replace(/"/g, '""')}"`,
+        `"${(item.employeeName || '').replace(/"/g, '""')}"`,
+        `"${(item.designation || 'Staff').replace(/"/g, '""')}"`,
+        (Number(item.basicSalary) || 0).toFixed(2),
+        (Number(item.commissionBase) || 0).toFixed(2),
+        (Number(item.commissionPercentage) || 0).toFixed(2),
+        commAmount.toFixed(2),
+        bonusAmount.toFixed(2),
+        (Number(item.grossSalary) || 0).toFixed(2),
+        (Number(item.advanceDeduction) || 0).toFixed(2),
+        (Number(item.loanDeduction) || 0).toFixed(2),
+        (Number(item.employeeEpf) || 0).toFixed(2),
+        otherDed.toFixed(2),
+        (Number(item.totalDeductions) || 0).toFixed(2),
+        (Number(item.netSalary) || 0).toFixed(2),
+        (Number(item.employerEpf) || 0).toFixed(2),
+        (Number(item.employerEtf) || 0).toFixed(2),
+      ];
+    });
+
+    const totalBasic = runItems.reduce((s, it) => s + (Number(it.basicSalary) || 0), 0);
+    const totalComm = runItems.reduce((s, it) => s + (Number(it.commissionAmount) || 0), 0);
+    const totalBonus = runItems.reduce((s, it) => s + (Number(it.bonus) || 0), 0);
+    const totalGross = Number(selectedRun.totalGross) || 0;
+    const totalAdvance = runItems.reduce((s, it) => s + (Number(it.advanceDeduction) || 0), 0);
+    const totalLoan = runItems.reduce((s, it) => s + (Number(it.loanDeduction) || 0), 0);
+    const totalEmpEpf = runItems.reduce((s, it) => s + (Number(it.employeeEpf) || 0), 0);
+    const totalOtherDed = runItems.reduce((s, it) => s + (Number(it.otherDeduction) || 0), 0);
+    const totalDeductions = Number(selectedRun.totalDeductions) || 0;
+    const totalNet = Number(selectedRun.totalNet) || 0;
+    const totalEmployerEpf = runItems.reduce((s, it) => s + (Number(it.employerEpf) || 0), 0);
+    const totalEmployerEtf = runItems.reduce((s, it) => s + (Number(it.employerEtf) || 0), 0);
+
+    const totalsRow = [
+      'TOTAL',
+      '',
+      `"${runItems.length} Staff"`,
+      '',
+      totalBasic.toFixed(2),
+      '',
+      '',
+      totalComm.toFixed(2),
+      totalBonus.toFixed(2),
+      totalGross.toFixed(2),
+      totalAdvance.toFixed(2),
+      totalLoan.toFixed(2),
+      totalEmpEpf.toFixed(2),
+      totalOtherDed.toFixed(2),
+      totalDeductions.toFixed(2),
+      totalNet.toFixed(2),
+      totalEmployerEpf.toFixed(2),
+      totalEmployerEtf.toFixed(2),
+    ];
+
+    const metaRows = [
+      [`"${salonName} - PAYROLL SUMMARY STATEMENT"`],
+      [`"Period: ${periodLabel}"`],
+      [`"Status: ${selectedRun.status}"`],
+      [`"Generated on: ${new Date().toLocaleString()}"`],
+      [
+        `"Total Gross: LKR ${totalGross.toFixed(2)}"`,
+        `"Total Deductions: LKR ${totalDeductions.toFixed(2)}"`,
+        `"Net Payable: LKR ${totalNet.toFixed(2)}"`,
+      ],
+      [],
+    ];
+
+    const csvContent =
+      '\uFEFF' +
+      metaRows.map((r) => r.join(',')).join('\r\n') +
+      '\r\n' +
+      headers.join(',') +
+      '\r\n' +
+      rows.map((r) => r.join(',')).join('\r\n') +
+      '\r\n' +
+      totalsRow.join(',');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Payroll_Report_${monthLabel(selectedRun.month)}_${selectedRun.year}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success('Payroll report downloaded as Excel (CSV).');
+  };
+
+  const handleExportPdf = () => {
+    if (!selectedRun) return;
+    const docTitle = `Payroll_Report_${monthLabel(selectedRun.month)}_${selectedRun.year}`;
+    printReportDocument('payroll-report-print-target', docTitle);
+  };
+
   const yearOptions = Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i);
   const isDraft = selectedRun?.status === 'DRAFT';
   const items = selectedRun?.items ?? [];
-  const showStickyActions =
-    !!selectedRun &&
-    (isDraft || selectedRun.status === 'FINALIZED');
+  const showStickyActions = !!selectedRun;
 
   if (runsLoading) return <OpsLoading />;
   if (runsError) {
@@ -248,36 +383,17 @@ export default function PayrollRunsPage() {
     <div
       className={`emp-page settings-shell payroll-page${showStickyActions ? ' has-sticky-actions' : ''}`}
     >
-      {/* Back button to Payroll Hub */}
-      <div className="flex items-center gap-2 mb-3">
-        <Link
-          to="/salon/payroll"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors py-1.5 px-2.5 rounded-lg hover:bg-slate-100"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          <span>Back to Payroll</span>
-        </Link>
+      {/* Quick summary pills */}
+      <div className="flex items-center justify-end gap-2 mb-2">
+        <span className="px-3 py-1 text-xs font-semibold rounded-lg bg-white border border-slate-200/80 text-slate-700 shadow-2xs">
+          {runs.length} runs
+        </span>
+        {selectedRun && (
+          <span className="px-3 py-1 text-xs font-semibold rounded-lg bg-emerald-50 border border-emerald-200/80 text-emerald-800 shadow-2xs font-mono">
+            Net {formatMoney(selectedRun.totalNet)}
+          </span>
+        )}
       </div>
-
-      <header className="pr-hero">
-        <div className="pr-hero-main">
-          <div className="pr-hero-icon" aria-hidden>
-            💼
-          </div>
-          <div>
-            <h1>Payroll</h1>
-            <p>Generate, adjust, finalize monthly pay</p>
-          </div>
-        </div>
-        <div className="pr-hero-pills">
-          <span className="pr-pill">{runs.length} runs</span>
-          {selectedRun && (
-            <span className="pr-pill pr-pill-net">
-              Net {formatMoney(selectedRun.totalNet)}
-            </span>
-          )}
-        </div>
-      </header>
 
       <section className="pr-card">
         <div className="pr-card-head">
@@ -375,8 +491,53 @@ export default function PayrollRunsPage() {
                   <p className="pr-detail-sub">
                     {items.length} employee{items.length === 1 ? '' : 's'}
                   </p>
+                  {/* Quick Export toolbar for mobile */}
+                  <div className="flex sm:hidden items-center gap-2 mt-2.5">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleExportPdf}
+                      className="h-7 px-2.5 text-xs font-semibold text-rose-700 border-rose-200 bg-rose-50/70 hover:bg-rose-100 flex items-center gap-1 shadow-2xs"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-rose-600" /> PDF Report
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleExportExcel}
+                      className="h-7 px-2.5 text-xs font-semibold text-emerald-700 border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100 flex items-center gap-1 shadow-2xs"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" /> Excel (CSV)
+                    </Button>
+                  </div>
                 </div>
                 <div className="pr-actions pr-actions-desktop">
+                  <div className="flex items-center gap-1.5 mr-1.5 pr-2 border-r border-slate-200">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleExportPdf}
+                      className="h-9 px-3 text-xs font-semibold text-rose-700 border-rose-200/90 bg-rose-50/50 hover:bg-rose-100/70 hover:text-rose-800 flex items-center gap-1.5 shadow-2xs transition-colors"
+                      title="Download or Print PDF Payroll Statement"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-rose-600" />
+                      PDF Report
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleExportExcel}
+                      className="h-9 px-3 text-xs font-semibold text-emerald-700 border-emerald-200/90 bg-emerald-50/50 hover:bg-emerald-100/70 hover:text-emerald-800 flex items-center gap-1.5 shadow-2xs transition-colors"
+                      title="Export full payroll breakdown to Excel (CSV)"
+                    >
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                      Excel (CSV)
+                    </Button>
+                  </div>
                   {isDraft && (
                     <>
                       <button
@@ -695,6 +856,22 @@ export default function PayrollRunsPage() {
 
       {showStickyActions && selectedRun && (
         <div className="pr-sticky-actions">
+          <button
+            type="button"
+            className="pr-btn pr-btn-secondary"
+            onClick={handleExportPdf}
+            title="Download or Print PDF Report"
+          >
+            <FileText className="w-3.5 h-3.5 text-rose-600 mr-1" /> PDF
+          </button>
+          <button
+            type="button"
+            className="pr-btn pr-btn-secondary"
+            onClick={handleExportExcel}
+            title="Export to Excel CSV"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 mr-1" /> Excel
+          </button>
           {isDraft && (
             <>
               <button
@@ -771,6 +948,242 @@ export default function PayrollRunsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Hidden Isolated Print Target for Landscape PDF generation */}
+      {selectedRun && (
+        <div
+          id="payroll-report-print-target"
+          className="reports-print-document"
+          style={{ display: 'none' }}
+        >
+          <div className="reports-print-header">
+            <div>
+              <div className="reports-print-eyebrow">
+                {user?.tenant?.name || 'Salon Management System'} · Official Payroll
+              </div>
+              <h1>
+                Monthly Payroll Statement — {monthLabel(selectedRun.month)} {selectedRun.year}
+              </h1>
+              <p>
+                Comprehensive breakdown of employee earnings, commissions, statutory deductions,
+                and net payable salaries.
+              </p>
+              <div className="reports-print-meta">
+                <span>
+                  Period: <strong>{monthLabel(selectedRun.month)} {selectedRun.year}</strong>
+                </span>
+                <span>
+                  Status: <strong>{selectedRun.status}</strong>
+                </span>
+                <span>
+                  Total Staff: <strong>{items.length} Employees</strong>
+                </span>
+              </div>
+            </div>
+            <div className="reports-print-generated">
+              Report Generated: {new Date().toLocaleDateString()} {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </div>
+          </div>
+
+          <div className="reports-print-summary">
+            <div>
+              <span>Total Gross Salary</span>
+              <strong>{formatMoneyLkr(selectedRun.totalGross)}</strong>
+            </div>
+            <div>
+              <span>Total Deductions</span>
+              <strong style={{ color: '#b91c1c' }}>{formatMoneyLkr(selectedRun.totalDeductions)}</strong>
+            </div>
+            <div>
+              <span>Net Salary Payable</span>
+              <strong style={{ color: '#0d5c3d' }}>{formatMoneyLkr(selectedRun.totalNet)}</strong>
+            </div>
+            <div>
+              <span>Staff EPF (8%)</span>
+              <strong>{formatMoneyLkr(items.reduce((s, it) => s + (Number(it.employeeEpf) || 0), 0))}</strong>
+            </div>
+            <div>
+              <span>Employer EPF (12%)</span>
+              <strong>{formatMoneyLkr(items.reduce((s, it) => s + (Number(it.employerEpf) || 0), 0))}</strong>
+            </div>
+            <div>
+              <span>Employer ETF (3%)</span>
+              <strong>{formatMoneyLkr(items.reduce((s, it) => s + (Number(it.employerEtf) || 0), 0))}</strong>
+            </div>
+          </div>
+
+          <div className="reports-print-section-title">Itemized Staff Payroll Register</div>
+          <table className="reports-print-table">
+            <thead>
+              <tr>
+                <th style={{ width: '24px' }}>#</th>
+                <th>Emp Code</th>
+                <th>Employee Name</th>
+                <th>Designation</th>
+                <th style={{ textAlign: 'right' }}>Basic Salary</th>
+                <th style={{ textAlign: 'right' }}>Commission</th>
+                <th style={{ textAlign: 'right' }}>Bonus</th>
+                <th style={{ textAlign: 'right' }}>Gross Pay</th>
+                <th style={{ textAlign: 'right' }}>Advance</th>
+                <th style={{ textAlign: 'right' }}>Loan</th>
+                <th style={{ textAlign: 'right' }}>EPF 8%</th>
+                <th style={{ textAlign: 'right' }}>Other Ded.</th>
+                <th style={{ textAlign: 'right' }}>Total Ded.</th>
+                <th style={{ textAlign: 'right' }}>Net Salary</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((it, idx) => (
+                <tr key={it.id}>
+                  <td>{idx + 1}</td>
+                  <td style={{ fontFamily: 'monospace' }}>{it.employeeCode}</td>
+                  <td style={{ fontWeight: 600 }}>{it.employeeName}</td>
+                  <td>{it.designation || 'Staff'}</td>
+                  <td style={{ textAlign: 'right' }}>{formatMoney(it.basicSalary)}</td>
+                  <td style={{ textAlign: 'right' }}>{formatMoney(it.commissionAmount)}</td>
+                  <td style={{ textAlign: 'right' }}>{formatMoney(it.bonus)}</td>
+                  <td style={{ textAlign: 'right', fontWeight: 600 }}>{formatMoney(it.grossSalary)}</td>
+                  <td style={{ textAlign: 'right' }}>{formatMoney(it.advanceDeduction || 0)}</td>
+                  <td style={{ textAlign: 'right' }}>{formatMoney(it.loanDeduction || 0)}</td>
+                  <td style={{ textAlign: 'right' }}>{formatMoney(it.employeeEpf || 0)}</td>
+                  <td style={{ textAlign: 'right' }}>{formatMoney(it.otherDeduction || 0)}</td>
+                  <td style={{ textAlign: 'right', color: '#b91c1c' }}>{formatMoney(it.totalDeductions)}</td>
+                  <td style={{ textAlign: 'right', fontWeight: 700, color: '#0f766e' }}>
+                    {formatMoney(it.netSalary)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <th colSpan={4} style={{ textAlign: 'right' }}>
+                  GRAND TOTALS ({items.length} Staff):
+                </th>
+                <th style={{ textAlign: 'right' }}>
+                  {formatMoney(items.reduce((s, it) => s + (Number(it.basicSalary) || 0), 0))}
+                </th>
+                <th style={{ textAlign: 'right' }}>
+                  {formatMoney(items.reduce((s, it) => s + (Number(it.commissionAmount) || 0), 0))}
+                </th>
+                <th style={{ textAlign: 'right' }}>
+                  {formatMoney(items.reduce((s, it) => s + (Number(it.bonus) || 0), 0))}
+                </th>
+                <th style={{ textAlign: 'right' }}>{formatMoney(selectedRun.totalGross)}</th>
+                <th style={{ textAlign: 'right' }}>
+                  {formatMoney(items.reduce((s, it) => s + (Number(it.advanceDeduction) || 0), 0))}
+                </th>
+                <th style={{ textAlign: 'right' }}>
+                  {formatMoney(items.reduce((s, it) => s + (Number(it.loanDeduction) || 0), 0))}
+                </th>
+                <th style={{ textAlign: 'right' }}>
+                  {formatMoney(items.reduce((s, it) => s + (Number(it.employeeEpf) || 0), 0))}
+                </th>
+                <th style={{ textAlign: 'right' }}>
+                  {formatMoney(items.reduce((s, it) => s + (Number(it.otherDeduction) || 0), 0))}
+                </th>
+                <th style={{ textAlign: 'right' }}>{formatMoney(selectedRun.totalDeductions)}</th>
+                <th style={{ textAlign: 'right', color: '#0f766e', fontSize: '11px' }}>
+                  {formatMoney(selectedRun.totalNet)}
+                </th>
+              </tr>
+            </tfoot>
+          </table>
+
+          {/* Statutory Contributions Summary */}
+          <div style={{ marginTop: '18px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+            <div
+              style={{
+                flex: 1,
+                border: '1px solid #cbd5e1',
+                borderRadius: '6px',
+                padding: '8px 12px',
+                background: '#f8fafc',
+              }}
+            >
+              <div style={{ fontWeight: 700, fontSize: '10px', color: '#1e293b', marginBottom: '4px' }}>
+                STATUTORY CONTRIBUTIONS SUMMARY
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#475569' }}>
+                <span>Total Employee EPF (8%):</span>
+                <strong>{formatMoneyLkr(items.reduce((s, it) => s + (Number(it.employeeEpf) || 0), 0))}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#475569', marginTop: '2px' }}>
+                <span>Total Employer EPF (12%):</span>
+                <strong>{formatMoneyLkr(items.reduce((s, it) => s + (Number(it.employerEpf) || 0), 0))}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#475569', marginTop: '2px' }}>
+                <span>Total Employer ETF (3%):</span>
+                <strong>{formatMoneyLkr(items.reduce((s, it) => s + (Number(it.employerEtf) || 0), 0))}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: 700, color: '#0f172a', borderTop: '1px solid #cbd5e1', paddingTop: '4px', marginTop: '4px' }}>
+                <span>Combined Statutory Remittance (23%):</span>
+                <strong>
+                  {formatMoneyLkr(
+                    items.reduce(
+                      (s, it) =>
+                        s +
+                        (Number(it.employeeEpf) || 0) +
+                        (Number(it.employerEpf) || 0) +
+                        (Number(it.employerEtf) || 0),
+                      0,
+                    ),
+                  )}
+                </strong>
+              </div>
+            </div>
+
+            <div
+              style={{
+                flex: 1,
+                border: '1px solid #cbd5e1',
+                borderRadius: '6px',
+                padding: '8px 12px',
+                background: '#f8fafc',
+              }}
+            >
+              <div style={{ fontWeight: 700, fontSize: '10px', color: '#1e293b', marginBottom: '4px' }}>
+                NET DISBURSEMENT SUMMARY
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#475569' }}>
+                <span>Total Gross Salaries:</span>
+                <strong>{formatMoneyLkr(selectedRun.totalGross)}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#b91c1c', marginTop: '2px' }}>
+                <span>Less Total Deductions:</span>
+                <strong>- {formatMoneyLkr(selectedRun.totalDeductions)}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 800, color: '#0d5c3d', borderTop: '1px solid #cbd5e1', paddingTop: '4px', marginTop: '4px' }}>
+                <span>Net Bank / Cash Payout:</span>
+                <strong>{formatMoneyLkr(selectedRun.totalNet)}</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* Signatures block */}
+          <div
+            style={{
+              marginTop: '32px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              paddingTop: '20px',
+              borderTop: '1px dashed #cbd5e1',
+            }}
+          >
+            <div style={{ textAlign: 'center', width: '28%' }}>
+              <div style={{ borderBottom: '1px solid #94a3b8', height: '36px', marginBottom: '6px' }}></div>
+              <div style={{ fontSize: '10px', color: '#475569', fontWeight: 600 }}>Prepared By (HR / Accountant)</div>
+            </div>
+            <div style={{ textAlign: 'center', width: '28%' }}>
+              <div style={{ borderBottom: '1px solid #94a3b8', height: '36px', marginBottom: '6px' }}></div>
+              <div style={{ fontSize: '10px', color: '#475569', fontWeight: 600 }}>Checked &amp; Verified By</div>
+            </div>
+            <div style={{ textAlign: 'center', width: '28%' }}>
+              <div style={{ borderBottom: '1px solid #94a3b8', height: '36px', marginBottom: '6px' }}></div>
+              <div style={{ fontSize: '10px', color: '#475569', fontWeight: 600 }}>Authorized Signatory / Owner</div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

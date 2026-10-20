@@ -11,9 +11,11 @@ import {
   Save,
   CheckCircle2,
   HelpCircle,
+  PlusCircle,
+  Sparkles,
 } from 'lucide-react';
 import { suppliersApi } from '@/api/suppliers.api';
-import { tenantApi, type Branch, type Product } from '@/api/tenant.api';
+import { tenantApi, type Branch, type Product, type ProductCategory } from '@/api/tenant.api';
 import type {
   Supplier,
   GRNPaymentOption,
@@ -31,6 +33,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { toast } from 'sonner';
 
 interface FormItemRow {
   id: string; // temporary client id
@@ -54,6 +64,21 @@ export default function GrnFormPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
+
+  // In-place Product Creation state
+  const [createProductOpen, setCreateProductOpen] = useState(false);
+  const [creatingProduct, setCreatingProduct] = useState(false);
+  const [createProductError, setCreateProductError] = useState<string | null>(null);
+  const [targetRowIndex, setTargetRowIndex] = useState<number | null>(null);
+  const [newProductForm, setNewProductForm] = useState({
+    name: '',
+    categoryId: '',
+    unit: 'Item',
+    costPrice: '',
+    sellingPrice: '',
+    description: '',
+  });
 
   // Form states
   const [supplierId, setSupplierId] = useState('');
@@ -89,19 +114,22 @@ export default function GrnFormPage() {
     async function init() {
       try {
         setLoading(true);
-        const [supRes, branchRes, prodRes] = await Promise.all([
+        const [supRes, branchRes, prodRes, catRes] = await Promise.all([
           suppliersApi.getSuppliers({ limit: 100, status: 'ACTIVE' }),
           tenantApi.branches.list(),
           tenantApi.products.list(),
+          tenantApi.productCategories.list().catch(() => []),
         ]);
 
         const sups = Array.isArray(supRes) ? supRes : supRes.data || [];
         const brs = Array.isArray(branchRes) ? branchRes : [];
         const prods = Array.isArray(prodRes) ? prodRes : [];
+        const cats = Array.isArray(catRes) ? catRes : (catRes as any)?.data || [];
 
         setSuppliers(sups);
         setBranches(brs);
         setProducts(prods);
+        setCategories(cats);
 
         // Default branch selection
         if (!isEdit && brs.length > 0) {
@@ -221,6 +249,121 @@ export default function GrnFormPage() {
       };
       return copy;
     });
+  };
+
+  const openCreateProductModal = (rowIndex?: number) => {
+    const rowCost =
+      rowIndex !== undefined && items[rowIndex]?.unitCost
+        ? String(items[rowIndex].unitCost)
+        : '';
+    setNewProductForm({
+      name: '',
+      categoryId: '',
+      unit: 'Item',
+      costPrice: rowCost,
+      sellingPrice: rowCost ? String(Math.round(Number(rowCost) * 1.3)) : '',
+      description: '',
+    });
+    setCreateProductError(null);
+    setTargetRowIndex(rowIndex !== undefined ? rowIndex : null);
+    setCreateProductOpen(true);
+  };
+
+  const handleCreateProductSubmit = async () => {
+    const trimmedName = newProductForm.name.trim();
+    if (!trimmedName) {
+      setCreateProductError('Product name is required.');
+      return;
+    }
+    const cost = Number(newProductForm.costPrice) || 0;
+    const sell = Number(newProductForm.sellingPrice) || 0;
+    if (cost < 0 || sell < 0) {
+      setCreateProductError('Cost and selling prices cannot be negative.');
+      return;
+    }
+
+    try {
+      setCreatingProduct(true);
+      setCreateProductError(null);
+
+      const activeBranchIds = branchId ? [branchId] : branches.map((b) => b.id);
+      const payload: Record<string, unknown> = {
+        name: trimmedName,
+        unit: newProductForm.unit.trim() || 'Item',
+        costPrice: cost,
+        sellingPrice: sell > 0 ? sell : cost,
+        description: newProductForm.description.trim() || undefined,
+        categoryId: newProductForm.categoryId || undefined,
+        branchIds: activeBranchIds.length > 0 ? activeBranchIds : undefined,
+      };
+
+      const res = await tenantApi.products.create(payload);
+      const createdId = res?.id;
+
+      // Re-fetch products to ensure full object synchronization
+      const freshProducts = await tenantApi.products.list();
+      const prodsList = Array.isArray(freshProducts) ? freshProducts : [];
+      setProducts(prodsList);
+
+      const createdProd =
+        prodsList.find((p) => p.id === createdId) ||
+        prodsList.find((p) => p.name.toLowerCase() === trimmedName.toLowerCase());
+
+      const prodId = createdProd?.id || createdId || '';
+      const prodName = createdProd?.name || trimmedName;
+      const prodCode = createdProd?.code || '';
+      const prodUnitCost = cost > 0 ? cost : Number(createdProd?.costPrice) || 0;
+
+      if (targetRowIndex !== null && items[targetRowIndex]) {
+        // Apply directly to the row that requested creation
+        setItems((prev) => {
+          const copy = [...prev];
+          copy[targetRowIndex] = {
+            ...copy[targetRowIndex],
+            productId: prodId,
+            productName: prodName,
+            productCode: prodCode,
+            unitCost: prodUnitCost,
+          };
+          return copy;
+        });
+      } else {
+        // Check for first empty row or append new row
+        const firstEmptyIdx = items.findIndex((it) => !it.productId);
+        if (firstEmptyIdx !== -1) {
+          setItems((prev) => {
+            const copy = [...prev];
+            copy[firstEmptyIdx] = {
+              ...copy[firstEmptyIdx],
+              productId: prodId,
+              productName: prodName,
+              productCode: prodCode,
+              unitCost: prodUnitCost,
+            };
+            return copy;
+          });
+        } else {
+          setItems((prev) => [
+            ...prev,
+            {
+              id: Math.random().toString(),
+              productId: prodId,
+              productName: prodName,
+              productCode: prodCode,
+              quantity: 1,
+              unitCost: prodUnitCost,
+            },
+          ]);
+        }
+      }
+
+      setCreateProductOpen(false);
+      toast.success(`Product "${trimmedName}" created and added to GRN!`);
+    } catch (err) {
+      setCreateProductError(getErrorMessage(err, 'Failed to create product'));
+    } finally {
+      setCreatingProduct(false);
+    }
   };
 
   const validateForm = () => {
@@ -435,26 +578,42 @@ export default function GrnFormPage() {
 
         {/* Section 2: Items Table */}
         <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b pb-3">
-            <h3 className="text-base font-semibold flex items-center gap-2">
-              <Package className="h-5 w-5 text-primary" /> 2. Purchased Items & Stock Intake
-            </h3>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleAddItem}
-              className="flex items-center gap-1.5"
-            >
-              <Plus size={15} /> Add Item Row
-            </Button>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
+            <div>
+              <h3 className="text-base font-semibold flex items-center gap-2">
+                <Package className="h-5 w-5 text-primary" /> 2. Purchased Items & Stock Intake
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Select existing products or create a brand new product right here without leaving this page.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => openCreateProductModal()}
+                className="flex items-center gap-1.5 text-emerald-700 border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800 font-medium"
+              >
+                <PlusCircle size={15} /> New Product
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddItem}
+                className="flex items-center gap-1.5"
+              >
+                <Plus size={15} /> Add Item Row
+              </Button>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-muted/40 border-b text-xs font-semibold text-muted-foreground uppercase">
                 <tr>
-                  <th className="px-3 py-2.5 min-w-[280px]">Product / Item *</th>
+                  <th className="px-3 py-2.5 min-w-[300px]">Product / Item *</th>
                   <th className="px-3 py-2.5 w-[140px] text-right">Quantity *</th>
                   <th className="px-3 py-2.5 w-[160px] text-right">Unit Cost (Rs.) *</th>
                   <th className="px-3 py-2.5 w-[160px] text-right">Line Total (Rs.)</th>
@@ -467,21 +626,47 @@ export default function GrnFormPage() {
                   return (
                     <tr key={row.id} className="hover:bg-muted/20">
                       <td className="px-3 py-2">
-                        <Select
-                          value={row.productId}
-                          onValueChange={(val) => handleProductSelect(idx, val)}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="-- Select Product --" />
-                          </SelectTrigger>
-                          <SelectContent className="max-h-60">
-                            {products.map((p) => (
-                              <SelectItem key={p.id} value={p.id}>
-                                {p.name} {p.code ? `[${p.code}]` : ''}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex-1 min-w-0">
+                            <Select
+                              value={row.productId}
+                              onValueChange={(val) => {
+                                if (val === '__new_product__') {
+                                  openCreateProductModal(idx);
+                                } else {
+                                  handleProductSelect(idx, val);
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="-- Select Product --" />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-64">
+                                <SelectItem
+                                  value="__new_product__"
+                                  className="text-emerald-700 font-semibold bg-emerald-50/80 hover:bg-emerald-100 cursor-pointer border-b mb-1 focus:bg-emerald-100"
+                                >
+                                  + Create New Product...
+                                </SelectItem>
+                                {products.map((p) => (
+                                  <SelectItem key={p.id} value={p.id}>
+                                    {p.name} {p.code ? `[${p.code}]` : ''}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            title="Create new product for this row"
+                            onClick={() => openCreateProductModal(idx)}
+                            className="h-9 px-2 text-xs font-medium text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 border border-emerald-200/80 shrink-0"
+                          >
+                            <Plus size={13} className="mr-0.5" /> New
+                          </Button>
+                        </div>
                       </td>
                       <td className="px-3 py-2">
                         <Input
@@ -715,6 +900,170 @@ export default function GrnFormPage() {
           </Button>
         </div>
       </div>
+
+      {/* In-Place Quick Product Creation Dialog */}
+      <Dialog open={createProductOpen} onOpenChange={setCreateProductOpen}>
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base font-bold">
+              <Sparkles className="w-4 h-4 text-emerald-600" />
+              Quick Create Product
+            </DialogTitle>
+          </DialogHeader>
+
+          <p className="text-xs text-muted-foreground -mt-2">
+            Add a new product into your catalog without leaving this GRN. It will automatically be selected in this row.
+          </p>
+
+          {createProductError && (
+            <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-2.5 text-xs text-destructive flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{createProductError}</span>
+            </div>
+          )}
+
+          <div className="space-y-3.5 py-1">
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold">
+                Product Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                autoFocus
+                placeholder="e.g. L'Oréal Pro Scalp Treatment 250ml"
+                value={newProductForm.name}
+                onChange={(e) =>
+                  setNewProductForm((prev) => ({ ...prev, name: e.target.value }))
+                }
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">Category</Label>
+                <Select
+                  value={newProductForm.categoryId}
+                  onValueChange={(val) =>
+                    setNewProductForm((prev) => ({ ...prev, categoryId: val }))
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select Category" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-48">
+                    {categories.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">Unit of Measure *</Label>
+                <Select
+                  value={newProductForm.unit}
+                  onValueChange={(val) =>
+                    setNewProductForm((prev) => ({ ...prev, unit: val }))
+                  }
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Unit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Item">Item</SelectItem>
+                    <SelectItem value="Bottle">Bottle</SelectItem>
+                    <SelectItem value="Box">Box</SelectItem>
+                    <SelectItem value="Pack">Pack</SelectItem>
+                    <SelectItem value="Tube">Tube</SelectItem>
+                    <SelectItem value="Pcs">Pcs</SelectItem>
+                    <SelectItem value="ml">ml</SelectItem>
+                    <SelectItem value="g">g</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">
+                  Purchase / Cost Price (Rs.) <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  className="font-mono text-right"
+                  value={newProductForm.costPrice}
+                  onChange={(e) => {
+                    const cVal = e.target.value;
+                    setNewProductForm((prev) => ({
+                      ...prev,
+                      costPrice: cVal,
+                      sellingPrice:
+                        prev.sellingPrice === '' && cVal
+                          ? String(Math.round(Number(cVal) * 1.3))
+                          : prev.sellingPrice,
+                    }));
+                  }}
+                />
+                <span className="text-[10px] text-muted-foreground">Pre-fills GRN item cost</span>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold">
+                  Retail Selling Price (Rs.) <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  className="font-mono text-right"
+                  value={newProductForm.sellingPrice}
+                  onChange={(e) =>
+                    setNewProductForm((prev) => ({ ...prev, sellingPrice: e.target.value }))
+                  }
+                />
+                <span className="text-[10px] text-muted-foreground">Price charged to clients</span>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-xs font-semibold text-muted-foreground">Description (Optional)</Label>
+              <Input
+                placeholder="Product barcode, SKU note or usage details"
+                value={newProductForm.description}
+                onChange={(e) =>
+                  setNewProductForm((prev) => ({ ...prev, description: e.target.value }))
+                }
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={creatingProduct}
+              onClick={() => setCreateProductOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={creatingProduct || !newProductForm.name.trim()}
+              onClick={handleCreateProductSubmit}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+            >
+              {creatingProduct ? 'Creating...' : 'Create & Select Product'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

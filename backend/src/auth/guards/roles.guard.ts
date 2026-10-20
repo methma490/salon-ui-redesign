@@ -24,6 +24,11 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('Insufficient permissions');
     }
 
+    const requiresSuperAdmin = requiredRoles.includes('SUPER_ADMIN');
+    if (requiresSuperAdmin && (user.userType !== 'SUPER_ADMIN' || Boolean(user.tenantId))) {
+      throw new ForbiddenException('Super Admin platform access required');
+    }
+
     const hasRole = requiredRoles.some((role) => user.roles.includes(role));
 
     if (!hasRole) {

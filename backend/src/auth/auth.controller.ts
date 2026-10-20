@@ -61,6 +61,10 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const clientIp = extractClientIp(req);
+    const headerSalonCode = (req.headers['x-salon-code'] || req.headers['x-tenant-code']) as string | undefined;
+    if (headerSalonCode && !dto.salonCode && !dto.tenantCode) {
+      dto.salonCode = headerSalonCode.trim().toUpperCase();
+    }
     const result = await this.authService.login(dto, clientIp);
 
     res.cookie(REFRESH_COOKIE_NAME, result.refreshToken, getRefreshCookieOptions());
@@ -123,7 +127,17 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   forgotPassword(@Body() dto: ForgotPasswordDto, @Req() req: Request) {
     const clientIp = extractClientIp(req);
-    return this.passwordResetService.requestReset(dto.email, dto.portal ?? 'salon', clientIp);
+    const headerSalonCode = (req.headers['x-salon-code'] || req.headers['x-tenant-code']) as string | undefined;
+    const salonCode =
+      dto.salonCode ||
+      dto.tenantCode ||
+      (headerSalonCode ? headerSalonCode.trim().toUpperCase() : undefined);
+    return this.passwordResetService.requestReset(
+      dto.email,
+      dto.portal ?? 'salon',
+      clientIp,
+      salonCode,
+    );
   }
 
   @Post('reset-password')

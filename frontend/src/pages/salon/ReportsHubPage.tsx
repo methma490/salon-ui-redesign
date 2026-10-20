@@ -7,6 +7,7 @@ import {
   Package,
   ChevronRight,
   ChevronLeft,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 export default function ReportsHubPage() {
@@ -36,13 +37,13 @@ export default function ReportsHubPage() {
             Reports &amp; Analytics
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 font-medium mt-0.5">
-            Financial statements, sales trends, staff performance and inventory valuation.
+            Financial statements, sales trends, staff performance, inventory, and payroll exports.
           </p>
         </div>
       </div>
 
-      {/* 4 Main Sub-Report Cards Requested by User - Exactly matching Reference Image */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+      {/* Sub-Report Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
         {/* 1. P & L Report */}
         <Link
           to="/salon/reports?tab=profit-loss"
@@ -123,6 +124,27 @@ export default function ReportsHubPage() {
             </h3>
             <p className="text-xs text-slate-400 mt-1 line-clamp-1">
               Stock valuation &amp; adjustments...
+            </p>
+          </div>
+        </Link>
+
+        {/* 5. Payroll Report (PDF & Excel) */}
+        <Link
+          to="/salon/payroll/runs"
+          className="flex flex-col justify-between p-4 sm:p-5 bg-white rounded-3xl border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-md hover:border-[#fecdd3] transition-all group min-h-[116px] sm:min-h-[124px]"
+        >
+          <div className="flex items-center justify-between mb-3 w-full">
+            <div className="w-11 h-11 rounded-2xl bg-[#fff1f2] border border-[#ffe4e6] flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
+              <FileSpreadsheet className="w-5 h-5 text-[#e11d48]" strokeWidth={2.2} />
+            </div>
+            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-[#e11d48] group-hover:translate-x-0.5 transition-all shrink-0" />
+          </div>
+          <div>
+            <h3 className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-[#e11d48] transition-colors leading-tight">
+              Payroll Report &gt;
+            </h3>
+            <p className="text-xs text-slate-400 mt-1 line-clamp-1">
+              Export PDF &amp; Excel statements...
             </p>
           </div>
         </Link>

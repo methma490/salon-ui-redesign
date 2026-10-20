@@ -61,8 +61,11 @@ export function getErrorMessage(err: unknown, fallback = 'Something went wrong')
   }
 
   if (err && typeof err === 'object' && 'response' in err) {
-    const data = (err as { response?: { data?: { message?: string | string[] } } }).response?.data
-      ?.message;
+    const resData = (err as { response?: { data?: { message?: string | string[]; code?: string } } }).response?.data;
+    if (resData?.code === 'EMAIL_ALREADY_IN_USE') {
+      return 'This email is already in use.';
+    }
+    const data = resData?.message;
     if (Array.isArray(data)) {
       return data.join(', ');
     }

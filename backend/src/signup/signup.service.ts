@@ -611,7 +611,11 @@ export class SignupService {
           email,
         );
         if (existing.length > 0) {
-          throw new ConflictException('An account with this admin email already exists');
+          throw new ConflictException({
+            statusCode: 409,
+            code: 'EMAIL_ALREADY_IN_USE',
+            message: 'This email is already in use.',
+          });
         }
       } catch (error) {
         if (error instanceof ConflictException) {

@@ -11,6 +11,7 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { bootstrapDatabase } from './database/bootstrap-database';
+import { isOriginAllowed, parseAllowedOrigins } from './common/utils/cors.util';
 
 config({ override: true });
 
@@ -81,64 +82,13 @@ async function bootstrap() {
   // 2. Hardened CORS Configuration
   const configuredFrontendUrl = configService.get<string>('FRONTEND_URL', '');
   const configuredAllowedOrigins = configService.get<string>('ALLOWED_ORIGINS', '');
-
-  const trustedOrigins = [
-    ...configuredFrontendUrl.split(','),
-    ...configuredAllowedOrigins.split(','),
-  ]
-    .map((s) => s.trim().toLowerCase().replace(/\/+$/, ''))
-    .filter(Boolean);
+  const trustedOrigins = parseAllowedOrigins(configuredFrontendUrl, configuredAllowedOrigins);
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Allow non-browser requests (mobile apps, server-to-server, PayHere IPN webhooks)
-      if (!origin) {
+      if (isOriginAllowed(origin, trustedOrigins, isProduction)) {
         return callback(null, true);
       }
-
-      const normalizedOrigin = origin.trim().toLowerCase().replace(/\/+$/, '');
-
-      // Check against explicit whitelist
-      if (trustedOrigins.includes(normalizedOrigin)) {
-        return callback(null, true);
-      }
-
-      // Check trusted domain patterns
-      try {
-        const url = new URL(origin);
-        const hostname = url.hostname.toLowerCase();
-
-        if (
-          hostname === 'dartcodes.com' ||
-          hostname.endsWith('.dartcodes.com')
-        ) {
-          return callback(null, true);
-        }
-
-        // Local development origins allowed only in non-production
-        if (!isProduction) {
-          if (
-            hostname === 'localhost' ||
-            hostname === '127.0.0.1' ||
-            hostname.endsWith('.localhost')
-          ) {
-            return callback(null, true);
-          }
-        }
-      } catch {
-        // Fall through to rejection
-      }
-
-      // Reject unknown origins in production (no origin reflection)
-      if (isProduction) {
-        return callback(new Error('Origin not allowed by CORS policy'), false);
-      }
-
-      // In development, log and allow only if no whitelist is configured
-      if (trustedOrigins.length === 0) {
-        return callback(null, true);
-      }
-
       return callback(new Error('Origin not allowed by CORS policy'), false);
     },
     credentials: true,

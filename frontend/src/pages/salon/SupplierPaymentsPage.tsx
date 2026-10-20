@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   CreditCard,
-  Plus,
   Search,
   CheckCircle2,
   XCircle,
@@ -11,7 +10,6 @@ import {
   AlertCircle,
   Truck,
   FileText,
-  ChevronLeft,
 } from 'lucide-react';
 import { suppliersApi } from '@/api/suppliers.api';
 import type {
@@ -295,22 +293,12 @@ export default function SupplierPaymentsPage() {
     resetRecordForm();
     setRecordDialogOpen(true);
   };
+  void openRecordDialog;
 
   const totalPagePayments = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
   return (
     <div className="emp-page space-y-6">
-      {/* Back button to Suppliers & GRN hub */}
-      <div className="flex items-center gap-2 mb-2">
-        <Link
-          to="/salon/suppliers-hub"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors py-1.5 px-2.5 rounded-lg hover:bg-slate-100"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          <span>Back to Suppliers &amp; GRN</span>
-        </Link>
-      </div>
-
       <OpsPageHeader
         title="Supplier Payments"
         subtitle="Record cash, bank transfer, and cheque settlements with automated GRN allocations."
@@ -323,13 +311,6 @@ export default function SupplierPaymentsPage() {
             >
               <Truck size={16} />
               Outstanding Queue
-            </Button>
-            <Button
-              onClick={openRecordDialog}
-              className="flex items-center gap-2 bg-primary text-primary-foreground"
-            >
-              <Plus size={16} />
-              Record Supplier Payment
             </Button>
           </div>
         }
@@ -462,9 +443,13 @@ export default function SupplierPaymentsPage() {
           <div className="p-12 text-center text-muted-foreground">
             <CreditCard className="mx-auto h-12 w-12 text-muted-foreground/40 mb-3" />
             <h3 className="text-lg font-semibold text-foreground">No Supplier Payments Found</h3>
-            <p className="mt-1 text-sm">Record a payment to settle outstanding vendor balances.</p>
-            <Button onClick={openRecordDialog} className="mt-4 flex items-center gap-2 mx-auto">
-              <Plus size={16} /> Record Payment
+            <p className="mt-1 text-sm">Settle outstanding vendor balances from the Outstanding Queue.</p>
+            <Button
+              onClick={() => navigate('/salon/supplier-outstanding')}
+              variant="outline"
+              className="mt-4 flex items-center gap-2 mx-auto"
+            >
+              <Truck size={16} /> View Outstanding Queue
             </Button>
           </div>
         ) : (

@@ -433,7 +433,7 @@
 
 .salon-admin-main > .admin-page-content {
   width: 100%;
-  max-width: 1600px;
-  margin-inline: auto;
-  padding-top: 0.5rem !important;
+  max-width: 100% !important;
+  margin-inline: 0 !important;
+  padding: 0 !important;
 }

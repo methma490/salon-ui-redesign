@@ -603,19 +603,9 @@ export default function AppointmentsPage() {
   if (isError) return <OpsError message={getErrorMessage(error)} onRetry={() => void refetch()} />;
 
   return (
-    <div className={`appointments-page mx-auto w-full max-w-[1500px] space-y-6 ${activeTab === 'calendar' ? 'appointments-calendar-page' : ''}`}>
-      {/* Top Header matching screenshot */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-            Appointments
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Book and manage customer appointments
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 w-full lg:w-auto">
+    <div className={`appointments-page w-full space-y-4 ${activeTab === 'calendar' ? 'appointments-calendar-page' : ''}`}>
+      {/* Top Header Controls */}
+      <div className="flex flex-wrap items-center justify-end gap-2.5 sm:gap-3 w-full mb-2">
           {/* Branch Selector */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <span className="text-xs font-semibold text-slate-500 shrink-0">Branch</span>
@@ -698,7 +688,6 @@ export default function AppointmentsPage() {
             <span>New Appointment</span>
           </button>
         </div>
-      </div>
 
       {/* Main Card Container */}
       <div className="appointments-card rounded-2xl border border-slate-200/90 bg-white shadow-xs overflow-hidden">

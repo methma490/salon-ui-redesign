@@ -123,7 +123,11 @@ export class PosService {
           );
         }
 
-        const unitPrice = Number(svc[0].price);
+        const catalogPrice = Number(svc[0].price);
+        const unitPrice =
+          item.unitPrice !== undefined && item.unitPrice !== null && !isNaN(Number(item.unitPrice))
+            ? Number(item.unitPrice)
+            : catalogPrice;
         const discount = item.discount ?? 0;
         const total = unitPrice - discount;
         subtotal += total;
@@ -150,7 +154,11 @@ export class PosService {
           throw new NotFoundException(`Product not found or inactive: ${item.productId}`);
         }
 
-        const unitPrice = Number(prod[0].selling_price);
+        const catalogPrice = Number(prod[0].selling_price);
+        const unitPrice =
+          item.unitPrice !== undefined && item.unitPrice !== null && !isNaN(Number(item.unitPrice))
+            ? Number(item.unitPrice)
+            : catalogPrice;
         const discount = item.discount ?? 0;
         const total = unitPrice * item.quantity - discount;
         subtotal += total;
