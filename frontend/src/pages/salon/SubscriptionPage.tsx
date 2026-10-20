@@ -1171,7 +1171,7 @@ export default function SubscriptionPage() {
             <h2 className="sub-panel-title">Payment History</h2>
 
             <p className="sub-panel-desc">Verified payments through PayHere and other gateways</p>
-
+y
           </div>
 
           <div className="sub-panel-body">

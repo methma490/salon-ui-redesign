@@ -58,7 +58,7 @@ export function Logo({ variant = 'light' }: LogoProps) {
       {/* Brand Title & Subtitle in Purple Brand Identity */}
       <div className="flex flex-col">
         <span
-          className={`text-sm sm:text-lg font-bold tracking-tight transition-colors leading-tight ${
+          className={`text-xs min-[360px]:text-sm sm:text-lg font-bold tracking-tight transition-colors leading-tight ${
             isDark
               ? 'text-white group-hover:text-violet-300'
               : 'text-slate-900 dark:text-[#f8f6ff] group-hover:text-violet-600 dark:group-hover:text-violet-300'

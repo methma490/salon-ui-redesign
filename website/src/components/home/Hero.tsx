@@ -97,7 +97,7 @@ export function Hero() {
       aria-label="Dart Smart Salon Management Platform"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
-      className="relative w-full min-h-[640px] sm:min-h-[720px] lg:min-h-[800px] flex flex-col justify-between overflow-hidden bg-slate-950 text-white"
+      className="relative w-full min-h-[600px] sm:min-h-[700px] lg:min-h-[780px] flex flex-col justify-between overflow-hidden bg-slate-950 text-white"
     >
       {/* ════ BACKGROUND IMAGE CAROUSEL WITH KEN BURNS ZOOM ANIMATION ════ */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none select-none">

@@ -153,6 +153,7 @@ export default function SupplierOutstandingPage() {
     try {
       setPayPending(true);
       setPayError(null);
+      
 
       const payload: CreateSupplierPaymentInput = {
         supplierId: payModalItem.supplierId,
